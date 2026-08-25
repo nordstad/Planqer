@@ -1,5 +1,5 @@
 # Multi-stage build for MCP server with TypeScript and Python support
-FROM node:20-alpine AS ts-builder
+FROM node:26-alpine AS ts-builder
 
 # Build TypeScript version
 WORKDIR /app
