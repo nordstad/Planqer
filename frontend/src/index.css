@@ -1,0 +1,1002 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PLANQER — THE SELF-HOSTED README
+   One world: a well-made open-source project's own homepage. Plain warm
+   paper, ink type, rounded cards, one confident accent reserved for the
+   action and the one figure that matters. No ruled catalog tables, no
+   trim-edge tab rail — the four tools are large and reachable from any page
+   through one top nav, and proof is a real diagram, never a claim.
+   Every semantic role is a custom property so day and night editions come
+   from one system, not two stylesheets.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@layer base {
+  :root {
+    --ground:      #fafaf7;   /* the page */
+    --ground-2:    #f2efe6;   /* input fill, plate fill, subtle stripe */
+    --ground-3:    #e9e6da;   /* disabled surfaces, hairline borders */
+    --card:        #ffffff;   /* a raised surface: cards, sheets, plates */
+    --ink:         #16150f;   /* type */
+    --ink-2:       #5c594c;   /* secondary type, running prose */
+    --ink-3:       #6f6a55;   /* labels, captions, muted — 4.5:1+ on paper and card */
+    --ink-4:       #d6d2c2;   /* the lightest hairline, never text */
+    --rule:        #e9e6da;   /* a divider — thin, never a heavy ink bar */
+    --rule-hair:   #e9e6da;
+    --accent:      #a34f18;   /* the signal: CTAs, the one figure, active state — darkened for 4.5:1 white text */
+    --accent-ink:  #ffffff;   /* type on a solid accent fill */
+    --accent-bg:   #fdf0e4;   /* a quiet accent tint: icon chips, highlights */
+    --signal:      var(--accent);      /* legacy alias, same role */
+    --signal-ink:  var(--accent-ink);
+    --revision:    #cc2200;   /* over limit, unplaced, delete — stays red, distinct from the accent */
+    --revision-bg: #fdeeea;
+    --shop:        #16150f;   /* saved / confirmed — ink, not a fifth colour */
+    --waste-dot:   rgba(22,21,15,.16);
+  }
+
+  .dark {
+    /* Night edition. Same plain world, warm dark stock. */
+    --ground:      #17150f;
+    --ground-2:    #201d15;
+    --ground-3:    #322d20;
+    --card:        #201d15;
+    --ink:         #ece7d8;
+    --ink-2:       #c7c2ae;
+    --ink-3:       #8f8b78;
+    --ink-4:       #4a4738;
+    --rule:        #322d20;
+    --rule-hair:   #322d20;
+    --accent:      #e0813a;
+    --accent-ink:  #17150f;
+    --accent-bg:   #3a2413;
+    --signal:      var(--accent);
+    --signal-ink:  var(--accent-ink);
+    --revision:    #ff6b45;
+    --revision-bg: #2e1410;
+    --shop:        #ece7d8;
+    --waste-dot:   rgba(236,231,216,.16);
+  }
+
+  html { scroll-behavior: auto; }
+
+  body {
+    font-family: 'Archivo', system-ui, sans-serif;
+    background: var(--ground);
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 1.45;
+    font-variant-numeric: tabular-nums;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  input, table, .tabular { font-variant-numeric: tabular-nums; }
+
+  h1, h2, h3, h4, h5, h6 { font-weight: 700; color: var(--ink); letter-spacing: -.01em; }
+
+  ::selection { background: var(--accent); color: var(--accent-ink); }
+  ::placeholder { color: var(--ink-3); }
+  * { caret-color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  ::-webkit-scrollbar { width: 12px; height: 12px; }
+  ::-webkit-scrollbar-track { background: var(--ground-2); }
+  ::-webkit-scrollbar-thumb { background: var(--ink-4); border: 3px solid var(--ground-2); }
+  ::-webkit-scrollbar-thumb:hover { background: var(--ink-3); }
+
+  .animate-background { background: var(--ground) !important; animation: none !important; }
+}
+
+@layer components {
+
+  /* ── the plan flow: one step on screen at a time ──────────────────────
+     An optimizer page used to put parts, stock, cost, the answer and the
+     diagram on one spread, and the spread won. The work is a sequence —
+     say what you need, read the plan, keep it — so the page is a sequence
+     too, and only the step you are on is drawn. */
+
+  .plan-steps {
+    display: flex; gap: 0 34px; list-style: none; margin: 0 0 28px; padding: 0;
+    border-bottom: 1px solid var(--rule-hair);
+  }
+  /* Segments take their natural width rather than a third of the page each, so
+     the amber underline hugs its own label the way the nav's does — and the rail
+     reads the same whether the step below it is a 620px form or a full-width
+     drawing. */
+  .plan-step { flex: 0 1 auto; min-width: 0; max-width: 260px; }
+  .plan-step-btn {
+    display: block; width: 100%; text-align: left; background: transparent;
+    border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px;
+    padding: 4px 0 12px; cursor: pointer; min-height: 0;
+  }
+  .plan-step-btn[data-state="locked"], .plan-step-btn[data-state="current"] { cursor: default; }
+  .plan-step-btn[data-state="current"] { border-bottom-color: var(--accent); }
+  .plan-step-no {
+    font-family: 'Archivo Narrow', sans-serif; font-size: 11px; font-weight: 700;
+    letter-spacing: .1em; color: var(--ink-3); margin-right: 8px;
+  }
+  .plan-step-btn[data-state="current"] .plan-step-no { color: var(--accent); }
+  .plan-step-label { font-size: 14.5px; font-weight: 700; color: var(--ink-3); }
+  .plan-step-btn[data-state="current"] .plan-step-label { color: var(--ink); }
+  .plan-step-btn[data-state="done"] .plan-step-label { color: var(--ink-2); }
+  .plan-step-btn[data-state="done"]:hover .plan-step-label,
+  .plan-step-btn[data-state="done"]:hover .plan-step-sum { color: var(--ink); }
+  .plan-step-sum {
+    display: block; margin-top: 3px;
+    font-family: 'Archivo Narrow', sans-serif; font-size: 12px; letter-spacing: .01em;
+    color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  @media (max-width: 767px) {
+    /* On a phone the rail keeps its three positions but drops the summaries —
+       the step you are on already shows its own facts underneath. */
+    .plan-steps { margin-bottom: 20px; }
+    .plan-step-btn { padding-right: 8px; }
+    .plan-step-sum { display: none; }
+    .plan-step-label { font-size: 13px; }
+  }
+
+  /* Parts and Save are forms and read at a form's measure; the plan is a
+     drawing and takes the whole page. */
+  .step-view { min-width: 0; }
+  .step-view.is-form { max-width: 620px; }
+
+  .step-h1 {
+    font-size: 26px; font-weight: 800; letter-spacing: -.02em; line-height: 1.15;
+    margin: 0 0 6px;
+  }
+  @media (max-width: 767px) { .step-h1 { font-size: 22px; } }
+  .step-lede {
+    font-size: 14.5px; line-height: 1.5; color: var(--ink-2); margin: 0; max-width: 58ch;
+  }
+  .step-head {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 12px 20px; flex-wrap: wrap; margin-bottom: 26px;
+  }
+  .step-head > div { min-width: 0; flex: 1 1 300px; }
+
+  .step-foot {
+    display: flex; align-items: center; gap: 12px 20px; flex-wrap: wrap;
+    margin-top: 32px; padding-top: 20px; border-top: 1px solid var(--rule-hair);
+  }
+  .step-foot-note { flex: 1 1 240px; margin: 0; }
+  .step-foot-act { flex: 0 1 320px; min-width: 200px; margin-left: auto; }
+
+  /* ── the answer, on the plan step: the one figure, then plain facts ──── */
+  .plan-answer {
+    display: flex; align-items: flex-end; gap: 10px 34px; flex-wrap: wrap; margin-bottom: 22px;
+  }
+  /* the payoff lands: the figure settles first, its facts follow — one
+     short authored moment per plan, disabled with reduced motion */
+  @media (prefers-reduced-motion: no-preference) {
+    .plan-answer-fig b { animation: answer-land .5s cubic-bezier(.16,1,.3,1) both; }
+    .plan-facts .plan-fact { animation: answer-land .4s cubic-bezier(.16,1,.3,1) both; }
+    .plan-facts .plan-fact:nth-child(1) { animation-delay: .12s; }
+    .plan-facts .plan-fact:nth-child(2) { animation-delay: .18s; }
+    .plan-facts .plan-fact:nth-child(3) { animation-delay: .24s; }
+    .plan-facts .plan-fact:nth-child(4) { animation-delay: .3s; }
+    .plan-facts .plan-fact:nth-child(5) { animation-delay: .36s; }
+  }
+  @keyframes answer-land {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: none; }
+  }
+  .plan-answer-fig { flex: none; }
+  .plan-answer-fig b {
+    display: block; font-size: clamp(46px, 6vw, 72px); font-weight: 800;
+    line-height: .9; letter-spacing: -.03em; color: var(--accent);
+  }
+  .plan-facts {
+    display: flex; gap: 12px 30px; flex-wrap: wrap; margin: 0; padding-bottom: 6px;
+  }
+  .plan-fact { min-width: 0; }
+  .plan-fact dt {
+    font-family: 'Archivo Narrow', sans-serif; font-size: 11px; font-weight: 700;
+    letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3);
+  }
+  .plan-fact dd { margin: 2px 0 0; font-size: 15px; font-weight: 700; }
+
+  /* Cut order flows into as many columns as fit, so three boards and thirty
+     both read at a glance instead of one becoming a scroll. */
+  .cut-order {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 0 28px; list-style: none; margin: 0; padding: 0;
+  }
+  .cut-order li {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 14px;
+    border-bottom: 1px solid var(--rule-hair); padding: 8px 0;
+  }
+  .cut-order-id {
+    font-family: 'Archivo Narrow', sans-serif; font-size: 11px; font-weight: 700;
+    letter-spacing: .06em; color: var(--ink-3); flex: none;
+  }
+  .cut-order-cuts {
+    font-size: 13px; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums;
+  }
+
+  /* ── sheet layouts: one plate per sheet, drawn to its real proportions ──
+     Positioned in percentages off the sheet's own dimensions, so a plate keeps
+     its aspect ratio at any column width instead of being scaled in pixels. */
+  /* auto-fit with a capped max so a one-sheet plan draws its single plate large
+     instead of leaving most of the page empty, while an eight-sheet plan still
+     lines up four to a row rather than stretching one plate to full width — a
+     portrait sheet at 1080px would be two thousand pixels tall. */
+  .sheet-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 340px));
+    justify-content: start; gap: 26px 24px;
+  }
+  .sheet-plate {
+    position: relative; width: 100%;
+    border: 1.5px solid var(--ink-4); border-radius: 8px; overflow: hidden;
+    background-color: var(--ground-2);
+    background-image: repeating-linear-gradient(45deg, transparent 0 5px, var(--waste-dot) 5px 6px);
+  }
+  .sheet-part {
+    position: absolute; overflow: hidden;
+    background: var(--card); border: 1px solid var(--ink); border-radius: 3px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: var(--ink); text-align: center;
+    /* Part ids are long and the cells are small — wrapping mid-token beats a
+       label sliced off at the edge, and 11px is the system's legible floor. */
+    line-height: 1.05; padding: 1px 2px; word-break: break-all;
+  }
+  .sheet-part[data-rotated="true"] { border-style: dashed; }
+  .sheet-cap {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+    margin-bottom: 8px;
+  }
+  .sheet-cap b { font-size: 13.5px; font-weight: 700; }
+  .sheet-cap span {
+    font-family: 'Archivo Narrow', sans-serif; font-size: 12px; color: var(--ink-3); white-space: nowrap;
+  }
+
+  /* ── an advanced option, folded away until asked for ─────────────────── */
+  .fold { border-top: 1px solid var(--rule-hair); }
+  .fold-head {
+    display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+    width: 100%; text-align: left; background: transparent; border: 0;
+    padding: 13px 2px; cursor: pointer; color: var(--ink); border-radius: 8px;
+  }
+  .fold-head:hover { color: var(--accent); }
+  .fold-head svg { flex: none; align-self: center; color: var(--ink-3); }
+  .fold-head:hover svg { color: var(--accent); }
+  .fold-title { font-size: 14.5px; font-weight: 700; }
+  .fold-hint {
+    font-family: 'Archivo Narrow', sans-serif; font-size: 12px; letter-spacing: .01em;
+    color: var(--ink-3); flex: 1 1 auto; min-width: 0;
+  }
+  .fold-body { padding: 2px 0 20px; }
+
+  /* ── a short explanation, on hover and on focus ──────────────────────── */
+  .infotip { position: relative; display: inline-flex; align-items: center; }
+  .infotip-dot {
+    width: 18px; height: 18px; min-height: 18px; border-radius: 9999px;
+    border: 1.5px solid var(--ink-4); background: var(--card); color: var(--ink-3);
+    font-size: 11px; font-weight: 700; line-height: 1; cursor: help; padding: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .infotip-dot:hover { border-color: var(--accent); color: var(--accent); }
+  /* Opens downward: these tips sit next to a field label near the top of a step,
+     where an upward bubble would cover the heading it is explaining. */
+  .infotip-body {
+    position: absolute; top: calc(100% + 9px); left: 50%; width: 250px;
+    transform: translateX(-50%); z-index: 20;
+    background: var(--card); border: 1px solid var(--rule-hair); border-radius: 10px;
+    box-shadow: 0 6px 16px -10px rgba(22,21,15,.28);
+    padding: 10px 12px; font-size: 12.5px; line-height: 1.45; color: var(--ink-2);
+    opacity: 0; visibility: hidden; transition: opacity .12s linear, visibility .12s linear;
+  }
+  .infotip:hover .infotip-body, .infotip-dot:focus-visible ~ .infotip-body {
+    opacity: 1; visibility: visible;
+  }
+  @media (max-width: 480px) {
+    /* Near the right edge a centred bubble would run off the page. */
+    .infotip-body { left: auto; right: -6px; transform: none; width: min(250px, 74vw); }
+  }
+
+  /* ── saved: the one confirmation this flow ends on ────────────────────── */
+  .saved-mark {
+    display: flex; align-items: flex-start; gap: 12px;
+    background: var(--accent-bg); border: 1px solid var(--rule-hair); border-radius: 12px;
+    padding: 16px 18px;
+  }
+  .saved-mark svg { flex: none; margin-top: 3px; color: var(--accent); }
+  .saved-mark b { display: block; font-size: 15px; font-weight: 700; }
+  .saved-mark p { margin: 3px 0 0; font-size: 13.5px; color: var(--ink-2); }
+  .saved-mark a { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+  .saved-mark a:hover { color: var(--ink); }
+
+  /* ── page frame: no trim edge, the top nav is the only navigation ────── */
+  .cat-page { min-height: 100vh; background: var(--ground); }
+  .cat-body { max-width: 1080px; margin: 0 auto; padding: 28px 24px 56px; min-width: 0; }
+  @media (max-width: 767px) {
+    .cat-body { padding: 20px 16px 40px; }
+  }
+
+  /* ── app nav: one top bar, on every page, the only wayfinding ────────── */
+  .app-nav { border-bottom: 1px solid var(--rule-hair); }
+  .app-nav-row {
+    display: flex; align-items: center; gap: 24px; flex-wrap: wrap;
+    max-width: 1080px; margin: 0 auto; padding: 16px 24px;
+  }
+  .app-wordmark {
+    font-weight: 800; font-size: 15.5px; letter-spacing: -.01em;
+    color: var(--ink); text-decoration: none; display: flex; align-items: center; gap: 8px;
+    flex: none;
+  }
+  .app-nav-links { display: flex; gap: 22px; flex-wrap: wrap; font-size: 13.5px; flex: 1; }
+  .app-nav-link {
+    color: var(--ink-2); text-decoration: none; padding: 3px 0;
+    border-bottom: 2px solid transparent; font-weight: 600;
+  }
+  .app-nav-link:hover { color: var(--ink); }
+  .app-nav-link.is-current { color: var(--ink); border-bottom-color: var(--accent); }
+  .app-nav-right { display: flex; align-items: center; gap: 16px; flex: none; margin-left: auto; }
+  @media (max-width: 767px) {
+    .app-nav-row { padding: 14px 16px; gap: 12px 16px; }
+    .app-nav-links { order: 3; flex-basis: 100%; gap: 16px 20px; }
+  }
+
+  /* ── modal header: kept for Save/Load/Delete sheets ──────────────────── */
+  .masthead {
+    display: flex; align-items: center; gap: 14px;
+    background: var(--ground-2); color: var(--ink);
+    padding: 12px 16px; border-bottom: 1px solid var(--rule-hair);
+  }
+  .masthead-brand {
+    font-weight: 800; font-size: 14px; letter-spacing: .02em;
+    color: var(--ink); text-decoration: none; display: flex; align-items: center; gap: 10px;
+  }
+  .masthead-section {
+    font-size: 12px; font-weight: 500; flex: 1; min-width: 0;
+    color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .masthead-flash {
+    background: transparent; color: var(--ink-2); white-space: nowrap; flex: none;
+    font-weight: 700; font-size: 12.5px; text-decoration: underline;
+    text-underline-offset: 2px; cursor: pointer; padding: 3px 4px;
+  }
+  .masthead-flash:hover { color: var(--accent); }
+
+  /* ── job header block: the fixed facts, in a quiet row ───────────────── */
+  .job-block {
+    display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px 0;
+    background: var(--card); border: 1px solid var(--rule-hair); border-radius: 12px;
+    padding: 14px 18px;
+  }
+  .job-cell { padding: 4px 20px 4px 0; }
+  .job-cell dt, .kicker {
+    font-family: 'Archivo Narrow', sans-serif; font-size: 11px; font-weight: 700;
+    letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3);
+  }
+  .job-cell dd { font-size: 14.5px; font-weight: 700; margin-top: 2px; }
+  .job-cell.is-revision dd { color: var(--revision); }
+
+  /* ── section heads: a quiet label over a hairline ────────────────────── */
+  .section-header { display: flex; align-items: baseline; gap: 10px; margin-bottom: 0; }
+  .section-title {
+    font-size: 15px; font-weight: 700; letter-spacing: -.005em; color: var(--ink);
+  }
+  .section-icon { display: none; }
+  .section-rule {
+    border-bottom: 1px solid var(--rule-hair);
+    padding-bottom: 10px; margin-bottom: 4px;
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 4px 12px; flex-wrap: wrap;
+  }
+  @media (max-width: 767px) {
+    .section-rule .folio { white-space: normal; order: 2; flex-basis: 100%; }
+    .section-rule .section-title { flex-basis: 100%; }
+    /* A folio paired with a control stays beside it: the rule above is for a
+       folio that is a direct child of the rule, where dropping to its own line
+       is right. Inside .section-rule-end it would order itself after the
+       button, reading as "Refresh — 2 projects" instead of the reverse. */
+    .section-rule-end .folio { order: 0; flex-basis: auto; }
+  }
+  .folio {
+    font-family: 'Archivo Narrow', sans-serif; font-size: 12px; font-weight: 600;
+    letter-spacing: .02em; color: var(--ink-3); white-space: nowrap;
+  }
+
+  /* ── tables: quiet hairline rows, plain register ─────────────────────── */
+  .cat-table { width: 100%; border-collapse: collapse; }
+  .cat-table th {
+    font-family: 'Archivo Narrow', sans-serif; font-size: 11px; font-weight: 600;
+    letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3);
+    text-align: right; padding: 7px 0 6px; border-bottom: 1px solid var(--rule-hair);
+    white-space: nowrap;
+  }
+  .cat-table th:first-child { text-align: left; }
+  .cat-table td {
+    padding: 8px 0; border-bottom: 1px solid var(--rule-hair);
+    text-align: right; font-size: 14px; font-weight: 500;
+  }
+  .cat-table td:first-child {
+    text-align: left; font-size: 12.5px;
+    letter-spacing: .02em; font-weight: 600; color: var(--ink-3);
+  }
+  .cat-table tr.is-sum td {
+    border-bottom: 0; border-top: 1.5px solid var(--ink);
+    font-weight: 800; padding-top: 8px;
+  }
+  .cat-table tr.is-sum td:first-child { color: var(--ink); }
+  .cat-table tr.is-out td { color: var(--ink-3); }
+  .cat-table.is-reference td:last-child { text-align: left; font-size: 13px; color: var(--ink-2); }
+  .cell-in-plan {
+    background: var(--accent-bg); color: var(--accent); font-weight: 800; border-radius: 6px;
+  }
+
+  /* ── the answer: a raised accent card, figure at real scale ──────────── */
+  .answer-field {
+    background: var(--card); border: 1px solid var(--rule-hair); border-radius: 16px;
+    padding: 20px 22px;
+  }
+  .answer-kicker {
+    font-family: 'Archivo Narrow', sans-serif; font-size: 11px; font-weight: 700;
+    letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3);
+  }
+  .answer-figure {
+    font-size: clamp(56px, 7vw, 88px); font-weight: 800; line-height: .95;
+    letter-spacing: -.03em; margin: 4px 0 0; color: var(--accent);
+  }
+  .answer-unit {
+    font-size: 12px; font-weight: 600; color: var(--ink-2);
+    border-top: 1px solid var(--rule-hair); padding-top: 8px; margin-top: 8px;
+  }
+  .answer-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    border-bottom: 1px solid var(--rule-hair); padding: 6px 0; font-size: 12.5px; color: var(--ink-2);
+  }
+  .answer-row b { font-size: 13.5px; font-weight: 700; color: var(--ink); }
+
+  /* ── board plates: one shared scale, rounded, plain ──────────────────── */
+  .plate-row { display: flex; align-items: center; gap: 10px; }
+  .plate-id {
+    font-family: 'Archivo Narrow', sans-serif; font-size: 11px; font-weight: 700;
+    letter-spacing: .02em; color: var(--ink-3); width: 26px; flex: none;
+  }
+  .plate-bar {
+    height: 28px; display: flex; border: 1.5px solid var(--rule-hair); background: var(--ground-2);
+    min-width: 0; border-radius: 6px; overflow: hidden;
+  }
+  .plate-cut {
+    border-right: 1.5px solid var(--rule-hair); font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; overflow: hidden;
+    color: var(--ink); letter-spacing: .01em;
+  }
+  .plate-cut:last-child { border-right: 0; }
+  .plate-kerf { width: 3px; background: var(--revision); flex: none; }
+  .plate-waste {
+    color: var(--ink-3); background-color: var(--ground-2);
+    background-image: repeating-linear-gradient(45deg, transparent 0 5px, var(--waste-dot) 5px 6px);
+  }
+  .plate-len {
+    font-size: 11px; font-weight: 600; letter-spacing: .01em; color: var(--ink-3); white-space: nowrap;
+  }
+
+  /* ── controls: rounded, plain case, one accent ───────────────────────── */
+  .btn, .btn-primary, .btn-accent, .btn-success, .btn-outline-danger, .btn-danger {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    font-weight: 700; font-size: 13.5px;
+    padding: 9px 16px; border: 1.5px solid var(--rule-hair); border-radius: 10px;
+    background: var(--card); color: var(--ink); cursor: pointer;
+    transition: background .12s linear, color .12s linear, border-color .12s linear;
+    min-height: 38px; text-decoration: none;
+  }
+  .btn:hover { background: var(--ground-2); border-color: var(--ink-4); }
+  .btn:disabled { color: var(--ink-3); background: var(--ground-2); cursor: not-allowed; }
+
+  .btn-primary { background: var(--ink); color: var(--ground); border-color: var(--ink); }
+  .btn-primary:hover { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .btn-primary:disabled { background: var(--ground-3); color: var(--ink-2); border-color: var(--ground-3); }
+
+  .btn-accent { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .btn-accent:hover { background: var(--ink); border-color: var(--ink); color: var(--ground); }
+
+  .btn-success { background: var(--card); color: var(--shop); border-color: var(--shop); }
+  .btn-success:hover { background: var(--shop); color: var(--ground); }
+
+  .btn-outline-danger, .btn-danger {
+    background: var(--card); color: var(--revision); border-color: var(--revision);
+  }
+  .btn-outline-danger:hover, .btn-danger:hover { background: var(--revision); color: #fff; }
+
+  .btn-order {
+    width: 100%; background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 12px;
+    font-weight: 700; font-size: 15px; padding: 14px 18px;
+    display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer;
+    min-height: 50px; text-decoration: none;
+  }
+  .btn-order:hover { background: var(--ink); color: var(--ground); }
+  .btn-order:disabled { background: var(--ground-3); color: var(--ink-2); cursor: not-allowed; }
+
+  /* ── form fields: bordered and rounded, not underline-only ───────────── */
+  .form-input, .form-select {
+    display: block; width: 100%; background: var(--card); color: var(--ink);
+    border: 1.5px solid var(--rule-hair); border-radius: 10px;
+    padding: 8px 12px; font-size: 14.5px; font-weight: 600; font-family: inherit;
+    min-height: 38px;
+  }
+  .form-input:focus, .form-select:focus {
+    outline: none; border-color: var(--accent); background: var(--accent-bg);
+  }
+  .form-input-error, .form-input-error:focus {
+    border-color: var(--revision); background: var(--revision-bg); color: var(--ink);
+  }
+  .form-label {
+    display: block; font-family: 'Archivo Narrow', sans-serif; font-size: 11px;
+    font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--ink-3); margin-bottom: 5px;
+  }
+
+  .cell-input {
+    width: 100%; background: transparent; border: 0; color: var(--ink);
+    font: inherit; font-size: 14px; font-weight: 600; text-align: right;
+    padding: 2px 4px; min-height: 30px; font-variant-numeric: tabular-nums; border-radius: 4px;
+  }
+  .cell-input:focus { outline: none; background: var(--accent-bg); color: var(--ink); }
+  .kerf-input { appearance: textfield; -moz-appearance: textfield; }
+  .kerf-input::-webkit-outer-spin-button, .kerf-input::-webkit-inner-spin-button {
+    -webkit-appearance: none; margin: 0;
+  }
+  .cell-input.is-error { color: var(--revision); background: var(--revision-bg); }
+  .cell-strike {
+    background: transparent; border: 0; color: var(--ink-3); cursor: pointer;
+    font-size: 15px; font-weight: 700; line-height: 1; padding: 4px 6px;
+    min-width: 30px; min-height: 30px; border-radius: 6px;
+  }
+  .cell-strike:hover { color: var(--revision); background: var(--revision-bg); }
+  input[type="checkbox"], input[type="radio"] {
+    appearance: none; width: 16px; height: 16px; border: 1.5px solid var(--ink-4);
+    background: var(--card); cursor: pointer; flex: none; position: relative; border-radius: 4px;
+  }
+  input[type="radio"] { border-radius: 9999px; }
+  input[type="checkbox"]:checked, input[type="radio"]:checked { background: var(--accent); border-color: var(--accent); }
+  input[type="checkbox"]:checked::after {
+    content: ''; position: absolute; left: 3px; top: 5px; width: 7px; height: 3px;
+    border-left: 2px solid var(--accent-ink); border-bottom: 2px solid var(--accent-ink);
+    transform: rotate(-45deg);
+  }
+  input[type="radio"]:checked::after {
+    content: ''; position: absolute; inset: 3px; border-radius: 9999px; background: var(--accent-ink);
+  }
+
+  /* ── surfaces: real cards, rounded, quietly bordered ─────────────────── */
+  .card, .card-modern, .glass-card {
+    background: var(--card); border: 1px solid var(--rule-hair); border-radius: 16px;
+    box-shadow: 0 1px 2px rgba(22,21,15,.04); backdrop-filter: none;
+    padding: 22px;
+  }
+  .card-header { border-bottom: 1px solid var(--rule-hair); padding: 0 0 10px; }
+  .card-body { padding: 0; }
+  .plate-surface { background: var(--ground-2); border: 1px solid var(--rule-hair); border-radius: 10px; }
+
+  /* ── help: numbered entries and a reading measure ────────────────────── */
+  .help-entry {
+    display: flex; align-items: baseline; gap: 10px; width: 100%; text-align: left;
+    background: transparent; border: 0; border-bottom: 1px solid var(--rule-hair);
+    padding: 9px 6px 9px 2px; cursor: pointer; color: var(--ink); border-radius: 8px;
+  }
+  .help-entry:hover { background: var(--ground-2); }
+  .help-entry[data-current="true"] { background: var(--accent-bg); color: var(--ink); }
+  .help-entry-no {
+    font-family: 'Archivo Narrow', sans-serif; font-size: 11px; font-weight: 700;
+    letter-spacing: .02em; color: var(--ink-3); width: 34px; flex: none;
+  }
+  .help-entry[data-current="true"] .help-entry-no { color: var(--accent); }
+  .help-entry-title { font-size: 13.5px; font-weight: 600; }
+
+  .help-prose { max-width: 74ch; }
+  .help-prose h1 {
+    font-size: 28px; font-weight: 800; letter-spacing: -.02em;
+    border-bottom: 1px solid var(--rule-hair); padding-bottom: 12px; margin-bottom: 18px;
+  }
+  .help-prose h2 {
+    font-size: 13px; font-weight: 700; letter-spacing: .04em;
+    border-bottom: 1px solid var(--rule-hair); padding-bottom: 8px;
+    margin: 32px 0 14px; color: var(--ink);
+  }
+  .help-prose h3 { font-size: 15px; font-weight: 800; margin: 22px 0 7px; }
+  .help-prose h4 { font-size: 13.5px; font-weight: 700; margin: 17px 0 6px; }
+  .help-prose p { font-size: 14px; line-height: 1.65; color: var(--ink-2); margin-bottom: 11px; }
+  .help-prose strong, .help-prose b { color: var(--ink); font-weight: 700; }
+  .help-prose ul, .help-prose ol { margin: 8px 0 12px; padding-left: 0; list-style: none; }
+  .help-prose li {
+    font-size: 14px; line-height: 1.6; color: var(--ink-2);
+    padding: 3px 0 3px 18px; position: relative;
+  }
+  .help-prose li::before { content: '—'; position: absolute; left: 0; color: var(--ink-3); }
+  .help-prose a { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+  .help-prose a:hover { color: var(--ink); }
+
+  /* ── an inserted sheet: what this system uses instead of a plain modal ── */
+  .cat-overlay {
+    position: fixed; inset: 0; z-index: 60; display: flex;
+    align-items: center; justify-content: center; padding: 18px;
+    background: rgba(22,21,15,.5);
+  }
+  .cat-sheet {
+    width: 100%; max-width: 640px; max-height: 86vh; overflow: auto;
+    background: var(--card); border: 1px solid var(--rule-hair); border-radius: 16px;
+    box-shadow: 0 24px 48px -24px rgba(22,21,15,.35);
+  }
+
+  /* ── notices ─────────────────────────────────────────────────────────── */
+  .alert-danger {
+    background: var(--revision-bg); border: 1px solid var(--revision);
+    color: var(--ink); padding: 11px 14px; font-size: 13.5px; font-weight: 600; border-radius: 10px;
+  }
+  .alert-danger::before {
+    content: 'Note'; display: block;
+    font-family: 'Archivo Narrow', sans-serif; font-size: 11px; font-weight: 700;
+    letter-spacing: .06em; text-transform: uppercase; color: var(--revision);
+    margin-bottom: 3px;
+  }
+  .alert-note {
+    background: var(--accent-bg); border: 1px solid var(--rule-hair);
+    padding: 11px 14px; font-size: 13.5px; color: var(--ink-2); border-radius: 10px;
+  }
+  .text-danger { color: var(--revision); }
+  .text-muted { color: var(--ink-3); }
+  .text-success { color: var(--shop); }
+  .synthetic {
+    font-family: 'Archivo Narrow', sans-serif; font-size: 12px; letter-spacing: .01em;
+    color: var(--ink-3); max-width: 70ch;
+  }
+
+  /* ── day/night switch ─────────────────────────────────────────────────── */
+  .toggle-switch {
+    position: relative; display: inline-flex; align-items: center;
+    width: 42px; height: 24px; border: 1.5px solid var(--rule-hair); border-radius: 9999px;
+    background: var(--ground-2); cursor: pointer; padding: 0; flex: none;
+  }
+  @media (max-width: 767px) {
+    .toggle-switch { width: 52px; height: 30px; }
+    .toggle-thumb { height: 22px; width: 22px; }
+    .toggle-thumb-on { transform: translateX(23px); }
+    .toggle-thumb-off { transform: translateX(2px); }
+  }
+  button:not(.toggle-switch):not(.cell-strike):not(.infotip-dot):not(.plan-step-btn) { min-height: 30px; }
+  .toggle-switch-on { background: var(--accent); border-color: var(--accent); }
+  .toggle-switch-off { background: var(--ground-2); }
+  .toggle-thumb {
+    display: inline-flex; align-items: center; justify-content: center; border-radius: 9999px;
+    height: 18px; width: 18px; background: var(--card); transition: transform .12s linear;
+  }
+  .toggle-thumb-on { transform: translateX(20px); }
+  .toggle-thumb-off { transform: translateX(2px); }
+  .toggle-thumb svg { display: none; }
+
+  /* ── work in progress: squares stepping, one authored moment ─────────── */
+  .loader-steps { display: inline-flex; gap: 4px; align-items: center; }
+  .loader-steps i {
+    width: 7px; height: 7px; background: currentColor; display: block; border-radius: 2px;
+    animation: step-fade 1.05s steps(1, end) infinite;
+  }
+  .loader-steps i:nth-child(2) { animation-delay: .35s; }
+  .loader-steps i:nth-child(3) { animation-delay: .7s; }
+  @keyframes step-fade { 0%, 33% { opacity: 1 } 34%, 100% { opacity: .22 } }
+  @media (prefers-reduced-motion: reduce) {
+    .loader-steps i { animation: none; opacity: .6 }
+  }
+
+  /* ── the cut diagram from the backend ────────────────────────────────── */
+  .cut-list-visualization {
+    background: var(--card); border: 1px solid var(--rule-hair); border-radius: 12px;
+    overflow: hidden; margin: 0; padding: 0; line-height: 0;
+  }
+  .cut-list-visualization img { display: block; width: 100%; height: auto; }
+
+  /* The right end of a section rule, when a count and a control share it. */
+  .section-rule-end { display: flex; align-items: center; gap: 14px; }
+
+  /* ── a compact button, for the several that sit on one row ───────────── */
+  .btn-sm {
+    padding: 5px 11px; min-height: 30px; font-size: 12.5px; border-radius: 8px;
+  }
+
+  /* ── rename in place: the mark that says a name is editable ──────────── */
+  .name-edit-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    background: transparent; border: 0; padding: 3px; margin-left: 2px;
+    color: var(--ink-4); cursor: pointer; border-radius: 6px; flex: none;
+    opacity: 0; transition: opacity .12s linear, color .12s linear;
+  }
+  /* Present on hover for the mouse, and permanently for the keyboard, which
+     has no way to hover a card into showing its controls. */
+  .plan-item:hover .name-edit-btn,
+  .proj-head:hover .name-edit-btn,
+  .name-edit-btn:focus-visible { opacity: 1; }
+  .name-edit-btn:hover { color: var(--accent); }
+  @media (hover: none) { .name-edit-btn { opacity: 1; } }
+  .name-edit { max-width: 320px; }
+
+  /* ── a saved plan's own diagram, at thumbnail size ────────────────────
+     The plate-paper fill is the loading state as well as the frame: an
+     arriving diagram fades onto the same surface a missing one leaves bare,
+     so nothing jumps and no spinner stands in for a plan. */
+  .thumb {
+    display: flex; align-items: center; justify-content: center;
+    width: 100%; height: 100%; overflow: hidden;
+    background: var(--ground-2); border: 1px solid var(--rule-hair); border-radius: 10px;
+  }
+  .thumb-img {
+    display: block; width: 100%; height: 100%; object-fit: contain;
+    padding: 6px; animation: thumb-in .22s cubic-bezier(.2, .7, .3, 1) both;
+  }
+  @keyframes thumb-in { from { opacity: 0 } to { opacity: 1 } }
+  @media (prefers-reduced-motion: reduce) { .thumb-img { animation: none } }
+  .thumb-none {
+    font-family: 'Archivo Narrow', sans-serif; font-size: 11px; font-weight: 600;
+    letter-spacing: .04em; color: var(--ink-3); text-align: center; padding: 0 10px;
+  }
+
+  /* ── the project index: each container showing what it holds ──────────
+     Two to a row at desk width rather than three or four: a cutting diagram
+     is a wide, short drawing, and a narrower column would shrink it to a
+     texture with no readable cuts in it. */
+  .proj-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 18px;
+  }
+  @media (max-width: 520px) { .proj-grid { grid-template-columns: 1fr; } }
+  .proj-card {
+    display: flex; flex-direction: column; gap: 14px; padding: 14px;
+    background: var(--card); border: 1px solid var(--rule-hair); border-radius: 16px;
+    box-shadow: 0 1px 2px rgba(22, 21, 15, .05); text-decoration: none; color: var(--ink);
+    transition: border-color .12s linear, box-shadow .12s linear;
+  }
+  .proj-card:hover { border-color: var(--accent); box-shadow: 0 6px 16px -10px rgba(22, 21, 15, .18); }
+  /* Tall enough that a portrait sheet layout — which contains to the frame's
+     height, not its width — still shows its parts rather than a stamp. */
+  .proj-card-cover { display: block; height: 156px; }
+  .proj-card-foot { display: flex; align-items: center; gap: 12px; }
+  .proj-card-text { flex: 1; min-width: 0; }
+  .proj-card-text b { display: block; font-size: 16px; font-weight: 700; }
+  .proj-card-text em {
+    display: block; font-style: normal; font-size: 12.5px; color: var(--ink-3); margin-top: 2px;
+  }
+  .proj-card-foot svg { flex: none; color: var(--ink-4); transition: color .12s linear; }
+  .proj-card:hover .proj-card-foot svg { color: var(--accent); }
+
+  /* ── back out of a project: an exit, not a second navigation ──────────── */
+  .crumb-back {
+    display: inline-flex; align-items: center; gap: 7px; margin-bottom: 16px;
+    font-family: 'Archivo Narrow', sans-serif; font-size: 12px; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); text-decoration: none;
+  }
+  .crumb-back:hover { color: var(--accent); }
+
+  /* ── the project you opened ───────────────────────────────────────────── */
+  .proj-head {
+    display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 16px;
+    padding-bottom: 16px; margin-bottom: 22px; border-bottom: 1px solid var(--rule-hair);
+  }
+  .proj-head-name {
+    display: flex; align-items: center; font-size: 26px; font-weight: 800;
+    letter-spacing: -.02em; line-height: 1.1; flex: 1 1 auto;
+  }
+  .proj-head-meta {
+    flex: 1 1 100%; order: 3; margin: 0;
+    font-size: 13px; color: var(--ink-2);
+  }
+  .proj-head-act { flex: none; align-self: center; display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; }
+
+  /* ── print the whole project: paper size sits with its one button ─────── */
+  .print-set { display: inline-flex; align-items: center; gap: 6px; }
+  .print-paper {
+    width: auto; min-height: 30px; padding: 4px 8px; font-size: 12.5px;
+    border-radius: 8px; border-width: 1px;
+  }
+
+  /* ── the plans inside: one wide row each, diagram first ────────────────
+     A row rather than a grid cell, for the same reason the index is two
+     columns wide: the drawing is wide, and the four things you do to a plan
+     read better in a line than stacked under a square. */
+  .plan-list { display: flex; flex-direction: column; gap: 12px; }
+  .plan-item {
+    display: flex; align-items: center; gap: 16px; padding: 12px 14px;
+    background: var(--card); border: 1px solid var(--rule-hair); border-radius: 16px;
+    box-shadow: 0 1px 2px rgba(22, 21, 15, .05);
+  }
+  .plan-item-thumb {
+    flex: none; width: 190px; height: 84px; padding: 0; border: 0;
+    background: transparent; cursor: zoom-in; border-radius: 10px;
+  }
+  .plan-item-thumb:disabled { cursor: default; }
+  .plan-item-thumb:not(:disabled):hover .thumb { border-color: var(--accent); }
+  .plan-item-body { flex: 1 1 220px; min-width: 0; }
+  .plan-item-name {
+    display: flex; align-items: center; font-size: 15.5px; font-weight: 700;
+    line-height: 1.25; margin-bottom: 4px;
+  }
+  /* Space separates the facts, not punctuation: a middot between them — by
+     pseudo-element or typed in — becomes a dangling mark at the start of a
+     wrapped line on a phone, which is exactly where this row wraps. */
+  .plan-item-facts {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 2px 18px; margin: 0;
+    font-size: 13px; color: var(--ink-2);
+  }
+  .plan-item-type { font-weight: 700; color: var(--ink); }
+  .plan-item-date {
+    font-family: 'Archivo Narrow', sans-serif; font-size: 12px; color: var(--ink-3); margin: 5px 0 0;
+  }
+  .plan-item-acts { display: flex; flex-wrap: wrap; gap: 8px; flex: none; margin-left: auto; }
+  @media (max-width: 767px) {
+    .plan-item { flex-wrap: wrap; }
+    .plan-item-thumb { width: 100%; height: 120px; }
+    .plan-item-acts { margin-left: 0; flex: 1 1 100%; }
+    /* A plan gets read and exported in a workshop, on a phone, one-handed:
+       these go back up to a real touch target, and Delete stays at its own
+       width rather than growing into the biggest button in the row. */
+    .plan-item-acts .btn-sm { min-height: 40px; padding: 8px 18px; }
+  }
+
+  /* ── plans in no project ───────────────────────────────────────────────
+     Deliberately not cards, and deliberately not in the project grid: a
+     project is a container you made and named, and these are the absence of
+     one. Rows under a labelled rule read as loose plans at a glance, which a
+     card sitting in the same grid never did however it was tinted. */
+  .unfiled { margin-top: 38px; }
+  .unfiled-all {
+    display: inline-flex; align-items: center; gap: 8px; margin-top: 14px;
+    font-size: 13px; font-weight: 700; color: var(--ink);
+    text-decoration: underline; text-underline-offset: 3px;
+  }
+  .unfiled-all:hover { color: var(--accent); }
+  .unfiled-noprojects {
+    font-size: 14px; line-height: 1.55; color: var(--ink-2);
+    max-width: 62ch; margin: 0;
+  }
+
+  /* ── nothing here yet: say what puts something here ───────────────────── */
+  .proj-blank {
+    background: var(--card); border: 1px dashed var(--ink-4); border-radius: 16px;
+    padding: 30px 26px; text-align: center;
+  }
+  .proj-blank.is-first { padding: 46px 26px; }
+  .proj-blank p {
+    font-size: 14px; line-height: 1.55; color: var(--ink-2);
+    max-width: 46ch; margin: 0 auto 18px; text-wrap: balance;
+  }
+  .proj-blank b { color: var(--ink); font-weight: 700; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HOMEPAGE — the launcher. Four tools reachable in one glance, a real cut
+   diagram instead of a claim, and the open-source facts kept to one quiet
+   line near the footer instead of leading the page.
+   ═══════════════════════════════════════════════════════════════════════════ */
+/* the top block reorders per breakpoint: desktop pairs text with the
+   diagram and puts cards below; mobile puts cards right after the (short)
+   text, deferring the fuller diagram so the launcher is never buried */
+.hp-top {
+  display: grid;
+  grid-template-columns: 1.15fr 380px;
+  grid-template-areas: "text visual" "rule rule" "cards cards";
+  gap: 28px 40px;
+  padding: 12px 0 8px;
+}
+@media (max-width: 900px) {
+  .hp-top {
+    grid-template-columns: 1fr;
+    grid-template-areas: "text" "rule" "cards" "visual";
+    gap: 20px;
+    padding: 8px 0 4px;
+  }
+}
+.hp-hero-text { grid-area: text; align-self: center; }
+.hp-visual-area { grid-area: visual; }
+.hp-grid-area { grid-area: cards; }
+
+/* the divider is a drawing, not a line: a tape-measure edge in the
+   lightest hairline ink — quiet enough to be furniture, specific enough
+   to belong to no other product */
+.hp-rule {
+  grid-area: rule; height: 13px; margin-top: 4px;
+  background:
+    repeating-linear-gradient(90deg, var(--ink-4) 0 1px, transparent 1px 10px) top left / 100% 6px no-repeat,
+    repeating-linear-gradient(90deg, var(--ink-4) 0 1px, transparent 1px 50px) top left / 100% 10px no-repeat,
+    repeating-linear-gradient(90deg, var(--ink-4) 0 1px, transparent 1px 100px) top left / 100% 13px no-repeat,
+    linear-gradient(var(--ink-4), var(--ink-4)) top left / 100% 1px no-repeat;
+}
+
+.hp-h1 {
+  font-size: 40px; font-weight: 800; line-height: 1.08; letter-spacing: -.02em;
+  margin: 0 0 14px; max-width: 18ch; text-wrap: balance;
+}
+@media (max-width: 900px) { .hp-h1 { font-size: 29px; max-width: none; } }
+.hp-h1 em { font-style: normal; color: var(--accent); }
+.hp-lede { font-size: 15px; line-height: 1.55; color: var(--ink-2); margin: 0; max-width: 48ch; }
+@media (max-width: 900px) { .hp-lede { font-size: 14px; } }
+
+/* the hero earns an action: ink slab, amber on hover — the system's own
+   primary, sized up for the one place the whole page points at */
+.hp-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 18px; margin-top: 22px; }
+.hp-cta {
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 12px 24px; border-radius: 12px; font-size: 14.5px; font-weight: 700;
+}
+.hp-alt {
+  font-size: 13.5px; color: var(--ink-2); text-decoration: underline;
+  text-underline-offset: 3px; text-decoration-color: var(--ink-4);
+}
+.hp-alt:hover { color: var(--accent); text-decoration-color: var(--accent); }
+
+.hp-visual {
+  background: var(--card); border: 1px solid var(--rule-hair); border-radius: 16px;
+  padding: 18px 20px; box-shadow: 0 1px 2px rgba(22,21,15,.05);
+}
+.hp-visual-label { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 12px; }
+.hp-plate { display: flex; height: 30px; border-radius: 6px; overflow: hidden; border: 1.5px solid var(--rule-hair); margin-bottom: 8px; position: relative; }
+.hp-plate-mini { height: 16px; opacity: .65; }
+.hp-plate-cut { display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: var(--ink); background: var(--ground-2); border-right: 1.5px solid var(--rule-hair); }
+.hp-plate-cut:last-child { border-right: 0; }
+.hp-plate-kerf { width: 4px; background: var(--accent); flex: none; }
+.hp-plate-waste { background-image: repeating-linear-gradient(45deg, transparent 0 4px, var(--waste-dot) 4px 5px); }
+.hp-visual-more { font-size: 11px; color: var(--ink-3); margin: 6px 0 12px; }
+.hp-visual-caption { font-size: 12px; color: var(--ink-2); margin: 0; line-height: 1.5; }
+.hp-visual-caption b { color: var(--ink); font-weight: 700; }
+
+/* the one authored moment: the plan arrives the way a plan is executed —
+   each board revealed left to right behind a passing blade, top board
+   first, then the two beneath, then the verdict line. plays once. */
+@media (prefers-reduced-motion: no-preference) {
+  .hp-visual .hp-plate { animation: hp-cut .9s cubic-bezier(.6,.05,.3,1) both; }
+  .hp-visual .hp-plate::after {
+    content: ''; position: absolute; top: 0; bottom: 0; width: 3px;
+    background: var(--accent); transform: translateX(-100%);
+    animation: hp-blade .9s cubic-bezier(.6,.05,.3,1) both;
+  }
+  .hp-visual .hp-plate { animation-delay: .25s; }
+  .hp-visual .hp-plate::after { animation-delay: .25s; }
+  .hp-visual .hp-plate-mini { animation-delay: .95s; animation-duration: .6s; }
+  .hp-visual .hp-plate-mini::after { animation-delay: .95s; animation-duration: .6s; }
+  .hp-visual .hp-plate-mini + .hp-plate-mini { animation-delay: 1.4s; }
+  .hp-visual .hp-plate-mini + .hp-plate-mini::after { animation-delay: 1.4s; }
+  .hp-visual-more, .hp-visual-caption { animation: hp-settle .45s ease-out 1.95s both; }
+}
+@keyframes hp-cut {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+@keyframes hp-blade {
+  from { left: 0%; opacity: 1; }
+  88% { opacity: 1; }
+  to { left: 100%; opacity: 0; }
+}
+@keyframes hp-settle {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
+.hp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 640px) { .hp-grid { grid-template-columns: 1fr; } }
+.hp-card {
+  background: var(--card); border: 1px solid var(--rule-hair); border-radius: 14px;
+  padding: 22px 22px 20px; display: flex; gap: 16px; align-items: flex-start;
+  text-decoration: none; color: var(--ink); transition: border-color .12s linear, box-shadow .12s linear;
+}
+.hp-card:hover { border-color: var(--accent); box-shadow: 0 6px 16px -10px rgba(22,21,15,.18); }
+.hp-card-ic { flex: none; width: 42px; height: 42px; border-radius: 10px; background: var(--accent-bg); display: flex; align-items: center; justify-content: center; color: var(--accent); }
+.hp-card h2 { font-size: 16.5px; font-weight: 700; margin: 0 0 5px; }
+.hp-card p { font-size: 13px; color: var(--ink-2); margin: 0; line-height: 1.45; }
+.hp-card-arrow {
+  margin-left: auto; align-self: center; color: var(--ink-3); font-size: 16px; flex: none;
+  transition: transform .15s ease-out, color .15s linear;
+}
+.hp-card:hover .hp-card-arrow { transform: translateX(3px); color: var(--accent); }
+
+/* one line: the one new fact the hero diagram doesn't already prove, plus
+   the reassurance that belongs right where the decision happens */
+.hp-note { font-size: 13px; color: var(--ink-2); margin: 18px 0 0; line-height: 1.55; max-width: 62ch; }
+.hp-note b { color: var(--ink); font-weight: 700; }
+
+.hp-footer { margin-top: 34px; padding: 20px 0; border-top: 1px solid var(--rule-hair); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; font-size: 12.5px; color: var(--ink-3); }
+.hp-footer a { color: var(--ink-2); text-decoration: none; margin-right: 16px; }
+.hp-footer a:hover { color: var(--accent); }
+
+/* part rows stack on small screens, sit on one rule at desk width */
+.part-input-row { flex-direction: column; }
+@media (min-width: 768px) { .part-input-row { flex-direction: row; } }
+.part-input-row > div { margin-bottom: 8px; }
+@media (min-width: 768px) { .part-input-row > div { margin-bottom: 0; } }

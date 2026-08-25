@@ -1,0 +1,37 @@
+{
+    "name": "planqer-mcp-server",
+    "version": "1.0.0",
+    "description": "MCP server for interacting with Planqer cutting optimization API",
+    "main": "dist/index.js",
+    "type": "module",
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsc --watch",
+        "start": "node dist/index.js",
+        "test": "npm run build && vitest run",
+        "test:watch": "vitest",
+        "test:coverage": "npm run build && vitest run --coverage",
+        "test:py": "uv run --group dev python -m pytest -q",
+        "test:all": "npm run test && npm run test:py"
+    },
+    "keywords": [
+        "mcp",
+        "server",
+        "cutting",
+        "optimization",
+        "woodworking"
+    ],
+    "author": "Planqer Web Team",
+    "license": "MIT",
+    "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.0.0",
+        "axios": "^1.7.0",
+        "zod": "^3.23.0"
+    },
+    "devDependencies": {
+        "@types/node": "^20.0.0",
+        "typescript": "^5.0.0",
+        "vitest": "^1.0.0",
+        "@vitest/coverage-v8": "^1.0.0"
+    }
+}

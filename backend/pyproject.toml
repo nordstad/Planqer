@@ -1,0 +1,65 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "planqer"
+version = "0.1.0"
+description = "FastAPI backend for Planqer: Optimize board cutting to minimize waste."
+requires-python = ">=3.12"  # matches python:3.12-slim in Dockerfile
+authors = [
+    { name = "Even Nordstad", email = "borkempire@gmail.com" }
+]
+dependencies = [
+    "fastapi>=0.115.0,<1.0.0",
+    "uvicorn>=0.30.0,<1.0.0",
+    "matplotlib>=3.9.0,<4.0.0",
+    "pyyaml>=6.0.1,<7.0.0",
+    "rich>=13.7.0,<14.0.0",
+    "rich-argparse>=1.7.0,<2.0.0",
+    "slowapi>=0.1.10,<0.2.0",
+    "httpx>=0.27.0,<1.0.0",
+    "pytest>=8.4.1,<9.0.0",
+    "prometheus-client>=0.20.0,<1.0.0",
+    "structlog>=24.4.0,<25.0.0",
+    "trimesh>=4.0.0",     # For 3D STL processing
+    "numpy>=1.24.0",      # Required by trimesh
+    "python-multipart",   # For file uploads
+    "networkx>=2.8.0",    # Graph engine for trimesh component splitting
+    "scipy>=1.10.0",      # Required for trimesh operations
+    "sqlmodel>=0.0.16",         # Database ORM for local accounts
+    "aiosqlite>=0.21.0",        # Async SQLite driver
+    "alembic>=1.13.0",          # Database migrations
+    "greenlet>=3.2.4",          # Required by SQLAlchemy's async engine
+    "python-jose[cryptography]>=3.3.0",  # JWT tokens
+    "passlib[bcrypt]>=1.7.4",   # Password hashing
+    "bcrypt<4.0",                # passlib's self-test predates bcrypt 4's strict 72-byte limit
+    "email-validator>=2.2.0",   # Email format validation for registration
+]
+# No dependency here needs a system library that pip cannot supply. cairosvg
+# did — it loads the native libcairo at runtime — which made PNG export work
+# or not depending on the host OS. The browser rasterizes the stored SVG now,
+# so a bare `uv sync` is a complete install on Linux, macOS and Windows alike.
+
+[tool.hatch.build.targets.wheel]
+packages = ["planqer"]
+
+[dependency-groups]
+dev = [
+    "icecream>=2.1.4",
+    "pytest>=8.4.1",
+    "pytest-cov>=6.2.1",
+    "pytest-asyncio>=0.23.0",
+    "requests>=2.32.4",
+    "ruff>=0.12.9",
+]
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore::matplotlib.MatplotlibDeprecationWarning"
+]
+
+[tool.coverage.run]
+# TestClient runs the ASGI app on a background thread; without this, coverage
+# only sees the main thread and silently under-reports every route handler.
+concurrency = ["thread", "greenlet"]

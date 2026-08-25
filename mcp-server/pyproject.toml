@@ -1,0 +1,35 @@
+[project]
+name = "planqer-mcp-server"
+version = "1.0.0"
+description = "MCP server for interacting with Planqer cutting optimization API"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "httpx>=0.28.1",
+    "mcp>=1.12.2,<2",
+]
+
+[[project.authors]]
+name = "Planqer Web Team"
+email = "noreply@anthropic.com"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project.scripts]
+planqer-mcp-server = "planqer_mcp_server:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.1",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=6.2.1",
+    "httpx>=0.28.1",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+filterwarnings = [
+    "ignore::DeprecationWarning"
+]

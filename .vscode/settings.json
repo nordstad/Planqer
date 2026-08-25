@@ -1,0 +1,9 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "uv": true,
+        "npm run test:e2e": true,
+        "lsof": true,
+        "true": true,
+        "npx playwright": true
+    }
+}

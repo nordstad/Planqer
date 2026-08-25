@@ -1,0 +1,27 @@
+name: Docker build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - "frontend/**"
+      - "mcp-server/**"
+      - "docker-compose.yml"
+      - ".github/workflows/docker-build.yml"
+  pull_request:
+    paths:
+      - "backend/**"
+      - "frontend/**"
+      - "mcp-server/**"
+      - "docker-compose.yml"
+      - ".github/workflows/docker-build.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build all services
+        run: docker compose build

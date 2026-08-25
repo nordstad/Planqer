@@ -1,0 +1,47 @@
+{
+    "kitchen_cabinets": {
+        "parts": {
+            "12.5": 4,
+            "8.25": 2,
+            "6.0": 3,
+            "4.75": 1
+        },
+        "available_board_lengths": [
+            96,
+            120,
+            144
+        ],
+        "saw_blade_width": 0.125,
+        "project_name": "Kitchen Cabinet Shelves"
+    },
+    "furniture_project": {
+        "parts": {
+            "81": 4,
+            "90": 16,
+            "179": 8,
+            "270": 4
+        },
+        "available_board_lengths": [
+            2500,
+            3000,
+            3300,
+            3600
+        ],
+        "saw_blade_width": 3,
+        "project_name": "Furniture Project"
+    },
+    "custom_project": {
+        "parts": {
+            "24": 8,
+            "36": 4,
+            "48": 6,
+            "72": 2
+        },
+        "available_board_lengths": [
+            96,
+            120
+        ],
+        "saw_blade_width": 0.1875,
+        "project_name": "Workshop Storage"
+    }
+}

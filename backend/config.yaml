@@ -1,0 +1,16 @@
+max_lengths:
+  part_length: 6000  # 6000mm = 6m
+  board_length: 6000  # 6000mm = 6m
+
+database:
+  # url override via DATABASE_URL env var; defaults to a local SQLite file.
+  echo: false
+
+auth:
+  # secret_key: set via SECRET_KEY env var. If unset, a random key is
+  # generated per process (existing sessions invalidate on restart).
+  algorithm: "HS256"
+  # 30 days: a self-hosted single-tenant instance should feel like signing in
+  # once, not re-authenticating every session (matches Gitea's 31-day and
+  # Grafana's 30-day defaults for the same setup).
+  access_token_expire_minutes: 43200

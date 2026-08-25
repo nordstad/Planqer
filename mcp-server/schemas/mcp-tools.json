@@ -1,0 +1,109 @@
+[
+    {
+        "name": "optimize_cutting",
+        "description": "Optimize cutting plans for woodworking projects. Supports both sync and async processing with multiple optimization algorithms.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "parts": {
+                    "type": "object",
+                    "description": "Object mapping part lengths to quantities (e.g., {\"12.5\": 4, \"8.25\": 2})",
+                    "additionalProperties": {
+                        "type": "number",
+                        "minimum": 1
+                    }
+                },
+                "available_board_lengths": {
+                    "type": "array",
+                    "description": "Array of available board lengths in the same units as parts",
+                    "items": {
+                        "type": "number",
+                        "minimum": 0.1
+                    }
+                },
+                "saw_blade_width": {
+                    "type": "number",
+                    "description": "Width of the saw blade (kerf) to account for material lost during cutting",
+                    "minimum": 0
+                },
+                "project_name": {
+                    "type": "string",
+                    "description": "Optional name for the cutting project"
+                },
+                "algorithm": {
+                    "type": "string",
+                    "description": "Optimization algorithm to use",
+                    "enum": [
+                        "first_fit_decreasing",
+                        "best_fit",
+                        "best_fit_decreasing",
+                        "genetic",
+                        "branch_bound"
+                    ]
+                },
+                "use_async": {
+                    "type": "boolean",
+                    "description": "Use async processing for complex optimizations (default: false)"
+                }
+            },
+            "required": [
+                "parts",
+                "available_board_lengths",
+                "saw_blade_width"
+            ]
+        }
+    },
+    {
+        "name": "optimize_demo",
+        "description": "Run cutting optimization with a pre-configured demo payload",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "example": {
+                    "type": "string",
+                    "description": "Which demo payload to optimize",
+                    "enum": [
+                        "kitchen_cabinets",
+                        "furniture_project",
+                        "custom_project"
+                    ]
+                },
+                "use_async": {
+                    "type": "boolean",
+                    "description": "Use async processing (default: false)"
+                }
+            },
+            "required": [
+                "example"
+            ]
+        }
+    },
+    {
+        "name": "get_demo_payloads",
+        "description": "Get pre-configured demo payloads for testing the cutting optimization API",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "example": {
+                    "type": "string",
+                    "description": "Which demo payload to return (default: all)",
+                    "enum": [
+                        "kitchen_cabinets",
+                        "furniture_project",
+                        "custom_project",
+                        "all"
+                    ]
+                }
+            }
+        }
+    },
+    {
+        "name": "get_cutting_example",
+        "description": "Get an example of how to use the cutting optimization API with sample data",
+        "inputSchema": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false
+        }
+    }
+]

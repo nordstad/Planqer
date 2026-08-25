@@ -1,0 +1,79 @@
+site_name: Planqer
+site_description: Self-hosted cutting optimization for boards and sheet goods
+site_url: https://borkempire.github.io/planqer/
+repo_url: https://github.com/borkempire/planqer
+repo_name: borkempire/planqer
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep orange
+      accent: deep orange
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep orange
+      accent: deep orange
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.action.edit
+  icon:
+    repo: fontawesome/brands/github
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+nav:
+  - Home: index.md
+  - Getting started: getting-started.md
+  - Guide:
+      - Board cutting: guide/board-cutting.md
+      - Sheet cutting: guide/sheet-cutting.md
+      - 3D model / STEP cutlists: guide/model-cutlist.md
+      - Projects & accounts: guide/projects-and-accounts.md
+      - MCP server (AI assistants): guide/mcp-server.md
+  - Reference:
+      - Configuration: reference/configuration.md
+      - REST API: reference/api.md
+  - Troubleshooting: troubleshooting.md
+  - Contributing: contributing.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/borkempire/planqer
+
+not_in_nav: |
+  RELEASE_NOTES.md

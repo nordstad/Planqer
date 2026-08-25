@@ -1,0 +1,256 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Planqer Web - Application Monitoring",
+    "tags": ["planqer", "optimization", "monitoring"],
+    "style": "dark",
+    "timezone": "browser",
+    "refresh": "30s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Optimization Requests Rate",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "rate(planqer_optimization_requests_total[5m])",
+            "legendFormat": "Requests/sec - {{algorithm}} ({{status}})",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {"label": "Requests per second"},
+          {"show": false}
+        ],
+        "legend": {"show": true, "values": true, "current": true},
+        "tooltip": {"shared": true}
+      },
+      {
+        "id": 2,
+        "title": "Optimization Duration",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(planqer_optimization_duration_seconds_bucket[5m]))",
+            "legendFormat": "95th percentile - {{algorithm}}",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(planqer_optimization_duration_seconds_bucket[5m]))",
+            "legendFormat": "50th percentile - {{algorithm}}",
+            "refId": "B"
+          }
+        ],
+        "yAxes": [
+          {"label": "Duration (seconds)"},
+          {"show": false}
+        ]
+      },
+      {
+        "id": 3,
+        "title": "HTTP Request Rate & Status",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+        "targets": [
+          {
+            "expr": "rate(planqer_http_requests_total[5m])",
+            "legendFormat": "{{method}} {{endpoint}} - {{status_code}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {"label": "Requests per second"},
+          {"show": false}
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Active Connections",
+        "type": "singlestat",
+        "gridPos": {"h": 4, "w": 6, "x": 12, "y": 8},
+        "targets": [
+          {
+            "expr": "planqer_active_requests",
+            "refId": "A"
+          }
+        ],
+        "valueName": "current",
+        "valueFontSize": "80%",
+        "colorBackground": true,
+        "thresholds": "5,10"
+      },
+      {
+        "id": 5,
+        "title": "WebSocket Connections",
+        "type": "singlestat",
+        "gridPos": {"h": 4, "w": 6, "x": 18, "y": 8},
+        "targets": [
+          {
+            "expr": "planqer_websocket_connections_active",
+            "refId": "A"
+          }
+        ],
+        "valueName": "current",
+        "colorBackground": true,
+        "thresholds": "10,25"
+      },
+      {
+        "id": 6,
+        "title": "Algorithm Performance Comparison",
+        "type": "table",
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16},
+        "targets": [
+          {
+            "expr": "avg(rate(planqer_optimization_duration_seconds_sum[5m])) by (algorithm) / avg(rate(planqer_optimization_duration_seconds_count[5m])) by (algorithm)",
+            "format": "table",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(planqer_optimization_requests_total{status=\"success\"}[5m])",
+            "format": "table",
+            "refId": "B"
+          },
+          {
+            "expr": "avg(planqer_waste_percentage) by (algorithm)",
+            "format": "table",
+            "refId": "C"
+          }
+        ],
+        "columns": [
+          {"text": "Algorithm", "value": "algorithm"},
+          {"text": "Avg Duration (s)", "value": "Value #A"},
+          {"text": "Success Rate", "value": "Value #B"},
+          {"text": "Avg Waste %", "value": "Value #C"}
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Error Rate",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24},
+        "targets": [
+          {
+            "expr": "rate(planqer_optimization_requests_total{status=\"error\"}[5m])",
+            "legendFormat": "Errors/sec - {{algorithm}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {"label": "Errors per second", "min": 0},
+          {"show": false}
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "query": {"queryType": "", "refId": "A"},
+              "reducer": {"type": "avg"},
+              "evaluator": {"params": [0.1], "type": "gt"}
+            }
+          ],
+          "executionErrorState": "alerting",
+          "for": "5m",
+          "frequency": "10s",
+          "handler": 1,
+          "name": "High Error Rate",
+          "noDataState": "no_data"
+        }
+      },
+      {
+        "id": 8,
+        "title": "Cache Performance",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24},
+        "targets": [
+          {
+            "expr": "rate(planqer_cache_hits_total[5m])",
+            "legendFormat": "Cache Hits/sec",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(planqer_cache_misses_total[5m])",
+            "legendFormat": "Cache Misses/sec",
+            "refId": "B"
+          }
+        ],
+        "yAxes": [
+          {"label": "Operations per second"},
+          {"show": false}
+        ]
+      },
+      {
+        "id": 9,
+        "title": "System Resources - CPU",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 32},
+        "targets": [
+          {
+            "expr": "rate(container_cpu_usage_seconds_total{name=~\".*planqer.*\"}[5m]) * 100",
+            "legendFormat": "CPU % - {{name}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {"label": "CPU Usage %", "max": 100},
+          {"show": false}
+        ]
+      },
+      {
+        "id": 10,
+        "title": "System Resources - Memory",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 32},
+        "targets": [
+          {
+            "expr": "container_memory_usage_bytes{name=~\".*planqer.*\"} / 1024 / 1024",
+            "legendFormat": "Memory MB - {{name}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {"label": "Memory Usage (MB)"},
+          {"show": false}
+        ]
+      },
+      {
+        "id": 11,
+        "title": "Log Volume by Level",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 40},
+        "targets": [
+          {
+            "expr": "sum(rate({service=\"backend\"}[1m])) by (level)",
+            "legendFormat": "{{level}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {"label": "Logs per minute"},
+          {"show": false}
+        ]
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "algorithm",
+          "type": "query",
+          "query": "label_values(planqer_optimization_requests_total, algorithm)",
+          "refresh": 1,
+          "includeAll": true,
+          "multi": true
+        }
+      ]
+    },
+    "annotations": {
+      "list": []
+    },
+    "schemaVersion": 27,
+    "version": 1
+  }
+}
