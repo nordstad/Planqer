@@ -20,7 +20,7 @@
   },
   "devDependencies": {
     "@babel/core": "8.0.1",
-    "@babel/preset-env": "^8.0.1",
+    "@babel/preset-env": "^8.0.2",
     "@babel/preset-react": "^8.0.1",
     "@playwright/test": "^1.55.0",
     "@testing-library/jest-dom": "^6.6.3",
