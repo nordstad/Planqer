@@ -9,6 +9,9 @@ on:
       - "mcp-server/**"
       - "docker-compose.yml"
       - ".github/workflows/docker-build.yml"
+      - "!backend/**/*.md"
+      - "!frontend/**/*.md"
+      - "!mcp-server/**/*.md"
   pull_request:
     paths:
       - "backend/**"
@@ -16,6 +19,9 @@ on:
       - "mcp-server/**"
       - "docker-compose.yml"
       - ".github/workflows/docker-build.yml"
+      - "!backend/**/*.md"
+      - "!frontend/**/*.md"
+      - "!mcp-server/**/*.md"
 
 jobs:
   build:

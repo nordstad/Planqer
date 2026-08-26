@@ -4,38 +4,70 @@ updates:
     directory: "/backend"
     schedule:
       interval: "weekly"
+    groups:
+      backend-python:
+        patterns:
+          - "*"
 
   - package-ecosystem: "uv"
     directory: "/mcp-server"
     schedule:
       interval: "weekly"
+    groups:
+      mcp-server-python:
+        patterns:
+          - "*"
 
   - package-ecosystem: "npm"
     directory: "/frontend"
     schedule:
       interval: "weekly"
+    groups:
+      frontend-npm:
+        patterns:
+          - "*"
 
   - package-ecosystem: "npm"
     directory: "/mcp-server"
     schedule:
       interval: "weekly"
+    groups:
+      mcp-server-npm:
+        patterns:
+          - "*"
 
   - package-ecosystem: "docker"
     directory: "/backend"
     schedule:
       interval: "weekly"
+    groups:
+      backend-docker:
+        patterns:
+          - "*"
 
   - package-ecosystem: "docker"
     directory: "/frontend"
     schedule:
       interval: "weekly"
+    groups:
+      frontend-docker:
+        patterns:
+          - "*"
 
   - package-ecosystem: "docker"
     directory: "/mcp-server"
     schedule:
       interval: "weekly"
+    groups:
+      mcp-server-docker:
+        patterns:
+          - "*"
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
