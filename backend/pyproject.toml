@@ -33,7 +33,7 @@ dependencies = [
     "greenlet>=3.2.4",          # Required by SQLAlchemy's async engine
     "python-jose[cryptography]>=3.3.0",  # JWT tokens
     "passlib[bcrypt]>=1.7.4",   # Password hashing
-    "bcrypt<4.0",                # passlib's self-test predates bcrypt 4's strict 72-byte limit
+    "bcrypt<6.0",                # passlib's self-test predates bcrypt 4's strict 72-byte limit
     "email-validator>=2.2.0",   # Email format validation for registration
 ]
 # No dependency here needs a system library that pip cannot supply. cairosvg
