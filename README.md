@@ -159,6 +159,9 @@ Guidance:
 
 Base route when accessed through the app/proxy: `/api`
 
+For the interactive FastAPI docs, open <http://localhost:8002/docs>. The
+fuller endpoint map is in [REST API](docs/reference/api.md).
+
 ### 1D board cutting
 
 `POST /api/cutting-plans`
