@@ -1,49 +1,52 @@
-name: Deploy docs
+# Disabled until the repository is made public (Deploy docs requires GitHub Advanced Security for private repos)
+# name: Deploy docs
 
-on:
-  push:
-    branches: [main]
-    paths:
-      - "docs/**"
-      - "mkdocs.yml"
-      - ".github/workflows/docs.yml"
-  workflow_dispatch: {}
+# name: Deploy docs
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+# on:
+#   push:
+#     branches: [main]
+#     paths:
+#       - "docs/**"
+#       - "mkdocs.yml"
+#       - ".github/workflows/docs.yml"
+#   workflow_dispatch: {}
 
-concurrency:
-  group: pages
-  cancel-in-progress: false
+# permissions:
+#   contents: read
+#   pages: write
+#   id-token: write
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
+# concurrency:
+#   group: pages
+#   cancel-in-progress: false
 
-      - uses: actions/setup-python@v6
-        with:
-          python-version: "3.12"
+# jobs:
+#   build:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v5
 
-      - name: Install MkDocs Material
-        run: pip install -r docs/requirements.txt
+#       - uses: actions/setup-python@v6
+#         with:
+#           python-version: "3.12"
 
-      - name: Build site
-        run: mkdocs build --strict
+#       - name: Install MkDocs Material
+#         run: pip install -r docs/requirements.txt
 
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: site
+#       - name: Build site
+#         run: mkdocs build --strict
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+#       - uses: actions/upload-pages-artifact@v3
+#         with:
+#           path: site
+
+#   deploy:
+#     needs: build
+#     runs-on: ubuntu-latest
+#     environment:
+#       name: github-pages
+#       url: ${{ steps.deployment.outputs.page_url }}
+#     steps:
+#       - id: deployment
+#         uses: actions/deploy-pages@v4
