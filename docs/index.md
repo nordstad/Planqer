@@ -20,6 +20,7 @@ where every cut goes.
 
 ## Where to start
 
+<!-- markdownlint-disable MD033 -->
 <div class="grid cards" markdown>
 
 - :material-rocket-launch:{ .lg .middle } **New here?**
@@ -55,20 +56,21 @@ where every cut goes.
     [:octicons-arrow-right-24: 3D model / STEP cutlists](guide/model-cutlist.md)
 
 </div>
+<!-- markdownlint-enable MD033 -->
 
 ## What every optimizer gives you
 
 | | |
 | --- | --- |
-| **Cut plan** | A diagram drawn to one scale, with every cut in the order you make it. |
+| **Cut plan** | A scaled diagram with every cut in order. |
 | **Kerf** | Blade width subtracted at every cut, not estimated afterward. |
-| **Offcut / waste** | What's left once the parts and the blade have taken theirs. |
+| **Offcut / waste** | What's left after parts and blade width. |
 | **Cost** | Optional: price per stock length, totalled for the plan. |
 | **Projects** | Saved on your own instance, under your own account. |
 | **Units** | Millimetres throughout. No imperial support. |
 
 ## Project links
 
-- Source: [github.com/borkempire/planqer](https://github.com/borkempire/planqer)
+- Source: [github.com/nordstad/Planqer](https://github.com/nordstad/Planqer)
 - License: [MIT](https://opensource.org/licenses/MIT)
 - Issues and feature requests: use the repository's issue tracker.

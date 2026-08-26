@@ -1,8 +1,8 @@
 site_name: Planqer
 site_description: Self-hosted cutting optimization for boards and sheet goods
-site_url: https://borkempire.github.io/planqer/
-repo_url: https://github.com/borkempire/planqer
-repo_name: borkempire/planqer
+site_url: https://nordstad.github.io/Planqer/
+repo_url: https://github.com/nordstad/Planqer
+repo_name: nordstad/Planqer
 edit_uri: edit/main/docs/
 
 theme:
@@ -73,7 +73,7 @@ nav:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/borkempire/planqer
+      link: https://github.com/nordstad/Planqer
 
 not_in_nav: |
   RELEASE_NOTES.md

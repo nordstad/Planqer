@@ -15,7 +15,7 @@ what you want.
 ## Run it
 
 ```bash
-git clone https://github.com/borkempire/planqer.git
+git clone https://github.com/nordstad/Planqer.git
 cd planqer
 docker compose -f docker-compose.release.yml up -d
 ```

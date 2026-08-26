@@ -11,7 +11,7 @@ calculations, visual diagrams, and local project storage.
 [![React](https://img.shields.io/badge/React-19-61DAFB.svg)](frontend/package.json)
 [![FastAPI](https://img.shields.io/badge/FastAPI-backend-009688.svg)](backend/planqer/api.py)
 
-📖 **[Read the full documentation](https://borkempire.github.io/planqer/)** —
+📖 **[Read the full documentation](https://nordstad.github.io/Planqer/)** —
 getting started, per-tool guides, configuration reference, and troubleshooting.
 
 ## Why Planqer
@@ -88,7 +88,7 @@ not need to build the frontend, backend, or MCP server locally.
 ### Run locally
 
 ```bash
-git clone https://github.com/borkempire/planqer.git
+git clone https://github.com/nordstad/Planqer.git
 cd planqer
 docker compose -f docker-compose.release.yml up -d
 ```
