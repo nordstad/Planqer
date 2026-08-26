@@ -63,6 +63,7 @@ nav:
       - Sheet cutting: guide/sheet-cutting.md
       - 3D model / STEP cutlists: guide/model-cutlist.md
       - Projects & accounts: guide/projects-and-accounts.md
+      - Backup and restore: guide/backup-and-restore.md
       - MCP server (AI assistants): guide/mcp-server.md
   - Reference:
       - Configuration: reference/configuration.md
