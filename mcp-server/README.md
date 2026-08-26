@@ -152,11 +152,11 @@ Operational guidance:
 
 2. Build and run with Docker Compose:
    ```bash
-   docker-compose up --build
+   docker compose up -d --build
    ```
 
 3. Access the application:
-   - **Frontend**: http://localhost:3000
+   - **Frontend**: http://localhost:3001
    - **API Documentation**: http://localhost:8000/docs
 
 ## 🧪 API Usage
@@ -341,7 +341,7 @@ Claude: Looking at your cutting plan, I can see the main waste factors:
 4. **"Backend not accessible from MCP"**
    ```bash
    # Start the full stack first
-   docker-compose up -d
+   docker compose up -d
    # Then test MCP
    cd mcp-server && uv run planqer-mcp-server
    ```

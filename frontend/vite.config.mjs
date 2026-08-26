@@ -91,7 +91,7 @@ function devServerPlugin() {
       return {
         server: {
           host: HOST || "0.0.0.0",
-          port: parseInt(PORT || "3000", 10),
+          port: parseInt(PORT || "3001", 10),
           open: false, // prevent xdg-open issues in WSL/containers
           https:
             httpsEnabled && SSL_CRT_FILE && SSL_KEY_FILE

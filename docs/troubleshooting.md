@@ -63,9 +63,14 @@ failing check output.
 
 ## Port already in use
 
-Planqer expects `3000` (frontend), `8002` (backend) free by default. If
-something else is already listening, either stop it or change the port
-mapping in `docker-compose.yml`.
+Planqer expects `3001` (frontend) and `8002` (backend) free by default. If
+another service is already using port 3001, you can override the published host port using environment variables (or a `.env` file) without editing code:
+
+```bash
+FRONTEND_PORT=3002 docker compose up -d
+```
+
+Alternatively, you can edit the port mappings directly in `docker-compose.yml`.
 
 ## Still stuck
 

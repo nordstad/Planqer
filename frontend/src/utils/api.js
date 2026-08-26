@@ -15,7 +15,7 @@ import axios from 'axios';
     stack runs on a homelab box you reach over the LAN.
   - Anything else means a reverse proxy is fronting both on one origin.
 */
-const APP_PORT = '3000';
+const APP_PORT = '3001';
 const API_PORT = '8002';
 
 const getApiUrl = () => {

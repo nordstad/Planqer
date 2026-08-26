@@ -37,7 +37,7 @@ explain the resulting boards/waste/efficiency back to you.
 ```
 
 The server talks to the backend over `PLANQER_API_URL`, which defaults to
-`http://localhost:8002/api`. When run via `docker-compose up`, the
+`http://localhost:8002/api`. When run via `docker compose up`, the
 `mcp-server` service is already wired to the `backend` container on the
 compose network — see [Configuration](../reference/configuration.md).
 
