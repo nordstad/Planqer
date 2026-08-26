@@ -38,7 +38,7 @@ Open:
     see [Backup and restore](guide/backup-and-restore.md) before restoring one.
 
 !!! note "Release image version"
-    The release compose file uses `PLANQER_VERSION=0.1.0` by default. Set
+    The release compose file uses `PLANQER_VERSION=0.2.0` by default. Set
     `PLANQER_VERSION=latest` only if you intentionally want the newest
     published release image.
 

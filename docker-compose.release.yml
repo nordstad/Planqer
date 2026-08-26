@@ -1,7 +1,7 @@
 services:
   backend:
     container_name: planqer-web-backend
-    image: ghcr.io/nordstad/planqer-backend:${PLANQER_VERSION:-0.1.0}
+    image: ghcr.io/nordstad/planqer-backend:${PLANQER_VERSION:-0.2.0}
     ports:
       - "${BACKEND_PORT:-8002}:8002"
     environment:
@@ -15,7 +15,7 @@ services:
 
   frontend:
     container_name: planqer-web-frontend
-    image: ghcr.io/nordstad/planqer-frontend:${PLANQER_VERSION:-0.1.0}
+    image: ghcr.io/nordstad/planqer-frontend:${PLANQER_VERSION:-0.2.0}
     environment:
       # The hostname you serve Planqer on. Vite refuses requests with a Host
       # header it doesn't know, so serving this behind a reverse proxy without
@@ -31,7 +31,7 @@ services:
 
   mcp-server:
     container_name: planqer-mcp-server
-    image: ghcr.io/nordstad/planqer-mcp-server:${PLANQER_VERSION:-0.1.0}
+    image: ghcr.io/nordstad/planqer-mcp-server:${PLANQER_VERSION:-0.2.0}
     environment:
       - PLANQER_API_URL=http://backend:8002/api
     depends_on:

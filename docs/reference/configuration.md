@@ -19,7 +19,7 @@ code.
 
 ## Backend
 
-- `PLANQER_VERSION`: defaults to `0.1.0` in
+- `PLANQER_VERSION`: defaults to `0.2.0` in
   `docker-compose.release.yml`. Selects the release image tag to pull from
   GitHub Container Registry. Use a pinned release for reproducible installs.
 - `SECRET_KEY`: defaults to a random value per process. Signs login sessions.
@@ -53,7 +53,7 @@ in `backend/config.yaml`, not environment variables.
 
 ```bash
 # Backend
-PLANQER_VERSION=0.1.0
+PLANQER_VERSION=0.2.0
 SECRET_KEY=<random-32-byte-hex>
 PLANQER_CORS_ORIGINS=https://planqer.example.com,https://cuts.example.com
 
