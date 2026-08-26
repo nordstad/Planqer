@@ -9,7 +9,7 @@ from typing import Any
 
 import httpx
 import mcp.server.stdio
-import mcp.types as types
+from mcp import types
 from mcp.server import NotificationOptions, Server
 from mcp.server.models import InitializationOptions
 
@@ -48,8 +48,6 @@ REDACT_FIELDS = {
     "structuredContent",
 }
 
-server = Server("planqer-mcp-server")
-
 TOOLS_CONTRACT_PATH = Path(__file__).resolve().parents[2] / "schemas" / "mcp-tools.json"
 DEMO_PAYLOADS_PATH = (
     Path(__file__).resolve().parents[2] / "schemas" / "demo-payloads.json"
@@ -61,7 +59,7 @@ def load_tools_contract() -> list[dict[str, Any]]:
         loaded = json.load(f)
 
     if not isinstance(loaded, list):
-        raise ValueError("MCP tools contract must be a list")
+        raise TypeError("MCP tools contract must be a list")
 
     return loaded
 
@@ -74,7 +72,7 @@ def load_demo_payloads() -> dict[str, dict[str, Any]]:
         loaded = json.load(f)
 
     if not isinstance(loaded, dict):
-        raise ValueError("Demo payloads contract must be an object")
+        raise TypeError("Demo payloads contract must be an object")
 
     return loaded
 
@@ -135,6 +133,9 @@ def format_optimization_result(
     """
     Format the API response in a way that's easy for AI assistants to understand and interpret.
     """
+    if not isinstance(request_payload, dict):
+        return f"⚠️ Error formatting response: request payload must be an object\n\nRaw response:\n```json\n{json.dumps(result, indent=2)}\n```"
+
     try:
         # Project information header
         formatted = "🎯 **Cutting Optimization Results**\n\n"
@@ -198,49 +199,59 @@ def format_optimization_result(
         formatted += "- Cost represents the number of boards needed\n"
 
         return formatted
-    except Exception as e:
-        return f"⚠️ Error formatting response: {str(e)}\n\nRaw response:\n```json\n{json.dumps(result, indent=2)}\n```"
+    except (KeyError, TypeError, ValueError) as e:
+        return f"⚠️ Error formatting response: {e!s}\n\nRaw response:\n```json\n{json.dumps(result, indent=2)}\n```"
 
 
-@server.list_tools()
-async def handle_list_tools() -> list[types.Tool]:
+async def handle_list_tools(
+    _ctx: Any, _params: types.PaginatedRequestParams | None
+) -> types.ListToolsResult:
     """
     List available tools for cutting optimization.
     """
-    return build_tools_from_contract()
+    return types.ListToolsResult(tools=build_tools_from_contract())
 
 
-@server.call_tool()
 async def handle_call_tool(
-    name: str, arguments: dict | None
-) -> list[types.TextContent | types.ImageContent | types.EmbeddedResource]:
+    _ctx: Any, params: types.CallToolRequestParams
+) -> types.CallToolResult:
     """
     Handle tool execution requests for cutting optimization.
     """
+    name = params.name
+    arguments = params.arguments or {}
     request_id = make_request_id()
     logger.info("event=mcp_call_start request_id=%s tool=%s", request_id, name)
 
     if name == "optimize_cutting":
-        result = await handle_optimize_cutting(arguments or {}, request_id=request_id)
+        result = await handle_optimize_cutting(arguments, request_id=request_id)
         logger.info("event=mcp_call_end request_id=%s tool=%s", request_id, name)
-        return result
+        return types.CallToolResult(content=result)
     elif name == "optimize_demo":
-        result = await handle_optimize_demo(arguments or {}, request_id=request_id)
+        result = await handle_optimize_demo(arguments, request_id=request_id)
         logger.info("event=mcp_call_end request_id=%s tool=%s", request_id, name)
-        return result
+        return types.CallToolResult(content=result)
     elif name == "get_demo_payloads":
-        result = handle_get_demo_payloads(arguments or {})
+        result = handle_get_demo_payloads(arguments)
         logger.info("event=mcp_call_end request_id=%s tool=%s", request_id, name)
-        return result
+        return types.CallToolResult(content=result)
     elif name == "get_cutting_example":
         result = handle_get_example()
         logger.info("event=mcp_call_end request_id=%s tool=%s", request_id, name)
-        return result
+        return types.CallToolResult(content=result)
     else:
         logger.warning(
             "event=mcp_call_unknown_tool request_id=%s tool=%s", request_id, name
         )
         raise ValueError(f"Unknown tool: {name}")
+
+
+server = Server(
+    "planqer-mcp-server",
+    version="1.0.0",
+    on_list_tools=handle_list_tools,
+    on_call_tool=handle_call_tool,
+)
 
 
 async def handle_optimize_cutting(
@@ -268,10 +279,10 @@ async def handle_optimize_cutting(
         }
 
         # Add optional fields
-        if "project_name" in arguments and arguments["project_name"]:
+        if arguments.get("project_name"):
             payload["project_name"] = arguments["project_name"]
 
-        if "algorithm" in arguments and arguments["algorithm"]:
+        if arguments.get("algorithm"):
             payload["algorithm"] = arguments["algorithm"]
 
         # Choose endpoint based on async flag
@@ -396,14 +407,11 @@ async def handle_optimize_cutting(
                     if _is_retryable_status(response.status_code)
                     else "non-retryable"
                 )
-                try:
-                    if isinstance(response_json, dict):
-                        error_details = str(response_json.get("detail", response_json))
-                    elif response_json is not None:
-                        error_details = str(response_json)
-                    else:
-                        error_details = response.text or f"HTTP {response.status_code}"
-                except Exception:
+                if isinstance(response_json, dict):
+                    error_details = str(response_json.get("detail", response_json))
+                elif response_json is not None:
+                    error_details = str(response_json)
+                else:
                     error_details = response.text or f"HTTP {response.status_code}"
 
                 return [
@@ -431,9 +439,9 @@ async def handle_optimize_cutting(
                 text=f"❌ Connection error: Could not reach the Planqer API at {API_BASE_URL}. Please check if the service is running.",
             )
         ]
-    except Exception as e:
+    except (KeyError, TypeError, ValueError) as e:
         logger.exception("event=api_unexpected_error request_id=%s", rid)
-        return [types.TextContent(type="text", text=f"❌ Unexpected error: {str(e)}")]
+        return [types.TextContent(type="text", text=f"❌ Unexpected error: {e!s}")]
 
 
 async def handle_optimize_demo(

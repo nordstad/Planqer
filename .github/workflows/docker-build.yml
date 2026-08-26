@@ -9,6 +9,9 @@ on:
       - "mcp-server/**"
       - "docker-compose.yml"
       - ".github/workflows/docker-build.yml"
+      - "!backend/**/*.md"
+      - "!frontend/**/*.md"
+      - "!mcp-server/**/*.md"
   pull_request:
     paths:
       - "backend/**"
@@ -16,12 +19,15 @@ on:
       - "mcp-server/**"
       - "docker-compose.yml"
       - ".github/workflows/docker-build.yml"
+      - "!backend/**/*.md"
+      - "!frontend/**/*.md"
+      - "!mcp-server/**/*.md"
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Build all services
         run: docker compose build

@@ -15,13 +15,13 @@ dependencies = [
     "uvicorn>=0.30.0,<1.0.0",
     "matplotlib>=3.9.0,<4.0.0",
     "pyyaml>=6.0.1,<7.0.0",
-    "rich>=13.7.0,<14.0.0",
+    "rich>=13.7.0,<16.0.0",
     "rich-argparse>=1.7.0,<2.0.0",
     "slowapi>=0.1.10,<0.2.0",
     "httpx>=0.27.0,<1.0.0",
-    "pytest>=8.4.1,<9.0.0",
+    "pytest>=8.4.1,<10.0.0",
     "prometheus-client>=0.20.0,<1.0.0",
-    "structlog>=24.4.0,<25.0.0",
+    "structlog>=24.4.0,<27.0.0",
     "trimesh>=4.0.0",     # For 3D STL processing
     "numpy>=1.24.0",      # Required by trimesh
     "python-multipart",   # For file uploads
@@ -32,14 +32,16 @@ dependencies = [
     "alembic>=1.13.0",          # Database migrations
     "greenlet>=3.2.4",          # Required by SQLAlchemy's async engine
     "python-jose[cryptography]>=3.3.0",  # JWT tokens
-    "passlib[bcrypt]>=1.7.4",   # Password hashing
-    "bcrypt<4.0",                # passlib's self-test predates bcrypt 4's strict 72-byte limit
+    "bcrypt>=5.0.0,<6.0",       # Password hashing
     "email-validator>=2.2.0",   # Email format validation for registration
 ]
 # No dependency here needs a system library that pip cannot supply. cairosvg
 # did — it loads the native libcairo at runtime — which made PNG export work
 # or not depending on the host OS. The browser rasterizes the stored SVG now,
 # so a bare `uv sync` is a complete install on Linux, macOS and Windows alike.
+
+[project.scripts]
+planqer = "planqer.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["planqer"]

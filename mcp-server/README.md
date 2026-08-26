@@ -146,7 +146,7 @@ Operational guidance:
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/planqer.git
+   git clone https://github.com/nordstad/Planqer.git
    cd planqer
    ```
 

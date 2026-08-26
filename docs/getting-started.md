@@ -1,9 +1,10 @@
 # Getting started
 
-Planqer is officially supported via Docker Compose. Running the services
-directly from source is a contributor path, not a documented way to run
-Planqer day to day — see [Contributing](contributing.md) if that's what you
-want.
+Planqer is officially supported via Docker Compose. The recommended install
+uses published release images from GitHub Container Registry, so Docker does
+not need to build the frontend, backend, or MCP server locally. Running from
+source is a contributor path — see [Contributing](contributing.md) if that's
+what you want.
 
 ## Prerequisites
 
@@ -14,9 +15,9 @@ want.
 ## Run it
 
 ```bash
-git clone https://github.com/borkempire/planqer.git
+git clone https://github.com/nordstad/Planqer.git
 cd planqer
-docker compose up -d --build
+docker compose -f docker-compose.release.yml up -d
 ```
 
 Open:
@@ -29,6 +30,36 @@ Open:
     The first account you register on a fresh instance becomes its admin.
     Every account is **local to that instance** — there is no cloud tier, and
     accounts never leave your own server.
+
+!!! note "Backups"
+    Saved projects and local accounts live in the backend data volume. Create
+    a live-safe backup with
+    `docker compose -f docker-compose.release.yml exec backend planqer backup`;
+    see [Backup and restore](guide/backup-and-restore.md) before restoring one.
+
+!!! note "Release image version"
+    The release compose file uses `PLANQER_VERSION=0.1.0` by default. Set
+    `PLANQER_VERSION=latest` only if you intentionally want the newest
+    published release image.
+
+## Private package access
+
+GitHub Container Registry packages can be private. If `docker compose` cannot
+pull the images anonymously, either make the Planqer packages public in GitHub
+Packages or log in before starting the stack:
+
+```bash
+echo <github-token> | docker login ghcr.io -u <github-username> --password-stdin
+```
+
+## Build from source
+
+Use the source-build compose file when contributing or testing local code
+changes:
+
+```bash
+docker compose up -d --build
+```
 
 ## Plan your first cut
 
@@ -58,4 +89,6 @@ which the frontend's dev server requires or it will refuse requests with a
 - [Sheet cutting](guide/sheet-cutting.md) — 2D parts nested on sheet stock.
 - [3D model / STEP cutlists](guide/model-cutlist.md) — start from a model
   instead of typing a part list.
+- [Backup and restore](guide/backup-and-restore.md) — protect saved projects
+  and local accounts.
 - [MCP server](guide/mcp-server.md) — drive the optimizer from an AI assistant.

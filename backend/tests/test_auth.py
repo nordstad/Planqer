@@ -3,6 +3,8 @@ import uuid
 import pytest
 from fastapi.testclient import TestClient
 
+from planqer.auth.security import get_password_hash, verify_password
+
 
 @pytest.fixture
 def app():
@@ -72,6 +74,19 @@ def test_login_invalid_credentials(client):
 
     assert response.status_code == 401
     assert "Incorrect email or password" in response.json()["detail"]
+
+
+def test_password_hash_rejects_bcrypt_overlong_passwords():
+    """bcrypt 5 raises for passwords over 72 bytes instead of truncating."""
+    with pytest.raises(ValueError, match="at most 72 bytes"):
+        get_password_hash("a" * 73)
+
+
+def test_password_verify_treats_overlong_passwords_as_invalid():
+    """Overlong login attempts should not raise through auth handlers."""
+    hashed_password = get_password_hash("testpassword123")
+
+    assert verify_password("a" * 73, hashed_password) is False
 
 
 def test_get_current_user(client, unique_user):

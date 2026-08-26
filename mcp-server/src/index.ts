@@ -133,7 +133,7 @@ const loadDemoPayloads = (): DemoPayloadMap => {
 };
 
 // Validation schemas
-const PartsSchema = z.record(z.number().positive());
+const PartsSchema = z.record(z.string(), z.number().positive());
 const BoardLengthsSchema = z.array(z.number().positive());
 const SawKerfSchema = z.number().nonnegative();
 const ProjectNameSchema = z.string().optional();
@@ -394,7 +394,7 @@ class PlanqerServer {
           errorMessage = `❌ Request error: ${error.message}`;
         }
       } else if (error instanceof z.ZodError) {
-        errorMessage = `❌ Validation error: ${error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')}`;
+        errorMessage = `❌ Validation error: ${error.issues.map(issue => `${issue.path.join('.')}: ${issue.message}`).join(', ')}`;
       } else {
         errorMessage = `❌ Unexpected error: ${error instanceof Error ? error.message : String(error)}`;
       }
