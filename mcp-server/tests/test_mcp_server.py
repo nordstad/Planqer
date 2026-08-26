@@ -3,19 +3,20 @@ Tests for the Planqer MCP Server functionality.
 """
 
 import json
-import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 import httpx
+import pytest
+from mcp import types
 
 from planqer_mcp_server.server import (
-    handle_optimize_cutting,
-    handle_optimize_demo,
+    DEMO_PAYLOADS,
+    format_optimization_result,
     handle_get_demo_payloads,
     handle_get_example,
-    format_optimization_result,
-    DEMO_PAYLOADS,
+    handle_optimize_cutting,
+    handle_optimize_demo,
 )
-import mcp.types as types
 
 
 class TestFormatOptimizationResult:
@@ -276,7 +277,7 @@ class TestOptimizeDemo:
         
         arguments = {"example": "furniture_project", "use_async": True}
         
-        result = await handle_optimize_demo(arguments)
+        await handle_optimize_demo(arguments)
         
         # Verify async flag was passed
         mock_optimize.assert_called_once()
@@ -313,7 +314,7 @@ class TestGetDemoPayloads:
         assert "Custom Project:" in result[0].text
         
         # Check that all demo payloads are included
-        for demo_name in DEMO_PAYLOADS.keys():
+        for demo_name in DEMO_PAYLOADS:
             assert demo_name in result[0].text or demo_name.replace('_', ' ').title() in result[0].text
     
     def test_get_demo_payloads_specific(self):
