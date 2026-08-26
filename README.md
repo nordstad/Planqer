@@ -6,8 +6,7 @@ It turns part lists or CAD files into practical cutting plans, with kerf-aware
 calculations, visual diagrams, and local project storage.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Docker Compose](https://img.shields.io/badge/Docker%20Compose-supported-2496ED.svg)](
-docker-compose.yml)
+[![Docker Compose](https://img.shields.io/badge/Docker%20Compose-supported-2496ED.svg)](docker-compose.release.yml)
 [![Python](https://img.shields.io/badge/Python-3.12-blue.svg)](backend/pyproject.toml)
 [![React](https://img.shields.io/badge/React-19-61DAFB.svg)](frontend/package.json)
 [![FastAPI](https://img.shields.io/badge/FastAPI-backend-009688.svg)](backend/planqer/api.py)
@@ -77,7 +76,9 @@ graph TB
 
 ## Quick Start (Recommended)
 
-Planqer is officially supported via Docker Compose.
+Planqer is officially supported via Docker Compose. The recommended install
+uses published release images from GitHub Container Registry, so Docker does
+not need to build the frontend, backend, or MCP server locally.
 
 ### Prerequisites
 
@@ -89,7 +90,7 @@ Planqer is officially supported via Docker Compose.
 ```bash
 git clone https://github.com/borkempire/planqer.git
 cd planqer
-docker compose up -d --build
+docker compose -f docker-compose.release.yml up -d
 ```
 
 Open:
@@ -102,6 +103,26 @@ Notes:
 
 - The first account created becomes admin for that instance.
 - Data is persisted in the Docker volume `backend_data`.
+- Release installs are pinned to `PLANQER_VERSION=0.1.0` by default. Set
+  `PLANQER_VERSION=latest` only if you intentionally want the newest published
+  release image.
+
+GitHub Container Registry packages can be private. If `docker compose` cannot
+pull the images anonymously, either make the Planqer packages public in GitHub
+Packages or log in before starting the stack:
+
+```bash
+echo <github-token> | docker login ghcr.io -u <github-username> --password-stdin
+```
+
+### Build from source
+
+Use the source-build compose file when contributing or testing local code
+changes:
+
+```bash
+docker compose up -d --build
+```
 
 ## Configuration
 

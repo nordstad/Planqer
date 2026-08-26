@@ -1,0 +1,50 @@
+services:
+  backend:
+    container_name: planqer-web-backend
+    image: ghcr.io/nordstad/planqer-backend:${PLANQER_VERSION:-0.1.0}
+    ports:
+      - "${BACKEND_PORT:-8002}:8002"
+    environment:
+      # Set to keep login sessions valid across container restarts.
+      - SECRET_KEY=${SECRET_KEY:-}
+    volumes:
+      # Local accounts + saved projects, on your own instance.
+      - backend_data:/app/backend/data
+    networks:
+      - planqer-network
+
+  frontend:
+    container_name: planqer-web-frontend
+    image: ghcr.io/nordstad/planqer-frontend:${PLANQER_VERSION:-0.1.0}
+    environment:
+      # The hostname you serve Planqer on. Vite refuses requests with a Host
+      # header it doesn't know, so serving this behind a reverse proxy without
+      # setting this returns "Blocked request" and nothing else.
+      - PLANQER_HOST=${PLANQER_HOST:-}
+      # Only needed if the API is not reachable at the same origin as the app
+      # (proxied) or at port 8002 on the same host (direct). An origin, no path.
+      - VITE_API_URL=${VITE_API_URL:-}
+    ports:
+      - "${FRONTEND_PORT:-3001}:3001"
+    networks:
+      - planqer-network
+
+  mcp-server:
+    container_name: planqer-mcp-server
+    image: ghcr.io/nordstad/planqer-mcp-server:${PLANQER_VERSION:-0.1.0}
+    environment:
+      - PLANQER_API_URL=http://backend:8002/api
+    depends_on:
+      - backend
+    networks:
+      - planqer-network
+    # MCP server runs as a service but doesn't expose ports (uses stdio)
+    stdin_open: true
+    tty: true
+
+networks:
+  planqer-network:
+    driver: bridge
+
+volumes:
+  backend_data:

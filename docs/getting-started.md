@@ -1,9 +1,10 @@
 # Getting started
 
-Planqer is officially supported via Docker Compose. Running the services
-directly from source is a contributor path, not a documented way to run
-Planqer day to day — see [Contributing](contributing.md) if that's what you
-want.
+Planqer is officially supported via Docker Compose. The recommended install
+uses published release images from GitHub Container Registry, so Docker does
+not need to build the frontend, backend, or MCP server locally. Running from
+source is a contributor path — see [Contributing](contributing.md) if that's
+what you want.
 
 ## Prerequisites
 
@@ -16,7 +17,7 @@ want.
 ```bash
 git clone https://github.com/borkempire/planqer.git
 cd planqer
-docker compose up -d --build
+docker compose -f docker-compose.release.yml up -d
 ```
 
 Open:
@@ -29,6 +30,30 @@ Open:
     The first account you register on a fresh instance becomes its admin.
     Every account is **local to that instance** — there is no cloud tier, and
     accounts never leave your own server.
+
+!!! note "Release image version"
+    The release compose file uses `PLANQER_VERSION=0.1.0` by default. Set
+    `PLANQER_VERSION=latest` only if you intentionally want the newest
+    published release image.
+
+## Private package access
+
+GitHub Container Registry packages can be private. If `docker compose` cannot
+pull the images anonymously, either make the Planqer packages public in GitHub
+Packages or log in before starting the stack:
+
+```bash
+echo <github-token> | docker login ghcr.io -u <github-username> --password-stdin
+```
+
+## Build from source
+
+Use the source-build compose file when contributing or testing local code
+changes:
+
+```bash
+docker compose up -d --build
+```
 
 ## Plan your first cut
 
