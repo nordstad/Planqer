@@ -16,12 +16,12 @@ want.
 ```bash
 git clone https://github.com/borkempire/planqer.git
 cd planqer
-docker-compose up --build
+docker compose up -d --build
 ```
 
 Open:
 
-- Frontend: <http://localhost:3000>
+- Frontend: <http://localhost:3001>
 - Backend API docs (Swagger UI): <http://localhost:8002/docs>
 - Health check: <http://localhost:8002/health>
 
@@ -32,7 +32,7 @@ Open:
 
 ## Plan your first cut
 
-1. Open <http://localhost:3000> and choose **Board cutting**, **Sheet
+1. Open <http://localhost:3001> and choose **Board cutting**, **Sheet
    cutting**, or **3D model**.
 2. Sign in or create a local account when prompted — planning and saving a
    cutlist needs one, but you can browse the homepage and upload a model

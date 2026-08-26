@@ -89,12 +89,12 @@ Planqer is officially supported via Docker Compose.
 ```bash
 git clone https://github.com/borkempire/planqer.git
 cd planqer
-docker-compose up --build
+docker compose up -d --build
 ```
 
 Open:
 
-- Frontend: <http://localhost:3000>
+- Frontend: <http://localhost:3001>
 - Backend API docs: <http://localhost:8002/docs>
 - Health endpoint: <http://localhost:8002/health>
 

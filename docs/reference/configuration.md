@@ -4,7 +4,7 @@ Localhost works with no configuration at all. Everything here is only needed
 for a hosted, proxied, or otherwise non-default deployment.
 
 Set variables in a `.env` file next to `docker-compose.yml`, or export them
-before running `docker-compose up`.
+before running `docker compose up -d`.
 
 ## Backend
 

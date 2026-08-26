@@ -5,7 +5,7 @@ services:
       context: .
       dockerfile: backend/Dockerfile
     ports:
-      - "8002:8002"
+      - "${BACKEND_PORT:-8002}:8002"
     environment:
       # Set to keep login sessions valid across container restarts.
       - SECRET_KEY=${SECRET_KEY:-}
@@ -29,7 +29,7 @@ services:
       # (proxied) or at port 8002 on the same host (direct). An origin, no path.
       - VITE_API_URL=${VITE_API_URL:-}
     ports:
-      - "3000:3000"
+      - "${FRONTEND_PORT:-3001}:3001"
     volumes:
       - ./frontend/src:/app/src
       - ./frontend/public:/app/public

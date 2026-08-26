@@ -71,7 +71,7 @@ npx @modelcontextprotocol/inspector uv run planqer-mcp-server
 Run the full stack:
 
 ```bash
-docker-compose up --build
+docker compose up -d --build
 ```
 
 ## Architecture
@@ -152,7 +152,7 @@ docker-compose up --build
 
 1. **Backend Changes**: Modify code in `/backend/planqer/`, run tests with `pytest`
 2. **Frontend Changes**: Modify components in `/frontend/src/`, test with `npm test`
-3. **Full Stack Testing**: Use `docker-compose up --build` to test integration
+3. **Full Stack Testing**: Use `docker compose up -d --build` to test integration
 4. **MCP Server Testing**: Use MCP Inspector for debugging AI tool interactions
 
 ## Key Algorithms

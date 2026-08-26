@@ -19,7 +19,7 @@ export default defineConfig({
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: 'http://localhost:3000',
+    baseURL: 'http://localhost:3001',
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
@@ -53,9 +53,9 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: process.env.SKIP_WEB_SERVER ? undefined : {
-    // Enforce a deterministic test target and fail fast if 3000 is occupied.
-    command: 'npm run dev -- --strictPort --port 3000',
-    url: 'http://localhost:3000',
+    // Enforce a deterministic test target and fail fast if 3001 is occupied.
+    command: 'npm run dev -- --strictPort --port 3001',
+    url: 'http://localhost:3001',
     reuseExistingServer: false,
     timeout: 120 * 1000,
   },

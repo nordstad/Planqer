@@ -17,7 +17,7 @@ jobs:
       - name: Wait for backend and frontend to be healthy
         run: |
           timeout 120 bash -c 'until curl -sf http://localhost:8002/health; do sleep 2; done'
-          timeout 120 bash -c 'until curl -sf http://localhost:3000/; do sleep 2; done'
+          timeout 120 bash -c 'until curl -sf http://localhost:3001/; do sleep 2; done'
 
       - name: Seed an account
         # A fresh instance has no accounts, so /cutting shows first-run setup
@@ -45,7 +45,7 @@ jobs:
         working-directory: frontend
         env:
           # playwright.config.js otherwise starts its own dev server and fails
-          # fast if port 3000 is taken — here it's already serving the stack
+          # fast if port 3001 is taken — here it's already serving the stack
           # docker compose just brought up.
           SKIP_WEB_SERVER: "1"
         run: npx playwright test
