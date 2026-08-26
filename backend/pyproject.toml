@@ -40,6 +40,9 @@ dependencies = [
 # or not depending on the host OS. The browser rasterizes the stored SVG now,
 # so a bare `uv sync` is a complete install on Linux, macOS and Windows alike.
 
+[project.scripts]
+planqer = "planqer.cli:main"
+
 [tool.hatch.build.targets.wheel]
 packages = ["planqer"]
 

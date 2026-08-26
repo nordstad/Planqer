@@ -13,6 +13,7 @@ ENV UV_COMPILE_BYTECODE=1
 
 # Copy from the cache instead of linking since it's a mounted volume
 ENV UV_LINK_MODE=copy
+ENV PATH="/app/backend/.venv/bin:${PATH}"
 
 # Install system dependencies for 3D processing and health checks, create
 # non-root user. The cairo/pango/gdk-pixbuf stack that used to sit here went

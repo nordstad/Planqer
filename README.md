@@ -103,6 +103,9 @@ Notes:
 
 - The first account created becomes admin for that instance.
 - Data is persisted in the Docker volume `backend_data`.
+- Create a live-safe local backup with
+  `docker compose -f docker-compose.release.yml exec backend planqer backup`. See
+  [Backup and restore](docs/guide/backup-and-restore.md) for restore steps.
 - Release installs are pinned to `PLANQER_VERSION=0.1.0` by default. Set
   `PLANQER_VERSION=latest` only if you intentionally want the newest published
   release image.

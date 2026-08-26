@@ -31,6 +31,12 @@ Open:
     Every account is **local to that instance** — there is no cloud tier, and
     accounts never leave your own server.
 
+!!! note "Backups"
+    Saved projects and local accounts live in the backend data volume. Create
+    a live-safe backup with
+    `docker compose -f docker-compose.release.yml exec backend planqer backup`;
+    see [Backup and restore](guide/backup-and-restore.md) before restoring one.
+
 !!! note "Release image version"
     The release compose file uses `PLANQER_VERSION=0.1.0` by default. Set
     `PLANQER_VERSION=latest` only if you intentionally want the newest
@@ -83,4 +89,6 @@ which the frontend's dev server requires or it will refuse requests with a
 - [Sheet cutting](guide/sheet-cutting.md) — 2D parts nested on sheet stock.
 - [3D model / STEP cutlists](guide/model-cutlist.md) — start from a model
   instead of typing a part list.
+- [Backup and restore](guide/backup-and-restore.md) — protect saved projects
+  and local accounts.
 - [MCP server](guide/mcp-server.md) — drive the optimizer from an AI assistant.
