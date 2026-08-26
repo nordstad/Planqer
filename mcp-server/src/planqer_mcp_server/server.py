@@ -133,6 +133,9 @@ def format_optimization_result(
     """
     Format the API response in a way that's easy for AI assistants to understand and interpret.
     """
+    if not isinstance(request_payload, dict):
+        return f"⚠️ Error formatting response: request payload must be an object\n\nRaw response:\n```json\n{json.dumps(result, indent=2)}\n```"
+
     try:
         # Project information header
         formatted = "🎯 **Cutting Optimization Results**\n\n"
@@ -196,7 +199,7 @@ def format_optimization_result(
         formatted += "- Cost represents the number of boards needed\n"
 
         return formatted
-    except Exception as e:  # noqa: BLE001
+    except (KeyError, TypeError, ValueError) as e:
         return f"⚠️ Error formatting response: {e!s}\n\nRaw response:\n```json\n{json.dumps(result, indent=2)}\n```"
 
 
@@ -404,14 +407,11 @@ async def handle_optimize_cutting(
                     if _is_retryable_status(response.status_code)
                     else "non-retryable"
                 )
-                try:
-                    if isinstance(response_json, dict):
-                        error_details = str(response_json.get("detail", response_json))
-                    elif response_json is not None:
-                        error_details = str(response_json)
-                    else:
-                        error_details = response.text or f"HTTP {response.status_code}"
-                except Exception:  # noqa: BLE001
+                if isinstance(response_json, dict):
+                    error_details = str(response_json.get("detail", response_json))
+                elif response_json is not None:
+                    error_details = str(response_json)
+                else:
                     error_details = response.text or f"HTTP {response.status_code}"
 
                 return [
@@ -439,7 +439,7 @@ async def handle_optimize_cutting(
                 text=f"❌ Connection error: Could not reach the Planqer API at {API_BASE_URL}. Please check if the service is running.",
             )
         ]
-    except Exception as e:
+    except (KeyError, TypeError, ValueError) as e:
         logger.exception("event=api_unexpected_error request_id=%s", rid)
         return [types.TextContent(type="text", text=f"❌ Unexpected error: {e!s}")]
 
