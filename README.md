@@ -1,96 +1,66 @@
 # Planqer
 
-Planqer is a self-hosted cutting optimization platform for woodworking and
-fabrication projects.
-It turns part lists or CAD files into practical cutting plans, with kerf-aware
-calculations, visual diagrams, and local project storage.
+Planqer is a self-hosted cutting optimization platform for woodworking and fabrication projects.
+It turns part lists or CAD files (STL/STEP) into practical, kerf-aware cutting plans with visual diagrams and local project storage.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Docker Compose](https://img.shields.io/badge/Docker%20Compose-supported-2496ED.svg)](
-docker-compose.yml)
+[![Docker Compose](https://img.shields.io/badge/Docker%20Compose-supported-2496ED.svg)](docker-compose.yml)
 [![Python](https://img.shields.io/badge/Python-3.12-blue.svg)](backend/pyproject.toml)
 [![React](https://img.shields.io/badge/React-19-61DAFB.svg)](frontend/package.json)
-[![FastAPI](https://img.shields.io/badge/FastAPI-backend-009688.svg)](backend/planqer/api.py)
 
-📖 **[Read the full documentation](https://borkempire.github.io/planqer/)** —
-getting started, per-tool guides, configuration reference, and troubleshooting.
+---
 
-## Why Planqer
+## Features
 
-- Self-hosted and private: your projects stay on your own machine or server.
-- Practical optimization: accounts for kerf and material constraints.
-- Multiple workflows: 1D boards, 2D sheets, STL cutlists, and STEP cutlists.
-- API and AI ready: REST API plus MCP server integration.
+- **1D Board & 2D Sheet Cutting**: Kerf compensation, part rotation, and waste efficiency calculations.
+- **CAD File Support**: Upload STL or STEP files to automatically generate cutlists.
+- **Self-Hosted & Private**: Local accounts and data stay entirely on your server.
+- **AI Assistant Integration**: Includes an MCP (Model Context Protocol) server for Claude Desktop and compatible clients.
 
-## Key Features
+---
 
-### Optimization
+## Quick Start
 
-- 1D board cutting with kerf compensation.
-- 2D sheet optimization with optional part rotation.
-- Multiple sheet strategies, including auto-selection.
-- Waste and efficiency reporting in every result.
-
-### Inputs and Outputs
-
-- Manual part entry for board and sheet jobs.
-- CAD-assisted workflow: STL upload (`/api/3d-cutlist`).
-- CAD-assisted workflow: STEP/STP upload (`/api/step-cutlist`).
-- Visual cut diagrams for implementation in the workshop.
-
-### Project Management
-
-- Local accounts on your own instance.
-- Save and organize projects/groups.
-- Day and night UI modes.
-
-### Integrations
-
-- FastAPI backend with OpenAPI docs.
-- MCP server tools for AI assistants
-  (Claude Desktop and compatible clients).
-
-## Architecture
-
-```mermaid
-graph TB
-  subgraph Frontend [Frontend - React]
-    A[App UI] --> B[Board Optimizer]
-    A --> C[Sheet Optimizer]
-    A --> D[3D and STEP Cutlists]
-  end
-
-  subgraph Backend [Backend - FastAPI]
-    E[API Routes] --> F[1D Algorithms]
-    E --> G[2D Algorithms]
-    E --> H[3D and STEP Processing]
-    F --> I[Visualizations]
-    G --> I
-  end
-
-  subgraph MCP [MCP Server]
-    J[AI Tools] --> E
-  end
-
-  A -.HTTP.-> E
-```
-
-## Quick Start (Recommended)
-
-Planqer is officially supported via Docker Compose.
-
-### Prerequisites
-
-- Docker
-- Docker Compose
-
-### Run locally
+The easiest way to run Planqer is with Docker Compose:
 
 ```bash
-git clone https://github.com/borkempire/planqer.git
+git clone https://github.com/nordstad/Planqer.git
 cd planqer
 docker compose up -d --build
 ```
+
+Once started, open:
+
+- **Frontend**: <http://localhost:3001>
+- **Backend API Docs**: <http://localhost:8002/docs>
+- **Health Check**: <http://localhost:8002/health>
+
+*Note: The first account created on a fresh instance becomes the administrator.*
+
+---
+
+## Documentation
+
+Detailed guides, configuration options, API references, and MCP server setup instructions are available in the documentation site.
+
+📖 **[Read the Documentation](https://nordstad.github.io/Planqer/)**
+
+> **Note**: The GitHub Pages documentation link above will be live once the repository is made public. To preview the docs locally:
+>
+> ```bash
+> pip install -r docs/requirements.txt
+> mkdocs serve
+> ```
+
+---
+
+## License
+
+[MIT](LICENSE)
+docker compose up -d --build
+
+```
+<<<<<<< HEAD
 
 Open:
 
@@ -102,39 +72,37 @@ Notes:
 
 - The first account created becomes admin for that instance.
 - Data is persisted in the Docker volume `backend_data`.
+=======
+>>>>>>> 9d2f3da (docs: simplify README and disable docs workflow until repo is public)
 
-## Configuration
+Once started, open:
 
-Localhost works without extra configuration. For hosted or proxied setups,
-configure environment variables in `.env` next to `docker-compose.yml`.
+- **Frontend**: <http://localhost:3001>
+- **Backend API Docs**: <http://localhost:8002/docs>
+- **Health Check**: <http://localhost:8002/health>
 
-### Common variables
+*Note: The first account created on a fresh instance becomes the administrator.*
 
-```bash
-# Backend
-SECRET_KEY=<random-32-byte-hex>
-PLANQER_CORS_ORIGINS=https://planqer.example.com,https://cuts.example.com
+---
 
-# Frontend
-PLANQER_HOST=planqer.example.com
-VITE_API_URL=https://planqer.example.com
+## Documentation
 
-# MCP server (container default points to backend service)
-PLANQER_API_URL=http://backend:8002/api
-```
+Detailed guides, configuration options, API references, and MCP server setup instructions are available in the documentation site.
 
-Guidance:
+📖 **[Read the Documentation](https://nordstad.github.io/Planqer/)**
 
-- Keep `SECRET_KEY` stable across restarts to preserve login sessions.
-- Set `PLANQER_HOST` when serving behind a reverse proxy to avoid blocked host
-  checks.
-- Set `VITE_API_URL` only when API discovery cannot be inferred from
-  deployment shape.
+> **Note**: The GitHub Pages documentation link above will be live once the repository is made public. To preview the docs locally:
+>
+> ```bash
+> pip install -r docs/requirements.txt
+> mkdocs serve
+> ```
 
-## API Overview
+---
 
-Base route when accessed through the app/proxy: `/api`
+## License
 
+<<<<<<< HEAD
 ### 1D board cutting
 
 `POST /api/cutting-plans`
@@ -271,9 +239,13 @@ curl <http://localhost:8002/health>
 planqer/
   backend/        FastAPI app, optimization logic, tests
   frontend/       React app, UI components, e2e tests
+=======
+[MIT](LICENSE)
+>>>>>>> 9d2f3da (docs: simplify README and disable docs workflow until repo is public)
   mcp-server/     MCP integration for AI assistants
   docs/           MkDocs Material documentation site (mkdocs.yml at the repo root)
   docker-compose.yml
+
 ```
 
 ## Contributing
