@@ -1,30 +1,11 @@
-# Disabled until the repository is made public (CodeQL requires GitHub Advanced Security for private repos)
-# name: CodeQL
-#
-# on:
-#   push:
-#     branches: [main]
-#   pull_request:
-#     branches: [main]
-#   schedule:
-#     - cron: "0 6 * * 1"
-#
-# jobs:
-#   analyze:
-#     runs-on: ubuntu-latest
-#     if: ${{ !contains(github.actor, 'dependabot') }}
-#     permissions:
-#       security-events: write
-#       contents: read
-#       actions: read
-#     strategy:
-#       matrix:
-#         language: ["python", "javascript-typescript"]
-#     steps:
-#       - uses: actions/checkout@v5
-#
-#       - uses: github/codeql-action/init@v3
-#         with:
-#           languages: ${{ matrix.language }}
-#
-#       - uses: github/codeql-action/analyze@v3
+name: CodeQL
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  disabled:
+    runs-on: ubuntu-latest
+    steps:
+      - name: CodeQL disabled
+        run: echo "CodeQL is disabled until GitHub Advanced Security is available."
