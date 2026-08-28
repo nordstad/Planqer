@@ -36,7 +36,7 @@ const CatalogPage = ({ children }) => {
   const [isDark, setIsDark] = useDarkMode();
   const { pathname } = useLocation();
   const isCurrent = (path) => pathname === path;
-  const { user, isAuthenticated, logout, needsSetup } = useAuth();
+  const { user, isAuthenticated, logout, needsSetup, setupCheckError } = useAuth();
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
   const navLinks = user?.is_admin
@@ -71,6 +71,10 @@ const CatalogPage = ({ children }) => {
                 </Link>
                 <button type="button" className="app-nav-link" style={NAV_BUTTON_RESET} onClick={logout}>Sign out</button>
               </>
+            ) : setupCheckError ? (
+              <span className="app-nav-link" title="Couldn't reach the API to check for accounts. See PLANQER_CORS_ORIGINS.">
+                Can't reach API
+              </span>
             ) : (
               <button type="button" className="app-nav-link" style={NAV_BUTTON_RESET} onClick={() => setAuthModalOpen(true)}>Sign in</button>
             )}
@@ -81,12 +85,14 @@ const CatalogPage = ({ children }) => {
       <div className="cat-body">
         {children}
       </div>
-      <AuthModal
-        isOpen={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
-        initialMode={needsSetup ? 'register' : 'login'}
-        isFirstRun={needsSetup}
-      />
+      {!setupCheckError && (
+        <AuthModal
+          isOpen={authModalOpen}
+          onClose={() => setAuthModalOpen(false)}
+          initialMode={needsSetup ? 'register' : 'login'}
+          isFirstRun={needsSetup}
+        />
+      )}
     </div>
   );
 };
