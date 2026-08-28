@@ -803,7 +803,21 @@ const ModelCutlistOptimizer = () => {
    is gated rather than the whole route. */
 const SignInRequired = ({ message }) => {
   const [authModalOpen, setAuthModalOpen] = useState(false);
-  const { needsSetup } = useAuth();
+  const { needsSetup, setupCheckError } = useAuth();
+
+  if (setupCheckError) {
+    return (
+      <div className="card" style={{ maxWidth: '420px', margin: '40px auto', textAlign: 'center' }}>
+        <h2 className="section-title" style={{ marginBottom: '10px' }}>Can't reach the API</h2>
+        <p style={{ color: 'var(--ink-2)' }}>
+          Couldn't confirm whether this instance has any accounts yet. If you're
+          accessing Planqer from a LAN address or hostname (not localhost), add
+          it to <code>PLANQER_CORS_ORIGINS</code> on the backend and restart it.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="card" style={{ maxWidth: '420px', margin: '40px auto', textAlign: 'center' }}>
       <h2 className="section-title" style={{ marginBottom: '10px' }}>Sign in required</h2>
