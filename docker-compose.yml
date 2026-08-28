@@ -9,6 +9,12 @@ services:
     environment:
       # Set to keep login sessions valid across container restarts.
       - SECRET_KEY=${SECRET_KEY:-}
+      # Comma-separated origins allowed to call the API, in addition to
+      # localhost/127.0.0.1. Set this to the address(es) you reach Planqer on
+      # (e.g. http://192.168.1.50:3001,https://planqer.example.com) or the
+      # browser silently loses the ability to log in or register - the
+      # request is just CORS-blocked.
+      - PLANQER_CORS_ORIGINS=${PLANQER_CORS_ORIGINS:-}
     volumes:
       # Local accounts + saved projects, on your own instance.
       - backend_data:/app/backend/data

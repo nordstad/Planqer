@@ -56,6 +56,36 @@ form. If you forget your password:
   on the terminal and writes it directly to the database. It does not go
   through the web UI, so it works even if you can't sign in at all.
 
-See `backend/create_admin.py --help` (or `python create_admin.py help` if
-running from source) for the full set of admin-management commands,
-including creating or promoting a user non-interactively.
+### Full command reference
+
+All commands below run the same way — from the host, outside the app:
+
+```bash
+docker exec -it planqer-web-backend uv run python create_admin.py <command>
+```
+
+(Or `python create_admin.py <command>` if running from source.)
+
+| Command | What it does |
+| --- | --- |
+| *(none)* | Interactive mode: prompts for an email and password, creates or promotes that user to admin. |
+| `list` | Lists every user on the instance, with admin/active status. |
+| `<email>` | Creates a new admin user with that email, or promotes an existing one — prompts for confirmation and, for new users, a password. |
+| `<email> --force` | Same as above, but skips confirmation prompts. Fails if a new user's password isn't also supplied non-interactively (see below). |
+| `set-password <email>` | Resets that user's password — prompts for a new one. Use this to recover a locked-out account. |
+| `set-password <email> --force` | Same, without the confirmation prompt. |
+| `help` / `-h` / `--help` | Prints this usage summary. |
+
+To create or promote a user with no prompts at all (e.g. in a provisioning
+script), set the email and password as environment variables and run with no
+arguments:
+
+```bash
+docker exec -it \
+  -e PLANQER_ADMIN_EMAIL=admin@example.com \
+  -e PLANQER_ADMIN_PASSWORD='a-strong-password' \
+  planqer-web-backend uv run python create_admin.py
+```
+
+Passwords must be at least 8 characters and include an uppercase letter, a
+lowercase letter, a digit, and a special character.
