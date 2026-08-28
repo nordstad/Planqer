@@ -7,6 +7,13 @@ Set variables in a `.env` file next to the compose files, or export them before
 running Docker Compose. Copy [`.env.example`](https://github.com/nordstad/Planqer/blob/main/.env.example)
 to `.env` as a starting point.
 
+Changed `.env` after containers already exist? A plain restart won't pick it
+up - env vars are only applied when a container is created. Recreate them:
+
+```bash
+docker compose up -d --force-recreate
+```
+
 Use `docker-compose.release.yml` for normal installs from published GHCR
 images. Use `docker-compose.yml` when you want Docker to build local source
 code.
