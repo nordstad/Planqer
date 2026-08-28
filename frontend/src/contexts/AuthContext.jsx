@@ -16,6 +16,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [needsSetup, setNeedsSetup] = useState(false);
+  const [setupCheckError, setSetupCheckError] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -33,7 +34,10 @@ export const AuthProvider = ({ children }) => {
           const { needs_setup } = await getSetupStatus();
           setNeedsSetup(needs_setup);
         } catch {
-          setNeedsSetup(false);
+          // Can't tell if this instance has accounts yet (e.g. the API was
+          // unreachable or CORS-blocked) - falling back to a login form here
+          // would hide that from someone who has no account to log in to.
+          setSetupCheckError(true);
         }
       }
       setLoading(false);
@@ -59,6 +63,7 @@ export const AuthProvider = ({ children }) => {
     loading,
     error,
     needsSetup,
+    setupCheckError,
     isAuthenticated: !!user,
     login,
     logout,

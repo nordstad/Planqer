@@ -37,6 +37,11 @@ theme:
   icon:
     repo: fontawesome/brands/github
 
+extra:
+  analytics:
+    provider: google
+    property: G-BNSPCXE3LW
+
 markdown_extensions:
   - admonition
   - attr_list

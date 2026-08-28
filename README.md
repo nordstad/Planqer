@@ -19,15 +19,38 @@ It turns part lists or CAD files (STL/STEP) into practical, kerf-aware cutting p
 
 ---
 
+![Planqer homepage](docs/assets/screenshots/homepage.png)
+
+<table>
+<tr>
+<td width="25%"><a href="docs/assets/screenshots/board-cutting-result.png"><img src="docs/assets/screenshots/board-cutting-result.png" alt="Board cutting result"></a><br><sub>Board cutting</sub></td>
+<td width="25%"><a href="docs/assets/screenshots/sheet-cutting-result.png"><img src="docs/assets/screenshots/sheet-cutting-result.png" alt="Sheet cutting result"></a><br><sub>Sheet cutting</sub></td>
+<td width="25%"><a href="docs/assets/screenshots/model-cutlist.png"><img src="docs/assets/screenshots/model-cutlist.png" alt="3D model upload"></a><br><sub>3D model → cutlist</sub></td>
+<td width="25%"><a href="docs/assets/screenshots/dashboard.png"><img src="docs/assets/screenshots/dashboard.png" alt="Project dashboard"></a><br><sub>Saved projects</sub></td>
+</tr>
+</table>
+
+---
+
 ## Quick Start
 
-The easiest way to run Planqer is with Docker Compose:
+The easiest way to run Planqer is with Docker Compose. Two ways to do it:
 
-```bash
-git clone https://github.com/nordstad/Planqer.git
-cd planqer
-docker compose up -d --build
-```
+- **Pull published images (recommended)** — uses `docker-compose.release.yml`,
+  pinned release images from GitHub Container Registry, no build step:
+
+  ```bash
+  curl -O https://raw.githubusercontent.com/nordstad/Planqer/main/docker-compose.release.yml
+  docker compose -f docker-compose.release.yml up -d
+  ```
+
+- **Build from source** — uses `docker-compose.yml`:
+
+  ```bash
+  git clone https://github.com/nordstad/Planqer.git
+  cd planqer
+  docker compose up -d --build
+  ```
 
 Once started, open:
 
@@ -36,6 +59,14 @@ Once started, open:
 - **Health Check**: <http://localhost:8002/health>
 
 *Note: The first account created on a fresh instance becomes the administrator.*
+
+*Accessing Planqer from another device on your network (e.g. `http://192.168.1.50:3001`)
+instead of `localhost`? Set `PLANQER_CORS_ORIGINS` to that address before starting, or
+sign-in and registration will silently fail as CORS-blocked requests:*
+
+```bash
+PLANQER_CORS_ORIGINS=http://192.168.1.50:3001 docker compose up -d --build
+```
 
 ---
 
