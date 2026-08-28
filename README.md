@@ -37,12 +37,24 @@ It turns part lists or CAD files (STL/STEP) into practical, kerf-aware cutting p
 The easiest way to run Planqer is with Docker Compose. Two ways to do it:
 
 - **Pull published images (recommended)** — uses `docker-compose.release.yml`,
-  pinned release images from GitHub Container Registry, no build step:
+  published images from GitHub Container Registry, no build step. Defaults to
+  `latest`; set `PLANQER_VERSION` to pin a specific release:
 
   ```bash
   curl -O https://raw.githubusercontent.com/nordstad/Planqer/main/docker-compose.release.yml
   docker compose -f docker-compose.release.yml up -d
   ```
+
+  Works with no further setup for `localhost`. To customize anything (pin a
+  version, allow a LAN/DNS address, set a stable `SECRET_KEY`), fetch
+  [`.env.example`](.env.example) and rename it to `.env` in the same
+  directory — Compose reads it automatically:
+
+  ```bash
+  curl -o .env https://raw.githubusercontent.com/nordstad/Planqer/main/.env.example
+  ```
+
+  See [Configuration](docs/reference/configuration.md) for what each variable does.
 
 - **Build from source** — uses `docker-compose.yml`:
 
