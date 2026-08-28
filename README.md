@@ -88,7 +88,7 @@ Detailed guides, configuration options, API references, and MCP server setup ins
 
 📖 **[Read the Documentation](https://nordstad.github.io/Planqer/)**
 
-> **Note**: The GitHub Pages documentation link above will be live once the repository is made public. To preview the docs locally:
+> To preview the docs locally:
 >
 > ```bash
 > pip install -r docs/requirements.txt
