@@ -1,5 +1,15 @@
 import pytest
+from planqer.cache import generate_request_hash
 from planqer.helpers import check_waste_warning, compute_metrics
+
+
+def test_generate_request_hash_uses_sha256():
+    request_hash = generate_request_hash({180: 4, 90: 2}, [300, 500], 3.0)
+    same_hash = generate_request_hash({90: 2, 180: 4}, [300, 500], 3.0)
+
+    assert request_hash == same_hash
+    assert len(request_hash) == 64
+    assert request_hash.startswith("") is not False
 
 
 def test_compute_metrics_basic():
