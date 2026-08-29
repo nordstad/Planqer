@@ -20,7 +20,6 @@ from dataclasses import dataclass
 from enum import Enum
 
 from fastapi import HTTPException, UploadFile
-
 from planqer.step_reader import StepParseError, read_step_file
 from planqer.threed_cutlist import is_sheet
 
@@ -32,14 +31,20 @@ MAX_UPLOAD_BYTES = 50 * 1024 * 1024
 
 # Millimetres per unit, for a file that declares no unit of its own.
 UNIT_SCALE = {
-    "mm": 1.0, "cm": 10.0, "m": 1000.0,
-    "in": 25.4, "inch": 25.4, "inches": 25.4,
-    "ft": 304.8, "feet": 304.8,
+    "mm": 1.0,
+    "cm": 10.0,
+    "m": 1000.0,
+    "in": 25.4,
+    "inch": 25.4,
+    "inches": 25.4,
+    "ft": 304.8,
+    "feet": 304.8,
 }
 
 
 class StepComponentType(Enum):
     """Component classification for woodworking from STEP files."""
+
     BOARD = "board"
     SHEET = "sheet"
     ASSEMBLY = "assembly"
@@ -48,6 +53,7 @@ class StepComponentType(Enum):
 @dataclass
 class StepCutListItem:
     """One line of the cut list, with the metadata CAD gave it."""
+
     type: StepComponentType
     length: float
     width: float
@@ -87,7 +93,9 @@ class StepProcessor:
     def _round(self, value: float) -> float:
         return round(value, self.round_precision)
 
-    def process_step_file(self, file_path: str, project_name: str | None = None) -> list[StepCutListItem]:
+    def process_step_file(
+        self, file_path: str, project_name: str | None = None
+    ) -> list[StepCutListItem]:
         try:
             bodies = read_step_file(file_path, fallback_scale=self.unit_scale)
         except StepParseError as e:
@@ -98,7 +106,9 @@ class StepProcessor:
             raise
         except Exception as e:
             logger.error(f"STEP processing failed: {e}")
-            raise HTTPException(status_code=500, detail=f"STEP processing failed: {e}") from e
+            raise HTTPException(
+                status_code=500, detail=f"STEP processing failed: {e}"
+            ) from e
 
         grouped: dict[tuple, dict] = {}
         for body in bodies:
@@ -109,11 +119,14 @@ class StepProcessor:
             # Below a millimetre is noise from the export, not something anyone
             # cuts; a zero thickness is broken geometry.
             if max(length, width, thickness) < 1.0 or thickness <= 0.5:
-                logger.info(f"Skipping '{body.name}': {length}×{width}×{thickness} mm is not cuttable")
+                logger.info(
+                    f"Skipping '{body.name}': {length}×{width}×{thickness} mm is not cuttable"
+                )
                 continue
 
             component_type = (
-                StepComponentType.SHEET if is_sheet(length, width, thickness)
+                StepComponentType.SHEET
+                if is_sheet(length, width, thickness)
                 else StepComponentType.BOARD
             )
 
@@ -144,24 +157,35 @@ class StepProcessor:
             name = data["name"]
             if len(names) > 1:
                 name = f"{next(iter(names))} (and {len(names) - 1} more)"
-            items.append(StepCutListItem(
-                type=data["type"],
-                length=data["length"],
-                width=data["width"],
-                thickness=data["thickness"],
-                quantity=data["quantity"],
-                name=name,
-                volume=data["volume"],
-                material=data["material"],
-                assembly_path=data["assembly_path"],
-                cad_id=data["cad_id"],
-            ))
+            items.append(
+                StepCutListItem(
+                    type=data["type"],
+                    length=data["length"],
+                    width=data["width"],
+                    thickness=data["thickness"],
+                    quantity=data["quantity"],
+                    name=name,
+                    volume=data["volume"],
+                    material=data["material"],
+                    assembly_path=data["assembly_path"],
+                    cad_id=data["cad_id"],
+                )
+            )
 
-        items.sort(key=lambda item: (item.type.value, item.material or "", -item.length, -item.width))
+        items.sort(
+            key=lambda item: (
+                item.type.value,
+                item.material or "",
+                -item.length,
+                -item.width,
+            )
+        )
         logger.info(f"STEP processing completed: {len(items)} distinct components")
         return items
 
-    def convert_to_planqer_parts(self, cutlist_items: list[StepCutListItem]) -> dict[str, int]:
+    def convert_to_planqer_parts(
+        self, cutlist_items: list[StepCutListItem]
+    ) -> dict[str, int]:
         """Board lengths and counts, in the shape the 1D optimizer takes."""
         parts: dict[str, int] = {}
         for item in cutlist_items:
@@ -182,7 +206,7 @@ async def process_uploaded_step(
     `units` is the fallback for a file that declares no length unit; the file's
     own declaration always wins.
     """
-    if not file.filename or not file.filename.lower().endswith(('.step', '.stp')):
+    if not file.filename or not file.filename.lower().endswith((".step", ".stp")):
         raise HTTPException(
             status_code=400,
             detail="File must be a STEP file (.step or .stp extension)",
@@ -194,16 +218,18 @@ async def process_uploaded_step(
             detail=f"File size too large. Maximum {MAX_UPLOAD_BYTES // (1024 * 1024)}MB allowed.",
         )
 
-    with tempfile.NamedTemporaryFile(suffix='.step', delete=False) as temp_file:
-        try:
+    temp_fd, temp_path = tempfile.mkstemp(prefix="planqer-step-", suffix=".step")
+    try:
+        os.chmod(temp_path, 0o600)
+        with os.fdopen(temp_fd, "wb") as temp_file:
             temp_file.write(await file.read())
             temp_file.flush()
 
-            processor = StepProcessor(units=units, round_precision=round_precision)
-            cutlist_items = processor.process_step_file(temp_file.name, project_name)
-            return cutlist_items, processor.convert_to_planqer_parts(cutlist_items)
-        finally:
-            try:
-                os.unlink(temp_file.name)
-            except OSError:
-                pass
+        processor = StepProcessor(units=units, round_precision=round_precision)
+        cutlist_items = processor.process_step_file(temp_path, project_name)
+        return cutlist_items, processor.convert_to_planqer_parts(cutlist_items)
+    finally:
+        try:
+            os.unlink(temp_path)
+        except OSError:
+            pass

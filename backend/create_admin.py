@@ -45,9 +45,8 @@ def get_secure_password(email: str, prompt: str = "Enter password for admin user
             print("Password cannot be empty. Please try again.")
             continue
 
-        is_valid, error_msg = validate_password(password)
-        if not is_valid:
-            print(error_msg)
+        if not validate_password(password)[0]:
+            print("Password does not meet the required policy. Please choose a different password.")
             continue
 
         if password != getpass.getpass("Confirm password: "):
@@ -101,9 +100,8 @@ async def create_admin_user(email: str, password: Optional[str] = None, force: b
         if not password:
             password = get_secure_password(email)
         else:
-            is_valid, error_msg = validate_password(password)
-            if not is_valid:
-                print(f"Password validation failed: {error_msg}")
+            if not validate_password(password)[0]:
+                print("Password validation failed. Please choose a different password.")
                 return None
 
         admin_user = User(
@@ -137,9 +135,8 @@ async def set_user_password(email: str, password: Optional[str] = None, force: b
         if not password:
             password = get_secure_password(email, prompt="Enter new password for '{email}': ")
         else:
-            is_valid, error_msg = validate_password(password)
-            if not is_valid:
-                print(f"Password validation failed: {error_msg}")
+            if not validate_password(password)[0]:
+                print("Password validation failed. Please choose a different password.")
                 return None
 
         user.hashed_password = get_password_hash(password)
