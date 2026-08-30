@@ -1,0 +1,9 @@
+{
+  "packageRules": [
+    {
+      "matchPackageNames": ["numpy"],
+      "allowedVersions": "<2.0.0",
+      "description": "Keep NumPy below 2.x because NumPy 2.x wheels require newer x86 CPU features than some supported self-hosted deployments provide."
+    }
+  ]
+}

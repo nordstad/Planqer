@@ -49,7 +49,9 @@ in `backend/config.yaml`, not environment variables.
   requests get "Blocked request".
 - `VITE_API_URL`: inferred by default. Only needed when the API is not
   reachable at the same origin as the app, or at port 8002 on the same host.
-  Use an origin, no path.
+  Use an origin, no path. If you publish the frontend on a different host port
+  than 3001, set this explicitly to the backend origin, such as
+  `http://192.168.1.50:8002`.
 
 ## MCP server
 
