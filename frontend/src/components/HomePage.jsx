@@ -1,6 +1,19 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import CatalogPage from './CatalogPage';
 import { BoardIcon, SheetIcon, CubeIcon, ArrowRight } from './icons';
+import { getHealth, getLatestRelease } from '../utils/api';
+
+// Compares two dotted version strings, e.g. isNewer('0.2.0', '0.1.0') -> true
+const isNewer = (latest, current) => {
+  const a = latest.split('.').map(Number);
+  const b = current.split('.').map(Number);
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    const diff = (a[i] || 0) - (b[i] || 0);
+    if (diff !== 0) return diff > 0;
+  }
+  return false;
+};
 
 const TOOLS = [
   {
@@ -68,7 +81,22 @@ const CutPlanPreview = () => (
   </div>
 );
 
-const HomePage = () => (
+const HomePage = () => {
+  const [version, setVersion] = useState(null);
+  const [latestVersion, setLatestVersion] = useState(null);
+
+  useEffect(() => {
+    getHealth()
+      .then((data) => setVersion(data.version))
+      .catch(() => {});
+    getLatestRelease()
+      .then((tag) => setLatestVersion(tag.replace(/^v/, '')))
+      .catch(() => {});
+  }, []);
+
+  const updateAvailable = version && latestVersion && isNewer(latestVersion, version);
+
+  return (
   <CatalogPage>
     <div className="hp-top">
       <div className="hp-hero-text">
@@ -126,9 +154,20 @@ const HomePage = () => (
           MIT licence
         </a>
       </div>
-      <span>No cloud account · no tracking · no analytics</span>
+<span>
+        No cloud account · no tracking · no analytics{version ? ` · v${version}` : ''}
+        {updateAvailable && (
+          <>
+            {' · '}
+            <a href="https://github.com/nordstad/Planqer/releases/latest" target="_blank" rel="noopener noreferrer">
+              v{latestVersion} available
+            </a>
+          </>
+        )}
+      </span>
     </footer>
   </CatalogPage>
-);
+  );
+};
 
 export default HomePage;
