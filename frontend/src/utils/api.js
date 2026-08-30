@@ -108,6 +108,33 @@ export const loginUser = async (email, password) => {
 
 export const logoutUser = () => clearAuthToken();
 
+export const getHealth = async () => {
+  const response = await axios.get(`${API_URL}/health`);
+  return response.data;
+};
+
+const LATEST_RELEASE_CACHE_KEY = 'latest_release_cache';
+const LATEST_RELEASE_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours, to stay well under GitHub's unauthenticated rate limit
+
+/* Reads the newest published release tag straight from GitHub, since that's
+   where `publish-images.yml` pushes `v*.*.*` tags. Cached in localStorage so
+   a page full of visitors doesn't hammer GitHub's unauthenticated API limit. */
+export const getLatestRelease = async () => {
+  try {
+    const cached = JSON.parse(localStorage.getItem(LATEST_RELEASE_CACHE_KEY) || 'null');
+    if (cached && Date.now() - cached.fetchedAt < LATEST_RELEASE_CACHE_TTL_MS) {
+      return cached.tag;
+    }
+  } catch {
+    // Ignore malformed cache entries and re-fetch.
+  }
+
+  const response = await axios.get('https://api.github.com/repos/nordstad/Planqer/releases/latest');
+  const tag = response.data.tag_name;
+  localStorage.setItem(LATEST_RELEASE_CACHE_KEY, JSON.stringify({ tag, fetchedAt: Date.now() }));
+  return tag;
+};
+
 export const getSetupStatus = async () => {
   try {
     const response = await axios.get(`${API_URL}/api/auth/setup-status`);

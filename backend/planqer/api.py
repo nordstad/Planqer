@@ -24,6 +24,7 @@ from fastapi import (
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from planqer import __version__
 from planqer.algorithms import OptimizationAlgorithm, get_algorithm_recommendation
 from planqer.async_processing import (
     generate_task_id,
@@ -235,7 +236,7 @@ step_router = APIRouter(prefix="/step-cutlist", tags=["STEP Model Cutlist"])
 app = FastAPI(
     title="planqer API",
     description="Optimize board cutting to minimize waste.",
-    version="1.0.0",
+    version=__version__,
     root_path="/api",
     lifespan=lifespan,
 )
@@ -1049,7 +1050,7 @@ async def health_check():
         return {
             "status": "healthy",
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "version": "1.0.0",
+            "version": __version__,
             "service": "planqer-api",
             "cache": {
                 "size": cache_info["cache_size"],
