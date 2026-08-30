@@ -86,6 +86,7 @@ const AdminDashboard = () => {
         <button type="button" className="btn" onClick={loadData}>Refresh</button>
       </div>
 
+      <div style={{ overflowX: 'auto' }}>
       <table className="cat-table">
         <thead>
           <tr>
@@ -109,8 +110,8 @@ const AdminDashboard = () => {
                 <td>{u.project_count}</td>
                 <td>{u.sheet_project_count}</td>
                 <td>{new Date(u.created_at).toLocaleDateString()}</td>
-                <td style={{ width: '420px' }}>
-                  <span className="flex justify-end gap-2">
+                <td style={{ minWidth: '420px' }}>
+                  <span className="flex justify-end gap-2" style={{ flexWrap: 'wrap' }}>
                     <button
                       className="btn"
                       style={{ padding: '5px 10px', minHeight: 0 }}
@@ -159,6 +160,7 @@ const AdminDashboard = () => {
           )}
         </tbody>
       </table>
+      </div>
 
       <ConfirmDialog
         open={!!pendingDelete}
