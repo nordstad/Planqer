@@ -41,6 +41,9 @@ extra:
   analytics:
     provider: google
     property: G-BNSPCXE3LW
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/nordstad/Planqer
 
 markdown_extensions:
   - admonition
@@ -75,11 +78,6 @@ nav:
       - REST API: reference/api.md
   - Troubleshooting: troubleshooting.md
   - Contributing: contributing.md
-
-extra:
-  social:
-    - icon: fontawesome/brands/github
-      link: https://github.com/nordstad/Planqer
 
 not_in_nav: |
   RELEASE_NOTES.md
