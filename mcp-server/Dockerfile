@@ -10,7 +10,7 @@ RUN npm run build
 RUN npm prune --omit=dev
 
 # Python runtime with uv
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 # Install uv for dependency management
 RUN pip install uv
