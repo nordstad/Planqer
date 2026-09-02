@@ -31,7 +31,7 @@ dependencies = [
     "aiosqlite>=0.21.0",        # Async SQLite driver
     "alembic>=1.13.0",          # Database migrations
     "greenlet>=3.2.4",          # Required by SQLAlchemy's async engine
-    "python-jose[cryptography]>=3.3.0",  # JWT tokens
+    "pyjwt>=2.10.1,<3.0.0",       # JWT tokens
     "bcrypt>=5.0.0,<6.0",       # Password hashing
     "email-validator>=2.2.0",   # Email format validation for registration
 ]
