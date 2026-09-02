@@ -6,7 +6,8 @@ from pathlib import Path
 from typing import Any
 
 import bcrypt
-from jose import JWTError, jwt
+import jwt
+from jwt.exceptions import InvalidTokenError
 
 from planqer.helpers import load_config
 
@@ -67,5 +68,5 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
 def verify_token(token: str) -> dict[str, Any] | None:
     try:
         return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-    except JWTError:
+    except InvalidTokenError:
         return None
