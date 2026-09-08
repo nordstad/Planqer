@@ -34,6 +34,14 @@ SVG_STYLES = {
         "part_label_small": f"font-family: {SYSTEM_FONT_STACK}; font-size: 8px; font-weight: bold; fill: {COLORS['primary_text']};",
         "sheet_info": f"font-family: {SYSTEM_FONT_STACK}; font-size: 12px; fill: {COLORS['secondary_text']};",
         "legend_text": f"font-family: {SYSTEM_FONT_STACK}; font-size: 9px; fill: {COLORS['light_text']};",
+    },
+    "tile": {
+        "figure_caption": f"font-family: {NARROW_FONT_STACK}; font-size: 11px; font-weight: 700; fill: {COLORS['primary_text']}; letter-spacing: 0.16em;",
+        "surface_title": f"font-family: {NARROW_FONT_STACK}; font-size: 16px; font-weight: 600; fill: {COLORS['primary_text']};",
+        "tile_label": f"font-family: {SYSTEM_FONT_STACK}; font-size: 9px; fill: {COLORS['secondary_text']};",
+        "surface_info": f"font-family: {SYSTEM_FONT_STACK}; font-size: 12px; fill: {COLORS['secondary_text']};",
+        "legend_text": f"font-family: {SYSTEM_FONT_STACK}; font-size: 9px; fill: {COLORS['light_text']};",
+        "sliver_label": f"font-family: {SYSTEM_FONT_STACK}; font-size: 9px; font-weight: bold; fill: #cc2200;",
     }
 }
 
