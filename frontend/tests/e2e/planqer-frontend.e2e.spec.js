@@ -48,6 +48,14 @@ test.describe('Planqer Frontend E2E Tests', () => {
     // Full workflow testing can be done separately
   });
 
+  test('tile layout route is reachable and requires sign-in', async ({ page }) => {
+    await page.goto('/tile-layout');
+
+    // Protected route: unauthenticated visitors see the sign-in prompt,
+    // not a crash — same gate as /cutting and /sheet-cutting.
+    await expect(page.getByText(/sign in required/i)).toBeVisible();
+  });
+
   test('failed sign-in shows an auth error and exits loading state', async ({ page }) => {
     await page.goto('/cutting');
 

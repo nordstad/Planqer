@@ -4,6 +4,7 @@ import AdminDashboard from './components/AdminDashboard';
 import AdminRoute from './components/AdminRoute';
 import CuttingOptimizer from './components/CuttingOptimizer';
 import SheetOptimizer from './components/SheetOptimizer';
+import TileOptimizer from './components/TileOptimizer';
 import ModelCutlistOptimizer from './components/ModelCutlistOptimizer';
 import HomePage from './components/HomePage';
 import HelpPage from './components/Help';
@@ -18,6 +19,7 @@ const App = () => {
           <Route path="/" element={<HomePage />} />
           <Route path="/cutting" element={<ProtectedRoute fallbackMessage="Sign in or create a local account on this instance to plan and save a cutlist."><CuttingOptimizer /></ProtectedRoute>} />
           <Route path="/sheet-cutting" element={<ProtectedRoute fallbackMessage="Sign in or create a local account on this instance to plan and save a sheet layout."><SheetOptimizer /></ProtectedRoute>} />
+          <Route path="/tile-layout" element={<ProtectedRoute fallbackMessage="Sign in or create a local account on this instance to plan a tile layout."><TileOptimizer /></ProtectedRoute>} />
           <Route path="/model-cutlist" element={<ModelCutlistOptimizer />} />
           <Route path="/3d-cutlist" element={<Navigate to="/model-cutlist" replace />} />
           <Route path="/step-cutlist" element={<Navigate to="/model-cutlist" replace />} />

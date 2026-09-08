@@ -79,3 +79,12 @@ export const CubeIcon = ({ size = 22 }) => (
     <path d="M4 7.5l8 4.5 8-4.5M12 12v9" />
   </svg>
 );
+
+/* Two rows offset by half a tile — a running bond, drawn so it reads
+   distinctly from SheetIcon's even grid at a glance. */
+export const TileIcon = ({ size = 22 }) => (
+  <svg {...base} viewBox="0 0 24 24" width={size} height={size}>
+    <rect x="3" y="4" width="18" height="16" />
+    <path d="M3 12h18M11 4v8M17 12v8M5 12v8" />
+  </svg>
+);

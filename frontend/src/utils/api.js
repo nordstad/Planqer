@@ -489,6 +489,63 @@ export const optimizeSheetCutting = async (parts, sheetWidth, sheetHeight, kerfW
   }
 };
 
+/* Solves and returns; it stores nothing, same as optimizeCutting/
+   optimizeSheetCutting — nothing is kept until the (future) save step exists.
+   Offset_fraction, min_edge_cut etc. are already validated server-side, so
+   this only shapes the request, it does not re-validate. */
+export const optimizeTileLayout = async ({
+  surfaceWidth, surfaceHeight, cutouts, tile, joint, bond,
+  minEdgeCut, reuseOffcuts, wastePercent, candidateCount, projectName,
+}) => {
+  const payload = {
+    surface_width: parseFloat(surfaceWidth),
+    surface_height: parseFloat(surfaceHeight),
+    cutouts: cutouts
+      .filter((c) => c.x !== '' && c.y !== '' && c.width !== '' && c.height !== '')
+      .map((c) => ({
+        x: parseFloat(c.x),
+        y: parseFloat(c.y),
+        width: parseFloat(c.width),
+        height: parseFloat(c.height),
+        label: c.label || null,
+      })),
+    tile: {
+      width: parseFloat(tile.width),
+      height: parseFloat(tile.height),
+      allow_rotation: !!tile.allowRotation,
+    },
+    joint: {
+      joint_width: parseFloat(joint.jointWidth),
+      perimeter_gap: parseFloat(joint.perimeterGap),
+    },
+    bond: {
+      pattern: bond.pattern,
+      offset_fraction: parseFloat(bond.offsetFraction),
+    },
+    min_edge_cut: minEdgeCut === '' || minEdgeCut === undefined ? null : parseFloat(minEdgeCut),
+    reuse_offcuts: reuseOffcuts !== false,
+    waste_percent: parseFloat(wastePercent),
+    candidate_count: parseInt(candidateCount, 10),
+    project_name: projectName || null,
+  };
+
+  try {
+    const response = await axios.post(
+      `${API_URL}/api/tile-layout`,
+      payload,
+      { timeout: 30000 } // 30 seconds — the solver samples the offset space, same order of cost as sheet packing
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Tile layout API request failed:', {
+      url: `${API_URL}/api/tile-layout`,
+      error: error.message,
+      response: error.response?.data,
+    });
+    throw new Error(extractErrorMessage(error));
+  }
+};
+
 /**
  * Process a 3D STL file to generate a cutting list
  * @param {File} file - The STL file to process

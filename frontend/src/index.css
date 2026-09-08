@@ -249,6 +249,39 @@
     font-family: 'Archivo Narrow', sans-serif; font-size: 12px; color: var(--ink-3); white-space: nowrap;
   }
 
+  /* ── tile layout candidates: one card per ranked option ──────────────
+     Selection borrows .plan-steps'/.app-nav's own grammar (a 2px amber
+     underline on the current one) rather than an amber fill, per the One
+     Accent Rule — a fill here would compete with the plan-answer figure on
+     the same step. */
+  .tile-candidates {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 18px; text-align: left;
+  }
+  .tile-candidate {
+    display: flex; flex-direction: column; gap: 12px; min-width: 0;
+    background: var(--card); border: 1.5px solid var(--rule-hair); border-bottom-width: 3px;
+    border-radius: 12px; box-shadow: 0 1px 2px rgba(22,21,15,.04);
+    padding: 14px; cursor: pointer; font: inherit; color: inherit;
+  }
+  .tile-candidate:hover { border-color: var(--ink-4); }
+  .tile-candidate[data-selected="true"] { border-bottom-color: var(--accent); }
+  .tile-candidate-thumb {
+    border-radius: 8px; overflow: hidden; background: var(--ground-2);
+    border: 1px solid var(--rule-hair);
+  }
+  .tile-candidate-thumb img { display: block; width: 100%; height: auto; }
+  .tile-candidate-label { font-size: 13.5px; font-weight: 700; }
+  .tile-candidate-facts {
+    display: flex; justify-content: space-between; gap: 10px; margin: 0;
+  }
+  .tile-candidate-facts dt {
+    font-family: 'Archivo Narrow', sans-serif; font-size: 11px; font-weight: 700;
+    letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3);
+  }
+  .tile-candidate-facts dd { margin: 2px 0 0; font-size: 14px; font-weight: 700; }
+  .tile-candidate-warn { margin: 0; font-size: 12px; font-weight: 600; color: var(--revision); }
+
   /* ── an advanced option, folded away until asked for ─────────────────── */
   .fold { border-top: 1px solid var(--rule-hair); }
   .fold-head {

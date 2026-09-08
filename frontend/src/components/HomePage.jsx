@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import CatalogPage from './CatalogPage';
-import { BoardIcon, SheetIcon, CubeIcon, ArrowRight } from './icons';
+import { BoardIcon, SheetIcon, CubeIcon, TileIcon, ArrowRight } from './icons';
 import { getHealth, getLatestRelease } from '../utils/api';
 
 // Compares two dotted version strings, e.g. isNewer('0.2.0', '0.1.0') -> true
@@ -27,6 +27,12 @@ const TOOLS = [
     title: 'Sheet cutting',
     body: 'Nest rectangular parts on plywood, MDF, metal, glass.',
     Icon: SheetIcon,
+  },
+  {
+    path: '/tile-layout',
+    title: 'Tile layout',
+    body: 'Tile, board, or panel a surface — where to start the grid, and how many to buy.',
+    Icon: TileIcon,
   },
   {
     path: '/model-cutlist',
