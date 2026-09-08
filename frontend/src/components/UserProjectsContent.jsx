@@ -20,6 +20,7 @@ import { Link } from 'react-router-dom';
 import {
   getUserProjects, updateProject, deleteProject,
   getUserSheetProjects, updateSheetProject, deleteSheetProject,
+  getUserTileProjects, updateTileProject, deleteTileProject,
   downloadProjectImage, getProjectGroups, renameProjectGroup, deleteProjectGroup,
 } from '../utils/api';
 import { svgBlobToPngBlob } from '../utils/svgToPng';
@@ -49,18 +50,39 @@ const formatDate = (dateString) => {
 
 const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
-const totalParts = (partsData, projectType) => {
-  if (projectType === 'sheet') {
-    return Array.isArray(partsData) ? partsData.reduce((sum, p) => sum + (parseInt(p.quantity, 10) || 0), 0) : 0;
+// The three saved project shapes don't share a "parts" concept — a tile
+// layout has no parts list, just a chosen candidate — so this returns the
+// three facts renderPlan/handlePrintAll actually print (type, count, stock)
+// rather than forcing a tile project through totalParts/stockLine helpers
+// shaped for board/sheet parts_data.
+const planFacts = (project) => {
+  if (project.projectType === 'sheet') {
+    const count = Array.isArray(project.parts_data)
+      ? project.parts_data.reduce((sum, p) => sum + (parseInt(p.quantity, 10) || 0), 0)
+      : 0;
+    return {
+      type: 'Sheet',
+      count: plural(count, 'part'),
+      stock: `${project.sheet_width}×${project.sheet_height}mm · ${project.material_type}`,
+    };
   }
-  return partsData && typeof partsData === 'object'
-    ? Object.values(partsData).reduce((sum, qty) => sum + qty, 0)
+  if (project.projectType === 'tile') {
+    const toBuy = project.layout_result?.tiles_to_purchase_with_waste ?? project.layout_result?.tiles_to_purchase;
+    return {
+      type: 'Tile',
+      count: Number.isFinite(toBuy) ? `${toBuy} to buy` : '—',
+      stock: `${project.surface_data.width}×${project.surface_data.height}mm · ${project.tile_data.width}×${project.tile_data.height} tile`,
+    };
+  }
+  const count = project.parts_data && typeof project.parts_data === 'object'
+    ? Object.values(project.parts_data).reduce((sum, qty) => sum + qty, 0)
     : 0;
+  return {
+    type: 'Board',
+    count: plural(count, 'part'),
+    stock: `${project.board_lengths.join(', ')}mm · ${project.saw_blade_width}mm kerf`,
+  };
 };
-
-const stockLine = (project) => (project.projectType === 'sheet'
-  ? `${project.sheet_width}×${project.sheet_height}mm · ${project.material_type}`
-  : `${project.board_lengths.join(', ')}mm · ${project.saw_blade_width}mm kerf`);
 
 const triggerDownload = (blob, filename) => {
   const url = window.URL.createObjectURL(blob);
@@ -97,15 +119,17 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
       setLoading(true);
       setError('');
 
-      const [boardProjects, sheetProjects, projectGroups] = await Promise.all([
+      const [boardProjects, sheetProjects, tileProjects, projectGroups] = await Promise.all([
         getUserProjects(),
         getUserSheetProjects(),
+        getUserTileProjects(),
         getProjectGroups(),
       ]);
 
       const combined = [
         ...boardProjects.map((p) => ({ ...p, projectType: 'board' })),
         ...sheetProjects.map((p) => ({ ...p, projectType: 'sheet' })),
+        ...tileProjects.map((p) => ({ ...p, projectType: 'tile' })),
       ].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
 
       setAllProjects(combined);
@@ -129,6 +153,8 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
           setBusyId(project.id);
           if (project.projectType === 'sheet') {
             await deleteSheetProject(project.id);
+          } else if (project.projectType === 'tile') {
+            await deleteTileProject(project.id);
           } else {
             await deleteProject(project.id);
           }
@@ -149,7 +175,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
       setBusyId(project.id);
       const svg = await downloadProjectImage(project.id, project.projectType);
       const blob = format === 'png' ? await svgBlobToPngBlob(svg) : svg;
-      const kind = project.projectType === 'sheet' ? 'Sheet Layout' : 'Cutlist';
+      const kind = project.projectType === 'sheet' ? 'Sheet Layout' : project.projectType === 'tile' ? 'Tile Layout' : 'Cutlist';
       triggerDownload(blob, `${project.name} - ${kind}.${format}`);
     } catch (err) {
       setError(err.message.includes('404')
@@ -170,16 +196,14 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
     try {
       setPrinting(true);
       setError('');
-      const withDiagrams = await Promise.all(printable.map(async (p) => ({
-        name: p.name,
-        facts: [
-          p.projectType === 'sheet' ? 'Sheet' : 'Board',
-          plural(totalParts(p.parts_data, p.projectType), 'part'),
-          stockLine(p),
-          `saved ${formatDate(p.created_at)}`,
-        ],
-        svgBlob: await downloadProjectImage(p.id, p.projectType),
-      })));
+      const withDiagrams = await Promise.all(printable.map(async (p) => {
+        const pf = planFacts(p);
+        return {
+          name: p.name,
+          facts: [pf.type, pf.count, pf.stock, `saved ${formatDate(p.created_at)}`],
+          svgBlob: await downloadProjectImage(p.id, p.projectType),
+        };
+      }));
       await printProjectPlans({
         title,
         meta: `${plural(printable.length, 'plan')} · printed ${formatDate(new Date())}`,
@@ -223,6 +247,8 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
     try {
       if (project.projectType === 'sheet') {
         await updateSheetProject(project.id, { name });
+      } else if (project.projectType === 'tile') {
+        await updateTileProject(project.id, { name });
       } else {
         await updateProject(project.id, { name });
       }
@@ -304,6 +330,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
 
   const renderPlan = (project) => {
     const hasDiagram = Boolean(project.has_svg_image || project.cutlist_image);
+    const facts = planFacts(project);
 
     return (
       <article className="plan-item" key={project.id}>
@@ -336,9 +363,9 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
             </h3>
           )}
           <p className="plan-item-facts">
-            <span className="plan-item-type">{project.projectType === 'sheet' ? 'Sheet' : 'Board'}</span>
-            <span>{plural(totalParts(project.parts_data, project.projectType), 'part')}</span>
-            <span>{stockLine(project)}</span>
+            <span className="plan-item-type">{facts.type}</span>
+            <span>{facts.count}</span>
+            <span>{facts.stock}</span>
           </p>
           <p className="plan-item-date">Saved {formatDate(project.created_at)}</p>
         </div>

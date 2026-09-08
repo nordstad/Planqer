@@ -289,6 +289,83 @@ export const deleteSheetProject = async (projectId) => {
   }
 };
 
+/* ── saved projects (tile layout) ─────────────────────────────────── */
+
+export const getUserTileProjects = async () => {
+  try {
+    const response = await axios.get(`${API_URL}/api/tile-projects/`);
+    return response.data;
+  } catch (error) {
+    throw new Error(extractErrorMessage(error));
+  }
+};
+
+/* Keeping a layout is its own step, same as board/sheet: the candidate is
+   already-computed (from optimizeTileLayout), and nothing is stored until
+   the user names it here. The diagram is redrawn server-side from
+   surface_data + layout_result, so no image is sent over the wire. */
+export const saveTileProject = async ({
+  name, projectGroupId, surfaceWidth, surfaceHeight, cutouts, tile, joint, bond,
+  minEdgeCut, reuseOffcuts, wastePercent, candidateCount, candidate,
+}) => {
+  try {
+    const response = await axios.post(`${API_URL}/api/tile-projects/`, {
+      name,
+      project_group_id: projectGroupId || null,
+      surface_data: {
+        width: parseFloat(surfaceWidth),
+        height: parseFloat(surfaceHeight),
+        cutouts: cutouts
+          .filter((c) => c.x !== '' && c.y !== '' && c.width !== '' && c.height !== '')
+          .map((c) => ({
+            x: parseFloat(c.x), y: parseFloat(c.y),
+            width: parseFloat(c.width), height: parseFloat(c.height),
+            label: c.label || null,
+          })),
+      },
+      tile_data: {
+        width: parseFloat(tile.width),
+        height: parseFloat(tile.height),
+        allow_rotation: !!tile.allowRotation,
+      },
+      bond_data: {
+        pattern: bond.pattern,
+        offset_fraction: parseFloat(bond.offsetFraction),
+        joint_width: parseFloat(joint.jointWidth),
+        perimeter_gap: parseFloat(joint.perimeterGap),
+      },
+      options_data: {
+        min_edge_cut: minEdgeCut === '' || minEdgeCut === undefined ? null : parseFloat(minEdgeCut),
+        reuse_offcuts: reuseOffcuts !== false,
+        waste_percent: parseFloat(wastePercent),
+        candidate_count: parseInt(candidateCount, 10),
+      },
+      layout_result: candidate,
+    });
+    return response.data;
+  } catch (error) {
+    throw new Error(extractErrorMessage(error));
+  }
+};
+
+export const updateTileProject = async (projectId, updates) => {
+  try {
+    const response = await axios.put(`${API_URL}/api/tile-projects/${projectId}`, updates);
+    return response.data;
+  } catch (error) {
+    throw new Error(extractErrorMessage(error));
+  }
+};
+
+export const deleteTileProject = async (projectId) => {
+  try {
+    const response = await axios.delete(`${API_URL}/api/tile-projects/${projectId}`);
+    return response.data;
+  } catch (error) {
+    throw new Error(extractErrorMessage(error));
+  }
+};
+
 /* ── project groups: containers holding multiple cutlists ────────── */
 
 export const getProjectGroups = async () => {
@@ -330,9 +407,20 @@ export const deleteProjectGroup = async (groupId) => {
 /* ── project image download (either project type) ────────────────── */
 
 /* Always SVG: it is the one format stored. A PNG is made from this blob in
-   the browser — see utils/svgToPng.js. */
+   the browser — see utils/svgToPng.js.
+
+   An explicit map, not a ternary with an implicit default: a project type
+   this map doesn't know throws here instead of silently falling through to
+   'projects' and downloading (or 404ing on) the wrong thing — a live bug the
+   moment a third project type existed to fall through to. See
+   .plans/tile-layout.md Decision #12. */
+const PROJECT_IMAGE_ENDPOINTS = { board: 'projects', sheet: 'sheet-projects', tile: 'tile-projects' };
+
 export const downloadProjectImage = async (projectId, projectType) => {
-  const endpoint = projectType === 'sheet' ? 'sheet-projects' : 'projects';
+  const endpoint = PROJECT_IMAGE_ENDPOINTS[projectType];
+  if (!endpoint) {
+    throw new Error(`Unknown project type "${projectType}"`);
+  }
   const response = await fetch(`${API_URL}/api/${endpoint}/${projectId}/image`, {
     headers: authHeaders(),
   });

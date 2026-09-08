@@ -8,15 +8,14 @@
   top/bottom symmetry can conflict, so the solver returns several
   Pareto-ranked candidates and the person doing the cutting picks the
   tradeoff that fits the job — see .plans/tile-layout.md Decision #3.
-
-  Step 03 ("Keep") is a stub: naming and a project picker are wired up, but
-  the save button is disabled. Persisting a tile layout (UserTileProject,
-  its routes, and captioned re-render) is Phase 3's job — this page has
-  nothing to save to yet.
 */
 
 import { useState, useEffect } from 'react';
-import { optimizeTileLayout, getProjectGroups, createProjectGroup } from '../utils/api';
+import { Link } from 'react-router-dom';
+import {
+  optimizeTileLayout, getProjectGroups, createProjectGroup,
+  saveTileProject, getUserTileProjects,
+} from '../utils/api';
 import { useDebounce } from '../hooks/useDebounce';
 import { useAuth } from '../contexts/AuthContext';
 import CatalogPage from './CatalogPage';
@@ -27,7 +26,7 @@ import PlanSteps from './PlanSteps';
 import CutoutRow from './CutoutRow';
 import TileLayoutCandidateCard from './TileLayoutCandidateCard';
 import TileResultDisplay from './TileResultDisplay';
-import { ArrowLeft, ArrowRight, Plus } from './icons';
+import { ArrowLeft, ArrowRight, Plus, Tick } from './icons';
 
 const mm = (n) => (Number.isFinite(n) ? Math.round(n).toLocaleString('sv-SE') : '—');
 
@@ -96,10 +95,17 @@ const TileOptimizer = () => {
     jointWidth: '', perimeterGap: '', minEdgeCut: '', wastePercent: '', candidateCount: '',
   });
 
-  /* the (stubbed) save step */
+  /* the save step */
   const [projectGroups, setProjectGroups] = useState([]);
   const [selectedGroupId, setSelectedGroupId] = useState('');
   const [projectName, setProjectName] = useState('');
+  const [saveAttempted, setSaveAttempted] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(null);
+
+  /* loading one back */
+  const [userProjects, setUserProjects] = useState([]);
+  const [loadModalOpen, setLoadModalOpen] = useState(false);
 
   const debounced = {
     surfaceWidth: useDebounce(surfaceWidth, 300),
@@ -140,7 +146,10 @@ const TileOptimizer = () => {
   ]);
 
   useEffect(() => {
-    if (user) getProjectGroups().then(setProjectGroups).catch(() => {});
+    if (user) {
+      getProjectGroups().then(setProjectGroups).catch(() => {});
+      getUserTileProjects().then(setUserProjects).catch(() => {});
+    }
   }, [user]);
 
   /* ── a layout belongs to its inputs ────────────────────────────────────── */
@@ -148,6 +157,7 @@ const TileOptimizer = () => {
     setResult(null);
     setSelectedIndex(0);
     setApiError('');
+    setSaved(null);
   };
 
   const setField = (setter) => (value) => { retireLayout(); setter(value); };
@@ -165,6 +175,32 @@ const TileOptimizer = () => {
   const removeCutout = (index) => {
     retireLayout();
     setCutouts(cutouts.filter((_, i) => i !== index));
+  };
+
+  const loadProject = (project) => {
+    retireLayout();
+    setSurfaceWidth(project.surface_data.width.toString());
+    setSurfaceHeight(project.surface_data.height.toString());
+    setCutouts((project.surface_data.cutouts || []).map((c) => ({
+      x: c.x.toString(), y: c.y.toString(), width: c.width.toString(), height: c.height.toString(),
+      label: c.label || '',
+    })));
+    setTileWidth(project.tile_data.width.toString());
+    setTileHeight(project.tile_data.height.toString());
+    setAllowRotation(!!project.tile_data.allow_rotation);
+    setJointWidth((project.bond_data.joint_width ?? 3).toString());
+    setPerimeterGap((project.bond_data.perimeter_gap ?? 0).toString());
+    setBondPattern(project.bond_data.pattern || 'stack');
+    setOffsetFraction((project.bond_data.offset_fraction ?? 0.5).toString());
+    const options = project.options_data || {};
+    setMinEdgeCut(options.min_edge_cut === null || options.min_edge_cut === undefined ? '' : options.min_edge_cut.toString());
+    setWastePercent((options.waste_percent ?? 10).toString());
+    setCandidateCount((options.candidate_count ?? 5).toString());
+    setReuseOffcuts(options.reuse_offcuts !== false);
+    setSelectedGroupId(project.project_group_id || '');
+    setProjectName(project.name);
+    setLoadModalOpen(false);
+    setStep(STEP_SURFACE);
   };
 
   /* ── derived facts ─────────────────────────────────────────────────────── */
@@ -189,6 +225,7 @@ const TileOptimizer = () => {
 
     setLoading(true);
     setResult(null);
+    setSaved(null);
     try {
       const response = await optimizeTileLayout({
         surfaceWidth, surfaceHeight, cutouts,
@@ -207,6 +244,11 @@ const TileOptimizer = () => {
     setLoading(false);
   };
 
+  /* ── keeping a layout ──────────────────────────────────────────────────── */
+  const nameError = saveAttempted && !projectName.trim()
+    ? 'Give the layout a name so you can find it again — “Kitchen splashback” beats “Untitled”'
+    : '';
+
   const createGroup = async (name) => {
     try {
       const group = await createProjectGroup(name);
@@ -219,6 +261,36 @@ const TileOptimizer = () => {
       return false;
     }
   };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setSaveAttempted(true);
+    setApiError('');
+    if (!projectName.trim()) return;
+
+    setSaving(true);
+    try {
+      const project = await saveTileProject({
+        name: projectName.trim(),
+        projectGroupId: selectedGroupId,
+        surfaceWidth, surfaceHeight, cutouts,
+        tile: { width: tileWidth, height: tileHeight, allowRotation },
+        joint: { jointWidth, perimeterGap },
+        bond: { pattern: bondPattern, offsetFraction },
+        minEdgeCut, reuseOffcuts, wastePercent, candidateCount,
+        candidate: selected,
+      });
+      setSaved(project);
+      setUserProjects(prev => [project, ...prev]);
+    } catch (error) {
+      setApiError(error.message || 'Could not save this layout');
+    }
+    setSaving(false);
+  };
+
+  const savedGroupName = saved
+    ? projectGroups.find(g => g.id === saved.project_group_id)?.name
+    : null;
 
   /* ── the rail ──────────────────────────────────────────────────────────── */
   const steps = [
@@ -242,7 +314,7 @@ const TileOptimizer = () => {
     {
       label: 'Keep',
       reachable: !!result,
-      summary: 'Coming soon',
+      summary: saved ? `Saved as ${saved.name}` : 'Name it and keep it',
       locked: 'Waits for a layout',
     },
   ];
@@ -269,6 +341,9 @@ const TileOptimizer = () => {
                 aren't ugly slivers.
               </p>
             </div>
+            <button type="button" className="btn" onClick={() => setLoadModalOpen(true)}>
+              Load a saved plan
+            </button>
           </div>
 
           <section>
@@ -611,52 +686,125 @@ const TileOptimizer = () => {
         </div>
       )}
 
-      {/* ── 03 · keep it (stub — see .plans/tile-layout.md Phase 3) ────────── */}
+      {/* ── 03 · keep it ──────────────────────────────────────────────────── */}
       {step === STEP_KEEP && result && (
-        <div className="step-view is-form">
+        <form className="step-view is-form" onSubmit={handleSave}>
           <div className="step-head" style={{ marginBottom: '22px' }}>
             <div>
-              <h1 className="step-h1">Save this layout</h1>
+              <h1 className="step-h1">{saved ? 'Layout saved' : 'Save this layout'}</h1>
               <p className="step-lede">
-                Saving a tile layout to your account is coming in a future
-                update. Name it and pick a project now if you like — the
-                diagram above is already yours to download.
+                {saved
+                  ? 'Kept on this instance under your account, so it follows you to any browser without leaving the machine.'
+                  : 'Name it, choose where it belongs, and it stays on this instance under your account — ready to open again from any browser.'}
               </p>
             </div>
           </div>
 
-          <div style={{ marginBottom: '24px' }}>
-            <ProjectPicker
-              groups={projectGroups}
-              value={selectedGroupId}
-              onChange={setSelectedGroupId}
-              onCreate={createGroup}
-            />
-          </div>
+          {saved ? (
+            <div className="saved-mark">
+              <Tick size={16} />
+              <div>
+                <b>Saved as {saved.name}</b>
+                <p>
+                  {savedGroupName
+                    ? <>Filed under {savedGroupName}. Open it any time from <Link to="/dashboard">your dashboard</Link>.</>
+                    : <>Not in a project. Open it any time from <Link to="/dashboard">your dashboard</Link>.</>}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div style={{ marginBottom: '24px' }}>
+                <ProjectPicker
+                  groups={projectGroups}
+                  value={selectedGroupId}
+                  onChange={setSelectedGroupId}
+                  onCreate={createGroup}
+                />
+              </div>
 
-          <div>
-            <label className="form-label" htmlFor="tile-plan-name">Plan name</label>
-            <input
-              id="tile-plan-name"
-              type="text"
-              className="form-input"
-              placeholder="Kitchen splashback"
-              value={projectName}
-              onChange={(e) => setProjectName(e.target.value)}
-            />
-            <p className="synthetic" style={{ marginTop: '7px' }}>
-              Kept locally for now — it labels a downloaded diagram, not a saved plan.
-            </p>
-          </div>
+              <div>
+                <label className="form-label" htmlFor="tile-plan-name">Plan name</label>
+                <input
+                  id="tile-plan-name"
+                  type="text"
+                  className={`form-input ${nameError ? 'form-input-error' : ''}`}
+                  placeholder="Kitchen splashback"
+                  value={projectName}
+                  onChange={(e) => setProjectName(e.target.value)}
+                  aria-invalid={!!nameError}
+                  aria-describedby="tile-plan-name-hint"
+                />
+                <p
+                  id="tile-plan-name-hint"
+                  className={nameError ? 'text-danger text-[12.5px] font-semibold' : 'synthetic'}
+                  style={{ marginTop: '7px' }}
+                  role={nameError ? 'alert' : undefined}
+                >
+                  {nameError || 'The name goes on the saved diagram, so label it the way you would label the job'}
+                </p>
+              </div>
+            </>
+          )}
 
           <div className="step-foot">
             <button type="button" className="btn" onClick={() => setStep(STEP_LAYOUT)}>
               <ArrowLeft /> Back to the layout
             </button>
-            <div className="step-foot-act">
-              <button type="button" className="btn-order" disabled title="Saving tile layouts is coming in a future update">
-                Save plan
+            {saved ? (
+              <div className="step-foot-act">
+                <Link to="/dashboard" className="btn-order">
+                  Open your dashboard <ArrowRight size={15} />
+                </Link>
+              </div>
+            ) : (
+              <div className="step-foot-act">
+                <button type="submit" className="btn-order" disabled={saving}>
+                  {saving ? <><Loader /> Saving</> : 'Save layout'}
+                </button>
+              </div>
+            )}
+          </div>
+        </form>
+      )}
+
+      {/* ── load a saved plan ─────────────────────────────────────────────── */}
+      {loadModalOpen && (
+        <div className="cat-overlay" role="dialog" aria-modal="true" aria-label="Load a saved plan">
+          <div className="cat-sheet">
+            <div className="masthead" style={{ marginTop: 0 }}>
+              <span className="masthead-brand" style={{ fontSize: '13px' }}>YOUR SAVED PLANS</span>
+              <span className="masthead-section" />
+              <button type="button" className="masthead-flash" onClick={() => setLoadModalOpen(false)}>
+                Close
               </button>
+            </div>
+            <div style={{ padding: '14px 16px 18px' }}>
+              {userProjects.length === 0 ? (
+                <p style={{ color: 'var(--ink-3)', fontSize: '13px' }}>
+                  Nothing saved yet. Solve a layout, name it, and it lands here.
+                </p>
+              ) : (
+                <table className="cat-table">
+                  <thead><tr><th>Name</th><th>Surface</th><th aria-label="Actions" /></tr></thead>
+                  <tbody>
+                    {userProjects.map(project => (
+                      <tr key={project.id}>
+                        <td style={{ textAlign: 'left', color: 'var(--ink)', fontSize: '13px' }}>{project.name}</td>
+                        <td>{mm(project.surface_data.width)} × {mm(project.surface_data.height)} mm</td>
+                        <td style={{ width: '90px' }}>
+                          <button className="btn" style={{ padding: '5px 10px', minHeight: 0 }} onClick={() => loadProject(project)}>
+                            Load
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+              <p className="synthetic" style={{ marginTop: '12px' }}>
+                To rename or delete a saved plan, use <Link to="/dashboard">your dashboard</Link>.
+              </p>
             </div>
           </div>
         </div>

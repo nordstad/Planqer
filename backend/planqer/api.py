@@ -64,6 +64,7 @@ from planqer.routes import (
     projects_router,
     settings_router,
     sheet_projects_router,
+    tile_projects_router,
 )
 from planqer.services import run_optimization
 from planqer.sheet_optimization import (
@@ -2028,6 +2029,7 @@ app.include_router(auth_router)
 app.include_router(settings_router)
 app.include_router(projects_router)
 app.include_router(sheet_projects_router)
+app.include_router(tile_projects_router)
 app.include_router(project_groups_router)
 app.include_router(admin_router)
 app.include_router(cutting_router)
