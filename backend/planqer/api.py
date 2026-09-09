@@ -80,11 +80,13 @@ from planqer.tile_layout.geometry import Cutout as TileCutout
 from planqer.tile_layout.geometry import JointSpec as TileJoint
 from planqer.tile_layout.geometry import Surface as TileSurface
 from planqer.tile_layout.geometry import Tile as TileGeometry
-from planqer.tile_layout.geometry import TileKind
+from planqer.tile_layout.geometry import TileKind, polygon_edge_lengths
 from planqer.tile_layout.solver import solve_tile_layout
 from planqer.tile_visualization import (
     FULL_TILE_FILL,
     assign_size_colors,
+    assign_size_labels,
+    generate_diagonal_piece_diagram,
     generate_tile_layout_visualization,
     tile_size_key,
 )
@@ -774,11 +776,15 @@ class PlacedTileInfo(BaseModel):
     y: float
     width: float
     height: float
+    nominal_width: float
+    nominal_height: float
     rotated: bool
     kind: str  # "full" | "cut" | "notched"
     is_sliver: bool
     is_reused_offcut: bool  # satisfied from another tile's offcut, not bought fresh
     fill_color: str  # matches the SVG's own fill for this tile — same size, same color
+    size_label: str | None = None
+    edge_lengths: list[float] | None = None
     # Only set for a diagonal ("set on point") bond — the piece's true
     # clipped polygon, since x/y/width/height are just its bounding box
     # for a rotated piece (see tile_layout.geometry.PlacedTile.vertices).
@@ -817,6 +823,7 @@ class TileLayoutCandidateResponse(BaseModel):
     is_pareto_optimal: bool
     warnings: list[str]
     visualization: str  # SVG data URL, per candidate
+    piece_diagrams: dict[str, str] = {}
 
 
 class TileLayoutResponse(BaseModel):
@@ -1577,6 +1584,15 @@ async def create_tile_layout(
         candidates_response = []
         for candidate in result.candidates:
             size_colors = assign_size_colors(candidate.tiles)
+            size_labels = assign_size_labels(candidate.tiles)
+            piece_diagrams = {}
+            for tile_item in candidate.tiles:
+                key = tile_size_key(tile_item)
+                if tile_item.vertices is not None and tile_item.kind != TileKind.FULL and size_labels[key] not in piece_diagrams:
+                    piece_diagrams[size_labels[key]] = generate_diagonal_piece_diagram(
+                        tile_item, size_labels[key], size_colors[key], 
+                        piece_width=tile_item.width, piece_height=tile_item.height
+                    )
             reused_consumer_indices = {consumer for consumer, _source in candidate.offcuts.matches}
             try:
                 visualization = generate_tile_layout_visualization(
@@ -1595,12 +1611,15 @@ async def create_tile_layout(
                     tiles=[
                         PlacedTileInfo(
                             x=t.x, y=t.y, width=t.width, height=t.height,
+                            nominal_width=t.nominal_width, nominal_height=t.nominal_height,
                             rotated=t.rotated, kind=t.kind.value, is_sliver=t.is_sliver,
                             is_reused_offcut=i in reused_consumer_indices,
                             fill_color=(
                                 FULL_TILE_FILL if t.kind == TileKind.FULL
                                 else size_colors[tile_size_key(t)]
                             ),
+                            size_label=(None if t.kind == TileKind.FULL else size_labels[tile_size_key(t)]),
+                            edge_lengths=(polygon_edge_lengths(t.vertices) if t.vertices is not None else None),
                             vertices=list(t.vertices) if t.vertices is not None else None,
                         )
                         for i, t in enumerate(candidate.tiles)
@@ -1624,6 +1643,7 @@ async def create_tile_layout(
                     is_pareto_optimal=candidate.is_pareto_optimal,
                     warnings=list(candidate.warnings),
                     visualization=visualization,
+                    piece_diagrams=piece_diagrams,
                 )
             )
 

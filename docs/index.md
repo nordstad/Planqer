@@ -13,8 +13,8 @@ where every cut goes.
   Compose. No cloud account, no analytics, no tracking.
 - **Kerf-aware.** Every plan subtracts the material your saw blade actually
   removes, so the numbers hold up at the saw.
-- **Four ways in.** Type a part list for boards or sheets, or upload an STL or
-  STEP file and let Planqer measure the parts for you.
+- **Five ways in.** Plan board cuts, sheet layouts, or tile layouts, or upload
+  an STL or STEP file and let Planqer measure the parts for you.
 - **AI-ready.** A REST API and an MCP server let an AI assistant drive the
   optimizer in natural language.
 
@@ -46,6 +46,14 @@ where every cut goes.
     Nest rectangular parts on plywood, MDF, metal or acrylic.
 
     [:octicons-arrow-right-24: Sheet cutting](guide/sheet-cutting.md)
+
+- :material-grid:{ .lg .middle } **Laying tile?**
+
+    ---
+
+    Find a tile grid that avoids ugly slivers around edges and openings.
+
+    [:octicons-arrow-right-24: Tile layout](guide/tile-layout.md)
 
 - :material-cube-outline:{ .lg .middle } **Already have a 3D model?**
 

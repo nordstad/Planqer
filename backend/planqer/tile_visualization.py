@@ -16,9 +16,10 @@ at true scale. Nothing extra needs to be drawn for a joint.
 
 import base64
 import colorsys
+import math
 from xml.sax.saxutils import escape
 
-from .tile_layout.geometry import TileKind
+from .tile_layout.geometry import TileKind, polygon_edge_lengths
 from .visualization_constants import get_css_styles
 
 # Muted, desaturated tones shared with the cutting/sheet visualizers — kept
@@ -35,10 +36,9 @@ def _generate_size_palette(count: int) -> list[str]:
     """`count` light, muted hues for coloring cut/notched tiles by their
     exact size (see assign_size_colors).
 
-    Hues are drawn from one long arc (168°-340°: teal through blue, purple,
-    magenta) that deliberately skips the green band (~103°, FULL_TILE_FILL) and
-    the red band (~0-15°, _SLIVER_STROKE) with a wide margin on each side —
-    a size color must never be mistakable for either fixed meaning.
+    Hues use two broad arcs, while lightness and saturation vary independently.
+    This keeps adjacent entries distinguishable when a layout has many cut
+    sizes, while avoiding the fixed green and red meanings.
 
     Assigned by a golden-ratio step (i * 0.618... mod 1) rather than an even
     i/count split: an even split packs the first few entries close together
@@ -48,13 +48,14 @@ def _generate_size_palette(count: int) -> list[str]:
     ratio scatters every prefix of the sequence roughly evenly across the
     whole arc instead."""
     golden = 0.6180339887498949
-    start, end = 168, 340
-    span = end - start
-    lightness, saturation = 0.76, 0.40
+    hue_arcs = ((25, 85), (145, 340))
     colors = []
     for i in range(count):
         hue = (i * golden) % 1.0
-        hue_deg = start + hue * span
+        arc_start, arc_end = hue_arcs[i % len(hue_arcs)]
+        hue_deg = arc_start + hue * (arc_end - arc_start)
+        lightness = 0.68 + ((i * 0.38196601125) % 1.0) * 0.16
+        saturation = 0.42 + ((i * 0.2360679775) % 1.0) * 0.16
         r, g, b = colorsys.hls_to_rgb(hue_deg / 360, lightness, saturation)
         colors.append("#{:02x}{:02x}{:02x}".format(int(r * 255), int(g * 255), int(b * 255)))
     return colors
@@ -81,7 +82,10 @@ def tile_size_key(t) -> tuple:
     Axis-aligned tiles are unaffected: their key is unchanged from before
     diagonal existed."""
     if t.vertices is not None:
-        return (round(t.width), round(t.height), len(t.vertices), round(t.area))
+        return (
+            round(t.width), round(t.height), round(t.nominal_width),
+            round(t.nominal_height), len(t.vertices), round(t.area),
+        )
     return (round(t.width), round(t.height))
 
 
@@ -96,16 +100,29 @@ def assign_size_colors(tiles) -> dict[tuple, str]:
     Pure function of `tiles`, so the SVG (drawn here) and the API's
     PlacedTileInfo.fill_color (set in api.py from this same function) can
     never drift apart — there is exactly one place this mapping is computed."""
-    seen: dict[tuple, None] = {}
+    ordered = _ordered_cut_keys(tiles)
+    return {key: _SIZE_PALETTE[i % len(_SIZE_PALETTE)] for i, key in enumerate(ordered)}
+
+
+def _ordered_cut_keys(tiles) -> list[tuple]:
     areas: dict[tuple, float] = {}
     for t in tiles:
-        if t.kind == TileKind.FULL:
-            continue
-        key = tile_size_key(t)
-        seen.setdefault(key, None)
-        areas[key] = t.area
-    ordered = sorted(seen.keys(), key=lambda key: areas[key], reverse=True)
-    return {key: _SIZE_PALETTE[i % len(_SIZE_PALETTE)] for i, key in enumerate(ordered)}
+        if t.kind != TileKind.FULL:
+            areas.setdefault(tile_size_key(t), t.area)
+    return sorted(areas, key=lambda key: areas[key], reverse=True)
+
+
+def _label_for_index(index: int) -> str:
+    label = ""
+    while True:
+        label = chr(65 + index % 26) + label
+        index = index // 26 - 1
+        if index < 0:
+            return label
+
+
+def assign_size_labels(tiles) -> dict[tuple, str]:
+    return {key: _label_for_index(i) for i, key in enumerate(_ordered_cut_keys(tiles))}
 
 
 class TileSVGVisualizer:
@@ -132,6 +149,10 @@ class TileSVGVisualizer:
   <rect width="100%" height="100%" fill="{_BACKGROUND}"/>
 '''
 
+    def svg_to_base64(self, svg_content: str) -> str:
+        svg_b64 = base64.b64encode(svg_content.encode("utf-8")).decode("utf-8")
+        return f"data:image/svg+xml;base64,{svg_b64}"
+
     def _create_header_section(self, project_name: str | None, label: str | None) -> str:
         parts = []
         y = 16
@@ -144,7 +165,7 @@ class TileSVGVisualizer:
 
     def _create_tile_rect(self, x: float, y: float, width: float, height: float,
                            fill: str, is_notched: bool, is_sliver: bool,
-                           scale: float, x_off: float, y_off: float) -> str:
+                            scale: float, x_off: float, y_off: float, label: str | None = None) -> str:
         px, py = x_off + x * scale, y_off + y * scale
         pw, ph = width * scale, height * scale
         stroke = _SLIVER_STROKE if is_sliver else _INK
@@ -177,12 +198,14 @@ class TileSVGVisualizer:
                     f'<text x="{cx:.1f}" y="{cy + 11:.1f}" class="sliver-label" '
                     f'text-anchor="middle" dominant-baseline="middle">SLIVER</text>'
                 )
+        if label and pw > 22 and ph > 22:
+            elements.append(f'<text x="{px + 8:.1f}" y="{py + 11:.1f}" class="tile-label" font-weight="bold">{escape(label)}</text>')
 
         return "".join(elements)
 
     def _create_tile_polygon(self, vertices, fill: str, is_notched: bool, is_sliver: bool,
-                              is_full: bool, nominal_width: float, nominal_height: float,
-                              scale: float, x_off: float, y_off: float) -> str:
+                               is_full: bool, nominal_width: float, nominal_height: float,
+                               scale: float, x_off: float, y_off: float, label: str | None = None) -> str:
         """Diagonal counterpart to _create_tile_rect: the piece is an
         arbitrary convex polygon (see geometry.place_and_clip_diagonal),
         not a rectangle, so it's drawn as <polygon>, not <rect>. Only a
@@ -222,6 +245,10 @@ class TileSVGVisualizer:
                     f'<text x="{cx:.1f}" y="{cy:.1f}" class="tile-label" '
                     f'text-anchor="middle" dominant-baseline="middle">{label}</text>'
                 )
+        if label and nominal_width * scale > 22 and nominal_height * scale > 22:
+            xs = [x_off + vx * scale for vx, _vy in vertices]
+            ys = [y_off + vy * scale for _vx, vy in vertices]
+            elements.append(f'<text x="{sum(xs) / len(xs):.1f}" y="{min(ys) + 11:.1f}" class="tile-label" font-weight="bold">{escape(label)}</text>')
 
         return "".join(elements)
 
@@ -262,7 +289,7 @@ class TileSVGVisualizer:
 
         if distinct_cut_sizes > 0:
             note = f"{distinct_cut_sizes} cut size{'s' if distinct_cut_sizes != 1 else ''} \u2014 see the cut list below"
-            parts.append(f'<text x="{cx}" y="{y}" class="legend-text">{escape(note)}</text>')
+            parts.append(f'<text x="{cx}" y="{y}" class="legend-text">{escape(note)} · letters match the cut list</text>')
 
         return "".join(parts)
 
@@ -292,6 +319,7 @@ class TileSVGVisualizer:
         )
 
         size_colors = assign_size_colors(candidate.tiles)
+        size_labels = assign_size_labels(candidate.tiles)
 
         svg_parts = [self._create_svg_header(int(total_width), int(total_height))]
         svg_parts.append(self._create_header_section(project_name, label))
@@ -301,21 +329,23 @@ class TileSVGVisualizer:
         )
 
         for tile in candidate.tiles:
+            label_tag = None
             if tile.kind == TileKind.FULL:
                 fill = FULL_TILE_FILL
             else:
                 fill = size_colors[tile_size_key(tile)]
+                label_tag = size_labels[tile_size_key(tile)]
             if tile.vertices is not None:
                 svg_parts.append(self._create_tile_polygon(
                     tile.vertices, fill, tile.kind == TileKind.NOTCHED, tile.is_sliver,
                     tile.kind == TileKind.FULL, tile.nominal_width, tile.nominal_height,
-                    scale, x_off, y_off,
+                    scale, x_off, y_off, label_tag,
                 ))
             else:
                 svg_parts.append(self._create_tile_rect(
                     tile.x, tile.y, tile.width, tile.height, fill,
                     tile.kind == TileKind.NOTCHED, tile.is_sliver,
-                    scale, x_off, y_off,
+                    scale, x_off, y_off, label_tag,
                 ))
 
         for cutout in surface.cutouts:
@@ -331,11 +361,126 @@ class TileSVGVisualizer:
   <rect width="100%" height="100%" fill="{_BACKGROUND}"/>
   <text x="200" y="100" text-anchor="middle" font-family="Arial, sans-serif"
         font-size="16" fill="#666">No tile layout available</text>
-</svg>'''
+        </svg>'''
 
-    def svg_to_base64(self, svg_content: str) -> str:
-        svg_b64 = base64.b64encode(svg_content.encode("utf-8")).decode("utf-8")
-        return f"data:image/svg+xml;base64,{svg_b64}"
+
+def generate_diagonal_piece_diagram(tile, label: str, fill: str, piece_width: float = None, piece_height: float = None) -> str:
+    """Render a full tile with its kept polygon and marked cut edges.
+    
+    Args:
+        tile: PlacedTile object with nominal dimensions and vertices
+        label: Piece label (A, B, C, etc.)
+        fill: Fill color for the kept area
+        piece_width: Actual piece width (if None, calculated from bounding box)
+        piece_height: Actual piece height (if None, calculated from bounding box)
+    """
+    width, height = tile.nominal_width, tile.nominal_height
+    padding = 70
+    scale = min(360 / width, 280 / height, 1.0)
+    
+    # Build cut dimensions info text for header
+    cut_info_text = f"Final size: {piece_width:.0f} × {piece_height:.0f} mm" if piece_width and piece_height else ""
+    
+    # Calculate edge lengths from vertices if available
+    local = tile.local_vertices or ()
+    if local:
+        edge_lengths = []
+        for i, start in enumerate(local):
+            end = local[(i + 1) % len(local)]
+            length = math.hypot(end[0] - start[0], end[1] - start[1])
+            edge_lengths.append(length)
+        
+        if edge_lengths and cut_info_text:
+            edges_str = " · ".join(f"{e:.0f}" for e in edge_lengths)
+            cut_info_text += f" | Edges: {edges_str} mm"
+    
+    # Add extra top padding if we have info text
+    top_padding = padding + (25 if cut_info_text else 0)
+    
+    svg_width = width * scale + padding * 2
+    svg_height = height * scale + top_padding + padding
+    ox, oy = padding, top_padding + 10
+    
+    def point(vertex):
+        return ox + (vertex[0] + width / 2) * scale, oy + (height / 2 - vertex[1]) * scale
+
+    polygon = " ".join(f"{x:.1f},{y:.1f}" for x, y in (point(v) for v in local))
+    full_points = (
+        f"{ox:.1f},{oy + height * scale:.1f} "
+        f"{ox + width * scale:.1f},{oy + height * scale:.1f} "
+        f"{ox + width * scale:.1f},{oy:.1f} {ox:.1f},{oy:.1f}"
+    )
+
+    elements = [
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{svg_width:.0f}" height="{svg_height:.0f}" viewBox="0 0 {svg_width:.0f} {svg_height:.0f}">',
+        '<defs><pattern id="waste" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" stroke="#aaa79b" stroke-width="2"/></pattern></defs>',
+        f'<rect width="100%" height="100%" fill="{_BACKGROUND}"/>',
+        f'<text x="{svg_width / 2:.1f}" y="24" text-anchor="middle" font-family="Arial,sans-serif" font-size="16" font-weight="bold" fill="{_INK}">Piece {escape(label)} · {width:.0f}×{height:.0f} mm tile</text>',
+    ]
+    
+    # Add info text if available
+    if cut_info_text:
+        elements.append(f'<text x="{svg_width / 2:.1f}" y="48" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="{_INK}">{escape(cut_info_text)}</text>')
+    
+    elements.extend([
+        f'<polygon points="{full_points}" fill="url(#waste)" stroke="{_INK}" stroke-width="2"/>',
+        f'<polygon points="{polygon}" fill="{fill}" stroke="{_INK}" stroke-width="1.5"/>',
+    ])
+    
+    # Add dimension lines for each edge of the piece polygon
+    for i, start in enumerate(local):
+        end = local[(i + 1) % len(local)]
+        
+        # Convert to screen coordinates
+        sx, sy = point(start)
+        ex, ey = point(end)
+        length = math.hypot(end[0] - start[0], end[1] - start[1])
+        
+        # Check if this is a cut edge (not on boundary)
+        on_boundary = (
+            abs(start[0] - end[0]) < 1e-6 and abs(abs(start[0]) - width / 2) < 1e-3
+            or abs(start[1] - end[1]) < 1e-6 and abs(abs(start[1]) - height / 2) < 1e-3
+        )
+        
+        if on_boundary:
+            # This is a boundary edge - draw dimension line for it
+            # Calculate midpoint
+            mx, my = (sx + ex) / 2, (sy + ey) / 2
+            
+            # Perpendicular offset for dimension line
+            dx = ey - sy
+            dy = sx - ex
+            norm = math.hypot(dx, dy)
+            if norm > 0:
+                dx, dy = dx / norm * 15, dy / norm * 15
+            
+            # Draw dimension line offset from edge
+            dim_line_start_x, dim_line_start_y = sx + dx, sy + dy
+            dim_line_end_x, dim_line_end_y = ex + dx, ey + dy
+            
+            elements.append(f'<line x1="{dim_line_start_x:.1f}" y1="{dim_line_start_y:.1f}" x2="{dim_line_end_x:.1f}" y2="{dim_line_end_y:.1f}" stroke="#d94801" stroke-width="2"/>')
+            
+            # Add small perpendicular marks at ends
+            elements.append(f'<line x1="{sx:.1f}" y1="{sy:.1f}" x2="{sx + dx:.1f}" y2="{sy + dy:.1f}" stroke="#d94801" stroke-width="2"/>')
+            elements.append(f'<line x1="{ex:.1f}" y1="{ey:.1f}" x2="{ex + dx:.1f}" y2="{ey + dy:.1f}" stroke="#d94801" stroke-width="2"/>')
+            
+            # Add measurement text
+            text_x, text_y = mx + dx * 1.5, my + dy * 1.5
+            elements.append(f'<text x="{text_x:.1f}" y="{text_y:.1f}" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" font-weight="bold" fill="#d94801">{length:.0f} mm</text>')
+        else:
+            # This is a cut edge - draw thick orange line with label
+            elements.append(f'<line x1="{sx:.1f}" y1="{sy:.1f}" x2="{ex:.1f}" y2="{ey:.1f}" stroke="#d94801" stroke-width="3"/>')
+            
+            # Add cut label at midpoint
+            mx, my = (sx + ex) / 2, (sy + ey) / 2
+            elements.append(f'<text x="{mx:.1f}" y="{my - 7:.1f}" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" font-weight="bold" fill="#a33100">CUT {length:.0f} mm</text>')
+    
+    elements.extend([
+        f'<text x="{svg_width / 2:.1f}" y="{svg_height - 24:.1f}" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="{_INK}">Colored area = keep · hatched area = waste · orange line = saw cut</text>',
+        "</svg>",
+    ])
+    visualizer = TileSVGVisualizer()
+    return visualizer.svg_to_base64("".join(elements))
 
 
 

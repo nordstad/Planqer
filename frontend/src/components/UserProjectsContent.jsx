@@ -30,6 +30,7 @@ import { useAuth } from '../contexts/AuthContext';
 import Loader from './Loader';
 import PlanThumb from './PlanThumb';
 import ConfirmDialog from './ConfirmDialog';
+import TileCutListTable from './TileCutListTable';
 import { ArrowLeft, ArrowRight, Pencil } from './icons';
 
 // The plans nobody filed. A route segment, not a group id.
@@ -330,74 +331,81 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
 
   /* ── one saved plan: its own diagram, its facts, its two exports ─────── */
 
-  const renderPlan = (project) => {
-    const hasDiagram = Boolean(project.has_svg_image || project.cutlist_image);
-    const facts = planFacts(project);
+   const renderPlan = (project) => {
+     const hasDiagram = Boolean(project.has_svg_image || project.cutlist_image);
+     const facts = planFacts(project);
 
-    return (
-      <article className="plan-item" key={project.id}>
-        <button
-          type="button"
-          className="plan-item-thumb"
-          onClick={() => handlePreview(project)}
-          disabled={!hasDiagram}
-          title={hasDiagram ? 'Open the full diagram' : 'No diagram was saved with this plan'}
-          aria-label={`Open the full diagram for ${project.name}`}
-        >
-          <PlanThumb project={project} />
-        </button>
+     return (
+       <div key={project.id}>
+         <article className="plan-item">
+           <button
+             type="button"
+             className="plan-item-thumb"
+             onClick={() => handlePreview(project)}
+             disabled={!hasDiagram}
+             title={hasDiagram ? 'Open the full diagram' : 'No diagram was saved with this plan'}
+             aria-label={`Open the full diagram for ${project.name}`}
+           >
+             <PlanThumb project={project} />
+           </button>
 
-        <div className="plan-item-body">
-          {editingId === project.id ? (
-            nameField(editingName, setEditingName, () => saveEdit(project), cancelEdit, 'Plan name')
-          ) : (
-            <h3 className="plan-item-name">
-              {project.name}
-              <button
-                type="button"
-                className="name-edit-btn"
-                onClick={() => startEdit(project)}
-                aria-label={`Rename ${project.name}`}
-                title="Rename this plan"
-              >
-                <Pencil />
-              </button>
-            </h3>
-          )}
-          <p className="plan-item-facts">
-            <span className="plan-item-type">{facts.type}</span>
-            <span>{facts.count}</span>
-            <span>{facts.stock}</span>
-          </p>
-          <p className="plan-item-date">Saved {formatDate(project.created_at)}</p>
-        </div>
+           <div className="plan-item-body">
+             {editingId === project.id ? (
+               nameField(editingName, setEditingName, () => saveEdit(project), cancelEdit, 'Plan name')
+             ) : (
+               <h3 className="plan-item-name">
+                 {project.name}
+                 <button
+                   type="button"
+                   className="name-edit-btn"
+                   onClick={() => startEdit(project)}
+                   aria-label={`Rename ${project.name}`}
+                   title="Rename this plan"
+                 >
+                   <Pencil />
+                 </button>
+               </h3>
+             )}
+             <p className="plan-item-facts">
+               <span className="plan-item-type">{facts.type}</span>
+               <span>{facts.count}</span>
+               <span>{facts.stock}</span>
+             </p>
+             <p className="plan-item-date">Saved {formatDate(project.created_at)}</p>
+           </div>
 
-        <div className="plan-item-acts">
-          <button
-            className="btn btn-sm"
-            onClick={() => handleDownload(project, 'svg')}
-            disabled={busyId === project.id || !hasDiagram}
-          >
-            SVG
-          </button>
-          <button
-            className="btn btn-sm"
-            onClick={() => handleDownload(project, 'png')}
-            disabled={busyId === project.id || !hasDiagram}
-          >
-            PNG
-          </button>
-          <button
-            className="btn btn-sm btn-outline-danger"
-            onClick={() => handleDelete(project)}
-            disabled={busyId === project.id}
-          >
-            Delete
-          </button>
-        </div>
-      </article>
-    );
-  };
+           <div className="plan-item-acts">
+             <button
+               className="btn btn-sm"
+               onClick={() => handleDownload(project, 'svg')}
+               disabled={busyId === project.id || !hasDiagram}
+             >
+               SVG
+             </button>
+             <button
+               className="btn btn-sm"
+               onClick={() => handleDownload(project, 'png')}
+               disabled={busyId === project.id || !hasDiagram}
+             >
+               PNG
+             </button>
+             <button
+               className="btn btn-sm btn-outline-danger"
+               onClick={() => handleDelete(project)}
+               disabled={busyId === project.id}
+             >
+               Delete
+             </button>
+           </div>
+         </article>
+         {project.projectType === 'tile' && project.layout_result && (
+           <div style={{ marginTop: '22px', marginBottom: '28px' }}>
+             <TileCutListTable candidate={project.layout_result} />
+           </div>
+         )}
+       </div>
+     );
+   };
 
   if (loading) {
     return (

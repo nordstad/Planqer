@@ -103,6 +103,7 @@ const buildHtml = ({ title, meta, paper, plans }) => {
   .cut-list td { border-bottom: 0.2mm solid #e3e1d6; }
   .cut-list tr { break-inside: avoid; page-break-inside: avoid; }
   .cut-list thead { display: table-header-group; } /* repeats on each printed page if the list spans more than one */
+  .piece-template { display: block; width: 110mm; max-height: 70mm; object-fit: contain; margin-top: 2mm; }
 </style>
 </head>
 <body>

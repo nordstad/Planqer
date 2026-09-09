@@ -133,6 +133,9 @@ class PlacedTile:
     notch_area: float = 0.0
     is_sliver: bool = False
     vertices: tuple[tuple[float, float], ...] | None = None
+    # Diagonal pieces keep their clipped polygon in the tile's own, unrotated
+    # coordinate frame for generating a mark-and-cut template.
+    local_vertices: tuple[tuple[float, float], ...] | None = None
 
     @property
     def area(self) -> float:
@@ -266,6 +269,27 @@ def _polygon_area(vertices: "tuple[tuple[float, float], ...] | list[tuple[float,
         x2, y2 = vertices[(i + 1) % n]
         total += x1 * y2 - x2 * y1
     return abs(total) / 2.0
+
+
+def polygon_edge_lengths(vertices: tuple[tuple[float, float], ...] | list[tuple[float, float]]) -> list[float]:
+    """Return polygon edge lengths in the same order as its vertices."""
+    return [
+        math.hypot(
+            vertices[(i + 1) % len(vertices)][0] - vertices[i][0],
+            vertices[(i + 1) % len(vertices)][1] - vertices[i][1],
+        )
+        for i in range(len(vertices))
+    ]
+
+
+def _to_local_frame(vertices: list[tuple[float, float]], cx: float, cy: float, angle_deg: float):
+    """Undo placement rotation so the nominal tile is axis-aligned."""
+    theta = math.radians(-angle_deg)
+    c, s = math.cos(theta), math.sin(theta)
+    return tuple(
+        (c * (x - cx) - s * (y - cy), c * (y - cy) + s * (x - cx))
+        for x, y in vertices
+    )
 
 
 def _clip_convex_polygon(
@@ -416,6 +440,7 @@ def place_and_clip_at_angle(
         nominal_height=height,
         notch_area=notch_area,
         vertices=tuple(clipped),
+        local_vertices=_to_local_frame(clipped, cx, cy, angle_deg),
     )
 
 

@@ -57,36 +57,38 @@ export const smallestCutMm = (candidate) => {
 // size (every tile on the same edge of the same row is cut the same way).
 // Full tiles get their own single summary row rather than one per tile.
 export const buildCutList = (tiles) => {
-  const groups = new Map();
-  let fullCount = 0;
-  let fullColor = null;
+   const groups = new Map();
+   let fullCount = 0;
+   let fullColor = null;
 
-  tiles.forEach((tile) => {
-    if (tile.kind === 'full') {
-      fullCount += 1;
-      fullColor = fullColor ?? tile.fill_color;
-      return;
-    }
-    const width = Math.round(tile.width);
-    const height = Math.round(tile.height);
-    const key = tileGroupKey(tile);
-    const existing = groups.get(key);
-    if (existing) {
-      existing.count += 1;
-      existing.sliverCount += tile.is_sliver ? 1 : 0;
-      existing.reusedCount += tile.is_reused_offcut ? 1 : 0;
-    } else {
-      groups.set(key, {
-        kind: tile.kind, width, height, count: 1, color: tile.fill_color,
-        isDiagonal: !!tile.vertices,
-        sliverCount: tile.is_sliver ? 1 : 0, reusedCount: tile.is_reused_offcut ? 1 : 0,
-      });
-    }
-  });
+   tiles.forEach((tile) => {
+     if (tile.kind === 'full') {
+       fullCount += 1;
+       fullColor = fullColor ?? tile.fill_color;
+       return;
+     }
+     const width = Math.round(tile.width);
+     const height = Math.round(tile.height);
+     const key = tileGroupKey(tile);
+     const existing = groups.get(key);
+     if (existing) {
+       existing.count += 1;
+       existing.sliverCount += tile.is_sliver ? 1 : 0;
+       existing.reusedCount += tile.is_reused_offcut ? 1 : 0;
+     } else {
+       groups.set(key, {
+         kind: tile.kind, width, height, count: 1, color: tile.fill_color,
+         isDiagonal: !!tile.vertices,
+         sliverCount: tile.is_sliver ? 1 : 0, reusedCount: tile.is_reused_offcut ? 1 : 0,
+         label: tile.size_label, // piece label (A, B, C, etc.) for accessing piece_diagrams
+         edgeLengths: tile.edge_lengths, // for diagonal pieces, the polygon edge lengths
+       });
+     }
+   });
 
-  const cutGroups = Array.from(groups.values()).sort((a, b) => (b.width * b.height) - (a.width * a.height));
-  return { fullCount, fullColor, cutGroups };
-};
+   const cutGroups = Array.from(groups.values()).sort((a, b) => (b.width * b.height) - (a.width * a.height));
+   return { fullCount, fullColor, cutGroups };
+ };
 
 const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (c) => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
@@ -115,10 +117,17 @@ export const buildCutListHtml = (candidate) => {
     const kind = g.isDiagonal
       ? (g.kind === 'notched' ? 'Diagonal, cut around an opening' : 'Diagonal')
       : (g.kind === 'notched' ? 'Cut around an opening' : 'Straight cut');
+    const detail = g.isDiagonal && g.edgeLengths
+      ? ` (${g.edgeLengths.map((length) => Math.round(length)).join(' · ')} mm)`
+      : '';
+    const labeledKind = `${kind}${detail}${g.isDiagonal && g.label ? ` [${g.label}]` : ''}`;
     const offcut = g.reusedCount > 0 ? `${g.reusedCount} of ${g.count}` : '—';
+    const template = candidate.piece_diagrams?.[g.label]
+      ? `<br><img src="${candidate.piece_diagrams[g.label]}" alt="Cut template ${escapeHtml(g.label)}" class="piece-template" />`
+      : '';
     rows.push(
       `<tr><td>${mm(g.width)} \u00d7 ${mm(g.height)}${sliver}</td>`
-      + `<td>${escapeHtml(kind)}</td><td>${offcut}</td><td>${g.count}</td></tr>`,
+      + `<td>${escapeHtml(labeledKind)}${template}</td><td>${offcut}</td><td>${g.count}</td></tr>`,
     );
   });
 

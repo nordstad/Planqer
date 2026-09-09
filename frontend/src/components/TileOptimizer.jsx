@@ -534,7 +534,7 @@ const TileOptimizer = () => {
                     value={bondPattern}
                     onChange={(e) => setField(setBondPattern)(e.target.value)}
                     className="form-select"
-                    style={{ width: '160px' }}
+                    style={{ width: '280px' }}
                   >
                     {/* Straight-grid family first (no weave), then the
                         herringbone family from simplest to most compound —

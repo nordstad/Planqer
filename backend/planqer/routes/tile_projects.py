@@ -84,8 +84,9 @@ def _render_saved_layout(surface_data: dict | None, layout_result: dict | None, 
         tiles = tuple(
             PlacedTile(
                 x=t["x"], y=t["y"], width=t["width"], height=t["height"],
+                nominal_width=t.get("nominal_width", t["width"]),
+                nominal_height=t.get("nominal_height", t["height"]),
                 rotated=t.get("rotated", False), kind=TileKind(t["kind"]),
-                nominal_width=t["width"], nominal_height=t["height"],
                 is_sliver=t.get("is_sliver", False),
                 # A diagonal ("set on point") piece's true shape — x/y/width/
                 # height above are only its bounding box for these; without

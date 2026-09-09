@@ -166,11 +166,8 @@ def test_tile_size_key_disambiguates_polygons_sharing_a_bounding_box():
     assert tile_size_key(triangle) != tile_size_key(pentagon)
 
 
-def test_tile_size_key_unchanged_for_axis_aligned_tiles():
-    """Axis-aligned tiles predate diagonal support — their key must be
-    exactly the plain (width, height) pair it always was, so
-    assign_size_colors's grouping for stack/running/herringbone can't
-    shift under existing callers."""
+def test_tile_size_key_includes_nominal_shape_for_axis_aligned_tiles():
+    """Axis-aligned pieces with different source tile shapes must not collide."""
     tile = PlacedTile(
         x=0, y=0, width=50, height=100, rotated=False,
         kind=TileKind.CUT, nominal_width=100, nominal_height=100,
