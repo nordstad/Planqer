@@ -572,7 +572,20 @@
   .kerf-input::-webkit-outer-spin-button, .kerf-input::-webkit-inner-spin-button {
     -webkit-appearance: none; margin: 0;
   }
-  .cell-input.is-error { color: var(--revision); background: var(--revision-bg); }
+  .cell-input.is-error {
+    color: var(--revision); background: var(--revision-bg); border: 1.5px solid var(--revision);
+  }
+
+  /* ── a labelled cell input: "x"/"y"/"w"/"h" tag sitting over the field ── */
+  .cutout-field { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .cutout-field-tag {
+    font-family: 'Archivo Narrow', sans-serif; font-size: 9.5px; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3);
+  }
+  /* the data row keeps no bottom rule when an error row follows it, so the
+     pair reads as one block rather than two stacked rows */
+  .cat-table tr.is-error-row td { border-bottom: 0; padding-bottom: 2px; }
+  .cutout-error-row td { padding-top: 0; }
   .cell-strike {
     background: transparent; border: 0; color: var(--ink-3); cursor: pointer;
     font-size: 15px; font-weight: 700; line-height: 1; padding: 4px 6px;

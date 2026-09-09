@@ -95,6 +95,7 @@ const TileOptimizer = () => {
     cutouts: [], surfaceWidth: '', surfaceHeight: '', tileWidth: '', tileHeight: '',
     jointWidth: '', perimeterGap: '', minEdgeCut: '', wastePercent: '', candidateCount: '',
   });
+  const [surfaceAttempted, setSurfaceAttempted] = useState(false);
 
   /* the save step */
   const [projectGroups, setProjectGroups] = useState([]);
@@ -231,6 +232,7 @@ const TileOptimizer = () => {
   const handleLayoutSubmit = async (e) => {
     e.preventDefault();
     setApiError('');
+    setSurfaceAttempted(true);
     if (hasErrors) return;
 
     setLoading(true);
@@ -404,7 +406,7 @@ const TileOptimizer = () => {
             {cutouts.length > 0 && (
               <table className="cat-table" style={{ marginTop: '14px' }}>
                 <thead>
-                  <tr><th>Item</th><th>At x, y mm</th><th>Size mm</th><th>Label</th><th aria-label="Remove" /></tr>
+                  <tr><th>Item</th><th>Position mm</th><th>Size mm</th><th>Label</th><th aria-label="Remove" /></tr>
                 </thead>
                 <tbody>
                   {cutouts.map((cutout, index) => (
@@ -415,6 +417,7 @@ const TileOptimizer = () => {
                       handleCutoutChange={handleCutoutChange}
                       removeCutout={removeCutout}
                       error={inputErrors.cutouts[index]}
+                      attempted={surfaceAttempted}
                     />
                   ))}
                 </tbody>
