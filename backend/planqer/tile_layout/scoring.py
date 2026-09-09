@@ -32,6 +32,13 @@ class LayoutMetrics:
     symmetry_delta_x: float
     symmetry_delta_y: float
 
+    # How many different rectangles a cutter actually has to measure and set
+    # the saw to — every full tile is one measurement (the tile's own size),
+    # so this counts unique (width, height) pairs among CUT/NOTCHED pieces
+    # only. Lower is better: fewer distinct sizes means fewer saw setups,
+    # independent of how many total pieces need cutting.
+    distinct_cut_sizes: int
+
 
 def score_layout(
     placed_tiles: list[PlacedTile],
@@ -74,6 +81,12 @@ def score_layout(
     symmetry_delta_x = abs(min(left_widths) - min(right_widths))
     symmetry_delta_y = abs(min(bottom_heights) - min(top_heights))
 
+    distinct_cut_sizes = len({
+        (round(t.width), round(t.height))
+        for t in placed_tiles
+        if t.kind != TileKind.FULL
+    })
+
     sliver_count = 0
     scored_tiles: list[PlacedTile] = []
     for t in placed_tiles:
@@ -99,5 +112,6 @@ def score_layout(
         sliver_count=sliver_count,
         symmetry_delta_x=symmetry_delta_x,
         symmetry_delta_y=symmetry_delta_y,
+        distinct_cut_sizes=distinct_cut_sizes,
     )
     return scored_tiles, metrics

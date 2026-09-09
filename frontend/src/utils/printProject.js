@@ -11,6 +11,11 @@
   Printing happens through a hidden same-origin iframe rather than a popup:
   no popup blockers, no flash of a new window, and the browser's own print
   dialog supplies both paper and save-as-PDF.
+
+  A plan can optionally carry `extraHtml` — pre-built markup printed below
+  its diagram on the same page (currently just the tile cut list; see
+  utils/tileCutList.js). Board and sheet plans don't set it and print
+  exactly as before.
 */
 
 const PAPERS = {
@@ -65,6 +70,7 @@ const buildHtml = ({ title, meta, paper, plans }) => {
           <p>${plan.facts.map(escapeHtml).join(' &nbsp;·&nbsp; ')}</p>
         </header>
         <img src="${plan.url}" alt="" style="max-height:${maxH}mm" />
+        ${plan.extraHtml || ''}
       </section>`;
   }).join('\n');
 
@@ -88,6 +94,15 @@ const buildHtml = ({ title, meta, paper, plans }) => {
   .plan-head h2 { font-size: 13pt; font-weight: 700; }
   .plan-head p { font-size: 9pt; color: #6b6a60; margin-top: 1mm; }
   .plan img { display: block; max-width: 100%; width: auto; height: auto; margin: 0 auto; }
+  .cut-list { width: 100%; border-collapse: collapse; margin-top: 6mm; font-size: 9pt; }
+  .cut-list th, .cut-list td { text-align: left; padding: 1.5mm 3mm 1.5mm 0; }
+  .cut-list th {
+    font-size: 7.5pt; text-transform: uppercase; letter-spacing: 0.04em; color: #6b6a60;
+    border-bottom: 0.3mm solid #c9c7ba; font-weight: 700;
+  }
+  .cut-list td { border-bottom: 0.2mm solid #e3e1d6; }
+  .cut-list tr { break-inside: avoid; page-break-inside: avoid; }
+  .cut-list thead { display: table-header-group; } /* repeats on each printed page if the list spans more than one */
 </style>
 </head>
 <body>

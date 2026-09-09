@@ -21,6 +21,20 @@ BASE_PAYLOAD = {
 }
 
 
+# Solved once for the whole module and reused by the fill_color/offcut/
+# distinct-cut-size tests below — they all inspect the same "busy" (many
+# distinct cut sizes) response, so there's no reason to burn three of the
+# endpoint's 10-requests-per-minute budget asking the exact same question.
+@pytest.fixture(scope="module")
+def busy_candidate():
+    payload = dict(BASE_PAYLOAD)
+    payload["surface_width"] = 8400
+    payload["surface_height"] = 2400
+    response = client.post("/api/tile-layout", json=payload)
+    assert response.status_code == 200
+    return response.json()["candidates"][0]
+
+
 def test_tile_layout_success():
     response = client.post("/api/tile-layout", json=BASE_PAYLOAD)
     assert response.status_code == 200
@@ -130,3 +144,37 @@ def test_tile_layout_allow_rotation():
     payload["tile"] = {"width": 300, "height": 600, "allow_rotation": True}
     response = client.post("/api/tile-layout", json=payload)
     assert response.status_code == 200
+
+
+def test_tile_layout_reports_distinct_cut_sizes_and_matches_candidate_tiles(busy_candidate):
+    non_full_sizes = {
+        (round(t["width"]), round(t["height"]))
+        for t in busy_candidate["tiles"]
+        if t["kind"] != "full"
+    }
+    assert busy_candidate["distinct_cut_sizes"] == len(non_full_sizes)
+    assert busy_candidate["distinct_cut_sizes"] > 1  # this surface genuinely has several edge-cut widths
+
+
+def test_tile_layout_fill_color_matches_size_not_kind(busy_candidate):
+    """Same (width, height) always gets the same fill_color regardless of
+    whether the piece is a straight CUT or a NOTCHED piece — color signals
+    the measurement, not the classification (see .plans/tile-layout.md)."""
+    color_by_size = {}
+    for t in busy_candidate["tiles"]:
+        if t["kind"] == "full":
+            continue
+        key = (round(t["width"]), round(t["height"]))
+        color_by_size.setdefault(key, t["fill_color"])
+        assert t["fill_color"] == color_by_size[key]
+
+    # Full tiles all share one fixed color, distinct from every cut-size color.
+    full_colors = {t["fill_color"] for t in busy_candidate["tiles"] if t["kind"] == "full"}
+    assert len(full_colors) == 1
+    assert full_colors.isdisjoint(color_by_size.values())
+
+
+def test_tile_layout_is_reused_offcut_count_matches_reused_offcut_count(busy_candidate):
+    flagged = sum(1 for t in busy_candidate["tiles"] if t["is_reused_offcut"])
+    assert flagged == busy_candidate["reused_offcut_count"]
+

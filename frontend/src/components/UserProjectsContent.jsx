@@ -25,6 +25,7 @@ import {
 } from '../utils/api';
 import { svgBlobToPngBlob } from '../utils/svgToPng';
 import { printProjectPlans } from '../utils/printProject';
+import { buildCutListHtml } from '../utils/tileCutList';
 import { useAuth } from '../contexts/AuthContext';
 import Loader from './Loader';
 import PlanThumb from './PlanThumb';
@@ -202,6 +203,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
           name: p.name,
           facts: [pf.type, pf.count, pf.stock, `saved ${formatDate(p.created_at)}`],
           svgBlob: await downloadProjectImage(p.id, p.projectType),
+          extraHtml: p.projectType === 'tile' ? buildCutListHtml(p.layout_result) : undefined,
         };
       }));
       await printProjectPlans({

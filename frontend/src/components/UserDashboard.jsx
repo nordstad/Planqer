@@ -4,6 +4,7 @@ import CatalogPage from './CatalogPage';
 import { useAuth } from '../contexts/AuthContext';
 import UserProjectsContent from './UserProjectsContent';
 import UserSettings from './UserSettings';
+import TileCutListTable from './TileCutListTable';
 
 const TABS = [
   { key: 'projects', label: 'My projects' },
@@ -86,6 +87,11 @@ const UserDashboard = () => {
                 />
               ) : (
                 <p className="synthetic">Loading preview…</p>
+              )}
+              {previewProject.projectType === 'tile' && previewProject.layout_result && (
+                <div style={{ marginTop: '22px' }}>
+                  <TileCutListTable candidate={previewProject.layout_result} />
+                </div>
               )}
             </div>
           </div>

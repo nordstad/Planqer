@@ -11,6 +11,7 @@
 
 import { useState } from 'react';
 import { Download } from './icons';
+import TileCutListTable from './TileCutListTable';
 
 const mm = (n) => (Number.isFinite(n) ? Math.round(n).toLocaleString('sv-SE') : '—');
 
@@ -61,6 +62,11 @@ const TileResultDisplay = ({ candidate, projectName }) => {
         </div>
       )}
 
+      <div style={{ marginTop: '26px' }}>
+        <TileCutListTable candidate={candidate} />
+      </div>
+
+
       <section style={{ marginTop: '26px' }}>
         <div className="section-rule">
           <h2 className="section-title">By the numbers</h2>
@@ -83,6 +89,7 @@ const TileResultDisplay = ({ candidate, projectName }) => {
               <td>{candidate.min_edge_cut_height === null ? 'None cut' : `${mm(candidate.min_edge_cut_height)} mm`}</td>
             </tr>
             <tr><td>Slivers below the guard</td><td>{candidate.sliver_count}</td></tr>
+            <tr><td>Distinct cut sizes</td><td>{candidate.distinct_cut_sizes}</td></tr>
             <tr><td>Material used</td><td>{(candidate.efficiency * 100).toFixed(1)}%</td></tr>
           </tbody>
         </table>

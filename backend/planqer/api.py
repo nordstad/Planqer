@@ -78,8 +78,9 @@ from planqer.tile_layout.geometry import Cutout as TileCutout
 from planqer.tile_layout.geometry import JointSpec as TileJoint
 from planqer.tile_layout.geometry import Surface as TileSurface
 from planqer.tile_layout.geometry import Tile as TileGeometry
+from planqer.tile_layout.geometry import TileKind
 from planqer.tile_layout.solver import solve_tile_layout
-from planqer.tile_visualization import generate_tile_layout_visualization
+from planqer.tile_visualization import FULL_TILE_FILL, assign_size_colors, generate_tile_layout_visualization
 
 # Load configuration
 CONFIG_PATH = Path(__file__).parent.parent / "config.yaml"
@@ -762,6 +763,8 @@ class PlacedTileInfo(BaseModel):
     rotated: bool
     kind: str  # "full" | "cut" | "notched"
     is_sliver: bool
+    is_reused_offcut: bool  # satisfied from another tile's offcut, not bought fresh
+    fill_color: str  # matches the SVG's own fill for this tile — same size, same color
 
 
 class TileLayoutCandidateResponse(BaseModel):
@@ -783,6 +786,7 @@ class TileLayoutCandidateResponse(BaseModel):
     sliver_count: int
     symmetry_delta_x: float
     symmetry_delta_y: float
+    distinct_cut_sizes: int  # unique CUT/NOTCHED (width, height) pairs — fewer means fewer saw setups
     coverage_area: float
     waste_area: float
     efficiency: float
@@ -1497,8 +1501,9 @@ async def create_tile_layout(
     the only real decision is the lattice's start offset. This endpoint
     samples that offset space, scores every resulting layout, and returns
     the Pareto-optimal candidates — ranked by minimum edge-cut safety, tile
-    count, and left/right + top/bottom symmetry — so the caller can pick the
-    tradeoff that fits the job rather than trust one auto-picked answer.
+    count, left/right + top/bottom symmetry, and distinct cut sizes (fewer
+    saw setups) — so the caller can pick the tradeoff that fits the job
+    rather than trust one auto-picked answer.
     """
     request_id = str(uuid4())[:8]
 
@@ -1547,6 +1552,8 @@ async def create_tile_layout(
 
         candidates_response = []
         for candidate in result.candidates:
+            size_colors = assign_size_colors(candidate.tiles)
+            reused_consumer_indices = {consumer for consumer, _source in candidate.offcuts.matches}
             try:
                 visualization = generate_tile_layout_visualization(
                     candidate, surface, tile_request.project_name
@@ -1565,8 +1572,13 @@ async def create_tile_layout(
                         PlacedTileInfo(
                             x=t.x, y=t.y, width=t.width, height=t.height,
                             rotated=t.rotated, kind=t.kind.value, is_sliver=t.is_sliver,
+                            is_reused_offcut=i in reused_consumer_indices,
+                            fill_color=(
+                                FULL_TILE_FILL if t.kind == TileKind.FULL
+                                else size_colors[(round(t.width), round(t.height))]
+                            ),
                         )
-                        for t in candidate.tiles
+                        for i, t in enumerate(candidate.tiles)
                     ],
                     full_tile_count=candidate.metrics.full_tile_count,
                     cut_tile_count=candidate.metrics.cut_tile_count,
@@ -1579,6 +1591,7 @@ async def create_tile_layout(
                     sliver_count=candidate.metrics.sliver_count,
                     symmetry_delta_x=candidate.metrics.symmetry_delta_x,
                     symmetry_delta_y=candidate.metrics.symmetry_delta_y,
+                    distinct_cut_sizes=candidate.metrics.distinct_cut_sizes,
                     coverage_area=candidate.metrics.coverage_area,
                     waste_area=candidate.metrics.waste_area,
                     efficiency=candidate.metrics.efficiency,

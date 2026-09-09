@@ -15,20 +15,77 @@ at true scale. Nothing extra needs to be drawn for a joint.
 """
 
 import base64
+import colorsys
 from xml.sax.saxutils import escape
 
+from .tile_layout.geometry import TileKind
 from .visualization_constants import get_css_styles
 
 # Muted, desaturated tones shared with the cutting/sheet visualizers — kept
 # clear of amber (the frontend page's one accent) and revision red (reserved
 # here for slivers, exactly as the design system reserves it for "over-limit
 # and delete affordances" elsewhere).
-_FILL_FULL = "#c7d9c0"
-_FILL_CUT = "#c0d3e0"
-_FILL_NOTCHED = "#d9d3b8"
+FULL_TILE_FILL = "#c7d9c0"
 _SLIVER_STROKE = "#cc2200"
 _INK = "#16150f"
 _BACKGROUND = "#ecebe4"
+
+
+def _generate_size_palette(count: int) -> list[str]:
+    """`count` light, muted hues for coloring cut/notched tiles by their
+    exact size (see assign_size_colors).
+
+    Hues are drawn from one long arc (168°-340°: teal through blue, purple,
+    magenta) that deliberately skips the green band (~103°, FULL_TILE_FILL) and
+    the red band (~0-15°, _SLIVER_STROKE) with a wide margin on each side —
+    a size color must never be mistakable for either fixed meaning.
+
+    Assigned by a golden-ratio step (i * 0.618... mod 1) rather than an even
+    i/count split: an even split packs the first few entries close together
+    whenever the actual distinct-size count is smaller than `count` (the
+    common case — most bond patterns produce well under a dozen distinct cut
+    sizes), which is exactly when they need to be most different. The golden
+    ratio scatters every prefix of the sequence roughly evenly across the
+    whole arc instead."""
+    golden = 0.6180339887498949
+    start, end = 168, 340
+    span = end - start
+    lightness, saturation = 0.76, 0.40
+    colors = []
+    for i in range(count):
+        hue = (i * golden) % 1.0
+        hue_deg = start + hue * span
+        r, g, b = colorsys.hls_to_rgb(hue_deg / 360, lightness, saturation)
+        colors.append("#{:02x}{:02x}{:02x}".format(int(r * 255), int(g * 255), int(b * 255)))
+    return colors
+
+
+# Comfortably more than a typical bond pattern's distinct cut-size count
+# (single digits in practice); beyond this the palette repeats and two
+# unrelated sizes could share a color — an accepted MVP limitation, not
+# silently wrong (the dimension label and cut list still disambiguate).
+_SIZE_PALETTE = _generate_size_palette(14)
+
+
+def assign_size_colors(tiles) -> dict[tuple[int, int], str]:
+    """Deterministic size -> color mapping, one entry per distinct rounded
+    (width, height) among non-full tiles (CUT and NOTCHED share the same
+    keying — a notched piece is still "this size", just also needing a
+    notch, which the diagram marks with a hatch overlay instead of a second
+    color). Ordered by descending area so the biggest/most common groups get
+    the earliest, most distinguishable palette entries.
+
+    Pure function of `tiles`, so the SVG (drawn here) and the API's
+    PlacedTileInfo.fill_color (set in api.py from this same function) can
+    never drift apart — there is exactly one place this mapping is computed."""
+    seen: dict[tuple[int, int], None] = {}
+    for t in tiles:
+        if t.kind == TileKind.FULL:
+            continue
+        key = (round(t.width), round(t.height))
+        seen.setdefault(key, None)
+    ordered = sorted(seen.keys(), key=lambda wh: wh[0] * wh[1], reverse=True)
+    return {key: _SIZE_PALETTE[i % len(_SIZE_PALETTE)] for i, key in enumerate(ordered)}
 
 
 class TileSVGVisualizer:
@@ -43,6 +100,10 @@ class TileSVGVisualizer:
              patternTransform="rotate(45)">
       <rect width="6" height="6" fill="{_BACKGROUND}"/>
       <line x1="0" y1="0" x2="0" y2="6" stroke="#8f8d80" stroke-width="1"/>
+    </pattern>
+    <pattern id="notch-overlay" width="6" height="6" patternUnits="userSpaceOnUse"
+             patternTransform="rotate(45)">
+      <line x1="0" y1="0" x2="0" y2="6" stroke="rgba(22,21,15,0.4)" stroke-width="1.5"/>
     </pattern>
     <style>
 {get_css_styles('tile')}
@@ -61,14 +122,11 @@ class TileSVGVisualizer:
             parts.append(f'<text x="24" y="{y}" class="surface-info" text-anchor="start">{escape(label)}</text>')
         return "".join(parts)
 
-    def _tile_fill(self, kind: str) -> str:
-        return {"full": _FILL_FULL, "cut": _FILL_CUT, "notched": _FILL_NOTCHED}.get(kind, _FILL_CUT)
-
     def _create_tile_rect(self, x: float, y: float, width: float, height: float,
-                           kind: str, is_sliver: bool, scale: float, x_off: float, y_off: float) -> str:
+                           fill: str, is_notched: bool, is_sliver: bool,
+                           scale: float, x_off: float, y_off: float) -> str:
         px, py = x_off + x * scale, y_off + y * scale
         pw, ph = width * scale, height * scale
-        fill = self._tile_fill(kind)
         stroke = _SLIVER_STROKE if is_sliver else _INK
         stroke_width = 2 if is_sliver else 1
 
@@ -78,6 +136,13 @@ class TileSVGVisualizer:
                 f'fill="{fill}" stroke="{stroke}" stroke-width="{stroke_width}"/>'
             )
         ]
+        if is_notched:
+            # A hatch overlay, not a second fill color: notched pieces keep
+            # their size's own color (the hatch is the only signal that this
+            # piece also needs a notch cut, not which size it is).
+            elements.append(
+                f'<rect x="{px:.1f}" y="{py:.1f}" width="{pw:.1f}" height="{ph:.1f}" fill="url(#notch-overlay)"/>'
+            )
 
         if pw > 26 and ph > 16:
             label = f"{width:.0f}\u00d7{height:.0f}"
@@ -111,20 +176,29 @@ class TileSVGVisualizer:
             )
         return "".join(elements)
 
-    def _create_legend(self, x: int, y: int) -> str:
-        entries = [
-            (_FILL_FULL, "Full tile"),
-            (_FILL_CUT, "Cut"),
-            (_FILL_NOTCHED, "Notched"),
-        ]
+    def _create_legend(self, x: int, y: int, distinct_cut_sizes: int) -> str:
         parts = []
         cx = x
-        for color, label in entries:
-            parts.append(f'<rect x="{cx}" y="{y - 8}" width="10" height="10" fill="{color}" stroke="{_INK}"/>')
-            parts.append(f'<text x="{cx + 14}" y="{y}" class="legend-text">{label}</text>')
-            cx += 90
+        parts.append(f'<rect x="{cx}" y="{y - 8}" width="10" height="10" fill="{FULL_TILE_FILL}" stroke="{_INK}"/>')
+        parts.append(f'<text x="{cx + 14}" y="{y}" class="legend-text">Full tile</text>')
+        cx += 90
+
+        # A hatch sample over a neutral chip, since "notched" is the overlay
+        # pattern now, not a fixed fill color — its own size still gets a
+        # color from the palette on the tiles themselves.
+        parts.append(f'<rect x="{cx}" y="{y - 8}" width="10" height="10" fill="{_BACKGROUND}" stroke="{_INK}"/>')
+        parts.append(f'<rect x="{cx}" y="{y - 8}" width="10" height="10" fill="url(#notch-overlay)"/>')
+        parts.append(f'<text x="{cx + 14}" y="{y}" class="legend-text">Notched</text>')
+        cx += 90
+
         parts.append(f'<rect x="{cx}" y="{y - 8}" width="10" height="10" fill="none" stroke="{_SLIVER_STROKE}" stroke-width="2"/>')
         parts.append(f'<text x="{cx + 14}" y="{y}" class="legend-text">Sliver</text>')
+        cx += 90
+
+        if distinct_cut_sizes > 0:
+            note = f"{distinct_cut_sizes} cut size{'s' if distinct_cut_sizes != 1 else ''} \u2014 see the cut list below"
+            parts.append(f'<text x="{cx}" y="{y}" class="legend-text">{escape(note)}</text>')
+
         return "".join(parts)
 
     def generate_layout_visualization(self, candidate, surface, project_name: str | None = None) -> str:
@@ -152,6 +226,8 @@ class TileSVGVisualizer:
             f"{candidate.label} \u00b7 {candidate.tiles_to_purchase} tiles to buy"
         )
 
+        size_colors = assign_size_colors(candidate.tiles)
+
         svg_parts = [self._create_svg_header(int(total_width), int(total_height))]
         svg_parts.append(self._create_header_section(project_name, label))
         svg_parts.append(
@@ -160,15 +236,20 @@ class TileSVGVisualizer:
         )
 
         for tile in candidate.tiles:
+            if tile.kind == TileKind.FULL:
+                fill = FULL_TILE_FILL
+            else:
+                fill = size_colors[(round(tile.width), round(tile.height))]
             svg_parts.append(self._create_tile_rect(
-                tile.x, tile.y, tile.width, tile.height, tile.kind.value, tile.is_sliver,
+                tile.x, tile.y, tile.width, tile.height, fill,
+                tile.kind == TileKind.NOTCHED, tile.is_sliver,
                 scale, x_off, y_off,
             ))
 
         for cutout in surface.cutouts:
             svg_parts.append(self._create_cutout_rect(cutout, scale, x_off, y_off))
 
-        svg_parts.append(self._create_legend(x_off, int(y_off + surface_h + 24)))
+        svg_parts.append(self._create_legend(x_off, int(y_off + surface_h + 24), len(size_colors)))
         svg_parts.append("</svg>")
         return "".join(svg_parts)
 
@@ -183,6 +264,7 @@ class TileSVGVisualizer:
     def svg_to_base64(self, svg_content: str) -> str:
         svg_b64 = base64.b64encode(svg_content.encode("utf-8")).decode("utf-8")
         return f"data:image/svg+xml;base64,{svg_b64}"
+
 
 
 def generate_tile_layout_visualization(candidate, surface, project_name: str | None = None) -> str:

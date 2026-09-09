@@ -10,10 +10,12 @@ CSS custom property, because it is rasterized outside the page's stylesheet.
 import base64
 import re
 
-from planqer.tile_layout.geometry import Cutout, JointSpec, Surface, Tile
+from planqer.tile_layout.geometry import Cutout, JointSpec, PlacedTile, Surface, Tile, TileKind
 from planqer.tile_layout.solver import solve_tile_layout
 from planqer.tile_visualization import (
+    FULL_TILE_FILL,
     TileSVGVisualizer,
+    assign_size_colors,
     generate_saved_tile_diagram,
     generate_tile_layout_visualization,
 )
@@ -97,3 +99,47 @@ def test_generate_saved_tile_diagram_matches_live_contract():
 
     assert "Saved plan" in svg
     assert "var(" not in svg
+
+
+def test_assign_size_colors_ignores_full_tiles_and_is_deterministic():
+    common = dict(rotated=False, nominal_width=100, nominal_height=100)
+    tiles = [
+        PlacedTile(x=0, y=0, width=100, height=100, kind=TileKind.FULL, **common),
+        PlacedTile(x=0, y=0, width=50, height=100, kind=TileKind.CUT, **common),
+        PlacedTile(x=0, y=0, width=50, height=100, kind=TileKind.CUT, **common),
+        PlacedTile(x=0, y=0, width=30, height=100, kind=TileKind.NOTCHED, notch_area=10, **common),
+    ]
+
+    colors = assign_size_colors(tiles)
+
+    # One entry per distinct non-full size — the repeated 50x100 CUT tile
+    # doesn't produce a second entry, and the FULL tile produces none.
+    assert set(colors.keys()) == {(50, 100), (30, 100)}
+    assert len(set(colors.values())) == 2  # the two sizes get different colors
+    # Calling it again on the same input must produce the exact same mapping
+    # (the SVG and the API's fill_color field both depend on this).
+    assert assign_size_colors(tiles) == colors
+
+
+def test_size_colors_never_collide_with_the_fixed_full_tile_color():
+    surface, result = _solve_simple()
+    for candidate in result.candidates:
+        colors = assign_size_colors(candidate.tiles)
+        assert FULL_TILE_FILL not in colors.values()
+
+
+def test_svg_uses_a_distinct_color_per_cut_size():
+    surface = Surface(width=8400, height=2400)
+    tile = Tile(width=300, height=600)
+    joint = JointSpec(joint_width=3)
+    result = solve_tile_layout(
+        surface, tile, joint, bond_pattern="running", offset_fraction=0.5,
+        candidate_count=3, sample_steps=8,
+    )
+    candidate = result.candidates[result.recommended_index]
+    colors = assign_size_colors(candidate.tiles)
+    assert len(colors) > 1  # this surface genuinely produces several cut sizes
+
+    svg = _decode(generate_tile_layout_visualization(candidate, surface))
+    for hex_color in colors.values():
+        assert hex_color in svg

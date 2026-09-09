@@ -78,6 +78,43 @@ def test_every_candidate_has_a_descriptive_label():
         assert c.label != "Alternative"
 
 
+def test_fewest_cuts_can_win_its_own_label():
+    # A surface wide/tall enough, with a running bond, that different
+    # offsets genuinely trade off distinct-cut-size count against the other
+    # three objectives — otherwise one offset would dominate on every axis
+    # and "Fewest cuts" would never need to be its own label.
+    surface = Surface(width=8400, height=2400)
+    tile = Tile(width=300, height=600)
+    joint = JointSpec(joint_width=3)
+
+    result = solve_tile_layout(
+        surface, tile, joint, bond_pattern="running", offset_fraction=0.5,
+        candidate_count=5, sample_steps=16,
+    )
+
+    assert any("Fewest cuts" in c.label for c in result.candidates)
+    fewest_cuts = min(c.metrics.distinct_cut_sizes for c in result.candidates)
+    labeled = next(c for c in result.candidates if "Fewest cuts" in c.label)
+    assert labeled.metrics.distinct_cut_sizes == fewest_cuts
+
+
+def test_distinct_cut_sizes_is_a_real_pareto_axis_not_just_a_label():
+    # A candidate that is strictly better on distinct cut sizes and no worse
+    # on anything else must survive the Pareto front even if it loses on
+    # tiles_count/symmetry/safety — proving dominance actually checks this
+    # 4th axis rather than only using it to break label ties afterward.
+    from planqer.tile_layout.solver import _dominates
+
+    worse_on_everything_else = {
+        "safety": 10.0, "symmetry": 5.0, "tiles_count": 20, "distinct_cuts": 3,
+    }
+    better_cuts_only = {
+        "safety": 10.0, "symmetry": 5.0, "tiles_count": 20, "distinct_cuts": 2,
+    }
+    assert _dominates(better_cuts_only, worse_on_everything_else)
+    assert not _dominates(worse_on_everything_else, better_cuts_only)
+
+
 def test_waste_percent_inflates_purchase_count():
     surface = Surface(width=909, height=1206)
     tile = Tile(width=300, height=600)

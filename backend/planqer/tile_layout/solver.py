@@ -107,17 +107,19 @@ def _safety_score(metrics: LayoutMetrics) -> float:
 
 def _dominates(a: dict, b: dict) -> bool:
     """True if candidate a is at least as good as b on every objective and
-    strictly better on at least one (safety higher-is-better; symmetry and
-    tile count lower-is-better)."""
+    strictly better on at least one (safety higher-is-better; symmetry,
+    tile count, and distinct cut sizes lower-is-better)."""
     at_least_as_good = (
         a["safety"] >= b["safety"]
         and a["symmetry"] <= b["symmetry"]
         and a["tiles_count"] <= b["tiles_count"]
+        and a["distinct_cuts"] <= b["distinct_cuts"]
     )
     strictly_better = (
         a["safety"] > b["safety"]
         or a["symmetry"] < b["symmetry"]
         or a["tiles_count"] < b["tiles_count"]
+        or a["distinct_cuts"] < b["distinct_cuts"]
     )
     return at_least_as_good and strictly_better
 
@@ -179,6 +181,7 @@ def _build_candidate(
         "safety": _safety_score(metrics),
         "symmetry": metrics.symmetry_delta_x + metrics.symmetry_delta_y,
         "tiles_count": tiles_to_purchase,
+        "distinct_cuts": metrics.distinct_cut_sizes,
     }
 
 
@@ -290,11 +293,13 @@ def solve_tile_layout(
     best_safety_idx = max(range(len(final)), key=lambda i: final[i]["safety"])
     best_tiles_idx = min(range(len(final)), key=lambda i: final[i]["tiles_count"])
     best_symmetry_idx = min(range(len(final)), key=lambda i: final[i]["symmetry"])
+    best_cuts_idx = min(range(len(final)), key=lambda i: final[i]["distinct_cuts"])
 
     tags: dict[int, list[str]] = {}
     tags.setdefault(best_safety_idx, []).append("Best sliver avoidance")
     tags.setdefault(best_tiles_idx, []).append("Fewest tiles to buy")
     tags.setdefault(best_symmetry_idx, []).append("Most symmetric")
+    tags.setdefault(best_cuts_idx, []).append("Fewest cuts")
 
     alt_counter = 1
     labeled_final = []

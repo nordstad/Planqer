@@ -48,6 +48,10 @@ const TileLayoutCandidateCard = ({ candidate, selected, onSelect }) => {
             <dt>Used</dt>
             <dd>{(candidate.efficiency * 100).toFixed(1)}%</dd>
           </div>
+          <div>
+            <dt>Distinct cuts</dt>
+            <dd>{candidate.distinct_cut_sizes}</dd>
+          </div>
         </dl>
         {hasSliver && (
           <p className="tile-candidate-warn">

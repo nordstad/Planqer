@@ -273,8 +273,9 @@
   .tile-candidate-thumb img { display: block; width: 100%; height: auto; }
   .tile-candidate-label { font-size: 13.5px; font-weight: 700; }
   .tile-candidate-facts {
-    display: flex; justify-content: space-between; gap: 10px; margin: 0;
+    display: flex; flex-wrap: wrap; gap: 10px 14px; margin: 0;
   }
+  .tile-candidate-facts > div { flex: 1 1 68px; min-width: 0; }
   .tile-candidate-facts dt {
     font-family: 'Archivo Narrow', sans-serif; font-size: 11px; font-weight: 700;
     letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3);

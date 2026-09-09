@@ -242,9 +242,48 @@ def test_score_layout_exact_coverage_case():
     assert metrics.min_edge_cut_width == pytest.approx(100)
     assert metrics.min_edge_cut_height is None
     assert len(scored) == 4
+    # One cut column, one size, so one distinct cut size — the 3 full tiles
+    # don't count (measuring a full tile isn't a "cut" to plan around).
+    assert metrics.distinct_cut_sizes == 1
 
 
-def test_score_layout_with_joints_reports_waste():
+def test_distinct_cut_sizes_ignores_full_tiles_and_groups_by_rounded_size():
+    surface = Surface(width=1000, height=600)
+    tile = Tile(width=300, height=600)
+    joint = JointSpec(joint_width=0)
+    positions = list(StackBond().raw_positions(surface, tile, joint, offset_x=0, offset_y=0))
+    placed = [
+        p
+        for (x, y, rotated) in positions
+        if (p := place_and_clip(x, y, rotated, tile, surface, joint)) is not None
+    ]
+
+    _scored, metrics = score_layout(placed, surface)
+
+    # 3 full tiles (300x600 each) + 1 cut tile (100x600) — only the cut tile
+    # counts, and it's exactly one size.
+    assert metrics.full_tile_count == 3
+    assert metrics.distinct_cut_sizes == 1
+
+
+def test_distinct_cut_sizes_groups_notched_and_cut_of_the_same_size_together():
+    # A NOTCHED piece and a CUT piece that happen to share a size are the
+    # same measurement for a cutter, even though one also needs a notch —
+    # they must count as one distinct size, not two.
+    surface = Surface(width=1000, height=1000)
+    common = dict(width=100, height=100, rotated=False, nominal_width=100, nominal_height=100)
+    placed = [
+        PlacedTile(x=0, y=0, kind=TileKind.CUT, **common),
+        PlacedTile(x=200, y=0, kind=TileKind.NOTCHED, notch_area=25, **common),
+        PlacedTile(x=400, y=0, kind=TileKind.FULL, **common),
+    ]
+
+    _scored, metrics = score_layout(placed, surface)
+
+    assert metrics.distinct_cut_sizes == 1
+
+
+
     surface = Surface(width=909, height=1206)
     tile = Tile(width=300, height=600)
     joint = JointSpec(joint_width=3)
