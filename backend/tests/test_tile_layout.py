@@ -8,7 +8,12 @@ verified by arithmetic, not just by re-running the code under test).
 
 import pytest
 
-from planqer.tile_layout.bonds import HerringboneBond, RunningBond, StackBond
+from planqer.tile_layout.bonds import (
+    DiagonalBond,
+    HerringboneBond,
+    RunningBond,
+    StackBond,
+)
 from planqer.tile_layout.geometry import (
     Cutout,
     JointSpec,
@@ -17,8 +22,9 @@ from planqer.tile_layout.geometry import (
     Tile,
     TileKind,
     place_and_clip,
+    place_and_clip_diagonal,
 )
-from planqer.tile_layout.offcuts import match_offcuts
+from planqer.tile_layout.offcuts import match_diagonal_offcuts, match_offcuts
 from planqer.tile_layout.scoring import score_layout
 
 # ── Surface / Cutout validation ──────────────────────────────────────────
@@ -137,6 +143,118 @@ def test_rotation_swaps_dimensions():
     assert placed is not None
     assert placed.nominal_width == 150
     assert placed.nominal_height == 300
+
+
+# ── place_and_clip_diagonal ───────────────────────────────────────────────
+#
+# A diagonal ("set on point") tile is a 100x100 square rotated 45 degrees
+# about its own center: its 4 corners sit at a distance of 50*sqrt(2) ==
+# 70.7106781... from the center, on the N/E/S/W compass points. That
+# constant recurs throughout these hand-computed cases.
+
+def test_diagonal_full_tile_entirely_inside_surface_is_full():
+    surface = Surface(width=200, height=200)
+    tile = Tile(width=100, height=100)
+    joint = JointSpec(joint_width=0)
+
+    placed = place_and_clip_diagonal(cx=100, cy=100, tile=tile, surface=surface, joint=joint)
+
+    assert placed is not None
+    assert placed.kind == TileKind.FULL
+    assert len(placed.vertices) == 4
+    assert placed.area == pytest.approx(10_000)
+
+
+def test_diagonal_area_uses_true_polygon_area_not_bounding_box():
+    # The bounding box of a square rotated 45 degrees is exactly double its
+    # real area (side = 100*sqrt(2), bbox area = 20,000) -- PlacedTile.area
+    # must return the true 10,000, not width*height, or every diagonal
+    # candidate's coverage/waste would be silently wrong.
+    surface = Surface(width=200, height=200)
+    tile = Tile(width=100, height=100)
+    joint = JointSpec(joint_width=0)
+
+    placed = place_and_clip_diagonal(cx=100, cy=100, tile=tile, surface=surface, joint=joint)
+
+    assert placed.width == pytest.approx(100 * 1.4142135623730951)  # bounding box side
+    assert placed.area == pytest.approx(10_000)  # true polygon area, not width*height
+
+
+def test_diagonal_tile_clipped_at_one_edge_leaves_a_pentagon():
+    # Center shifted left so only the west corner (at cx - 70.71) pokes
+    # past the surface's x=0 edge -- clipping a single corner off a
+    # quadrilateral leaves a pentagon (4 - 1 removed + 2 new intersection
+    # points), the common case for a tile mostly inside the field.
+    surface = Surface(width=200, height=200)
+    tile = Tile(width=100, height=100)
+    joint = JointSpec(joint_width=0)
+
+    placed = place_and_clip_diagonal(cx=30, cy=100, tile=tile, surface=surface, joint=joint)
+
+    assert placed is not None
+    assert placed.kind == TileKind.CUT
+    assert len(placed.vertices) == 5
+    assert placed.area == pytest.approx(8342.640687119285)
+    assert min(p[0] for p in placed.vertices) == pytest.approx(0)
+
+
+def test_diagonal_tile_mostly_outside_leaves_a_small_triangle():
+    # Center far enough outside the surface that only the tip of the
+    # diamond's east corner remains inside -- this is the small sliver
+    # case at the very tip of a diagonal row (the shape offcuts.py's
+    # triangle-pairing later relies on).
+    surface = Surface(width=200, height=200)
+    tile = Tile(width=100, height=100)
+    joint = JointSpec(joint_width=0)
+
+    placed = place_and_clip_diagonal(cx=-50, cy=100, tile=tile, surface=surface, joint=joint)
+
+    assert placed is not None
+    assert placed.kind == TileKind.CUT
+    assert len(placed.vertices) == 3
+    assert placed.area == pytest.approx(428.93218813452495)
+
+
+def test_diagonal_tile_entirely_outside_surface_is_none():
+    surface = Surface(width=200, height=200)
+    tile = Tile(width=100, height=100)
+    joint = JointSpec(joint_width=0)
+
+    placed = place_and_clip_diagonal(cx=-200, cy=100, tile=tile, surface=surface, joint=joint)
+
+    assert placed is None
+
+
+def test_diagonal_tile_partially_overlapping_cutout_is_notched():
+    # Diamond centered at (200, 200), fully inside a 400x400 surface (no
+    # boundary clip). A cutout occupying the diamond's NE bounding-box
+    # quadrant overlaps exactly the diamond's NE quarter -- a right
+    # triangle with both legs 50*sqrt(2), i.e. area (50*sqrt(2))^2 / 2 ==
+    # 2500 exactly.
+    surface = Surface(width=400, height=400, cutouts=(Cutout(x=200, y=200, width=100, height=100),))
+    tile = Tile(width=100, height=100)
+    joint = JointSpec(joint_width=0)
+
+    placed = place_and_clip_diagonal(cx=200, cy=200, tile=tile, surface=surface, joint=joint)
+
+    assert placed is not None
+    assert placed.kind == TileKind.NOTCHED
+    assert placed.notch_area == pytest.approx(2500)
+    # area is the boundary-clipped shape's area *including* the notch
+    # region -- notch_area is subtracted separately at the aggregate level
+    # in scoring.py, exactly like the axis-aligned NOTCHED contract already
+    # works (see test_tile_partially_overlapping_cutout_is_notched above).
+    assert placed.area == pytest.approx(10_000)
+
+
+def test_diagonal_tile_fully_inside_cutout_is_discarded():
+    surface = Surface(width=400, height=400, cutouts=(Cutout(x=0, y=0, width=400, height=400),))
+    tile = Tile(width=100, height=100)
+    joint = JointSpec(joint_width=0)
+
+    placed = place_and_clip_diagonal(cx=200, cy=200, tile=tile, surface=surface, joint=joint)
+
+    assert placed is None
 
 
 # ── Bonds ─────────────────────────────────────────────────────────────────
@@ -275,6 +393,128 @@ def test_herringbone_bond_leaves_no_gap():
     _scored, metrics = score_layout(placed, surface)
 
     assert metrics.coverage_area == pytest.approx(surface.net_area, rel=1e-6)
+
+
+def _diagonal_clipped(bond, surface, tile, joint, offset_x=0.0, offset_y=0.0):
+    return [
+        p
+        for (cx, cy, _rotated) in bond.raw_positions(surface, tile, joint, offset_x, offset_y)
+        if (p := place_and_clip_diagonal(cx, cy, tile, surface, joint)) is not None
+    ]
+
+
+def _tile_polygon(t: PlacedTile) -> list[tuple[float, float]]:
+    if t.vertices is not None:
+        return list(t.vertices)
+    return [(t.x, t.y), (t.x + t.width, t.y), (t.x + t.width, t.y + t.height), (t.x, t.y + t.height)]
+
+
+def _convex_polygon_overlap_area(a, b) -> float:
+    """Sutherland-Hodgman clip of convex polygon `a` by convex polygon `b`
+    (both CCW), returning the intersection's area. Bounding-box overlap
+    (as used for the axis-aligned _no_overlaps helper above) would give
+    false positives for diamonds: two diamonds' bounding boxes routinely
+    overlap at their corners even when the diamonds themselves don't."""
+    output = a
+    n = len(b)
+    for i in range(n):
+        if not output:
+            break
+        p1, p2 = b[i], b[(i + 1) % n]
+
+        def inside(p, p1=p1, p2=p2):
+            return (p2[0] - p1[0]) * (p[1] - p1[1]) - (p2[1] - p1[1]) * (p[0] - p1[0]) >= -1e-9
+
+        def intersect(s, e, p1=p1, p2=p2):
+            x1, y1 = s
+            x2, y2 = e
+            x3, y3 = p1
+            x4, y4 = p2
+            d = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
+            if abs(d) < 1e-12:
+                return e
+            t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / d
+            return (x1 + t * (x2 - x1), y1 + t * (y2 - y1))
+
+        new_output = []
+        m = len(output)
+        for j in range(m):
+            curr = output[j]
+            prev = output[j - 1]
+            curr_in = inside(curr)
+            prev_in = inside(prev)
+            if curr_in:
+                if not prev_in:
+                    new_output.append(intersect(prev, curr))
+                new_output.append(curr)
+            elif prev_in:
+                new_output.append(intersect(prev, curr))
+        output = new_output
+
+    n = len(output)
+    if n < 3:
+        return 0.0
+    total = 0.0
+    for i in range(n):
+        x1, y1 = output[i]
+        x2, y2 = output[(i + 1) % n]
+        total += x1 * y2 - x2 * y1
+    return abs(total) / 2.0
+
+
+def _no_polygon_overlaps(tiles) -> bool:
+    polygons = [_tile_polygon(t) for t in tiles]
+    for i in range(len(tiles)):
+        for j in range(i + 1, len(tiles)):
+            if _convex_polygon_overlap_area(polygons[i], polygons[j]) > 1e-6:
+                return False
+    return True
+
+
+@pytest.mark.parametrize("width,height,joint_width", [
+    (100, 100, 3),  # square
+    (300, 150, 3),  # 2:1 plank
+    (300, 100, 0),  # 3:1 plank, no grout
+])
+def test_diagonal_bond_never_overlaps(width, height, joint_width):
+    """Verified against the real geometry pipeline with a proper polygon
+    overlap check (bounding-box overlap alone would false-positive on
+    every adjacent diamond pair)."""
+    surface = Surface(width=1500, height=1200)
+    tile = Tile(width=width, height=height)
+    joint = JointSpec(joint_width=joint_width)
+
+    placed = _diagonal_clipped(DiagonalBond(), surface, tile, joint)
+
+    assert len(placed) > 0
+    assert _no_polygon_overlaps(placed)
+
+
+def test_diagonal_bond_leaves_no_gap_at_zero_joint():
+    """With zero joint width, diamonds tile the plane exactly -- coverage
+    must equal surface area (no gaps), matching herringbone's own no-gap
+    check above."""
+    surface = Surface(width=1000, height=1000)
+    tile = Tile(width=100, height=100)
+    joint = JointSpec(joint_width=0)
+
+    placed = _diagonal_clipped(DiagonalBond(), surface, tile, joint)
+    coverage = sum(p.area for p in placed)
+
+    assert coverage == pytest.approx(surface.net_area, rel=1e-6)
+
+
+def test_diagonal_bond_respects_the_joint_gap():
+    """A real (non-zero) joint must measurably reduce coverage relative to
+    a zero joint on the same surface -- otherwise the gap parameter would
+    be silently ignored."""
+    surface = Surface(width=1000, height=1000)
+    tile = Tile(width=100, height=100)
+
+    no_joint = _diagonal_clipped(DiagonalBond(), surface, tile, JointSpec(joint_width=0))
+    with_joint = _diagonal_clipped(DiagonalBond(), surface, tile, JointSpec(joint_width=5))
+
+    assert sum(p.area for p in with_joint) < sum(p.area for p in no_joint)
 
 
 # ── Scoring ───────────────────────────────────────────────────────────────
@@ -422,6 +662,89 @@ def test_symmetry_delta_nonzero_when_layout_is_not_centered():
     assert metrics.symmetry_delta_x == pytest.approx(200)  # 300 (right, full) vs 100 (left? )
 
 
+def test_diagonal_min_cut_span_uses_caliper_width_not_bounding_box():
+    # Reuses the exact fixtures from test_diagonal_tile_clipped_at_one_edge_leaves_a_pentagon
+    # and test_diagonal_tile_mostly_outside_leaves_a_small_triangle above.
+    surface = Surface(width=200, height=200)
+    tile = Tile(width=100, height=100)
+    joint = JointSpec(joint_width=0)
+
+    full = place_and_clip_diagonal(cx=100, cy=100, tile=tile, surface=surface, joint=joint)
+    pentagon = place_and_clip_diagonal(cx=30, cy=100, tile=tile, surface=surface, joint=joint)
+    triangle = place_and_clip_diagonal(cx=-50, cy=100, tile=tile, surface=surface, joint=joint)
+
+    _scored, metrics = score_layout([full, pentagon, triangle], surface)
+
+    # The bounding-box-based min_edge_cut_width/height stay None -- they're
+    # explicitly axis-aligned-only now (see scoring.py).
+    assert metrics.min_edge_cut_width is None
+    assert metrics.min_edge_cut_height is None
+    # The pentagon (one corner clipped off a square) keeps its full 100mm
+    # min width -- chopping one corner off doesn't narrow the two opposite
+    # edges that actually define a square's minimum width. The triangle
+    # (mostly outside, a thin sliver remaining) is the true narrow piece:
+    # its width perpendicular to the clipped edge is exactly the distance
+    # its tip pokes past the boundary, 50*(sqrt(2)-1).
+    assert metrics.min_diagonal_cut_span == pytest.approx(50 * (2**0.5 - 1))
+
+
+def test_diagonal_symmetry_is_a_real_zero_not_computed():
+    """A physically asymmetric diagonal layout (all three pieces sit at
+    different x/y extents) must still report exactly 0.0, not skip the
+    computation and leave a stale/undefined value -- see scoring.py's
+    is_diagonal_layout short-circuit and .plans/tile-layout.md Phase 4b."""
+    surface = Surface(width=200, height=200)
+    tile = Tile(width=100, height=100)
+    joint = JointSpec(joint_width=0)
+
+    pentagon = place_and_clip_diagonal(cx=30, cy=100, tile=tile, surface=surface, joint=joint)
+    triangle = place_and_clip_diagonal(cx=-50, cy=100, tile=tile, surface=surface, joint=joint)
+
+    _scored, metrics = score_layout([pentagon, triangle], surface)
+
+    assert metrics.symmetry_delta_x == 0.0
+    assert metrics.symmetry_delta_y == 0.0
+
+
+def test_diagonal_sliver_detection_uses_caliper_width():
+    surface = Surface(width=200, height=200)
+    tile = Tile(width=100, height=100)
+    joint = JointSpec(joint_width=0)
+
+    pentagon = place_and_clip_diagonal(cx=30, cy=100, tile=tile, surface=surface, joint=joint)
+    triangle = place_and_clip_diagonal(cx=-50, cy=100, tile=tile, surface=surface, joint=joint)
+    span = 50 * (2**0.5 - 1)  # ~20.71mm, the triangle's known min caliper width
+
+    scored, metrics = score_layout(
+        [pentagon, triangle], surface, min_edge_cut=span + 1,
+    )
+
+    slivers = {id(t) for t in scored if t.is_sliver}
+    assert metrics.sliver_count == 1
+    assert len(slivers) == 1
+    # The 100mm-wide pentagon must not be flagged just because it's CUT —
+    # only the genuinely narrow triangle is a sliver at this threshold.
+    sliver_tile = next(t for t in scored if t.is_sliver)
+    assert len(sliver_tile.vertices) == 3
+
+
+def test_diagonal_distinct_cut_sizes_disambiguates_shapes_with_the_same_bounding_box():
+    """A triangle and a pentagon can share a bounding box (both clipped
+    from the same corner region) — the size key must not conflate them
+    just because width/height round the same."""
+    surface = Surface(width=200, height=200)
+    common_2d = [(0.0, 0.0), (10.0, 0.0), (0.0, 10.0)]  # triangle, bbox 10x10
+    common_pentagon = [(0.0, 0.0), (10.0, 0.0), (10.0, 5.0), (5.0, 10.0), (0.0, 10.0)]  # bbox 10x10 too
+
+    common = {"x": 0, "y": 0, "width": 10, "height": 10, "rotated": False, "nominal_width": 100, "nominal_height": 100}
+    triangle = PlacedTile(kind=TileKind.CUT, vertices=tuple(common_2d), **common)
+    pentagon = PlacedTile(kind=TileKind.CUT, vertices=tuple(common_pentagon), **common)
+
+    _scored, metrics = score_layout([triangle, pentagon], surface)
+
+    assert metrics.distinct_cut_sizes == 2
+
+
 # ── Offcut reuse ──────────────────────────────────────────────────────────
 
 def _tile_at(x, y, width, height, kind=TileKind.CUT, nominal_width=300, nominal_height=600):
@@ -494,3 +817,72 @@ def test_rotation_allows_matching_a_swapped_offcut():
     result = match_offcuts(placed, tile)
 
     assert result.reused_count == 1
+
+
+# ── Diagonal offcut reuse ─────────────────────────────────────────────────
+
+def test_diagonal_offcuts_pairs_congruent_triangular_slivers():
+    # cx=-50 and cx=250 are symmetric around the surface's x=100 centerline
+    # (each poking 50mm past its own boundary), so the two triangular
+    # slivers they leave are congruent -- exactly the two halves of one
+    # tile ripped along its diagonal.
+    surface = Surface(width=200, height=200)
+    tile = Tile(width=100, height=100)
+    joint = JointSpec(joint_width=0)
+
+    tri_a = place_and_clip_diagonal(cx=-50, cy=100, tile=tile, surface=surface, joint=joint)
+    tri_b = place_and_clip_diagonal(cx=250, cy=100, tile=tile, surface=surface, joint=joint)
+    assert tri_a.kind == TileKind.CUT and len(tri_a.vertices) == 3
+    assert tri_b.kind == TileKind.CUT and len(tri_b.vertices) == 3
+
+    result = match_diagonal_offcuts([tri_a, tri_b])
+
+    assert result.raw_tile_count == 2
+    assert result.reused_count == 1
+    assert result.tiles_to_purchase == 1
+    assert result.matches == ((0, 1),)
+
+
+def test_diagonal_offcuts_does_not_pair_different_sized_slivers():
+    surface = Surface(width=200, height=200)
+    tile = Tile(width=100, height=100)
+    joint = JointSpec(joint_width=0)
+
+    small = place_and_clip_diagonal(cx=-50, cy=100, tile=tile, surface=surface, joint=joint)
+    bigger = place_and_clip_diagonal(cx=-30, cy=100, tile=tile, surface=surface, joint=joint)
+
+    result = match_diagonal_offcuts([small, bigger])
+
+    assert result.reused_count == 0
+    assert result.tiles_to_purchase == 2
+
+
+def test_diagonal_offcuts_ignores_pentagons_and_full_tiles():
+    # Pentagons (a true corner clip) and full diamonds are explicitly out
+    # of scope for v1 pairing -- only triangular CUT slivers are matched.
+    surface = Surface(width=200, height=200)
+    tile = Tile(width=100, height=100)
+    joint = JointSpec(joint_width=0)
+
+    full = place_and_clip_diagonal(cx=100, cy=100, tile=tile, surface=surface, joint=joint)
+    pentagon = place_and_clip_diagonal(cx=30, cy=100, tile=tile, surface=surface, joint=joint)
+    assert full.kind == TileKind.FULL
+    assert pentagon.kind == TileKind.CUT and len(pentagon.vertices) == 5
+
+    result = match_diagonal_offcuts([full, pentagon])
+
+    assert result.reused_count == 0
+    assert result.tiles_to_purchase == 2
+
+
+def test_diagonal_offcuts_does_not_match_a_triangle_to_itself():
+    surface = Surface(width=200, height=200)
+    tile = Tile(width=100, height=100)
+    joint = JointSpec(joint_width=0)
+
+    tri = place_and_clip_diagonal(cx=-50, cy=100, tile=tile, surface=surface, joint=joint)
+
+    result = match_diagonal_offcuts([tri])
+
+    assert result.reused_count == 0
+    assert result.tiles_to_purchase == 1

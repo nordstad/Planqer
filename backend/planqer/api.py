@@ -80,7 +80,12 @@ from planqer.tile_layout.geometry import Surface as TileSurface
 from planqer.tile_layout.geometry import Tile as TileGeometry
 from planqer.tile_layout.geometry import TileKind
 from planqer.tile_layout.solver import solve_tile_layout
-from planqer.tile_visualization import FULL_TILE_FILL, assign_size_colors, generate_tile_layout_visualization
+from planqer.tile_visualization import (
+    FULL_TILE_FILL,
+    assign_size_colors,
+    generate_tile_layout_visualization,
+    tile_size_key,
+)
 
 # Load configuration
 CONFIG_PATH = Path(__file__).parent.parent / "config.yaml"
@@ -660,18 +665,18 @@ class TileJointSpec(BaseModel):
 
 
 class TileBondSpec(BaseModel):
-    """The laying pattern. See tile_layout/bonds.py — true 45-degree
-    diagonal-set tiles are deferred (see .plans/tile-layout.md phase 4);
-    they need rotated/polygon clipping, not just a new bond."""
+    """The laying pattern. See tile_layout/bonds.py."""
 
-    pattern: str = "stack"  # "stack" | "running" | "herringbone"
-    offset_fraction: float = 0.5  # fraction of tile width; 0.5 = brick bond; ignored for herringbone
+    pattern: str = "stack"  # "stack" | "running" | "herringbone" | "diagonal"
+    offset_fraction: float = 0.5  # fraction of tile width; 0.5 = brick bond; ignored for herringbone/diagonal
 
     @field_validator("pattern")
     @classmethod
     def validate_pattern(cls, v):
-        if v not in ("stack", "running", "herringbone"):
-            raise ValueError(f"Invalid bond pattern '{v}'. Valid options: stack, running, herringbone")
+        if v not in ("stack", "running", "herringbone", "diagonal"):
+            raise ValueError(
+                f"Invalid bond pattern '{v}'. Valid options: stack, running, herringbone, diagonal"
+            )
         return v
 
     @field_validator("offset_fraction")
@@ -766,6 +771,11 @@ class PlacedTileInfo(BaseModel):
     is_sliver: bool
     is_reused_offcut: bool  # satisfied from another tile's offcut, not bought fresh
     fill_color: str  # matches the SVG's own fill for this tile — same size, same color
+    # Only set for a diagonal ("set on point") bond — the piece's true
+    # clipped polygon, since x/y/width/height are just its bounding box
+    # for a rotated piece (see tile_layout.geometry.PlacedTile.vertices).
+    # None for every axis-aligned bond, where x/y/width/height are exact.
+    vertices: list[tuple[float, float]] | None = None
 
 
 class TileLayoutCandidateResponse(BaseModel):
@@ -784,6 +794,11 @@ class TileLayoutCandidateResponse(BaseModel):
     reused_offcut_count: int
     min_edge_cut_width: float | None
     min_edge_cut_height: float | None
+    # The diagonal-bond counterpart to the two fields above — one caliper-
+    # width span instead of an x/y pair, since a rotated piece's "cut
+    # width" isn't an axis-aligned fact anymore. None for every
+    # axis-aligned bond (see tile_layout.scoring.LayoutMetrics).
+    min_diagonal_cut_span: float | None
     sliver_count: int
     symmetry_delta_x: float
     symmetry_delta_y: float
@@ -1576,8 +1591,9 @@ async def create_tile_layout(
                             is_reused_offcut=i in reused_consumer_indices,
                             fill_color=(
                                 FULL_TILE_FILL if t.kind == TileKind.FULL
-                                else size_colors[(round(t.width), round(t.height))]
+                                else size_colors[tile_size_key(t)]
                             ),
+                            vertices=list(t.vertices) if t.vertices is not None else None,
                         )
                         for i, t in enumerate(candidate.tiles)
                     ],
@@ -1589,6 +1605,7 @@ async def create_tile_layout(
                     reused_offcut_count=candidate.offcuts.reused_count,
                     min_edge_cut_width=candidate.metrics.min_edge_cut_width,
                     min_edge_cut_height=candidate.metrics.min_edge_cut_height,
+                    min_diagonal_cut_span=candidate.metrics.min_diagonal_cut_span,
                     sliver_count=candidate.metrics.sliver_count,
                     symmetry_delta_x=candidate.metrics.symmetry_delta_x,
                     symmetry_delta_y=candidate.metrics.symmetry_delta_y,

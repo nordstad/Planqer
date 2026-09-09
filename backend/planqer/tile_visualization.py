@@ -67,9 +67,27 @@ def _generate_size_palette(count: int) -> list[str]:
 _SIZE_PALETTE = _generate_size_palette(14)
 
 
-def assign_size_colors(tiles) -> dict[tuple[int, int], str]:
-    """Deterministic size -> color mapping, one entry per distinct rounded
-    (width, height) among non-full tiles (CUT and NOTCHED share the same
+def tile_size_key(t) -> tuple:
+    """The key assign_size_colors groups tiles by. Exposed (not a
+    underscore-private helper) because api.py's fill_color lookup must
+    compute the exact same key a second time — this is the one place the
+    key is defined, so the SVG (grouped here) and the API response (set in
+    api.py from this same function) can never drift apart.
+
+    A bounding-box match alone (round(width), round(height)) isn't enough
+    to guarantee two *diagonal* pieces are actually the same shape — a
+    triangle and a pentagon can share a bounding box — so a diagonal
+    tile's key also includes its vertex count and true polygon area.
+    Axis-aligned tiles are unaffected: their key is unchanged from before
+    diagonal existed."""
+    if t.vertices is not None:
+        return (round(t.width), round(t.height), len(t.vertices), round(t.area))
+    return (round(t.width), round(t.height))
+
+
+def assign_size_colors(tiles) -> dict[tuple, str]:
+    """Deterministic size -> color mapping, one entry per distinct
+    tile_size_key() among non-full tiles (CUT and NOTCHED share the same
     keying — a notched piece is still "this size", just also needing a
     notch, which the diagram marks with a hatch overlay instead of a second
     color). Ordered by descending area so the biggest/most common groups get
@@ -78,13 +96,15 @@ def assign_size_colors(tiles) -> dict[tuple[int, int], str]:
     Pure function of `tiles`, so the SVG (drawn here) and the API's
     PlacedTileInfo.fill_color (set in api.py from this same function) can
     never drift apart — there is exactly one place this mapping is computed."""
-    seen: dict[tuple[int, int], None] = {}
+    seen: dict[tuple, None] = {}
+    areas: dict[tuple, float] = {}
     for t in tiles:
         if t.kind == TileKind.FULL:
             continue
-        key = (round(t.width), round(t.height))
+        key = tile_size_key(t)
         seen.setdefault(key, None)
-    ordered = sorted(seen.keys(), key=lambda wh: wh[0] * wh[1], reverse=True)
+        areas[key] = t.area
+    ordered = sorted(seen.keys(), key=lambda key: areas[key], reverse=True)
     return {key: _SIZE_PALETTE[i % len(_SIZE_PALETTE)] for i, key in enumerate(ordered)}
 
 
@@ -156,6 +176,39 @@ class TileSVGVisualizer:
                 elements.append(
                     f'<text x="{cx:.1f}" y="{cy + 11:.1f}" class="sliver-label" '
                     f'text-anchor="middle" dominant-baseline="middle">SLIVER</text>'
+                )
+
+        return "".join(elements)
+
+    def _create_tile_polygon(self, vertices, fill: str, is_notched: bool, is_sliver: bool,
+                              is_full: bool, nominal_width: float, nominal_height: float,
+                              scale: float, x_off: float, y_off: float) -> str:
+        """Diagonal counterpart to _create_tile_rect: the piece is an
+        arbitrary convex polygon (see geometry.place_and_clip_diagonal),
+        not a rectangle, so it's drawn as <polygon>, not <rect>. Only a
+        FULL diamond gets a dimension label — its bounding box isn't its
+        real size, so labeling a CUT/NOTCHED polygon with "width x height"
+        the way an axis-aligned piece is labeled would misrepresent an
+        irregular shape as a rectangle. The drawn outline itself, at true
+        scale, is what a CUT/NOTCHED piece's own shape communicates."""
+        points = " ".join(f"{x_off + vx * scale:.1f},{y_off + vy * scale:.1f}" for vx, vy in vertices)
+        stroke = _SLIVER_STROKE if is_sliver else _INK
+        stroke_width = 2 if is_sliver else 1
+
+        elements = [f'<polygon points="{points}" fill="{fill}" stroke="{stroke}" stroke-width="{stroke_width}"/>']
+        if is_notched:
+            elements.append(f'<polygon points="{points}" fill="url(#notch-overlay)"/>')
+
+        if is_full:
+            xs = [x_off + vx * scale for vx, _vy in vertices]
+            ys = [y_off + vy * scale for _vx, vy in vertices]
+            pw, ph = max(xs) - min(xs), max(ys) - min(ys)
+            if pw > 26 and ph > 16:
+                label = f"{nominal_width:.0f}\u00d7{nominal_height:.0f}"
+                cx, cy = sum(xs) / len(xs), sum(ys) / len(ys)
+                elements.append(
+                    f'<text x="{cx:.1f}" y="{cy:.1f}" class="tile-label" '
+                    f'text-anchor="middle" dominant-baseline="middle">{label}</text>'
                 )
 
         return "".join(elements)
@@ -239,12 +292,19 @@ class TileSVGVisualizer:
             if tile.kind == TileKind.FULL:
                 fill = FULL_TILE_FILL
             else:
-                fill = size_colors[(round(tile.width), round(tile.height))]
-            svg_parts.append(self._create_tile_rect(
-                tile.x, tile.y, tile.width, tile.height, fill,
-                tile.kind == TileKind.NOTCHED, tile.is_sliver,
-                scale, x_off, y_off,
-            ))
+                fill = size_colors[tile_size_key(tile)]
+            if tile.vertices is not None:
+                svg_parts.append(self._create_tile_polygon(
+                    tile.vertices, fill, tile.kind == TileKind.NOTCHED, tile.is_sliver,
+                    tile.kind == TileKind.FULL, tile.nominal_width, tile.nominal_height,
+                    scale, x_off, y_off,
+                ))
+            else:
+                svg_parts.append(self._create_tile_rect(
+                    tile.x, tile.y, tile.width, tile.height, fill,
+                    tile.kind == TileKind.NOTCHED, tile.is_sliver,
+                    scale, x_off, y_off,
+                ))
 
         for cutout in surface.cutouts:
             svg_parts.append(self._create_cutout_rect(cutout, scale, x_off, y_off))

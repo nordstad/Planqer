@@ -7,13 +7,14 @@ import math
 
 import pytest
 
+from planqer.tile_layout.bonds import DiagonalBond
 from planqer.tile_layout.geometry import Cutout, JointSpec, Surface, Tile
 from planqer.tile_layout.solver import build_bond, solve_tile_layout
 
 
 def test_build_bond_rejects_unknown_pattern():
     with pytest.raises(ValueError):
-        build_bond("chevron")  # true 45-degree diagonal-set patterns aren't implemented — see .plans/tile-layout.md
+        build_bond("chevron")  # mitred herringbone variant — not implemented, see .plans/tile-layout.md
 
 
 def test_solve_rejects_candidate_count_below_one():
@@ -240,3 +241,63 @@ def test_herringbone_allow_rotation_does_not_duplicate_candidates():
     )
 
     assert all(not c.rotated for c in result.candidates)
+
+
+def test_build_bond_diagonal_returns_diagonal_bond():
+    assert isinstance(build_bond("diagonal"), DiagonalBond)
+
+
+def test_diagonal_solves_end_to_end():
+    surface = Surface(width=2000, height=1500)
+    tile = Tile(width=300, height=150)
+    joint = JointSpec(joint_width=3)
+
+    result = solve_tile_layout(
+        surface, tile, joint, bond_pattern="diagonal", candidate_count=10, sample_steps=8,
+    )
+
+    assert len(result.candidates) > 0
+    # Every diagonal piece (full or cut) carries its true polygon shape —
+    # unlike axis-aligned bonds, there's no rectangle-only fast path here.
+    assert all(t.vertices is not None for c in result.candidates for t in c.tiles)
+    # scoring.py's diagonal-specific metrics are wired up end to end: a
+    # real surface always has *some* boundary-cut diamond, so at least one
+    # candidate should carry a caliper-width span, and none should carry
+    # the axis-aligned-only min_edge_cut_width/height (see scoring.py).
+    assert any(c.metrics.min_diagonal_cut_span is not None for c in result.candidates)
+    assert all(c.metrics.min_edge_cut_width is None for c in result.candidates)
+    assert all(c.metrics.symmetry_delta_x == 0.0 and c.metrics.symmetry_delta_y == 0.0 for c in result.candidates)
+    # match_diagonal_offcuts (triangle-pair reuse) is wired up end to end —
+    # a real surface produces enough matching boundary slivers that at
+    # least one candidate shows real reuse, not just the zero-reuse
+    # fallback.
+    assert any(c.offcuts.reused_count > 0 for c in result.candidates)
+
+
+def test_diagonal_has_no_flush_corner_canonical_candidates():
+    """A 45-degree tile can never sit flush with a 90-degree surface corner
+    (geometrically impossible, not just unconsidered) — solve_tile_layout
+    skips canonical-candidate injection for this bond, so no returned
+    candidate should carry a "corner" label the way stack/running/
+    herringbone candidates do."""
+    surface = Surface(width=2000, height=1500)
+    tile = Tile(width=300, height=150)
+    joint = JointSpec(joint_width=3)
+
+    result = solve_tile_layout(
+        surface, tile, joint, bond_pattern="diagonal", candidate_count=10, sample_steps=8,
+    )
+
+    assert all("corner" not in c.label for c in result.candidates)
+
+
+def test_diagonal_allow_rotation_can_surface_a_rotated_candidate():
+    surface = Surface(width=2000, height=1500)
+    tile = Tile(width=300, height=150, allow_rotation=True)
+    joint = JointSpec(joint_width=3)
+
+    result = solve_tile_layout(
+        surface, tile, joint, bond_pattern="diagonal", candidate_count=20, sample_steps=8,
+    )
+
+    assert any(c.rotated for c in result.candidates)

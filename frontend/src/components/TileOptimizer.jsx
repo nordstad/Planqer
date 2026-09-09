@@ -27,6 +27,7 @@ import CutoutRow from './CutoutRow';
 import TileLayoutCandidateCard from './TileLayoutCandidateCard';
 import TileResultDisplay from './TileResultDisplay';
 import { ArrowLeft, ArrowRight, Plus, Tick } from './icons';
+import { smallestCutMm } from '../utils/tileCutList';
 
 const mm = (n) => (Number.isFinite(n) ? Math.round(n).toLocaleString('sv-SE') : '—');
 
@@ -210,10 +211,14 @@ const TileOptimizer = () => {
     || !!inputErrors.jointWidth || !!inputErrors.perimeterGap
     || !!inputErrors.minEdgeCut || !!inputErrors.wastePercent || !!inputErrors.candidateCount;
 
+  const bondSummary = bondPattern === 'running'
+    ? `running ${Math.round(parseFloat(offsetFraction) * 100)}%`
+    : { stack: 'stack', herringbone: 'herringbone', diagonal: 'diagonal' }[bondPattern] || 'stack';
+
   const surfaceSummary = `${mm(parseFloat(surfaceWidth))} × ${mm(parseFloat(surfaceHeight))} mm`
     + ` · ${mm(parseFloat(tileWidth))} × ${mm(parseFloat(tileHeight))} tile`
     + ` · ${mm(parseFloat(jointWidth))} mm joint`
-    + ` · ${bondPattern === 'running' ? `running ${Math.round(parseFloat(offsetFraction) * 100)}%` : bondPattern === 'herringbone' ? 'herringbone' : 'stack'}`;
+    + ` · ${bondSummary}`;
 
   const selected = result ? result.candidates[selectedIndex] : null;
 
@@ -304,9 +309,7 @@ const TileOptimizer = () => {
       reachable: !!result,
       summary: result
         ? `${selected.tiles_to_purchase_with_waste} tiles · smallest cut ${
-            selected.min_edge_cut_width === null && selected.min_edge_cut_height === null
-              ? 'none'
-              : mm(Math.min(selected.min_edge_cut_width ?? Infinity, selected.min_edge_cut_height ?? Infinity)) + ' mm'
+            smallestCutMm(selected) === null ? 'none' : `${mm(smallestCutMm(selected))} mm`
           } · ${selected.reused_offcut_count} offcuts reused`
         : '',
       locked: 'Solves from your surface',
@@ -523,6 +526,7 @@ const TileOptimizer = () => {
                   <option value="stack">Stack — straight grid</option>
                   <option value="running">Running — brick offset</option>
                   <option value="herringbone">Herringbone — 90° weave</option>
+                  <option value="diagonal">Diagonal — set on point</option>
                 </select>
               </div>
               {bondPattern === 'running' && (
@@ -545,6 +549,8 @@ const TileOptimizer = () => {
               {inputErrors.jointWidth || inputErrors.perimeterGap
                 || (bondPattern === 'herringbone'
                   ? 'Every tile alternates 90° from its neighbors — works with any tile size, no offset to set.'
+                  : bondPattern === 'diagonal'
+                  ? 'Every tile is rotated 45° ("set on point") — works with any tile size, no offset to set.'
                   : '50% is a standard brick bond; 33% is a third bond. The perimeter gap is expansion room against the wall, not grout.')}
             </p>
           </section>

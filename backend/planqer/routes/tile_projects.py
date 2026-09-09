@@ -87,6 +87,11 @@ def _render_saved_layout(surface_data: dict | None, layout_result: dict | None, 
                 rotated=t.get("rotated", False), kind=TileKind(t["kind"]),
                 nominal_width=t["width"], nominal_height=t["height"],
                 is_sliver=t.get("is_sliver", False),
+                # A diagonal ("set on point") piece's true shape — x/y/width/
+                # height above are only its bounding box for these; without
+                # this, a saved diagonal project's re-render would silently
+                # draw a rectangle instead of the real polygon.
+                vertices=tuple(tuple(v) for v in t["vertices"]) if t.get("vertices") else None,
             )
             for t in layout_result["tiles"]
         )

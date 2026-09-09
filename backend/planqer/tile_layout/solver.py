@@ -16,9 +16,16 @@ remains selectable even when it isn't the most efficient choice on paper.
 import math
 from dataclasses import dataclass
 
-from .bonds import BondGenerator, HerringboneBond, RunningBond, StackBond
-from .geometry import JointSpec, PlacedTile, Surface, Tile, place_and_clip
-from .offcuts import OffcutResult, match_offcuts
+from .bonds import BondGenerator, DiagonalBond, HerringboneBond, RunningBond, StackBond
+from .geometry import (
+    JointSpec,
+    PlacedTile,
+    Surface,
+    Tile,
+    place_and_clip,
+    place_and_clip_diagonal,
+)
+from .offcuts import OffcutResult, match_diagonal_offcuts, match_offcuts
 from .scoring import LayoutMetrics, score_layout
 
 _INF = float("inf")
@@ -61,6 +68,8 @@ def build_bond(pattern: str, offset_fraction: float = 0.5) -> BondGenerator:
         return RunningBond(offset_fraction=offset_fraction)
     if pattern == "herringbone":
         return HerringboneBond()
+    if pattern == "diagonal":
+        return DiagonalBond()
     raise ValueError(f"Unknown bond pattern: {pattern!r}")
 
 
@@ -80,8 +89,15 @@ def _generate_layout(
     offset_y: float,
 ) -> list[PlacedTile]:
     placed = []
+    is_diagonal = isinstance(bond, DiagonalBond)
     for x, y, rotated in bond.raw_positions(surface, tile, joint, offset_x, offset_y):
-        p = place_and_clip(x, y, rotated, tile, surface, joint)
+        if is_diagonal:
+            # (x, y) here is the tile's center, not its pre-clip top-left
+            # corner — DiagonalBond's raw_positions docstring explains why
+            # a different clip function (polygon, not rectangle) is needed.
+            p = place_and_clip_diagonal(x, y, tile, surface, joint)
+        else:
+            p = place_and_clip(x, y, rotated, tile, surface, joint)
         if p is not None:
             placed.append(p)
     return placed
@@ -94,6 +110,7 @@ def _signature(metrics: LayoutMetrics) -> tuple:
         metrics.notched_count,
         round(metrics.min_edge_cut_width, 3) if metrics.min_edge_cut_width is not None else -1,
         round(metrics.min_edge_cut_height, 3) if metrics.min_edge_cut_height is not None else -1,
+        round(metrics.min_diagonal_cut_span, 3) if metrics.min_diagonal_cut_span is not None else -1,
         round(metrics.symmetry_delta_x, 3),
         round(metrics.symmetry_delta_y, 3),
     )
@@ -101,7 +118,14 @@ def _signature(metrics: LayoutMetrics) -> tuple:
 
 def _safety_score(metrics: LayoutMetrics) -> float:
     """Higher is better. A tile dimension that was never cut contributes no
-    sliver risk on that axis, so it scores as +inf on that axis."""
+    sliver risk on that axis, so it scores as +inf on that axis. A diagonal
+    layout's safety is its one caliper-width span (see
+    scoring.LayoutMetrics.min_diagonal_cut_span) instead of two axis
+    values — falling through to the axis-aligned fields when it's None
+    correctly yields +inf for a diagonal layout with nothing cut too,
+    since both are None in that case."""
+    if metrics.min_diagonal_cut_span is not None:
+        return metrics.min_diagonal_cut_span
     w = metrics.min_edge_cut_width if metrics.min_edge_cut_width is not None else _INF
     h = metrics.min_edge_cut_height if metrics.min_edge_cut_height is not None else _INF
     return min(w, h)
@@ -151,7 +175,15 @@ def _build_candidate(
     scored_tiles, metrics = score_layout(placed, surface, min_edge_cut=min_edge_cut)
 
     if reuse_offcuts:
-        offcut_result = match_offcuts(scored_tiles, tile)
+        # A candidate's tiles are always all-axis-aligned or all-diagonal
+        # (one bond per candidate, never mixed) — match_offcuts' rectangle
+        # math and match_diagonal_offcuts' triangle-leg math aren't
+        # interchangeable, so which one runs depends on which shape this
+        # candidate's pieces actually are.
+        if scored_tiles[0].vertices is not None:
+            offcut_result = match_diagonal_offcuts(list(scored_tiles))
+        else:
+            offcut_result = match_offcuts(scored_tiles, tile)
         tiles_to_purchase = offcut_result.tiles_to_purchase
     else:
         offcut_result = OffcutResult(
@@ -256,14 +288,18 @@ def solve_tile_layout(
 
         # Canonical, mathematically-exact candidates first, so they win the
         # dedup slot (and keep their descriptive label) over an equivalent
-        # sampled point discovered later.
-        for label, ox, oy in _canonical_candidates(working_tile, rotated_flag, surface, joint):
-            _consider(_build_candidate(
-                label=label, offset_x=ox, offset_y=oy, rotated=rotated_flag,
-                bond=bond, surface=surface, tile=working_tile, joint=joint,
-                min_edge_cut=min_edge_cut, reuse_offcuts=reuse_offcuts,
-                waste_percent=waste_percent,
-            ))
+        # sampled point discovered later. Skipped for diagonal: a 45-degree
+        # tile can never sit flush with a 90-degree surface corner the way
+        # an axis-aligned tile can, so "full tile at this corner" isn't a
+        # candidate that exists for this bond — see bonds.DiagonalBond.
+        if bond_pattern != "diagonal":
+            for label, ox, oy in _canonical_candidates(working_tile, rotated_flag, surface, joint):
+                _consider(_build_candidate(
+                    label=label, offset_x=ox, offset_y=oy, rotated=rotated_flag,
+                    bond=bond, surface=surface, tile=working_tile, joint=joint,
+                    min_edge_cut=min_edge_cut, reuse_offcuts=reuse_offcuts,
+                    waste_percent=waste_percent,
+                ))
 
         for i in range(sample_steps):
             ox = pitch_x * i / sample_steps

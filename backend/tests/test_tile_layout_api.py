@@ -192,3 +192,41 @@ def test_tile_layout_herringbone_bond():
     kinds = {t["kind"] for t in candidate["tiles"]}
     assert "full" in kinds
 
+
+def test_tile_layout_diagonal_bond():
+    payload = dict(BASE_PAYLOAD)
+    payload["surface_width"] = 2000
+    payload["surface_height"] = 1500
+    payload["tile"] = {"width": 300, "height": 150, "allow_rotation": False}
+    payload["bond"] = {"pattern": "diagonal", "offset_fraction": 0.5}
+    response = client.post("/api/tile-layout", json=payload)
+    assert response.status_code == 200
+    candidate = response.json()["candidates"][0]
+    assert candidate["tiles_to_purchase"] >= 1
+
+    # Every diagonal piece carries its true polygon — unlike axis-aligned
+    # bonds, x/y/width/height alone would only be its bounding box.
+    assert all(t["vertices"] is not None and len(t["vertices"]) >= 3 for t in candidate["tiles"])
+    # The axis-aligned min_edge_cut_width/height are meaningless for a
+    # rotated piece — None here, with min_diagonal_cut_span in their place.
+    assert candidate["min_edge_cut_width"] is None
+    assert candidate["min_edge_cut_height"] is None
+    assert candidate["min_diagonal_cut_span"] is not None
+    assert candidate["symmetry_delta_x"] == 0.0
+    assert candidate["symmetry_delta_y"] == 0.0
+    # visualization still comes back as a normal SVG data URL — the
+    # polygon-vs-rect drawing choice is an internal detail.
+    assert candidate["visualization"].startswith("data:image/svg+xml;base64,")
+
+
+def test_tile_layout_diagonal_has_no_flush_corner_candidates():
+    payload = dict(BASE_PAYLOAD)
+    payload["surface_width"] = 2000
+    payload["surface_height"] = 1500
+    payload["tile"] = {"width": 300, "height": 150, "allow_rotation": False}
+    payload["bond"] = {"pattern": "diagonal", "offset_fraction": 0.5}
+    payload["candidate_count"] = 10
+    response = client.post("/api/tile-layout", json=payload)
+    assert response.status_code == 200
+    assert all("corner" not in c["label"] for c in response.json()["candidates"])
+

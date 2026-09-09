@@ -10,10 +10,13 @@
   one amber signal on this step also carries "this is the one we'd pick."
 */
 
+import { smallestCutMm } from '../utils/tileCutList';
+
 const mm = (n) => (Number.isFinite(n) ? Math.round(n).toLocaleString('sv-SE') : '—');
 
 const TileLayoutCandidateCard = ({ candidate, selected, onSelect }) => {
   const hasSliver = candidate.sliver_count > 0;
+  const smallestCut = smallestCutMm(candidate);
 
   return (
     <button
@@ -35,14 +38,7 @@ const TileLayoutCandidateCard = ({ candidate, selected, onSelect }) => {
           </div>
           <div>
             <dt>Smallest cut</dt>
-            <dd>
-              {candidate.min_edge_cut_width === null && candidate.min_edge_cut_height === null
-                ? 'None cut'
-                : `${mm(Math.min(
-                    candidate.min_edge_cut_width ?? Infinity,
-                    candidate.min_edge_cut_height ?? Infinity
-                  ))} mm`}
-            </dd>
+            <dd>{smallestCut === null ? 'None cut' : `${mm(smallestCut)} mm`}</dd>
           </div>
           <div>
             <dt>Used</dt>

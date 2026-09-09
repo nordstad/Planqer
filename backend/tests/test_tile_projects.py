@@ -202,6 +202,45 @@ def test_updating_layout_result_redraws_the_saved_diagram(client, solved_result)
         assert first_image != second_image
 
 
+def test_saved_diagonal_project_redraws_the_true_polygon_shape(client):
+    """The re-render adapter (_render_saved_layout) rebuilds PlacedTile
+    from the stored JSON — it must carry `vertices` through, or a saved
+    diagonal project would silently redraw as rectangles (its stored
+    x/y/width/height are only the bounding box for a rotated piece)."""
+    headers = _register_and_login(client)
+    diagonal_payload = {
+        **TILE_PAYLOAD,
+        "surface_width": 2000,
+        "surface_height": 1500,
+        "tile": {"width": 300, "height": 150, "allow_rotation": False},
+        "bond": {"pattern": "diagonal", "offset_fraction": 0.5},
+    }
+    result = client.post("/api/tile-layout", json=diagonal_payload).json()
+    candidate = result["candidates"][result["recommended_index"]]
+    assert any(t["vertices"] is not None for t in candidate["tiles"])  # sanity
+
+    save_payload = {
+        "name": "Diagonal splashback",
+        "project_group_id": None,
+        "surface_data": {
+            "width": diagonal_payload["surface_width"],
+            "height": diagonal_payload["surface_height"],
+            "cutouts": [],
+        },
+        "tile_data": diagonal_payload["tile"],
+        "bond_data": {**diagonal_payload["bond"], **TILE_PAYLOAD["joint"]},
+        "options_data": {"candidate_count": diagonal_payload["candidate_count"]},
+        "layout_result": candidate,
+    }
+    saved = client.post("/api/tile-projects/", json=save_payload, headers=headers).json()
+
+    response = client.get(f"/api/tile-projects/{saved['id']}/image", headers=headers)
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "image/svg+xml"
+    assert b"<polygon" in response.content
+
+
 # ── bad path / ownership ─────────────────────────────────────────────────
 
 

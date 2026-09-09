@@ -10,7 +10,14 @@ CSS custom property, because it is rasterized outside the page's stylesheet.
 import base64
 import re
 
-from planqer.tile_layout.geometry import Cutout, JointSpec, PlacedTile, Surface, Tile, TileKind
+from planqer.tile_layout.geometry import (
+    Cutout,
+    JointSpec,
+    PlacedTile,
+    Surface,
+    Tile,
+    TileKind,
+)
 from planqer.tile_layout.solver import solve_tile_layout
 from planqer.tile_visualization import (
     FULL_TILE_FILL,
@@ -18,6 +25,7 @@ from planqer.tile_visualization import (
     assign_size_colors,
     generate_saved_tile_diagram,
     generate_tile_layout_visualization,
+    tile_size_key,
 )
 
 
@@ -143,3 +151,83 @@ def test_svg_uses_a_distinct_color_per_cut_size():
     svg = _decode(generate_tile_layout_visualization(candidate, surface))
     for hex_color in colors.values():
         assert hex_color in svg
+
+
+def test_tile_size_key_disambiguates_polygons_sharing_a_bounding_box():
+    # A triangle and a pentagon can share a bounding box (both clipped from
+    # the same corner region) -- the key must not conflate them.
+    common = {"x": 0, "y": 0, "width": 10, "height": 10, "rotated": False,
+              "nominal_width": 100, "nominal_height": 100, "kind": TileKind.CUT}
+    triangle = PlacedTile(vertices=((0.0, 0.0), (10.0, 0.0), (0.0, 10.0)), **common)
+    pentagon = PlacedTile(
+        vertices=((0.0, 0.0), (10.0, 0.0), (10.0, 5.0), (5.0, 10.0), (0.0, 10.0)), **common,
+    )
+
+    assert tile_size_key(triangle) != tile_size_key(pentagon)
+
+
+def test_tile_size_key_unchanged_for_axis_aligned_tiles():
+    """Axis-aligned tiles predate diagonal support — their key must be
+    exactly the plain (width, height) pair it always was, so
+    assign_size_colors's grouping for stack/running/herringbone can't
+    shift under existing callers."""
+    tile = PlacedTile(
+        x=0, y=0, width=50, height=100, rotated=False,
+        kind=TileKind.CUT, nominal_width=100, nominal_height=100,
+    )
+    assert tile_size_key(tile) == (50, 100)
+
+
+def test_diagonal_svg_draws_polygons_not_rects_for_tiles():
+    surface = Surface(width=1500, height=1200)
+    tile = Tile(width=300, height=150)
+    joint = JointSpec(joint_width=3)
+    result = solve_tile_layout(
+        surface, tile, joint, bond_pattern="diagonal", candidate_count=3, sample_steps=6,
+    )
+    candidate = result.candidates[result.recommended_index]
+
+    svg = _decode(generate_tile_layout_visualization(candidate, surface))
+
+    assert svg.count("<polygon") >= len(candidate.tiles)
+
+
+def test_diagonal_svg_has_intrinsic_dimensions_and_no_css_variables():
+    """Same PNG-export contract as the axis-aligned bonds — see
+    test_svg_has_intrinsic_dimensions_and_no_css_variables above."""
+    surface = Surface(width=1500, height=1200)
+    tile = Tile(width=300, height=150)
+    joint = JointSpec(joint_width=3)
+    result = solve_tile_layout(
+        surface, tile, joint, bond_pattern="diagonal", candidate_count=3, sample_steps=6,
+    )
+    candidate = result.candidates[result.recommended_index]
+
+    svg = _decode(generate_tile_layout_visualization(candidate, surface))
+
+    svg_tag = re.search(r"<svg[^>]*>", svg).group(0)
+    assert re.search(r'width="\d', svg_tag)
+    assert re.search(r'height="\d', svg_tag)
+    assert "var(" not in svg
+
+
+def test_diagonal_svg_labels_only_full_tiles():
+    """A CUT/NOTCHED diagonal piece's bounding box isn't its real size, so
+    labeling it "width x height" the way an axis-aligned piece is labeled
+    would misrepresent an irregular shape as a rectangle — only FULL
+    diamonds (where nominal size is an honest fact) get a dimension label
+    (see _create_tile_polygon)."""
+    surface = Surface(width=1500, height=1200)
+    tile = Tile(width=300, height=150)
+    joint = JointSpec(joint_width=3)
+    result = solve_tile_layout(
+        surface, tile, joint, bond_pattern="diagonal", candidate_count=3, sample_steps=6,
+    )
+    candidate = result.candidates[result.recommended_index]
+    assert any(t.kind != TileKind.FULL for t in candidate.tiles)  # sanity: real cut pieces exist
+    full_tile = next(t for t in candidate.tiles if t.kind == TileKind.FULL)
+
+    svg = _decode(generate_tile_layout_visualization(candidate, surface))
+
+    full_label = f"{full_tile.nominal_width:.0f}\u00d7{full_tile.nominal_height:.0f}"
+    assert full_label in svg

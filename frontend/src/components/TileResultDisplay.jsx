@@ -12,6 +12,7 @@
 import { useState } from 'react';
 import { Download } from './icons';
 import TileCutListTable from './TileCutListTable';
+import { smallestCutMm } from '../utils/tileCutList';
 
 const mm = (n) => (Number.isFinite(n) ? Math.round(n).toLocaleString('sv-SE') : '—');
 
@@ -20,6 +21,7 @@ const TileResultDisplay = ({ candidate, projectName }) => {
   if (!candidate) return null;
 
   const safeName = (projectName ? projectName : 'tile_layout').replace(/[^a-zA-Z0-9_-]/g, '_');
+  const isDiagonal = candidate.min_diagonal_cut_span != null;
 
   const downloadDiagram = () => {
     const extension = candidate.visualization.startsWith('data:image/png') ? 'png' : 'svg';
@@ -80,14 +82,23 @@ const TileResultDisplay = ({ candidate, projectName }) => {
             <tr><td>Offcuts reused</td><td>{candidate.reused_offcut_count}</td></tr>
             <tr><td>Tiles to buy</td><td>{candidate.tiles_to_purchase}</td></tr>
             <tr><td>With breakage allowance</td><td>{candidate.tiles_to_purchase_with_waste}</td></tr>
-            <tr>
-              <td>Tightest cut, left/right edge</td>
-              <td>{candidate.min_edge_cut_width === null ? 'None cut' : `${mm(candidate.min_edge_cut_width)} mm`}</td>
-            </tr>
-            <tr>
-              <td>Tightest cut, top/bottom edge</td>
-              <td>{candidate.min_edge_cut_height === null ? 'None cut' : `${mm(candidate.min_edge_cut_height)} mm`}</td>
-            </tr>
+            {isDiagonal ? (
+              <tr>
+                <td>Tightest cut</td>
+                <td>{smallestCutMm(candidate) === null ? 'None cut' : `${mm(smallestCutMm(candidate))} mm`}</td>
+              </tr>
+            ) : (
+              <>
+                <tr>
+                  <td>Tightest cut, left/right edge</td>
+                  <td>{candidate.min_edge_cut_width === null ? 'None cut' : `${mm(candidate.min_edge_cut_width)} mm`}</td>
+                </tr>
+                <tr>
+                  <td>Tightest cut, top/bottom edge</td>
+                  <td>{candidate.min_edge_cut_height === null ? 'None cut' : `${mm(candidate.min_edge_cut_height)} mm`}</td>
+                </tr>
+              </>
+            )}
             <tr><td>Slivers below the guard</td><td>{candidate.sliver_count}</td></tr>
             <tr><td>Distinct cut sizes</td><td>{candidate.distinct_cut_sizes}</td></tr>
             <tr><td>Material used</td><td>{(candidate.efficiency * 100).toFixed(1)}%</td></tr>

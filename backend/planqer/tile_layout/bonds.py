@@ -11,10 +11,12 @@ Adding a new bond (herringbone, diagonal — see .plans/tile-layout.md phase 4)
 means adding a new class here. geometry.py, scoring.py and offcuts.py do not
 need to change: that is the whole point of this seam. Herringbone (below)
 holds to this — it is built entirely from axis-aligned rectangles, so
-place_and_clip's existing rectangle-clip logic applies unchanged. True 45°
-diagonal-set tiles do not: they need rotated-rectangle (or polygon) clipping,
-which is a real geometry expansion, not a new bond alone — see
-.plans/tile-layout.md for that scoping discussion.
+place_and_clip's existing rectangle-clip logic applies unchanged. Diagonal
+(also below) needed real additions to geometry.py (polygon clipping),
+scoring.py (a caliper-width metric), and offcuts.py (triangle-pair
+matching) — see .plans/tile-layout.md Phase 4b for that design — but this
+module itself still holds to the seam: DiagonalBond only emits raw (x, y,
+rotated) positions, same as every other bond here.
 """
 
 import math
@@ -23,6 +25,8 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from .geometry import JointSpec, Surface, Tile
+
+_C45 = math.sqrt(2) / 2  # cos(45deg) == sin(45deg)
 
 
 def _index_range(offset: float, pitch: float, extent: float, span: float) -> range:
@@ -151,3 +155,65 @@ class HerringboneBond:
                 oy = offset_y + i * t1y + j * t2y
                 yield (ox, oy, h_rotated)
                 yield (ox + l + g, oy, v_rotated)
+
+
+@dataclass(frozen=True)
+class DiagonalBond:
+    """45-degree "set on point" bond: every tile is a w x h rectangle
+    rotated 45 degrees about its own center (see
+    geometry.place_and_clip_diagonal), all in the same fixed orientation —
+    unlike herringbone, this bond does not mix two 90-degree orientations
+    within one lattice. A non-square tile's other diagonal orientation is
+    reached the normal way: the pattern-level rotation search in
+    solver._orientations swaps tile.width/height for a second full search
+    pass, exactly like stack/running bond — this class doesn't need to
+    know about that.
+
+    Built the easy way: generate a plain rectangular lattice in a
+    coordinate frame rotated -45 degrees relative to the surface ("local"
+    space, where the tiles are just axis-aligned w x h rectangles on a
+    regular grid, exactly like StackBond), then rotate each lattice
+    point's center back into surface space by +45 degrees before handing
+    it to place_and_clip_diagonal. Rotation is an isometry, so a joint gap
+    of g between adjacent tiles in local space is still exactly g in
+    surface space once rotated — no herringbone-style from-scratch
+    translation-vector derivation is needed here, and no restriction on
+    tile aspect ratio either.
+
+    offset_x/offset_y are consumed as the *local*-frame offset, over the
+    same pitch_x = tile.width + joint_width, pitch_y = tile.height +
+    joint_width every bond is already sampled over in solver.py — so the
+    solver's existing generic offset-sampling grid works unchanged for
+    this bond too. There is, however, no meaningful "full tile flush with
+    a straight corner" canonical candidate for a 45-degree tile against a
+    90-degree corner (geometrically impossible, not just unconsidered), so
+    solver.py skips canonical-candidate injection for this bond and relies
+    on the sampled grid alone — see solve_tile_layout.
+    """
+
+    def raw_positions(
+        self, surface: Surface, tile: Tile, joint: JointSpec, offset_x: float, offset_y: float
+    ) -> Iterator[tuple[float, float, bool]]:
+        pitch_lx = tile.width + joint.joint_width
+        pitch_ly = tile.height + joint.joint_width
+
+        # A local-space step's *world-space* magnitude equals its local
+        # pitch exactly (rotation preserves distance), so each axis gets
+        # its own margin sized off its own pitch. Unlike herringbone's
+        # generic width+height bound, this lattice's two directions are
+        # each exactly 45 degrees off-axis, so the exact (not merely safe)
+        # required span is the surface rectangle's projection onto either
+        # direction: (width + height) / sqrt(2) -- tighter by a factor of
+        # sqrt(2) than the Manhattan bound, which matters here since every
+        # raw position costs a polygon clip, not a cheap rectangle clip.
+        diagonal = (surface.width + surface.height) * _C45
+        margin_i = math.ceil(diagonal / pitch_lx) + 3
+        margin_j = math.ceil(diagonal / pitch_ly) + 3
+
+        for j in range(-margin_j, margin_j):
+            ly = offset_y + j * pitch_ly
+            for i in range(-margin_i, margin_i):
+                lx = offset_x + i * pitch_lx
+                cx = _C45 * (lx - ly)
+                cy = _C45 * (lx + ly)
+                yield (cx, cy, False)

@@ -13,6 +13,7 @@ tiles remove an irregular (non-rectangular) region and are not a source of
 reusable offcuts in the MVP.
 """
 
+import math
 from dataclasses import dataclass
 
 from .geometry import PlacedTile, Tile, TileKind
@@ -79,6 +80,99 @@ def match_offcuts(placed_tiles: list[PlacedTile], tile: Tile) -> OffcutResult:
             if _fits(offcut_w, offcut_h, need_w, need_h, tile.allow_rotation):
                 used_pool_indices.add(pool_index)
                 matches.append((req_index, source_index))
+                break
+
+    reused_count = len(matches)
+    return OffcutResult(
+        raw_tile_count=raw_tile_count,
+        reused_count=reused_count,
+        tiles_to_purchase=raw_tile_count - reused_count,
+        matches=tuple(matches),
+    )
+
+
+# ── Diagonal offcut reuse ─────────────────────────────────────────────────
+#
+# A diagonal CUT piece that's mostly outside the surface (see
+# geometry.place_and_clip_diagonal) leaves only a small triangular sliver
+# inside — the diamond's one preserved 90-degree corner, plus two new
+# vertices where the surface boundary crosses the diamond's edges. The two
+# leg lengths adjacent to that preserved corner are exactly what's left of
+# the tile in each direction, and two such triangles with the *same* leg
+# pair are precisely the two halves you'd get from ripping one fresh tile
+# along its diagonal — the actual trade technique this models ("cut one
+# tile diagonally, use both halves at opposite ends of a row").
+#
+# Pentagons/hexagons (a true corner clip, where two straight edges cut the
+# same diamond) are not paired here — genuinely irregular, out of scope
+# for v1 (see .plans/tile-layout.md Phase 4b).
+
+_ANGLE_TOL_DEG = 1.0
+_LEG_TOL = 1e-3
+
+
+def _triangle_right_angle_legs(
+    vertices: tuple[tuple[float, float], ...],
+) -> tuple[float, float] | None:
+    """The two edge lengths adjacent to whichever vertex of a triangle is
+    closest to a right angle, sorted so leg order doesn't matter for
+    comparison. None if no vertex is close enough to 90 degrees — every
+    triangle place_and_clip_diagonal actually produces has one (the
+    diamond's one preserved corner), so this is a defensive fallback, not
+    an expected path."""
+    if len(vertices) != 3:
+        return None
+
+    best: tuple[float, float, float] | None = None
+    for i in range(3):
+        p = vertices[i]
+        a = vertices[(i - 1) % 3]
+        b = vertices[(i + 1) % 3]
+        v1x, v1y = a[0] - p[0], a[1] - p[1]
+        v2x, v2y = b[0] - p[0], b[1] - p[1]
+        len1, len2 = math.hypot(v1x, v1y), math.hypot(v2x, v2y)
+        if len1 < _EPS or len2 < _EPS:
+            continue
+        cos_angle = max(-1.0, min(1.0, (v1x * v2x + v1y * v2y) / (len1 * len2)))
+        angle_diff = abs(math.degrees(math.acos(cos_angle)) - 90.0)
+        if best is None or angle_diff < best[0]:
+            best = (angle_diff, len1, len2)
+
+    if best is None or best[0] > _ANGLE_TOL_DEG:
+        return None
+    _, leg1, leg2 = best
+    return (min(leg1, leg2), max(leg1, leg2))
+
+
+def match_diagonal_offcuts(placed_tiles: list[PlacedTile]) -> OffcutResult:
+    """Greedy pairing of triangular diagonal CUT pieces whose leg-pair
+    signature matches — see the module note above. Unlike match_offcuts,
+    there's no consumer/source asymmetry to the physical technique (one
+    fresh tile is ripped to satisfy *two* placed pieces at once), but the
+    result is recorded in the same (consumer_index, source_index) shape
+    for API/schema compatibility — which piece plays which role is
+    arbitrary."""
+    raw_tile_count = len(placed_tiles)
+
+    candidates: list[tuple[int, tuple[float, float]]] = []
+    for i, t in enumerate(placed_tiles):
+        if t.kind == TileKind.CUT and t.vertices is not None:
+            legs = _triangle_right_angle_legs(t.vertices)
+            if legs is not None:
+                candidates.append((i, legs))
+
+    matches: list[tuple[int, int]] = []
+    used: set[int] = set()
+    for idx, (i, legs_i) in enumerate(candidates):
+        if i in used:
+            continue
+        for j, legs_j in candidates[idx + 1 :]:
+            if j in used:
+                continue
+            if abs(legs_i[0] - legs_j[0]) < _LEG_TOL and abs(legs_i[1] - legs_j[1]) < _LEG_TOL:
+                matches.append((i, j))
+                used.add(i)
+                used.add(j)
                 break
 
     reused_count = len(matches)

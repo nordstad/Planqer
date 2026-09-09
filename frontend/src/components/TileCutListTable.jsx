@@ -29,6 +29,7 @@ const TileCutListTable = ({ candidate }) => {
 
   const { fullCount, fullColor, cutGroups } = buildCutList(candidate.tiles);
   if (fullCount === 0 && cutGroups.length === 0) return null;
+  const hasDiagonalCuts = cutGroups.some((g) => g.isDiagonal);
 
   return (
     <section>
@@ -62,7 +63,9 @@ const TileCutListTable = ({ candidate }) => {
                 )}
               </td>
               <td style={{ textAlign: 'left', color: 'var(--ink-2)' }}>
-                {group.kind === 'notched' ? 'Cut around an opening — see diagram' : 'Straight cut'}
+                {group.isDiagonal
+                  ? (group.kind === 'notched' ? 'Diagonal, cut around an opening — see diagram' : 'Diagonal — see diagram')
+                  : (group.kind === 'notched' ? 'Cut around an opening — see diagram' : 'Straight cut')}
               </td>
               <td>{group.reusedCount > 0 ? `${group.reusedCount} of ${group.count}` : '—'}</td>
               <td>{group.count}</td>
@@ -76,6 +79,7 @@ const TileCutListTable = ({ candidate }) => {
         readable without every tile needing its own printed dimensions.
         {candidate.notched_count > 0 && ' "Cut around an opening" gives the piece\u2019s outer size only; the notch itself is the shape drawn in the diagram.'}
         {candidate.reused_offcut_count > 0 && ' "From offcut" is how many of that size come free from another tile\u2019s leftover, not a fresh tile.'}
+        {hasDiagonalCuts && ' A "Diagonal" size is the piece\u2019s outer bounding box, not its actual triangular/pentagonal shape \u2014 see the diagram for the real cut.'}
       </p>
     </section>
   );
