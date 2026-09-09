@@ -8,7 +8,7 @@ verified by arithmetic, not just by re-running the code under test).
 
 import pytest
 
-from planqer.tile_layout.bonds import RunningBond, StackBond
+from planqer.tile_layout.bonds import HerringboneBond, RunningBond, StackBond
 from planqer.tile_layout.geometry import (
     Cutout,
     JointSpec,
@@ -207,6 +207,74 @@ def test_running_bond_rejects_offset_fraction_out_of_range():
         RunningBond(offset_fraction=0.0)
     with pytest.raises(ValueError):
         RunningBond(offset_fraction=1.0)
+
+
+def _clipped(bond, surface, tile, joint, offset_x=0.0, offset_y=0.0):
+    return [
+        p
+        for (x, y, rotated) in bond.raw_positions(surface, tile, joint, offset_x, offset_y)
+        if (p := place_and_clip(x, y, rotated, tile, surface, joint)) is not None
+    ]
+
+
+def _no_overlaps(tiles):
+    eps = 1e-6
+
+    def overlaps(a, b):
+        return not (
+            a.x + a.width <= b.x + eps or b.x + b.width <= a.x + eps
+            or a.y + a.height <= b.y + eps or b.y + b.height <= a.y + eps
+        )
+
+    return not any(overlaps(tiles[i], tiles[j]) for i in range(len(tiles)) for j in range(i + 1, len(tiles)))
+
+
+@pytest.mark.parametrize("width,height,joint_width", [
+    (300, 150, 3),   # classic 2:1 plank
+    (300, 100, 0),   # 3:1 plank, no grout
+    (200, 180, 4),   # a ratio close to square, real joint
+])
+def test_herringbone_bond_never_overlaps(width, height, joint_width):
+    """Verified constructively (see bonds.HerringboneBond's docstring) for
+    any tile aspect ratio and joint width — this exercises that guarantee
+    against the real geometry pipeline, not just the derivation script."""
+    surface = Surface(width=2000, height=1500)
+    tile = Tile(width=width, height=height)
+    joint = JointSpec(joint_width=joint_width)
+
+    placed = _clipped(HerringboneBond(), surface, tile, joint)
+
+    assert len(placed) > 0
+    assert _no_overlaps(placed)
+
+
+def test_herringbone_bond_places_both_orientations():
+    surface = Surface(width=2000, height=1500)
+    tile = Tile(width=300, height=150)
+    joint = JointSpec(joint_width=3)
+
+    placed = _clipped(HerringboneBond(), surface, tile, joint)
+
+    widths = {round(t.width) for t in placed if t.kind == TileKind.FULL}
+    # A full tile is either 300x150 (unrotated) or 150x300 (rotated) — both
+    # should appear, since herringbone mixes both within one lattice.
+    assert 300 in widths
+    assert 150 in widths
+
+
+def test_herringbone_bond_leaves_no_gap():
+    """A gap (as opposed to an overlap) doesn't show up as an overlap check
+    at all — it shows up as *missing area*. Coverage area must equal surface
+    area minus the deliberate joint gaps, not less (a hole would silently
+    under-report both waste and tile count)."""
+    surface = Surface(width=1000, height=1000)
+    tile = Tile(width=200, height=100)
+    joint = JointSpec(joint_width=0)  # zero joint: coverage must be exact
+
+    placed = _clipped(HerringboneBond(), surface, tile, joint)
+    _scored, metrics = score_layout(placed, surface)
+
+    assert metrics.coverage_area == pytest.approx(surface.net_area, rel=1e-6)
 
 
 # ── Scoring ───────────────────────────────────────────────────────────────

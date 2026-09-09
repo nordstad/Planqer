@@ -16,7 +16,7 @@ remains selectable even when it isn't the most efficient choice on paper.
 import math
 from dataclasses import dataclass
 
-from .bonds import BondGenerator, RunningBond, StackBond
+from .bonds import BondGenerator, HerringboneBond, RunningBond, StackBond
 from .geometry import JointSpec, PlacedTile, Surface, Tile, place_and_clip
 from .offcuts import OffcutResult, match_offcuts
 from .scoring import LayoutMetrics, score_layout
@@ -59,6 +59,8 @@ def build_bond(pattern: str, offset_fraction: float = 0.5) -> BondGenerator:
         return StackBond()
     if pattern == "running":
         return RunningBond(offset_fraction=offset_fraction)
+    if pattern == "herringbone":
+        return HerringboneBond()
     raise ValueError(f"Unknown bond pattern: {pattern!r}")
 
 
@@ -185,14 +187,19 @@ def _build_candidate(
     }
 
 
-def _orientations(tile: Tile) -> list[tuple[Tile, bool]]:
+def _orientations(tile: Tile, bond_pattern: str) -> list[tuple[Tile, bool]]:
     """The tile as given, plus — if rotation is allowed — the whole pattern
     laid with the tile turned 90 degrees. This is a *pattern-level* choice
     (lay every tile the other way round) distinct from PlacedTile.rotated,
-    which the MVP bonds never set (no bond mixes orientations within one
-    lattice)."""
+    which stack/running bonds never set (no bond mixes orientations within
+    one lattice) — but herringbone does mix both 90-degree orientations
+    within its own lattice already (see bonds.HerringboneBond), so swapping
+    width/height for a second search pass would relabel which raw
+    orientation counts as "unrotated" but produce the exact same set of
+    placed rectangles. Skipped for herringbone the same way a square tile
+    skips it."""
     orientations = [(tile, False)]
-    if tile.allow_rotation and tile.width != tile.height:
+    if tile.allow_rotation and tile.width != tile.height and bond_pattern != "herringbone":
         swapped = Tile(width=tile.height, height=tile.width, allow_rotation=tile.allow_rotation)
         orientations.append((swapped, True))
     return orientations
@@ -242,7 +249,7 @@ def solve_tile_layout(
         if key not in pool:
             pool[key] = entry
 
-    for working_tile, rotated_flag in _orientations(tile):
+    for working_tile, rotated_flag in _orientations(tile, bond_pattern):
         bond = build_bond(bond_pattern, offset_fraction)
         pitch_x = working_tile.width + joint.joint_width
         pitch_y = working_tile.height + joint.joint_width

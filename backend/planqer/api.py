@@ -660,17 +660,18 @@ class TileJointSpec(BaseModel):
 
 
 class TileBondSpec(BaseModel):
-    """The laying pattern. See tile_layout/bonds.py — herringbone and
-    diagonal are deferred (see .plans/tile-layout.md phase 4)."""
+    """The laying pattern. See tile_layout/bonds.py — true 45-degree
+    diagonal-set tiles are deferred (see .plans/tile-layout.md phase 4);
+    they need rotated/polygon clipping, not just a new bond."""
 
-    pattern: str = "stack"  # "stack" | "running"
-    offset_fraction: float = 0.5  # fraction of tile width; 0.5 = brick bond
+    pattern: str = "stack"  # "stack" | "running" | "herringbone"
+    offset_fraction: float = 0.5  # fraction of tile width; 0.5 = brick bond; ignored for herringbone
 
     @field_validator("pattern")
     @classmethod
     def validate_pattern(cls, v):
-        if v not in ("stack", "running"):
-            raise ValueError(f"Invalid bond pattern '{v}'. Valid options: stack, running")
+        if v not in ("stack", "running", "herringbone"):
+            raise ValueError(f"Invalid bond pattern '{v}'. Valid options: stack, running, herringbone")
         return v
 
     @field_validator("offset_fraction")

@@ -13,7 +13,7 @@ from planqer.tile_layout.solver import build_bond, solve_tile_layout
 
 def test_build_bond_rejects_unknown_pattern():
     with pytest.raises(ValueError):
-        build_bond("herringbone")  # not implemented until phase 4
+        build_bond("chevron")  # true 45-degree diagonal-set patterns aren't implemented — see .plans/tile-layout.md
 
 
 def test_solve_rejects_candidate_count_below_one():
@@ -208,3 +208,35 @@ def test_rotation_allowed_can_surface_a_rotated_candidate():
     )
 
     assert any(c.rotated for c in result.candidates)
+
+
+def test_herringbone_solves_end_to_end_with_a_flush_corner_candidate():
+    surface = Surface(width=2000, height=1500)
+    tile = Tile(width=300, height=150)
+    joint = JointSpec(joint_width=3)
+
+    result = solve_tile_layout(
+        surface, tile, joint, bond_pattern="herringbone", candidate_count=20, sample_steps=8,
+    )
+
+    assert len(result.candidates) > 0
+    corner = next((c for c in result.candidates if "bottom-left corner" in c.label), None)
+    assert corner is not None
+    origin_tile = next(t for t in corner.tiles if t.x < 1e-6 and t.y < 1e-6)
+    assert origin_tile.kind.value == "full"
+
+
+def test_herringbone_allow_rotation_does_not_duplicate_candidates():
+    """Herringbone already mixes both 90-degree orientations within its own
+    lattice (see bonds.HerringboneBond), so the pattern-level rotation
+    search (_orientations) would only relabel an identical layout — the
+    same reasoning that already skips it for a square tile."""
+    surface = Surface(width=2000, height=1500)
+    tile = Tile(width=300, height=150, allow_rotation=True)
+    joint = JointSpec(joint_width=3)
+
+    result = solve_tile_layout(
+        surface, tile, joint, bond_pattern="herringbone", candidate_count=10, sample_steps=8,
+    )
+
+    assert all(not c.rotated for c in result.candidates)

@@ -213,7 +213,7 @@ const TileOptimizer = () => {
   const surfaceSummary = `${mm(parseFloat(surfaceWidth))} × ${mm(parseFloat(surfaceHeight))} mm`
     + ` · ${mm(parseFloat(tileWidth))} × ${mm(parseFloat(tileHeight))} tile`
     + ` · ${mm(parseFloat(jointWidth))} mm joint`
-    + ` · ${bondPattern === 'running' ? `running ${Math.round(parseFloat(offsetFraction) * 100)}%` : 'stack'}`;
+    + ` · ${bondPattern === 'running' ? `running ${Math.round(parseFloat(offsetFraction) * 100)}%` : bondPattern === 'herringbone' ? 'herringbone' : 'stack'}`;
 
   const selected = result ? result.candidates[selectedIndex] : null;
 
@@ -522,6 +522,7 @@ const TileOptimizer = () => {
                 >
                   <option value="stack">Stack — straight grid</option>
                   <option value="running">Running — brick offset</option>
+                  <option value="herringbone">Herringbone — 90° weave</option>
                 </select>
               </div>
               {bondPattern === 'running' && (
@@ -542,9 +543,12 @@ const TileOptimizer = () => {
             </div>
             <p className={inputErrors.jointWidth || inputErrors.perimeterGap ? 'text-danger text-[12.5px] font-semibold' : 'synthetic'} style={{ marginTop: '10px' }}>
               {inputErrors.jointWidth || inputErrors.perimeterGap
-                || '50% is a standard brick bond; 33% is a third bond. The perimeter gap is expansion room against the wall, not grout.'}
+                || (bondPattern === 'herringbone'
+                  ? 'Every tile alternates 90° from its neighbors — works with any tile size, no offset to set.'
+                  : '50% is a standard brick bond; 33% is a third bond. The perimeter gap is expansion room against the wall, not grout.')}
             </p>
           </section>
+
 
           <div style={{ marginTop: '26px' }}>
             <Disclosure

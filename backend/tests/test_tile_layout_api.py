@@ -98,7 +98,7 @@ def test_tile_layout_rejects_oversized_tile():
 
 def test_tile_layout_rejects_unknown_bond_pattern():
     payload = dict(BASE_PAYLOAD)
-    payload["bond"] = {"pattern": "herringbone", "offset_fraction": 0.5}
+    payload["bond"] = {"pattern": "chevron", "offset_fraction": 0.5}
     response = client.post("/api/tile-layout", json=payload)
     assert response.status_code == 422
 
@@ -177,4 +177,18 @@ def test_tile_layout_fill_color_matches_size_not_kind(busy_candidate):
 def test_tile_layout_is_reused_offcut_count_matches_reused_offcut_count(busy_candidate):
     flagged = sum(1 for t in busy_candidate["tiles"] if t["is_reused_offcut"])
     assert flagged == busy_candidate["reused_offcut_count"]
+
+
+def test_tile_layout_herringbone_bond():
+    payload = dict(BASE_PAYLOAD)
+    payload["surface_width"] = 2000
+    payload["surface_height"] = 1500
+    payload["tile"] = {"width": 300, "height": 150, "allow_rotation": False}
+    payload["bond"] = {"pattern": "herringbone", "offset_fraction": 0.5}
+    response = client.post("/api/tile-layout", json=payload)
+    assert response.status_code == 200
+    candidate = response.json()["candidates"][0]
+    assert candidate["tiles_to_purchase"] >= 1
+    kinds = {t["kind"] for t in candidate["tiles"]}
+    assert "full" in kinds
 
