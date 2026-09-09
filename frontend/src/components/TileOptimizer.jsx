@@ -24,6 +24,7 @@ import ProjectPicker from './ProjectPicker';
 import Loader from './Loader';
 import PlanSteps from './PlanSteps';
 import CutoutRow from './CutoutRow';
+import BondPatternIcon from './BondPatternIcon';
 import TileLayoutCandidateCard from './TileLayoutCandidateCard';
 import TileResultDisplay from './TileResultDisplay';
 import { ArrowLeft, ArrowRight, Plus, Tick } from './icons';
@@ -524,21 +525,30 @@ const TileOptimizer = () => {
               </div>
               <div style={{ flex: 'none' }}>
                 <label className="form-label" htmlFor="tile-bond">Bond</label>
-                <select
-                  id="tile-bond"
-                  value={bondPattern}
-                  onChange={(e) => setField(setBondPattern)(e.target.value)}
-                  className="form-select"
-                  style={{ width: '160px' }}
-                >
-                  <option value="stack">Stack — straight grid</option>
-                  <option value="running">Running — brick offset</option>
-                  <option value="herringbone">Herringbone — 90° weave</option>
-                  <option value="diagonal">Diagonal — set on point</option>
-                  <option value="diagonal_herringbone">Diagonal herringbone — 45° weave</option>
-                  <option value="double_herringbone">Double herringbone — paired planks</option>
-                  <option value="diagonal_double_herringbone">Diagonal double herringbone</option>
-                </select>
+                <div className="flex items-center gap-2">
+                  <span className="bond-preview" style={{ color: 'var(--accent)' }}>
+                    <BondPatternIcon pattern={bondPattern} size={24} />
+                  </span>
+                  <select
+                    id="tile-bond"
+                    value={bondPattern}
+                    onChange={(e) => setField(setBondPattern)(e.target.value)}
+                    className="form-select"
+                    style={{ width: '160px' }}
+                  >
+                    {/* Straight-grid family first (no weave), then the
+                        herringbone family from simplest to most compound —
+                        "diagonal" sits with stack/running because it's the
+                        same plain grid, just rotated, not a weave. */}
+                    <option value="stack">Stack — straight grid</option>
+                    <option value="running">Running — brick offset</option>
+                    <option value="diagonal">Diagonal — set on point</option>
+                    <option value="herringbone">Herringbone — 90° weave</option>
+                    <option value="diagonal_herringbone">Diagonal herringbone — 45° weave</option>
+                    <option value="double_herringbone">Double herringbone — paired planks</option>
+                    <option value="diagonal_double_herringbone">Diagonal double herringbone — 45° weave, paired planks</option>
+                  </select>
+                </div>
               </div>
               {bondPattern === 'running' && (
                 <div style={{ flex: 'none' }}>

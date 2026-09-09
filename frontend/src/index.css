@@ -562,6 +562,12 @@
     color: var(--ink-3); margin-bottom: 5px;
   }
 
+  /* ── a swatch of what the selected bond pattern looks like ───────────── */
+  .bond-preview {
+    flex: none; width: 38px; height: 38px; border-radius: 9px;
+    background: var(--accent-bg); display: flex; align-items: center; justify-content: center;
+  }
+
   .cell-input {
     width: 100%; background: transparent; border: 0; color: var(--ink);
     font: inherit; font-size: 14px; font-weight: 600; text-align: right;
