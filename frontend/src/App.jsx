@@ -20,7 +20,7 @@ const App = () => {
           <Route path="/cutting" element={<ProtectedRoute fallbackMessage="Sign in or create a local account on this instance to plan and save a cutlist."><CuttingOptimizer /></ProtectedRoute>} />
           <Route path="/sheet-cutting" element={<ProtectedRoute fallbackMessage="Sign in or create a local account on this instance to plan and save a sheet layout."><SheetOptimizer /></ProtectedRoute>} />
           <Route path="/tile-layout" element={<ProtectedRoute fallbackMessage="Sign in or create a local account on this instance to plan a tile layout."><TileOptimizer /></ProtectedRoute>} />
-          <Route path="/model-cutlist" element={<ModelCutlistOptimizer />} />
+          <Route path="/model-cutlist" element={<ProtectedRoute fallbackMessage="Sign in or create a local account on this instance to upload a 3D model."><ModelCutlistOptimizer /></ProtectedRoute>} />
           <Route path="/3d-cutlist" element={<Navigate to="/model-cutlist" replace />} />
           <Route path="/step-cutlist" element={<Navigate to="/model-cutlist" replace />} />
           <Route path="/help" element={<HelpPage />} />

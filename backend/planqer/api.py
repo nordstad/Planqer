@@ -13,6 +13,7 @@ from alembic.config import Config as AlembicConfig
 from fastapi import (
     APIRouter,
     BackgroundTasks,
+    Depends,
     FastAPI,
     File,
     Form,
@@ -40,6 +41,7 @@ from planqer.async_processing import (
     start_periodic_cleanup,
     task_manager,
 )
+from planqer.auth import get_current_user
 from planqer.cache import clear_cache, get_cache_info
 from planqer.helpers import load_config
 from planqer.logging_config import (
@@ -1697,6 +1699,7 @@ async def get_available_sheet_algorithms():
 @limiter.limit("5/minute")  # Lower rate limit for file processing
 async def create_3d_cutlist(
     request: Request,
+    current_user=Depends(get_current_user),
     file: UploadFile = File(..., description="STL file to process"),
     units: str = Form("mm", description="Units for dimensions (mm, cm, m, in, ft)"),
     round_precision: int = Form(
@@ -1869,6 +1872,7 @@ async def create_3d_cutlist(
 @limiter.limit("3/minute")  # Lower rate limit for STEP processing (more intensive)
 async def create_step_cutlist(
     request: Request,
+    current_user=Depends(get_current_user),
     file: UploadFile = File(..., description="STEP file to process"),
     units: str = Form("mm", description="Units for dimensions (mm, cm, m, in, ft)"),
     round_precision: int = Form(

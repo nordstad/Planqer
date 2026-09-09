@@ -6,8 +6,8 @@ Planning and saving a cutlist requires a **local account on your own
 instance** — never a cloud account. Nothing is sent anywhere else. The first
 account created on a fresh instance becomes its admin.
 
-Uploading and reading a 3D model (`/model-cutlist`) does **not** require an
-account; only planning and saving a cutlist does.
+Uploading and reading a 3D model (`/model-cutlist`) requires a local account.
+Planning and saving the resulting cutlist also require that account.
 
 ## Dashboard
 
