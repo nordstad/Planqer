@@ -213,7 +213,12 @@ const TileOptimizer = () => {
 
   const bondSummary = bondPattern === 'running'
     ? `running ${Math.round(parseFloat(offsetFraction) * 100)}%`
-    : { stack: 'stack', herringbone: 'herringbone', diagonal: 'diagonal' }[bondPattern] || 'stack';
+    : {
+        stack: 'stack', herringbone: 'herringbone', diagonal: 'diagonal',
+        diagonal_herringbone: 'diagonal herringbone',
+        double_herringbone: 'double herringbone',
+        diagonal_double_herringbone: 'diagonal double herringbone',
+      }[bondPattern] || 'stack';
 
   const surfaceSummary = `${mm(parseFloat(surfaceWidth))} × ${mm(parseFloat(surfaceHeight))} mm`
     + ` · ${mm(parseFloat(tileWidth))} × ${mm(parseFloat(tileHeight))} tile`
@@ -527,6 +532,9 @@ const TileOptimizer = () => {
                   <option value="running">Running — brick offset</option>
                   <option value="herringbone">Herringbone — 90° weave</option>
                   <option value="diagonal">Diagonal — set on point</option>
+                  <option value="diagonal_herringbone">Diagonal herringbone — 45° weave</option>
+                  <option value="double_herringbone">Double herringbone — paired planks</option>
+                  <option value="diagonal_double_herringbone">Diagonal double herringbone</option>
                 </select>
               </div>
               {bondPattern === 'running' && (
@@ -547,11 +555,14 @@ const TileOptimizer = () => {
             </div>
             <p className={inputErrors.jointWidth || inputErrors.perimeterGap ? 'text-danger text-[12.5px] font-semibold' : 'synthetic'} style={{ marginTop: '10px' }}>
               {inputErrors.jointWidth || inputErrors.perimeterGap
-                || (bondPattern === 'herringbone'
-                  ? 'Every tile alternates 90° from its neighbors — works with any tile size, no offset to set.'
-                  : bondPattern === 'diagonal'
-                  ? 'Every tile is rotated 45° ("set on point") — works with any tile size, no offset to set.'
-                  : '50% is a standard brick bond; 33% is a third bond. The perimeter gap is expansion room against the wall, not grout.')}
+                || {
+                  herringbone: 'Every tile alternates 90° from its neighbors — works with any tile size, no offset to set.',
+                  diagonal: 'Every tile is rotated 45° ("set on point") — works with any tile size, no offset to set.',
+                  diagonal_herringbone: 'The herringbone weave above, rotated 45° as a whole — works with any tile size, no offset to set.',
+                  double_herringbone: 'Each arm of the weave is a pair of planks side by side — works with any tile size, no offset to set.',
+                  diagonal_double_herringbone: 'The paired-plank weave above, rotated 45° as a whole — works with any tile size, no offset to set.',
+                }[bondPattern]
+                || '50% is a standard brick bond; 33% is a third bond. The perimeter gap is expansion room against the wall, not grout.'}
             </p>
           </section>
 

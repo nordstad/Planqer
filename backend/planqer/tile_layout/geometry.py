@@ -7,6 +7,7 @@ Coordinate system: (0, 0) is the bottom-left corner of the surface, x grows
 right, y grows up. All units are millimetres, matching the rest of the app.
 """
 
+import math
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -315,35 +316,52 @@ def _clip_convex_polygon(
     return poly
 
 
+def _rotated_rect_vertices(
+    cx: float, cy: float, width: float, height: float, angle_deg: float
+) -> list[tuple[float, float]]:
+    """The 4 corners of a width x height rectangle, centered at (cx, cy),
+    rotated `angle_deg` degrees about its own center. Returned
+    counter-clockwise, matching this module's other convex polygons so
+    Sutherland-Hodgman clipping behaves consistently. Generalizes
+    _diamond_vertices's fixed 45-degree case (see place_and_clip_diagonal)
+    to any angle, which diagonal herringbone needs (45 for its "H" tiles,
+    135 for its "V" tiles — see bonds.DiagonalHerringboneBond)."""
+    hw, hh = width / 2, height / 2
+    theta = math.radians(angle_deg)
+    c, s = math.cos(theta), math.sin(theta)
+    # Unrotated corners (bottom-left, bottom-right, top-right, top-left),
+    # rotated by the standard 2D rotation matrix.
+    corners = [(-hw, -hh), (hw, -hh), (hw, hh), (-hw, hh)]
+    return [(cx + c * x - s * y, cy + s * x + c * y) for x, y in corners]
+
+
 def _diamond_vertices(cx: float, cy: float, width: float, height: float) -> list[tuple[float, float]]:
     """The 4 corners of a width x height rectangle, centered at (cx, cy),
     rotated 45 degrees about its own center. Returned counter-clockwise
     (south, east, north, west), matching this module's other convex
     polygons so Sutherland-Hodgman clipping behaves consistently."""
-    hw, hh = width / 2, height / 2
-    c = _HALF_SQRT2
-    # Unrotated corners (bottom-left, bottom-right, top-right, top-left),
-    # rotated by x' = c*(x-y), y' = c*(x+y) — a standard 45 degree rotation.
-    corners = [(-hw, -hh), (hw, -hh), (hw, hh), (-hw, hh)]
-    return [(cx + c * (x - y), cy + c * (x + y)) for x, y in corners]
+    return _rotated_rect_vertices(cx, cy, width, height, 45.0)
 
 
-def place_and_clip_diagonal(
+def place_and_clip_at_angle(
     cx: float,
     cy: float,
-    tile: Tile,
+    width: float,
+    height: float,
+    angle_deg: float,
     surface: Surface,
     joint: JointSpec,
 ) -> PlacedTile | None:
-    """Place a diagonal ("set on point") tile centered at (cx, cy), clip it
-    against the surface's usable interior and any cutouts, and classify
-    the result. Mirrors place_and_clip's contract exactly, but the piece
-    kept is a polygon (`PlacedTile.vertices`), not just an (x, y, w, h)
-    rectangle — see the module-level note above for why cutouts still only
-    need an area-overlap, not a reshaping clip.
+    """Place a width x height rectangle centered at (cx, cy) and rotated
+    `angle_deg` degrees, clip it against the surface's usable interior and
+    any cutouts, and classify the result. Generalizes
+    place_and_clip_diagonal (a fixed 45-degree, whole-tile-size case) to
+    any angle and any piece size — diagonal herringbone needs both: two
+    different piece shapes (l x s and s x l) at two different angles (the
+    pattern's base angle, and that angle + 90) within the same lattice.
 
-    Returns None if the tile falls entirely outside the usable surface, or
-    entirely inside a cutout.
+    Returns None if the piece falls entirely outside the usable surface,
+    or entirely inside a cutout.
     """
     gap = joint.perimeter_gap
     usable_x, usable_y = gap, gap
@@ -352,10 +370,10 @@ def place_and_clip_diagonal(
     if usable_w <= 0 or usable_h <= 0:
         raise ValueError("perimeter_gap leaves no usable surface area")
 
-    diamond = _diamond_vertices(cx, cy, tile.width, tile.height)
-    nominal_area = tile.width * tile.height
+    rect = _rotated_rect_vertices(cx, cy, width, height, angle_deg)
+    nominal_area = width * height
 
-    clipped = _clip_convex_polygon(diamond, usable_x, usable_y, usable_w, usable_h)
+    clipped = _clip_convex_polygon(rect, usable_x, usable_y, usable_w, usable_h)
     if len(clipped) < 3:
         return None
     clipped_area = _polygon_area(clipped)
@@ -394,8 +412,28 @@ def place_and_clip_diagonal(
         height=max(ys) - by,
         rotated=False,
         kind=kind,
-        nominal_width=tile.width,
-        nominal_height=tile.height,
+        nominal_width=width,
+        nominal_height=height,
         notch_area=notch_area,
         vertices=tuple(clipped),
     )
+
+
+def place_and_clip_diagonal(
+    cx: float,
+    cy: float,
+    tile: Tile,
+    surface: Surface,
+    joint: JointSpec,
+) -> PlacedTile | None:
+    """Place a diagonal ("set on point") tile centered at (cx, cy), clip it
+    against the surface's usable interior and any cutouts, and classify
+    the result. Mirrors place_and_clip's contract exactly, but the piece
+    kept is a polygon (`PlacedTile.vertices`), not just an (x, y, w, h)
+    rectangle — see the module-level note above for why cutouts still only
+    need an area-overlap, not a reshaping clip.
+
+    Returns None if the tile falls entirely outside the usable surface, or
+    entirely inside a cutout.
+    """
+    return place_and_clip_at_angle(cx, cy, tile.width, tile.height, 45.0, surface, joint)

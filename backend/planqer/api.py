@@ -664,18 +664,24 @@ class TileJointSpec(BaseModel):
         return validate_numeric_input(v, 0.0, 200.0)
 
 
+_VALID_BOND_PATTERNS = (
+    "stack", "running", "herringbone", "diagonal",
+    "diagonal_herringbone", "double_herringbone", "diagonal_double_herringbone",
+)
+
+
 class TileBondSpec(BaseModel):
     """The laying pattern. See tile_layout/bonds.py."""
 
-    pattern: str = "stack"  # "stack" | "running" | "herringbone" | "diagonal"
-    offset_fraction: float = 0.5  # fraction of tile width; 0.5 = brick bond; ignored for herringbone/diagonal
+    pattern: str = "stack"
+    offset_fraction: float = 0.5  # fraction of tile width; 0.5 = brick bond; ignored for every herringbone-family bond
 
     @field_validator("pattern")
     @classmethod
     def validate_pattern(cls, v):
-        if v not in ("stack", "running", "herringbone", "diagonal"):
+        if v not in _VALID_BOND_PATTERNS:
             raise ValueError(
-                f"Invalid bond pattern '{v}'. Valid options: stack, running, herringbone, diagonal"
+                f"Invalid bond pattern '{v}'. Valid options: {', '.join(_VALID_BOND_PATTERNS)}"
             )
         return v
 

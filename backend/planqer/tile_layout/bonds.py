@@ -217,3 +217,166 @@ class DiagonalBond:
                 cx = _C45 * (lx - ly)
                 cy = _C45 * (lx + ly)
                 yield (cx, cy, False)
+
+
+@dataclass(frozen=True)
+class DiagonalHerringboneBond:
+    """The classic 90-degree herringbone weave (see HerringboneBond), but
+    with the *entire* weave rotated 45 degrees relative to the surface —
+    "diagonal herringbone" or "herringbone on the bias," a distinct real
+    pattern from both plain HerringboneBond (weave aligned to the wall)
+    and DiagonalBond (a plain grid, one tile per position, no weave at
+    all — the "set on point"/diamond layout).
+
+    Built the same way DiagonalBond is: generate the *exact same* H/V
+    motif and translation vectors HerringboneBond already derives and
+    verifies (unchanged local-space math — this class does not
+    re-derive anything), then rotate each placed piece's center (and its
+    own local 0/90-degree orientation) by one *global* 45 degrees before
+    handing it to place_and_clip_at_angle. Rotation is an isometry, so
+    the interlocking H/V relationship HerringboneBond already proved
+    gap-free and overlap-free survives the extra rotation unchanged —
+    the same reasoning DiagonalBond's own docstring relies on for a
+    plain grid, just applied to a more complex motif here.
+
+    yields (cx, cy, is_v_tile) — is_v_tile reuses the tuple's bool slot
+    to say which of the motif's two piece shapes (l x s "H", or s x l
+    "V" — already two different rectangle shapes in local space, not one
+    shape needing an extra rotation) this position is; solver.py's
+    dispatch for this bond turns that into the (width, height) pair
+    place_and_clip_at_angle needs, both pieces sharing the same 45-degree
+    global angle.
+    """
+
+    def raw_positions(
+        self, surface: Surface, tile: Tile, joint: JointSpec, offset_x: float, offset_y: float
+    ) -> Iterator[tuple[float, float, bool]]:
+        g = joint.joint_width
+        l, s = max(tile.width, tile.height), min(tile.width, tile.height)
+
+        t1x, t1y = l + s + 2 * g, l - s - g
+        t2x, t2y = -(s + g), s + g
+
+        # Local space and world space are related by a pure rotation (no
+        # scaling), so the same conservative Manhattan bound
+        # HerringboneBond itself uses remains a safe bound here too — a
+        # rotation can't make a point that was reachable become
+        # unreachable, or vice versa.
+        diagonal = surface.width + surface.height
+        margin_i = math.ceil(diagonal / max(abs(t1x), abs(t1y), 1e-6)) + 3
+        margin_j = math.ceil(diagonal / max(abs(t2x), abs(t2y), 1e-6)) + 3
+
+        for i in range(-margin_i, margin_i):
+            for j in range(-margin_j, margin_j):
+                ox = offset_x + i * t1x + j * t2x
+                oy = offset_y + i * t1y + j * t2y
+
+                # H piece: local top-left (ox, oy), local shape l x s.
+                h_cx, h_cy = ox + l / 2, oy + s / 2
+                yield (_C45 * (h_cx - h_cy), _C45 * (h_cx + h_cy), False)
+
+                # V piece: local top-left (ox + l + g, oy), local shape s x l.
+                v_ox = ox + l + g
+                v_cx, v_cy = v_ox + s / 2, oy + l / 2
+                yield (_C45 * (v_cx - v_cy), _C45 * (v_cx + v_cy), True)
+
+
+@dataclass(frozen=True)
+class DoubleHerringboneBond:
+    """The classic herringbone weave (see HerringboneBond), but with each
+    arm made of *two* planks side by side instead of one — "double
+    herringbone," a distinct real pattern (not a variation this module
+    invented; see .plans/tile-layout.md for the reference this was built
+    against).
+
+    Built by running HerringboneBond's own translation-vector derivation
+    against the *pair's* combined footprint — l x (2s + g), not l x s —
+    which tiles gap-free for exactly the same reason a single plank does:
+    the derivation places no restriction on the aspect ratio of the two
+    dimensions it's given, whichever is numerically bigger. Each composite
+    arm is then subdivided back into its two individual s x l (or l x s)
+    planks, separated by one joint gap — a subdivision that can't
+    introduce an overlap or gap of its own, since it only splits a single
+    already-non-overlapping composite footprint into two side-by-side
+    halves.
+    """
+
+    def raw_positions(
+        self, surface: Surface, tile: Tile, joint: JointSpec, offset_x: float, offset_y: float
+    ) -> Iterator[tuple[float, float, bool]]:
+        g = joint.joint_width
+        wide = tile.width >= tile.height
+        s, l = (tile.height, tile.width) if wide else (tile.width, tile.height)
+        h_rotated = not wide
+        v_rotated = wide
+
+        s_pair = 2 * s + g  # the side-by-side pair's combined width
+
+        t1x, t1y = l + s_pair + 2 * g, l - s_pair - g
+        t2x, t2y = -(s_pair + g), s_pair + g
+
+        diagonal = surface.width + surface.height
+        margin_i = math.ceil(diagonal / max(abs(t1x), abs(t1y), 1e-6)) + 3
+        margin_j = math.ceil(diagonal / max(abs(t2x), abs(t2y), 1e-6)) + 3
+
+        for i in range(-margin_i, margin_i):
+            for j in range(-margin_j, margin_j):
+                ox = offset_x + i * t1x + j * t2x
+                oy = offset_y + i * t1y + j * t2y
+
+                # H arm: composite top-left (ox, oy), footprint l wide x
+                # s_pair tall -- two l x s planks stacked along local y.
+                yield (ox, oy, h_rotated)
+                yield (ox, oy + s + g, h_rotated)
+
+                # V arm: composite top-left (ox + l + g, oy), footprint
+                # s_pair wide x l tall -- two s x l planks side by side
+                # along local x.
+                v_ox = ox + l + g
+                yield (v_ox, oy, v_rotated)
+                yield (v_ox + s + g, oy, v_rotated)
+
+
+@dataclass(frozen=True)
+class DiagonalDoubleHerringboneBond:
+    """DoubleHerringboneBond's pairs-of-planks weave, rotated 45 degrees
+    as a whole — the diagonal counterpart, exactly as DiagonalHerringboneBond
+    is to HerringboneBond. Same combined-footprint technique as
+    DoubleHerringboneBond, with each sub-plank's center individually
+    rotated into world space (see DiagonalHerringboneBond's docstring for
+    why that's the correct way to compose a local weave with a global
+    rotation)."""
+
+    def raw_positions(
+        self, surface: Surface, tile: Tile, joint: JointSpec, offset_x: float, offset_y: float
+    ) -> Iterator[tuple[float, float, bool]]:
+        g = joint.joint_width
+        l, s = max(tile.width, tile.height), min(tile.width, tile.height)
+        s_pair = 2 * s + g
+
+        t1x, t1y = l + s_pair + 2 * g, l - s_pair - g
+        t2x, t2y = -(s_pair + g), s_pair + g
+
+        diagonal = surface.width + surface.height
+        margin_i = math.ceil(diagonal / max(abs(t1x), abs(t1y), 1e-6)) + 3
+        margin_j = math.ceil(diagonal / max(abs(t2x), abs(t2y), 1e-6)) + 3
+
+        for i in range(-margin_i, margin_i):
+            for j in range(-margin_j, margin_j):
+                ox = offset_x + i * t1x + j * t2x
+                oy = offset_y + i * t1y + j * t2y
+
+                # H arm: composite local top-left (ox, oy), footprint
+                # l x s_pair -- two l x s planks stacked along local y,
+                # each independently rotated 45 degrees about its own center.
+                for k in (0, 1):
+                    h_cx, h_cy = ox + l / 2, oy + k * (s + g) + s / 2
+                    yield (_C45 * (h_cx - h_cy), _C45 * (h_cx + h_cy), False)
+
+                # V arm: composite local top-left (ox + l + g, oy),
+                # footprint s_pair x l -- two s x l planks side by side
+                # along local x.
+                v_ox = ox + l + g
+                for k in (0, 1):
+                    v_cx, v_cy = v_ox + k * (s + g) + s / 2, oy + l / 2
+                    yield (_C45 * (v_cx - v_cy), _C45 * (v_cx + v_cy), True)

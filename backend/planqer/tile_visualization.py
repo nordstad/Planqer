@@ -200,10 +200,22 @@ class TileSVGVisualizer:
             elements.append(f'<polygon points="{points}" fill="url(#notch-overlay)"/>')
 
         if is_full:
-            xs = [x_off + vx * scale for vx, _vy in vertices]
-            ys = [y_off + vy * scale for _vx, vy in vertices]
-            pw, ph = max(xs) - min(xs), max(ys) - min(ys)
-            if pw > 26 and ph > 16:
+            # A rotated piece's *bounding box* is inflated relative to its
+            # true footprint (the same reason PlacedTile.area doesn't use
+            # width*height for one — see geometry.py) — using it here to
+            # decide "is there room for a label" was wrong: it can look
+            # roomy enough even when the tile's own true width/height, at
+            # this scale, is nowhere near big enough for horizontal text,
+            # which is exactly what caused labels to smear together at
+            # zoomed-out scales. Gate on the tile's real scaled size
+            # instead, with one stricter combined threshold (not the
+            # axis-aligned case's asymmetric 26-wide/16-tall) since a
+            # rotated tile needs room in *both* directions for text that
+            # isn't rotated along with it.
+            scaled_w, scaled_h = nominal_width * scale, nominal_height * scale
+            if scaled_w > 40 and scaled_h > 40:
+                xs = [x_off + vx * scale for vx, _vy in vertices]
+                ys = [y_off + vy * scale for _vx, vy in vertices]
                 label = f"{nominal_width:.0f}\u00d7{nominal_height:.0f}"
                 cx, cy = sum(xs) / len(xs), sum(ys) / len(ys)
                 elements.append(

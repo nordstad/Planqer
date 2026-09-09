@@ -7,7 +7,12 @@ import math
 
 import pytest
 
-from planqer.tile_layout.bonds import DiagonalBond
+from planqer.tile_layout.bonds import (
+    DiagonalBond,
+    DiagonalDoubleHerringboneBond,
+    DiagonalHerringboneBond,
+    DoubleHerringboneBond,
+)
 from planqer.tile_layout.geometry import Cutout, JointSpec, Surface, Tile
 from planqer.tile_layout.solver import build_bond, solve_tile_layout
 
@@ -301,3 +306,103 @@ def test_diagonal_allow_rotation_can_surface_a_rotated_candidate():
     )
 
     assert any(c.rotated for c in result.candidates)
+
+
+def test_build_bond_diagonal_herringbone_returns_diagonal_herringbone_bond():
+    assert isinstance(build_bond("diagonal_herringbone"), DiagonalHerringboneBond)
+
+
+def test_diagonal_herringbone_solves_end_to_end():
+    surface = Surface(width=2000, height=1500)
+    tile = Tile(width=300, height=150)
+    joint = JointSpec(joint_width=3)
+
+    result = solve_tile_layout(
+        surface, tile, joint, bond_pattern="diagonal_herringbone", candidate_count=10, sample_steps=8,
+    )
+
+    assert len(result.candidates) > 0
+    assert all(t.vertices is not None for c in result.candidates for t in c.tiles)
+    assert any(c.metrics.min_diagonal_cut_span is not None for c in result.candidates)
+    assert all(c.metrics.min_edge_cut_width is None for c in result.candidates)
+    assert all(c.metrics.symmetry_delta_x == 0.0 and c.metrics.symmetry_delta_y == 0.0 for c in result.candidates)
+
+
+def test_diagonal_herringbone_has_no_flush_corner_canonical_candidates():
+    surface = Surface(width=2000, height=1500)
+    tile = Tile(width=300, height=150)
+    joint = JointSpec(joint_width=3)
+
+    result = solve_tile_layout(
+        surface, tile, joint, bond_pattern="diagonal_herringbone", candidate_count=10, sample_steps=8,
+    )
+
+    assert all("corner" not in c.label for c in result.candidates)
+
+
+def test_diagonal_herringbone_allow_rotation_does_not_duplicate_candidates():
+    """Reuses HerringboneBond's own motif, which already mixes both
+    90-degree orientations within one lattice — the pattern-level
+    rotation search would only relabel an identical layout, the same
+    reasoning that already skips it for plain herringbone."""
+    surface = Surface(width=2000, height=1500)
+    tile = Tile(width=300, height=150, allow_rotation=True)
+    joint = JointSpec(joint_width=3)
+
+    result = solve_tile_layout(
+        surface, tile, joint, bond_pattern="diagonal_herringbone", candidate_count=10, sample_steps=8,
+    )
+
+    assert all(not c.rotated for c in result.candidates)
+
+
+def test_build_bond_double_herringbone_returns_double_herringbone_bond():
+    assert isinstance(build_bond("double_herringbone"), DoubleHerringboneBond)
+
+
+def test_build_bond_diagonal_double_herringbone_returns_diagonal_double_herringbone_bond():
+    assert isinstance(build_bond("diagonal_double_herringbone"), DiagonalDoubleHerringboneBond)
+
+
+def test_double_herringbone_solves_end_to_end_with_a_flush_corner_candidate():
+    """Unlike the diagonal-family bonds, double herringbone is wall-aligned
+    — a flush corner candidate is just as meaningful for it as for plain
+    herringbone, so canonical-candidate injection is *not* skipped here."""
+    surface = Surface(width=2000, height=1500)
+    tile = Tile(width=300, height=150)
+    joint = JointSpec(joint_width=3)
+
+    result = solve_tile_layout(
+        surface, tile, joint, bond_pattern="double_herringbone", candidate_count=20, sample_steps=8,
+    )
+
+    assert len(result.candidates) > 0
+    assert any("corner" in c.label for c in result.candidates)
+
+
+def test_double_herringbone_allow_rotation_does_not_duplicate_candidates():
+    surface = Surface(width=2000, height=1500)
+    tile = Tile(width=300, height=150, allow_rotation=True)
+    joint = JointSpec(joint_width=3)
+
+    result = solve_tile_layout(
+        surface, tile, joint, bond_pattern="double_herringbone", candidate_count=10, sample_steps=8,
+    )
+
+    assert all(not c.rotated for c in result.candidates)
+
+
+def test_diagonal_double_herringbone_solves_end_to_end():
+    surface = Surface(width=2000, height=1500)
+    tile = Tile(width=300, height=150)
+    joint = JointSpec(joint_width=3)
+
+    result = solve_tile_layout(
+        surface, tile, joint, bond_pattern="diagonal_double_herringbone", candidate_count=10, sample_steps=8,
+    )
+
+    assert len(result.candidates) > 0
+    assert all(t.vertices is not None for c in result.candidates for t in c.tiles)
+    assert any(c.metrics.min_diagonal_cut_span is not None for c in result.candidates)
+    assert all(c.metrics.min_edge_cut_width is None for c in result.candidates)
+    assert all("corner" not in c.label for c in result.candidates)

@@ -10,6 +10,9 @@ import pytest
 
 from planqer.tile_layout.bonds import (
     DiagonalBond,
+    DiagonalDoubleHerringboneBond,
+    DiagonalHerringboneBond,
+    DoubleHerringboneBond,
     HerringboneBond,
     RunningBond,
     StackBond,
@@ -22,6 +25,7 @@ from planqer.tile_layout.geometry import (
     Tile,
     TileKind,
     place_and_clip,
+    place_and_clip_at_angle,
     place_and_clip_diagonal,
 )
 from planqer.tile_layout.offcuts import match_diagonal_offcuts, match_offcuts
@@ -255,6 +259,24 @@ def test_diagonal_tile_fully_inside_cutout_is_discarded():
     placed = place_and_clip_diagonal(cx=200, cy=200, tile=tile, surface=surface, joint=joint)
 
     assert placed is None
+
+
+def test_place_and_clip_at_angle_45_matches_place_and_clip_diagonal():
+    """place_and_clip_diagonal is a thin wrapper over the more general
+    place_and_clip_at_angle (angle_deg=45, whole tile) -- this pins that
+    the generalization (needed for diagonal herringbone's two piece
+    shapes/angles) didn't change diagonal's own behavior."""
+    surface = Surface(width=200, height=200)
+    tile = Tile(width=100, height=100)
+    joint = JointSpec(joint_width=0)
+
+    via_wrapper = place_and_clip_diagonal(cx=30, cy=100, tile=tile, surface=surface, joint=joint)
+    via_general = place_and_clip_at_angle(
+        cx=30, cy=100, width=tile.width, height=tile.height, angle_deg=45.0, surface=surface, joint=joint,
+    )
+
+    assert via_wrapper.vertices == via_general.vertices
+    assert via_wrapper.kind == via_general.kind
 
 
 # ── Bonds ─────────────────────────────────────────────────────────────────
@@ -515,6 +537,152 @@ def test_diagonal_bond_respects_the_joint_gap():
     with_joint = _diagonal_clipped(DiagonalBond(), surface, tile, JointSpec(joint_width=5))
 
     assert sum(p.area for p in with_joint) < sum(p.area for p in no_joint)
+
+
+def _diagonal_herringbone_clipped(surface, tile, joint, offset_x=0.0, offset_y=0.0):
+    """DiagonalHerringboneBond yields (cx, cy, is_v_tile) -- is_v_tile
+    picks which of the motif's two piece shapes (l x s "H" or s x l "V")
+    this position is; both share the same 45-degree global angle (see
+    solver._generate_layout's dispatch for this bond)."""
+    l, s = max(tile.width, tile.height), min(tile.width, tile.height)
+    placed = []
+    for cx, cy, is_v in DiagonalHerringboneBond().raw_positions(surface, tile, joint, offset_x, offset_y):
+        width, height = (s, l) if is_v else (l, s)
+        p = place_and_clip_at_angle(cx, cy, width, height, 45.0, surface, joint)
+        if p is not None:
+            placed.append(p)
+    return placed
+
+
+@pytest.mark.parametrize("width,height,joint_width", [
+    (300, 150, 3),   # classic 2:1 plank
+    (300, 100, 0),   # 3:1 plank, no grout
+    (200, 180, 4),   # a ratio close to square, real joint
+])
+def test_diagonal_herringbone_never_overlaps(width, height, joint_width):
+    surface = Surface(width=1500, height=1200)
+    tile = Tile(width=width, height=height)
+    joint = JointSpec(joint_width=joint_width)
+
+    placed = _diagonal_herringbone_clipped(surface, tile, joint)
+
+    assert len(placed) > 0
+    assert _no_polygon_overlaps(placed)
+
+
+def test_diagonal_herringbone_leaves_no_gap_at_zero_joint():
+    surface = Surface(width=1000, height=1000)
+    tile = Tile(width=300, height=150)
+    joint = JointSpec(joint_width=0)
+
+    placed = _diagonal_herringbone_clipped(surface, tile, joint)
+    coverage = sum(p.area for p in placed)
+
+    assert coverage == pytest.approx(surface.net_area, rel=1e-6)
+
+
+def test_diagonal_herringbone_places_both_piece_shapes():
+    surface = Surface(width=1500, height=1200)
+    tile = Tile(width=300, height=150)
+    joint = JointSpec(joint_width=3)
+
+    placed = _diagonal_herringbone_clipped(surface, tile, joint)
+
+    full = [p for p in placed if p.kind == TileKind.FULL]
+    nominal_shapes = {(round(p.nominal_width), round(p.nominal_height)) for p in full}
+    # The "H" (300x150) and "V" (150x300) motif shapes are two distinct
+    # nominal sizes, both of which should appear among full pieces on a
+    # real surface -- unlike plain herringbone, there's no PlacedTile.rotated
+    # bookkeeping here (both pieces are equally "rotated" 45 degrees), so
+    # this checks nominal_width/height directly instead.
+    assert (300, 150) in nominal_shapes
+    assert (150, 300) in nominal_shapes
+
+
+@pytest.mark.parametrize("width,height,joint_width", [
+    (300, 150, 3),   # classic 2:1 plank
+    (300, 100, 0),   # 3:1 plank, no grout
+    (200, 180, 4),   # a ratio close to square, real joint
+])
+def test_double_herringbone_never_overlaps(width, height, joint_width):
+    """Double herringbone: each arm of the classic weave is a *pair* of
+    planks instead of one — verified constructively (see
+    bonds.DoubleHerringboneBond's docstring) by running the same
+    translation-vector derivation against the pair's combined footprint,
+    which places no restriction on aspect ratio, exactly like a single
+    plank."""
+    surface = Surface(width=1500, height=1200)
+    tile = Tile(width=width, height=height)
+    joint = JointSpec(joint_width=joint_width)
+
+    placed = _clipped(DoubleHerringboneBond(), surface, tile, joint)
+
+    assert len(placed) > 0
+    assert _no_overlaps(placed)
+
+
+def test_double_herringbone_leaves_no_gap_at_zero_joint():
+    surface = Surface(width=1000, height=1000)
+    tile = Tile(width=300, height=150)
+    joint = JointSpec(joint_width=0)
+
+    placed = _clipped(DoubleHerringboneBond(), surface, tile, joint)
+    _scored, metrics = score_layout(placed, surface)
+
+    assert metrics.coverage_area == pytest.approx(surface.net_area, rel=1e-6)
+
+
+def test_double_herringbone_places_pairs_of_identical_planks():
+    """Each arm should show up as a *pair* of same-size planks, not a
+    single doubled-up size -- the whole point of "double" herringbone is
+    that the individual plank size is unchanged, just used two at a time."""
+    surface = Surface(width=1500, height=1200)
+    tile = Tile(width=300, height=150)
+    joint = JointSpec(joint_width=3)
+
+    placed = _clipped(DoubleHerringboneBond(), surface, tile, joint)
+
+    full = [p for p in placed if p.kind == TileKind.FULL]
+    nominal_shapes = {(round(p.nominal_width), round(p.nominal_height)) for p in full}
+    assert nominal_shapes == {(300, 150), (150, 300)}  # same two sizes as plain herringbone, not doubled
+
+
+def _diagonal_double_herringbone_clipped(surface, tile, joint, offset_x=0.0, offset_y=0.0):
+    l, s = max(tile.width, tile.height), min(tile.width, tile.height)
+    placed = []
+    for cx, cy, is_v in DiagonalDoubleHerringboneBond().raw_positions(surface, tile, joint, offset_x, offset_y):
+        width, height = (s, l) if is_v else (l, s)
+        p = place_and_clip_at_angle(cx, cy, width, height, 45.0, surface, joint)
+        if p is not None:
+            placed.append(p)
+    return placed
+
+
+@pytest.mark.parametrize("width,height,joint_width", [
+    (300, 150, 3),
+    (300, 100, 0),
+    (200, 180, 4),
+])
+def test_diagonal_double_herringbone_never_overlaps(width, height, joint_width):
+    surface = Surface(width=1500, height=1200)
+    tile = Tile(width=width, height=height)
+    joint = JointSpec(joint_width=joint_width)
+
+    placed = _diagonal_double_herringbone_clipped(surface, tile, joint)
+
+    assert len(placed) > 0
+    assert _no_polygon_overlaps(placed)
+
+
+def test_diagonal_double_herringbone_leaves_no_gap_at_zero_joint():
+    surface = Surface(width=1000, height=1000)
+    tile = Tile(width=300, height=150)
+    joint = JointSpec(joint_width=0)
+
+    placed = _diagonal_double_herringbone_clipped(surface, tile, joint)
+    coverage = sum(p.area for p in placed)
+
+    assert coverage == pytest.approx(surface.net_area, rel=1e-6)
 
 
 # ── Scoring ───────────────────────────────────────────────────────────────

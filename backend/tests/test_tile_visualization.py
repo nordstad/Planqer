@@ -231,3 +231,40 @@ def test_diagonal_svg_labels_only_full_tiles():
 
     full_label = f"{full_tile.nominal_width:.0f}\u00d7{full_tile.nominal_height:.0f}"
     assert full_label in svg
+
+
+def test_diagonal_svg_suppresses_labels_when_tiles_render_too_small():
+    """Regression test for a real reported bug: a large surface with small
+    tiles produced hundreds of overlapping/smeared labels. The bug was
+    gating on the rotated piece's *bounding box* (inflated relative to its
+    true footprint) instead of its real scaled size — see
+    _create_tile_polygon. 4400x2200mm / 300x100mm tile is the exact
+    surface/tile combination that was reported broken."""
+    surface = Surface(width=4400, height=2200)
+    tile = Tile(width=300, height=100)
+    joint = JointSpec(joint_width=3)
+    result = solve_tile_layout(
+        surface, tile, joint, bond_pattern="diagonal_herringbone", candidate_count=3, sample_steps=6,
+    )
+    candidate = result.candidates[result.recommended_index]
+    assert candidate.metrics.full_tile_count > 0  # sanity: labels would exist if not suppressed
+
+    svg = _decode(generate_tile_layout_visualization(candidate, surface))
+
+    assert svg.count("tile-label") == 1  # only the CSS class definition, no rendered <text> elements
+
+
+def test_diagonal_herringbone_svg_shows_labels_when_there_is_room():
+    """Companion to the regression test above — guards against
+    over-correcting the fix into never showing a label at all."""
+    surface = Surface(width=2000, height=1500)
+    tile = Tile(width=300, height=150)
+    joint = JointSpec(joint_width=3)
+    result = solve_tile_layout(
+        surface, tile, joint, bond_pattern="diagonal_herringbone", candidate_count=3, sample_steps=6,
+    )
+    candidate = result.candidates[result.recommended_index]
+
+    svg = _decode(generate_tile_layout_visualization(candidate, surface))
+
+    assert svg.count("tile-label") > 1

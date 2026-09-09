@@ -230,3 +230,49 @@ def test_tile_layout_diagonal_has_no_flush_corner_candidates():
     assert response.status_code == 200
     assert all("corner" not in c["label"] for c in response.json()["candidates"])
 
+
+def test_tile_layout_diagonal_herringbone_bond():
+    payload = dict(BASE_PAYLOAD)
+    payload["surface_width"] = 2000
+    payload["surface_height"] = 1500
+    payload["tile"] = {"width": 300, "height": 150, "allow_rotation": False}
+    payload["bond"] = {"pattern": "diagonal_herringbone", "offset_fraction": 0.5}
+    response = client.post("/api/tile-layout", json=payload)
+    assert response.status_code == 200
+    candidate = response.json()["candidates"][0]
+    assert candidate["tiles_to_purchase"] >= 1
+    assert candidate["full_tile_count"] > 0
+    assert all(t["vertices"] is not None and len(t["vertices"]) >= 3 for t in candidate["tiles"])
+    assert candidate["min_edge_cut_width"] is None
+    assert candidate["min_diagonal_cut_span"] is not None
+
+
+def test_tile_layout_double_herringbone_bond():
+    payload = dict(BASE_PAYLOAD)
+    payload["surface_width"] = 2000
+    payload["surface_height"] = 1500
+    payload["tile"] = {"width": 300, "height": 150, "allow_rotation": False}
+    payload["bond"] = {"pattern": "double_herringbone", "offset_fraction": 0.5}
+    response = client.post("/api/tile-layout", json=payload)
+    assert response.status_code == 200
+    candidate = response.json()["candidates"][0]
+    assert candidate["tiles_to_purchase"] >= 1
+    assert candidate["full_tile_count"] > 0
+    # Wall-aligned -- plain rectangles, no vertices.
+    assert all(t["vertices"] is None for t in candidate["tiles"])
+
+
+def test_tile_layout_diagonal_double_herringbone_bond():
+    payload = dict(BASE_PAYLOAD)
+    payload["surface_width"] = 2000
+    payload["surface_height"] = 1500
+    payload["tile"] = {"width": 300, "height": 150, "allow_rotation": False}
+    payload["bond"] = {"pattern": "diagonal_double_herringbone", "offset_fraction": 0.5}
+    response = client.post("/api/tile-layout", json=payload)
+    assert response.status_code == 200
+    candidate = response.json()["candidates"][0]
+    assert candidate["tiles_to_purchase"] >= 1
+    assert candidate["full_tile_count"] > 0
+    assert all(t["vertices"] is not None and len(t["vertices"]) >= 3 for t in candidate["tiles"])
+    assert candidate["min_diagonal_cut_span"] is not None
+

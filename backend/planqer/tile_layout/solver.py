@@ -16,13 +16,23 @@ remains selectable even when it isn't the most efficient choice on paper.
 import math
 from dataclasses import dataclass
 
-from .bonds import BondGenerator, DiagonalBond, HerringboneBond, RunningBond, StackBond
+from .bonds import (
+    BondGenerator,
+    DiagonalBond,
+    DiagonalDoubleHerringboneBond,
+    DiagonalHerringboneBond,
+    DoubleHerringboneBond,
+    HerringboneBond,
+    RunningBond,
+    StackBond,
+)
 from .geometry import (
     JointSpec,
     PlacedTile,
     Surface,
     Tile,
     place_and_clip,
+    place_and_clip_at_angle,
     place_and_clip_diagonal,
 )
 from .offcuts import OffcutResult, match_diagonal_offcuts, match_offcuts
@@ -70,6 +80,12 @@ def build_bond(pattern: str, offset_fraction: float = 0.5) -> BondGenerator:
         return HerringboneBond()
     if pattern == "diagonal":
         return DiagonalBond()
+    if pattern == "diagonal_herringbone":
+        return DiagonalHerringboneBond()
+    if pattern == "double_herringbone":
+        return DoubleHerringboneBond()
+    if pattern == "diagonal_double_herringbone":
+        return DiagonalDoubleHerringboneBond()
     raise ValueError(f"Unknown bond pattern: {pattern!r}")
 
 
@@ -90,12 +106,24 @@ def _generate_layout(
 ) -> list[PlacedTile]:
     placed = []
     is_diagonal = isinstance(bond, DiagonalBond)
+    is_diagonal_herringbone = isinstance(bond, (DiagonalHerringboneBond, DiagonalDoubleHerringboneBond))
+    l, s = max(tile.width, tile.height), min(tile.width, tile.height)
     for x, y, rotated in bond.raw_positions(surface, tile, joint, offset_x, offset_y):
         if is_diagonal:
             # (x, y) here is the tile's center, not its pre-clip top-left
             # corner — DiagonalBond's raw_positions docstring explains why
             # a different clip function (polygon, not rectangle) is needed.
             p = place_and_clip_diagonal(x, y, tile, surface, joint)
+        elif is_diagonal_herringbone:
+            # (x, y) is this piece's center; `rotated` is reused to mean
+            # "is this the V piece" (l x s "H", or s x l "V" — already two
+            # different rectangle shapes in local space, not one shape
+            # needing an extra 90-degree twist) — both get the *same*
+            # global angle. Shared by DiagonalHerringboneBond and
+            # DiagonalDoubleHerringboneBond, whose sub-planks are always
+            # the tile's own l x s / s x l size regardless of pairing.
+            width, height = (s, l) if rotated else (l, s)
+            p = place_and_clip_at_angle(x, y, width, height, 45.0, surface, joint)
         else:
             p = place_and_clip(x, y, rotated, tile, surface, joint)
         if p is not None:
@@ -224,14 +252,21 @@ def _orientations(tile: Tile, bond_pattern: str) -> list[tuple[Tile, bool]]:
     laid with the tile turned 90 degrees. This is a *pattern-level* choice
     (lay every tile the other way round) distinct from PlacedTile.rotated,
     which stack/running bonds never set (no bond mixes orientations within
-    one lattice) — but herringbone does mix both 90-degree orientations
-    within its own lattice already (see bonds.HerringboneBond), so swapping
-    width/height for a second search pass would relabel which raw
-    orientation counts as "unrotated" but produce the exact same set of
-    placed rectangles. Skipped for herringbone the same way a square tile
-    skips it."""
+    one lattice) — but every herringbone-family bond (plain, diagonal,
+    double, diagonal double — all built on the same H/V motif, see
+    bonds.py) mixes both 90-degree orientations within its own lattice
+    already, so swapping width/height for a second search pass would
+    relabel which raw orientation counts as "unrotated" but produce the
+    exact same set of placed pieces. Skipped for all of them, the same way
+    a square tile skips it."""
     orientations = [(tile, False)]
-    if tile.allow_rotation and tile.width != tile.height and bond_pattern != "herringbone":
+    if (
+        tile.allow_rotation
+        and tile.width != tile.height
+        and bond_pattern not in (
+            "herringbone", "diagonal_herringbone", "double_herringbone", "diagonal_double_herringbone",
+        )
+    ):
         swapped = Tile(width=tile.height, height=tile.width, allow_rotation=tile.allow_rotation)
         orientations.append((swapped, True))
     return orientations
@@ -288,11 +323,14 @@ def solve_tile_layout(
 
         # Canonical, mathematically-exact candidates first, so they win the
         # dedup slot (and keep their descriptive label) over an equivalent
-        # sampled point discovered later. Skipped for diagonal: a 45-degree
-        # tile can never sit flush with a 90-degree surface corner the way
-        # an axis-aligned tile can, so "full tile at this corner" isn't a
-        # candidate that exists for this bond — see bonds.DiagonalBond.
-        if bond_pattern != "diagonal":
+        # sampled point discovered later. Skipped for every 45-degree bond
+        # (diagonal, diagonal herringbone, diagonal double herringbone): a
+        # rotated tile can never sit flush with a 90-degree surface corner
+        # the way an axis-aligned tile can, so "full tile at this corner"
+        # isn't a candidate that exists for any of them. Double herringbone
+        # (wall-aligned) is unaffected — a flush corner is just as
+        # meaningful for it as for plain herringbone.
+        if bond_pattern not in ("diagonal", "diagonal_herringbone", "diagonal_double_herringbone"):
             for label, ox, oy in _canonical_candidates(working_tile, rotated_flag, surface, joint):
                 _consider(_build_candidate(
                     label=label, offset_x=ox, offset_y=oy, rotated=rotated_flag,
