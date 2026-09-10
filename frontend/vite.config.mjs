@@ -29,18 +29,6 @@ export default defineConfig(({ mode }) => {
       alias: [{ find: /^~([^/])/, replacement: "$1" }],
       extensions: ['.mjs', '.js', '.jsx', '.json']
     },
-    esbuild: {
-      loader: 'jsx',
-      include: /src\/.*\.jsx?$/,
-      exclude: []
-    },
-    optimizeDeps: {
-      esbuildOptions: {
-        loader: {
-          '.js': 'jsx',
-        },
-      },
-    },
   };
 });
 
@@ -129,6 +117,7 @@ function buildPathPlugin() {
           outDir: BUILD_PATH || "build",
           minify: "esbuild",
           target: "es2018",
+          chunkSizeWarningLimit: 600,
         },
       };
     },

@@ -376,7 +376,7 @@ def generate_diagonal_piece_diagram(tile, fill: str) -> str:
         fill: Fill color for the kept area
     """
     width, height = tile.nominal_width, tile.nominal_height
-    padding = 70
+    padding = 120
     scale = min(360 / width, 280 / height, 1.0)
     
     local = tile.local_vertices or ()
@@ -405,7 +405,119 @@ def generate_diagonal_piece_diagram(tile, fill: str) -> str:
         f'<polygon points="{polygon}" fill="{fill}" stroke="{_INK}" stroke-width="1.5"/>',
     ])
     
-    # Add dimension lines for each edge of the piece polygon
+    signed_area = sum(
+        start[0] * end[1] - end[0] * start[1]
+        for start, end in zip(local, local[1:] + local[:1])
+    ) / 2
+    centroid = (
+        sum(vertex[0] for vertex in local) / len(local),
+        sum(vertex[1] for vertex in local) / len(local),
+    )
+
+    def outward_normal(start, end, reference):
+        dx, dy = end[0] - start[0], end[1] - start[1]
+        length = math.hypot(dx, dy)
+        if not length:
+            return 0, 0
+        if signed_area > 0:
+            candidate = (dy / length, -dx / length)
+        else:
+            candidate = (-dy / length, dx / length)
+        midpoint = ((start[0] + end[0]) / 2, (start[1] + end[1]) / 2)
+        if (candidate[0] * (midpoint[0] - reference[0])
+                + candidate[1] * (midpoint[1] - reference[1])) < 0:
+            return -candidate[0], -candidate[1]
+        return candidate
+
+    label_boxes = []
+
+    def add_dimension(start, end, normal, label):
+        sx, sy = point(start)
+        ex, ey = point(end)
+        screen_normal = (normal[0], -normal[1])
+        text_width = max(12, len(label) * 7.2)
+        text_height = 14
+        midpoint_x, midpoint_y = (sx + ex) / 2, (sy + ey) / 2
+
+        def overlaps(box):
+            return any(
+                box[0] < other[2] + 4 and box[2] + 4 > other[0]
+                and box[1] < other[3] + 4 and box[3] + 4 > other[1]
+                for other in label_boxes
+            )
+
+        offset = 22
+        while True:
+            ox1, oy1 = sx + screen_normal[0] * offset, sy + screen_normal[1] * offset
+            ox2, oy2 = ex + screen_normal[0] * offset, ey + screen_normal[1] * offset
+            text_x, text_y = (ox1 + ox2) / 2, (oy1 + oy2) / 2 - 5
+            box = (
+                text_x - text_width / 2, text_y - text_height,
+                text_x + text_width / 2, text_y + 3,
+            )
+            if not overlaps(box) and min(box) >= 4 and box[2] <= svg_width - 4 and box[3] <= svg_height - 4:
+                label_boxes.append(box)
+                break
+            offset += 22
+
+        elements.append(
+            f'<line x1="{ox1:.1f}" y1="{oy1:.1f}" x2="{ox2:.1f}" y2="{oy2:.1f}" stroke="#d94801" stroke-width="2"/>'
+        )
+        elements.append(
+            f'<line x1="{sx:.1f}" y1="{sy:.1f}" x2="{ox1:.1f}" y2="{oy1:.1f}" stroke="#d94801" stroke-width="2"/>'
+        )
+        elements.append(
+            f'<line x1="{ex:.1f}" y1="{ey:.1f}" x2="{ox2:.1f}" y2="{oy2:.1f}" stroke="#d94801" stroke-width="2"/>'
+        )
+        elements.append(
+            f'<text x="{text_x:.1f}" y="{text_y:.1f}" text-anchor="middle" '
+            f'font-family="Arial,sans-serif" font-size="12" font-weight="bold" fill="#d94801">{label}</text>'
+        )
+
+    def is_on_side(vertex, side):
+        half_width, half_height = width / 2, height / 2
+        x, y = vertex
+        if side == "left":
+            return abs(x + half_width) < 1e-3
+        if side == "right":
+            return abs(x - half_width) < 1e-3
+        if side == "bottom":
+            return abs(y + half_height) < 1e-3
+        return abs(y - half_height) < 1e-3
+
+    side_corners = {
+        "left": ((-width / 2, -height / 2), (-width / 2, height / 2)),
+        "right": ((width / 2, -height / 2), (width / 2, height / 2)),
+        "bottom": ((-width / 2, -height / 2), (width / 2, -height / 2)),
+        "top": ((-width / 2, height / 2), (width / 2, height / 2)),
+    }
+
+    # Measure the parts of the original tile boundary that are not polygon
+    # edges. These locate each cut intersection from a tile corner.
+    for side, corners in side_corners.items():
+        boundary_vertices = [vertex for vertex in local if is_on_side(vertex, side)]
+        boundary_points = list(corners) + boundary_vertices
+        if side in ("left", "right"):
+            boundary_points.sort(key=lambda vertex: vertex[1])
+        else:
+            boundary_points.sort(key=lambda vertex: vertex[0])
+        for start, end in zip(boundary_points, boundary_points[1:]):
+            segment_length = math.hypot(end[0] - start[0], end[1] - start[1])
+            if segment_length < 1e-3:
+                continue
+            is_polygon_edge = any(
+                (start == edge_start and end == edge_end)
+                or (start == edge_end and end == edge_start)
+                for edge_start, edge_end in zip(local, local[1:] + local[:1])
+            )
+            has_cut_intersection = start in boundary_vertices or end in boundary_vertices
+            if has_cut_intersection and not is_polygon_edge:
+                add_dimension(
+                    start, end, outward_normal(start, end, centroid), f"{segment_length:.0f} mm",
+                )
+
+    # Add dimension lines for each edge of the piece polygon. The labels are
+    # deliberately offset away from the kept polygon, including cut edges.
     for i, start in enumerate(local):
         end = local[(i + 1) % len(local)]
         
@@ -420,38 +532,14 @@ def generate_diagonal_piece_diagram(tile, fill: str) -> str:
             or abs(start[1] - end[1]) < 1e-6 and abs(abs(start[1]) - height / 2) < 1e-3
         )
         
+        normal = outward_normal(start, end, centroid)
         if on_boundary:
-            # This is a boundary edge - draw dimension line for it
-            # Calculate midpoint
-            mx, my = (sx + ex) / 2, (sy + ey) / 2
-            
-            # Perpendicular offset for dimension line
-            dx = ey - sy
-            dy = sx - ex
-            norm = math.hypot(dx, dy)
-            if norm > 0:
-                dx, dy = dx / norm * 15, dy / norm * 15
-            
-            # Draw dimension line offset from edge
-            dim_line_start_x, dim_line_start_y = sx + dx, sy + dy
-            dim_line_end_x, dim_line_end_y = ex + dx, ey + dy
-            
-            elements.append(f'<line x1="{dim_line_start_x:.1f}" y1="{dim_line_start_y:.1f}" x2="{dim_line_end_x:.1f}" y2="{dim_line_end_y:.1f}" stroke="#d94801" stroke-width="2"/>')
-            
-            # Add small perpendicular marks at ends
-            elements.append(f'<line x1="{sx:.1f}" y1="{sy:.1f}" x2="{sx + dx:.1f}" y2="{sy + dy:.1f}" stroke="#d94801" stroke-width="2"/>')
-            elements.append(f'<line x1="{ex:.1f}" y1="{ey:.1f}" x2="{ex + dx:.1f}" y2="{ey + dy:.1f}" stroke="#d94801" stroke-width="2"/>')
-            
-            # Add measurement text
-            text_x, text_y = mx + dx * 1.5, my + dy * 1.5
-            elements.append(f'<text x="{text_x:.1f}" y="{text_y:.1f}" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" font-weight="bold" fill="#d94801">{length:.0f} mm</text>')
+            add_dimension(start, end, normal, f"{length:.0f} mm")
         else:
-            # This is a cut edge - draw thick orange line with label
+            # This is a cut edge - draw the actual saw line, then annotate it
+            # with a second dimension line outside the kept polygon.
             elements.append(f'<line x1="{sx:.1f}" y1="{sy:.1f}" x2="{ex:.1f}" y2="{ey:.1f}" stroke="#d94801" stroke-width="3"/>')
-            
-            # Add cut label at midpoint
-            mx, my = (sx + ex) / 2, (sy + ey) / 2
-            elements.append(f'<text x="{mx:.1f}" y="{my - 7:.1f}" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" font-weight="bold" fill="#a33100">CUT {length:.0f} mm</text>')
+            add_dimension(start, end, normal, f"CUT {length:.0f} mm")
     
     elements.append("</svg>")
     visualizer = TileSVGVisualizer()

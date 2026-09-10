@@ -249,6 +249,42 @@ def test_diagonal_piece_template_keeps_description_text_outside_svg():
     assert "CUT " in svg
 
 
+def test_diagonal_piece_template_measures_boundary_offsets_outside_piece():
+    vertices = ((-150.0, -213.0), (-150.0, 213.0), (62.8, 0.0))
+    tile = PlacedTile(
+        x=0, y=0, width=300, height=426, rotated=False, kind=TileKind.CUT,
+        nominal_width=300, nominal_height=600, vertices=vertices,
+        local_vertices=vertices,
+    )
+
+    svg = _decode(generate_diagonal_piece_diagram(tile, "#d9c98a"))
+
+    # The two 87mm corner offsets locate the cut intersections on the
+    # original 600mm tile; 426mm is the kept boundary and 301mm are the cuts.
+    assert svg.count("87 mm") == 2
+    assert "426 mm" in svg
+    assert svg.count("301 mm") == 2
+    assert svg.count("CUT 301 mm") == 2
+    assert svg.count('stroke="#d94801"') >= 15  # five dimensions, each with extension marks
+
+    labels = [
+        (float(x), float(y), text)
+        for x, y, text in re.findall(
+            r'<text x="([\d.-]+)" y="([\d.-]+)"[^>]*fill="#d94801">([^<]+)</text>', svg,
+        )
+    ]
+    boxes = [
+        (x - len(text) * 7.2 / 2, y - 14, x + len(text) * 7.2 / 2, y + 3)
+        for x, y, text in labels
+    ]
+    for i, box in enumerate(boxes):
+        for other in boxes[i + 1:]:
+            assert not (
+                box[0] < other[2] + 4 and box[2] + 4 > other[0]
+                and box[1] < other[3] + 4 and box[3] + 4 > other[1]
+            )
+
+
 def test_diagonal_svg_suppresses_labels_when_tiles_render_too_small():
     """Regression test for a real reported bug: a large surface with small
     tiles produced hundreds of overlapping/smeared labels. The bug was
