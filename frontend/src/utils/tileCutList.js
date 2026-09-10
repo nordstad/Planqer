@@ -76,13 +76,14 @@ export const buildCutList = (tiles) => {
        existing.sliverCount += tile.is_sliver ? 1 : 0;
        existing.reusedCount += tile.is_reused_offcut ? 1 : 0;
      } else {
-       groups.set(key, {
-         kind: tile.kind, width, height, count: 1, color: tile.fill_color,
-         isDiagonal: !!tile.vertices,
-         sliverCount: tile.is_sliver ? 1 : 0, reusedCount: tile.is_reused_offcut ? 1 : 0,
-         label: tile.size_label, // piece label (A, B, C, etc.) for accessing piece_diagrams
-         edgeLengths: tile.edge_lengths, // for diagonal pieces, the polygon edge lengths
-       });
+        groups.set(key, {
+          kind: tile.kind, width, height, count: 1, color: tile.fill_color,
+          isDiagonal: !!tile.vertices,
+          nominalWidth: tile.nominal_width, nominalHeight: tile.nominal_height,
+          sliverCount: tile.is_sliver ? 1 : 0, reusedCount: tile.is_reused_offcut ? 1 : 0,
+          label: tile.size_label, // piece label (A, B, C, etc.) for accessing piece_diagrams
+          edgeLengths: tile.edge_lengths, // for diagonal pieces, the polygon edge lengths
+        });
      }
    });
 
@@ -123,7 +124,7 @@ export const buildCutListHtml = (candidate) => {
     const labeledKind = `${kind}${detail}${g.isDiagonal && g.label ? ` [${g.label}]` : ''}`;
     const offcut = g.reusedCount > 0 ? `${g.reusedCount} of ${g.count}` : '—';
     const template = candidate.piece_diagrams?.[g.label]
-      ? `<br><img src="${candidate.piece_diagrams[g.label]}" alt="Cut template ${escapeHtml(g.label)}" class="piece-template" />`
+      ? `<div class="piece-template-meta"><b>Piece ${escapeHtml(g.label)} - ${mm(g.nominalWidth)} \u00d7 ${mm(g.nominalHeight)} mm tile</b><br>Final size: ${mm(g.width)} \u00d7 ${mm(g.height)} mm${g.edgeLengths ? ` | Edges: ${g.edgeLengths.map((length) => mm(length)).join(' \u00b7 ')} mm` : ''}</div><img src="${candidate.piece_diagrams[g.label]}" alt="Cut template for piece ${escapeHtml(g.label)}" class="piece-template" /><p class="piece-template-note"><b>How to cut:</b> The solid (light) area is what you keep. The hatched (gray) area is waste. The orange line shows where to cut with your saw.</p>`
       : '';
     rows.push(
       `<tr><td>${mm(g.width)} \u00d7 ${mm(g.height)}${sliver}</td>`

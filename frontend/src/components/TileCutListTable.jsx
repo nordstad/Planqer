@@ -11,6 +11,18 @@ import { useState } from 'react';
 
 const mm = (n) => (Number.isFinite(n) ? Math.round(n).toLocaleString('sv-SE') : '—');
 
+const pieceMeta = (piece) => (
+  <>
+    <strong style={{ display: 'block', color: 'var(--ink)', fontSize: '16px' }}>
+      Piece {piece.label} - {mm(piece.nominalWidth)}×{mm(piece.nominalHeight)} mm tile
+    </strong>
+    <span>
+      Final size: {mm(piece.width)}×{mm(piece.height)} mm
+      {piece.edgeLengths && ` | Edges: ${piece.edgeLengths.map((length) => mm(length)).join(' · ')} mm`}
+    </span>
+  </>
+);
+
 // A small square in the exact color the diagram drew that size in — the
 // diagram itself only labels tiles with text when there's room, but the
 // color survives at any scale, so this is how a busy layout stays legible:
@@ -71,7 +83,7 @@ const TileCutListTable = ({ candidate }) => {
                       {group.kind === 'notched' ? 'Diagonal, cut around an opening' : 'Diagonal'}
                       {group.edgeLengths && ` · ${group.edgeLengths.map((length) => mm(length)).join(' · ')} mm`}
                        {candidate.piece_diagrams?.[group.label] && (
-                         <button type="button" className="btn btn-small" style={{ marginLeft: '8px' }} onClick={() => setTemplate({ label: group.label, image: candidate.piece_diagrams[group.label] })}>
+                          <button type="button" className="btn btn-small" style={{ marginLeft: '8px' }} onClick={() => setTemplate({ ...group, image: candidate.piece_diagrams[group.label] })}>
                            View cut {group.label}
                          </button>
                        )}
@@ -99,6 +111,9 @@ const TileCutListTable = ({ candidate }) => {
             <div className="masthead" style={{ marginTop: 0 }}>
               <span className="masthead-brand" style={{ fontSize: '13px' }}>CUT TEMPLATE {template.label}</span>
               <button type="button" className="masthead-flash" onClick={() => setTemplate(null)}>Close</button>
+            </div>
+            <div style={{ padding: '16px 16px 0', color: 'var(--ink-2)', fontSize: '13px', lineHeight: '1.5' }}>
+              {pieceMeta(template)}
             </div>
             <img src={template.image} alt={`Cut template for piece ${template.label}`} style={{ display: 'block', width: '100%', padding: '16px' }} />
             <div style={{ padding: '0 16px 16px', color: 'var(--ink-2)', fontSize: '13px', lineHeight: '1.5' }}>

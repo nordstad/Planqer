@@ -364,42 +364,25 @@ class TileSVGVisualizer:
         </svg>'''
 
 
-def generate_diagonal_piece_diagram(tile, label: str, fill: str, piece_width: float = None, piece_height: float = None) -> str:
+def generate_diagonal_piece_diagram(tile, fill: str) -> str:
     """Render a full tile with its kept polygon and marked cut edges.
+
+    Text describing the piece belongs outside this SVG. Keeping the diagram
+    image-only prevents long labels from being clipped when the image is
+    displayed at a different size and keeps that information selectable.
     
     Args:
         tile: PlacedTile object with nominal dimensions and vertices
-        label: Piece label (A, B, C, etc.)
         fill: Fill color for the kept area
-        piece_width: Actual piece width (if None, calculated from bounding box)
-        piece_height: Actual piece height (if None, calculated from bounding box)
     """
     width, height = tile.nominal_width, tile.nominal_height
     padding = 70
     scale = min(360 / width, 280 / height, 1.0)
     
-    # Build cut dimensions info text for header
-    cut_info_text = f"Final size: {piece_width:.0f} × {piece_height:.0f} mm" if piece_width and piece_height else ""
-    
-    # Calculate edge lengths from vertices if available
     local = tile.local_vertices or ()
-    if local:
-        edge_lengths = []
-        for i, start in enumerate(local):
-            end = local[(i + 1) % len(local)]
-            length = math.hypot(end[0] - start[0], end[1] - start[1])
-            edge_lengths.append(length)
-        
-        if edge_lengths and cut_info_text:
-            edges_str = " · ".join(f"{e:.0f}" for e in edge_lengths)
-            cut_info_text += f" | Edges: {edges_str} mm"
-    
-    # Add extra top padding if we have info text
-    top_padding = padding + (25 if cut_info_text else 0)
-    
     svg_width = width * scale + padding * 2
-    svg_height = height * scale + top_padding + padding
-    ox, oy = padding, top_padding + 10
+    svg_height = height * scale + padding * 2
+    ox, oy = padding, padding
     
     def point(vertex):
         return ox + (vertex[0] + width / 2) * scale, oy + (height / 2 - vertex[1]) * scale
@@ -415,13 +398,8 @@ def generate_diagonal_piece_diagram(tile, label: str, fill: str, piece_width: fl
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{svg_width:.0f}" height="{svg_height:.0f}" viewBox="0 0 {svg_width:.0f} {svg_height:.0f}">',
         '<defs><pattern id="waste" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" stroke="#aaa79b" stroke-width="2"/></pattern></defs>',
         f'<rect width="100%" height="100%" fill="{_BACKGROUND}"/>',
-        f'<text x="{svg_width / 2:.1f}" y="24" text-anchor="middle" font-family="Arial,sans-serif" font-size="16" font-weight="bold" fill="{_INK}">Piece {escape(label)} · {width:.0f}×{height:.0f} mm tile</text>',
     ]
-    
-    # Add info text if available
-    if cut_info_text:
-        elements.append(f'<text x="{svg_width / 2:.1f}" y="48" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="{_INK}">{escape(cut_info_text)}</text>')
-    
+
     elements.extend([
         f'<polygon points="{full_points}" fill="url(#waste)" stroke="{_INK}" stroke-width="2"/>',
         f'<polygon points="{polygon}" fill="{fill}" stroke="{_INK}" stroke-width="1.5"/>',
@@ -475,10 +453,7 @@ def generate_diagonal_piece_diagram(tile, label: str, fill: str, piece_width: fl
             mx, my = (sx + ex) / 2, (sy + ey) / 2
             elements.append(f'<text x="{mx:.1f}" y="{my - 7:.1f}" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" font-weight="bold" fill="#a33100">CUT {length:.0f} mm</text>')
     
-    elements.extend([
-        f'<text x="{svg_width / 2:.1f}" y="{svg_height - 24:.1f}" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="{_INK}">Colored area = keep · hatched area = waste · orange line = saw cut</text>',
-        "</svg>",
-    ])
+    elements.append("</svg>")
     visualizer = TileSVGVisualizer()
     return visualizer.svg_to_base64("".join(elements))
 

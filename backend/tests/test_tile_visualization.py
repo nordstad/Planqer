@@ -23,6 +23,7 @@ from planqer.tile_visualization import (
     FULL_TILE_FILL,
     TileSVGVisualizer,
     assign_size_colors,
+    generate_diagonal_piece_diagram,
     generate_saved_tile_diagram,
     generate_tile_layout_visualization,
     tile_size_key,
@@ -228,6 +229,24 @@ def test_diagonal_svg_labels_only_full_tiles():
 
     full_label = f"{full_tile.nominal_width:.0f}\u00d7{full_tile.nominal_height:.0f}"
     assert full_label in svg
+
+
+def test_diagonal_piece_template_keeps_description_text_outside_svg():
+    surface = Surface(width=1500, height=1200)
+    tile = Tile(width=300, height=150)
+    joint = JointSpec(joint_width=3)
+    result = solve_tile_layout(
+        surface, tile, joint, bond_pattern="diagonal", candidate_count=3, sample_steps=6,
+    )
+    candidate = result.candidates[result.recommended_index]
+    cut_tile = next(t for t in candidate.tiles if t.kind != TileKind.FULL and t.vertices is not None)
+
+    svg = _decode(generate_diagonal_piece_diagram(cut_tile, "#d9c98a"))
+
+    assert "Piece A" not in svg
+    assert "Final size:" not in svg
+    assert "Colored area = keep" not in svg
+    assert "CUT " in svg
 
 
 def test_diagonal_svg_suppresses_labels_when_tiles_render_too_small():

@@ -1590,8 +1590,7 @@ async def create_tile_layout(
                 key = tile_size_key(tile_item)
                 if tile_item.vertices is not None and tile_item.kind != TileKind.FULL and size_labels[key] not in piece_diagrams:
                     piece_diagrams[size_labels[key]] = generate_diagonal_piece_diagram(
-                        tile_item, size_labels[key], size_colors[key], 
-                        piece_width=tile_item.width, piece_height=tile_item.height
+                        tile_item, size_colors[key],
                     )
             reused_consumer_indices = {consumer for consumer, _source in candidate.offcuts.matches}
             try:
