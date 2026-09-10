@@ -38,7 +38,7 @@ def test_create_backup_uses_sqlite_backup_api_and_writes_manifest(tmp_path: Path
     assert manifest["format"] == BACKUP_FORMAT
     assert "source_path" not in manifest["database"]
     assert manifest["database"]["type"] == "sqlite"
-    assert manifest["database"]["alembic_revision"] == "007_add_default_currency"
+    assert manifest["database"]["alembic_revision"] == "008_add_tile_projects"
     assert len(manifest["database"]["sha256"]) == 64
 
 
@@ -179,7 +179,7 @@ def _create_database(path: Path, *, project_name: str) -> None:
         connection.execute("CREATE TABLE projects (name TEXT NOT NULL)")
         connection.execute("INSERT INTO projects (name) VALUES (?)", (project_name,))
         connection.execute("CREATE TABLE alembic_version (version_num TEXT NOT NULL)")
-        connection.execute("INSERT INTO alembic_version (version_num) VALUES (?)", ("007_add_default_currency",))
+        connection.execute("INSERT INTO alembic_version (version_num) VALUES (?)", ("008_add_tile_projects",))
         connection.commit()
     finally:
         connection.close()
@@ -194,7 +194,7 @@ def _project_names(path: Path) -> list[str]:
     return [row[0] for row in rows]
 
 
-def _manifest(sha256: str, *, alembic_revision: str = "007_add_default_currency") -> dict[str, object]:
+def _manifest(sha256: str, *, alembic_revision: str = "008_add_tile_projects") -> dict[str, object]:
     return {
         "format": BACKUP_FORMAT,
         "created_at": "2026-08-26T21:15:30Z",

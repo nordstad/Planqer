@@ -141,3 +141,43 @@ class UserSheetProject(SQLModel, table=True):
         default_factory=lambda: datetime.now(),
         sa_column=Column(DateTime(timezone=False), nullable=False),
     )
+
+
+class UserTileProject(SQLModel, table=True):
+    """A saved tile/board/panel layout. Periodic-grid inputs group into
+    fewer, richer JSON blobs than UserSheetProject's flat columns — a
+    surface's cutouts are themselves a variable-length nested list, so
+    surface_data/tile_data/bond_data each hold one of the sub-requests
+    TileLayoutRequest already defines (see api.py), rather than exploding
+    every field into its own column. options_data holds the solver knobs
+    (sliver threshold, waste%, offcut reuse) that TileOptimizer folds away —
+    keeping them, not just the chosen candidate, is what lets a reload
+    someday restore the exact form state, not just the picture."""
+
+    __tablename__ = "user_tile_projects"
+
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    user_id: UUID = Field(foreign_key="users.id")
+    project_group_id: Optional[UUID] = Field(
+        default=None, foreign_key="project_groups.id"
+    )
+
+    name: str
+    surface_data: str  # JSON: {width, height, cutouts: [{x,y,width,height,label}]}
+    tile_data: str  # JSON: {width, height, allow_rotation}
+    bond_data: str  # JSON: {pattern, offset_fraction, joint_width, perimeter_gap}
+    options_data: str = Field(
+        default="{}"
+    )  # JSON: {min_edge_cut, reuse_offcuts, waste_percent, candidate_count}
+    layout_result: str | None = None  # JSON: the selected candidate, as returned by /api/tile-layout
+    cutlist_image: str | None = None
+    cutlist_image_svg: str | None = None
+
+    created_at: Optional[datetime] = Field(
+        default_factory=lambda: datetime.now(),
+        sa_column=Column(DateTime(timezone=False), nullable=False),
+    )
+    updated_at: Optional[datetime] = Field(
+        default_factory=lambda: datetime.now(),
+        sa_column=Column(DateTime(timezone=False), nullable=False),
+    )

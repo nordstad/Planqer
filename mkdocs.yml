@@ -69,6 +69,7 @@ nav:
   - Guide:
       - Board cutting: guide/board-cutting.md
       - Sheet cutting: guide/sheet-cutting.md
+      - Tile layout: guide/tile-layout.md
       - 3D model / STEP cutlists: guide/model-cutlist.md
       - Projects & accounts: guide/projects-and-accounts.md
       - Backup and restore: guide/backup-and-restore.md

@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
 from planqer.auth import get_current_user
-from planqer.database import ProjectGroup, User, UserProject, UserSheetProject, get_session
+from planqer.database import ProjectGroup, User, UserProject, UserSheetProject, UserTileProject, get_session
 
 router = APIRouter(prefix="/project-groups", tags=["project-groups"])
 logger = logging.getLogger("planqer.routes.project_groups")
@@ -95,7 +95,7 @@ async def delete_project_group(
     # SQLite here doesn't enforce the migration's ON DELETE CASCADE (foreign
     # key checks aren't turned on for this connection), so its cutlists are
     # deleted explicitly rather than left orphaned with a dangling group id.
-    for cutlist_model in (UserProject, UserSheetProject):
+    for cutlist_model in (UserProject, UserSheetProject, UserTileProject):
         stmt = select(cutlist_model).where(cutlist_model.project_group_id == group_id)
         result = await session.execute(stmt)
         for cutlist in result.scalars().all():

@@ -63,13 +63,12 @@ docker compose up -d --build
 
 ## Plan your first cut
 
-1. Open <http://localhost:3001> and choose **Board cutting**, **Sheet
-   cutting**, or **3D model**.
-2. Sign in or create a local account when prompted — planning and saving a
-   cutlist needs one, but you can browse the homepage and upload a model
-   without one.
-3. Enter your parts (or upload a model) and your available stock lengths or
-   sheet size.
+1. Open <http://localhost:3001> and choose **Board cutting**, **Sheet cutting**,
+   **Tile layout**, or **3D model**.
+2. Sign in or create a local account when prompted. The optimizer pages,
+   model uploads, and saving a plan require a local account.
+3. Enter your parts, surface and tile dimensions, or upload a model. Add stock
+   lengths, sheet size, openings, or tile layout options as appropriate.
 4. Run the plan and read the boards/sheets-required figure.
 5. Download the diagram, or name and save the plan to your dashboard.
 
@@ -87,6 +86,7 @@ which the frontend's dev server requires or it will refuse requests with a
 
 - [Board cutting](guide/board-cutting.md) — 1D parts from boards, lumber, pipe.
 - [Sheet cutting](guide/sheet-cutting.md) — 2D parts nested on sheet stock.
+- [Tile layout](guide/tile-layout.md) — rectangular tile patterns on a surface.
 - [3D model / STEP cutlists](guide/model-cutlist.md) — start from a model
   instead of typing a part list.
 - [Backup and restore](guide/backup-and-restore.md) — protect saved projects

@@ -249,6 +249,40 @@
     font-family: 'Archivo Narrow', sans-serif; font-size: 12px; color: var(--ink-3); white-space: nowrap;
   }
 
+  /* ── tile layout candidates: one card per ranked option ──────────────
+     Selection borrows .plan-steps'/.app-nav's own grammar (a 2px amber
+     underline on the current one) rather than an amber fill, per the One
+     Accent Rule — a fill here would compete with the plan-answer figure on
+     the same step. */
+  .tile-candidates {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 18px; text-align: left;
+  }
+  .tile-candidate {
+    display: flex; flex-direction: column; gap: 12px; min-width: 0;
+    background: var(--card); border: 1.5px solid var(--rule-hair); border-bottom-width: 3px;
+    border-radius: 12px; box-shadow: 0 1px 2px rgba(22,21,15,.04);
+    padding: 14px; cursor: pointer; font: inherit; color: inherit;
+  }
+  .tile-candidate:hover { border-color: var(--ink-4); }
+  .tile-candidate[data-selected="true"] { border-bottom-color: var(--accent); }
+  .tile-candidate-thumb {
+    border-radius: 8px; overflow: hidden; background: var(--ground-2);
+    border: 1px solid var(--rule-hair);
+  }
+  .tile-candidate-thumb img { display: block; width: 100%; height: auto; }
+  .tile-candidate-label { font-size: 13.5px; font-weight: 700; }
+  .tile-candidate-facts {
+    display: flex; flex-wrap: wrap; gap: 10px 14px; margin: 0;
+  }
+  .tile-candidate-facts > div { flex: 1 1 68px; min-width: 0; }
+  .tile-candidate-facts dt {
+    font-family: 'Archivo Narrow', sans-serif; font-size: 11px; font-weight: 700;
+    letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3);
+  }
+  .tile-candidate-facts dd { margin: 2px 0 0; font-size: 14px; font-weight: 700; }
+  .tile-candidate-warn { margin: 0; font-size: 12px; font-weight: 600; color: var(--revision); }
+
   /* ── an advanced option, folded away until asked for ─────────────────── */
   .fold { border-top: 1px solid var(--rule-hair); }
   .fold-head {
@@ -528,6 +562,12 @@
     color: var(--ink-3); margin-bottom: 5px;
   }
 
+  /* ── a swatch of what the selected bond pattern looks like ───────────── */
+  .bond-preview {
+    flex: none; width: 38px; height: 38px; border-radius: 9px;
+    background: var(--accent-bg); display: flex; align-items: center; justify-content: center;
+  }
+
   .cell-input {
     width: 100%; background: transparent; border: 0; color: var(--ink);
     font: inherit; font-size: 14px; font-weight: 600; text-align: right;
@@ -538,7 +578,20 @@
   .kerf-input::-webkit-outer-spin-button, .kerf-input::-webkit-inner-spin-button {
     -webkit-appearance: none; margin: 0;
   }
-  .cell-input.is-error { color: var(--revision); background: var(--revision-bg); }
+  .cell-input.is-error {
+    color: var(--revision); background: var(--revision-bg); border: 1.5px solid var(--revision);
+  }
+
+  /* ── a labelled cell input: "x"/"y"/"w"/"h" tag sitting over the field ── */
+  .cutout-field { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .cutout-field-tag {
+    font-family: 'Archivo Narrow', sans-serif; font-size: 9.5px; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3);
+  }
+  /* the data row keeps no bottom rule when an error row follows it, so the
+     pair reads as one block rather than two stacked rows */
+  .cat-table tr.is-error-row td { border-bottom: 0; padding-bottom: 2px; }
+  .cutout-error-row td { padding-top: 0; }
   .cell-strike {
     background: transparent; border: 0; color: var(--ink-3); cursor: pointer;
     font-size: 15px; font-weight: 700; line-height: 1; padding: 4px 6px;

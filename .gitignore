@@ -198,3 +198,6 @@ RELEASE_NOTES.md
 test-results/
 playwright-report/
 coverage/
+
+# Local planning notes (not project source, not for the public repo)
+.plans/

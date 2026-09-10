@@ -40,16 +40,18 @@ Authorization: Bearer <token>
 Swagger UI supports this flow through the **Authorize** button after you call
 `POST /auth/login` and copy the returned token.
 
-Public optimization endpoints can be called without a saved project, but saved
-projects, settings, project groups, and admin endpoints require authentication.
+Board, sheet, and tile optimization endpoints can be called without a saved
+project. STL and STEP model-upload endpoints, saved projects, settings, project
+groups, and admin endpoints require authentication.
 
 ## Optimization
 
 | Endpoint | Purpose |
 | --- | --- |
 | `POST /api/cutting-plans` | 1D board cutting. Rate limited: 10/minute. |
-| `POST /api/cutting-plans/async` | Start an asynchronous 1D optimization task. |
-| `POST /api/sheet-optimization` | 2D sheet packing. Rate limited: 10/minute. |
+| `POST /api/cutting-plans/async` | Start an async 1D task. |
+| `POST /api/sheet-optimization` | 2D sheet packing. Rate limited: 10/min. |
+| `POST /api/tile-layout` | Ranked tile candidates. Rate limited: 10/min. |
 | `POST /api/3d-cutlist` | STL upload to cutlist. Rate limited: 5/minute. |
 | `POST /api/step-cutlist` | STEP upload to cutlist. Rate limited: 3/minute. |
 | `GET /algorithms` | List available 1D optimization algorithms. |

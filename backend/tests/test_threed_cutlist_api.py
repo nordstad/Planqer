@@ -3,6 +3,7 @@ API tests for 3D cutlist endpoints.
 """
 
 import pytest
+import uuid
 from unittest.mock import patch
 from fastapi.testclient import TestClient
 from planqer.api import app
@@ -21,7 +22,24 @@ def disable_rate_limiting():
 @pytest.fixture
 def client():
     """Create test client."""
-    return TestClient(app)
+    with TestClient(app) as test_client:
+        user = {
+            "email": f"model-test-{uuid.uuid4()}@example.com",
+            "password": "testpassword123",
+        }
+        test_client.post("/api/auth/register", json=user)
+        login = test_client.post("/api/auth/login", json=user)
+        test_client.headers.update(
+            {"Authorization": f"Bearer {login.json()['access_token']}"}
+        )
+        yield test_client
+
+
+def test_model_cutlist_endpoints_require_auth(client):
+    client.headers.pop("Authorization")
+
+    assert client.post("/api/3d-cutlist").status_code == 401
+    assert client.post("/api/step-cutlist").status_code == 401
 
 
 def test_3d_cutlist_missing_file(client):

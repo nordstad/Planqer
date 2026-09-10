@@ -4,16 +4,16 @@ import os
 import re
 import time
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from html import escape
 from pathlib import Path
 from uuid import uuid4
 
-from alembic import command as alembic_command
 from alembic.config import Config as AlembicConfig
 from fastapi import (
     APIRouter,
     BackgroundTasks,
+    Depends,
     FastAPI,
     File,
     Form,
@@ -24,6 +24,14 @@ from fastapi import (
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel, field_validator
+from slowapi import Limiter
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+
+from alembic import command as alembic_command
 from planqer import __version__
 from planqer.algorithms import OptimizationAlgorithm, get_algorithm_recommendation
 from planqer.async_processing import (
@@ -33,6 +41,7 @@ from planqer.async_processing import (
     start_periodic_cleanup,
     task_manager,
 )
+from planqer.auth import get_current_user
 from planqer.cache import clear_cache, get_cache_info
 from planqer.helpers import load_config
 from planqer.logging_config import (
@@ -57,6 +66,7 @@ from planqer.routes import (
     projects_router,
     settings_router,
     sheet_projects_router,
+    tile_projects_router,
 )
 from planqer.services import run_optimization
 from planqer.sheet_optimization import (
@@ -66,12 +76,20 @@ from planqer.sheet_optimization import (
 )
 from planqer.step_cutlist import process_uploaded_step
 from planqer.threed_cutlist import process_uploaded_stl
-from pydantic import BaseModel, field_validator
-from slowapi import Limiter
-from slowapi.errors import RateLimitExceeded
-from slowapi.util import get_remote_address
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request
+from planqer.tile_layout.geometry import Cutout as TileCutout
+from planqer.tile_layout.geometry import JointSpec as TileJoint
+from planqer.tile_layout.geometry import Surface as TileSurface
+from planqer.tile_layout.geometry import Tile as TileGeometry
+from planqer.tile_layout.geometry import TileKind, polygon_edge_lengths
+from planqer.tile_layout.solver import solve_tile_layout
+from planqer.tile_visualization import (
+    FULL_TILE_FILL,
+    assign_size_colors,
+    assign_size_labels,
+    generate_diagonal_piece_diagram,
+    generate_tile_layout_visualization,
+    tile_size_key,
+)
 
 # Load configuration
 CONFIG_PATH = Path(__file__).parent.parent / "config.yaml"
@@ -232,6 +250,7 @@ sheet_router = APIRouter(
 )
 threed_router = APIRouter(prefix="/3d-cutlist", tags=["3D Model Cutlist"])
 step_router = APIRouter(prefix="/step-cutlist", tags=["STEP Model Cutlist"])
+tile_router = APIRouter(prefix="/tile-layout", tags=["Tile Layout"])
 
 app = FastAPI(
     title="planqer API",
@@ -592,6 +611,231 @@ class SheetOptimizationResponse(BaseModel):
     visualization: str  # Base64 encoded image
 
 
+# ── Tile / surface layout ────────────────────────────────────────────────
+# Periodic grid placement, not bin packing — see
+# backend/planqer/tile_layout/__init__.py and .plans/tile-layout.md for the
+# design rationale. The only real decision variable is the lattice's start
+# offset; everything else here is derived from it.
+
+
+class TileCutoutSpec(BaseModel):
+    """A rectangular opening in the surface (window, door, socket, hood)."""
+
+    x: float
+    y: float
+    width: float
+    height: float
+    label: str | None = None
+
+    @field_validator("x", "y", "width", "height")
+    @classmethod
+    def validate_dimensions(cls, v):
+        return validate_numeric_input(v, 0.0, 20000.0)
+
+    @field_validator("label")
+    @classmethod
+    def validate_label(cls, v):
+        return sanitize_project_name(v)
+
+
+class TileSpec(BaseModel):
+    """A single rectangular tile/board/panel size."""
+
+    width: float
+    height: float
+    allow_rotation: bool = False
+
+    @field_validator("width", "height")
+    @classmethod
+    def validate_dimensions(cls, v):
+        return validate_numeric_input(v, 10.0, 3000.0)  # 10mm to 3000mm
+
+
+class TileJointSpec(BaseModel):
+    """Grout/joint width between tiles, and a perimeter expansion gap."""
+
+    joint_width: float = 3.0
+    perimeter_gap: float = 0.0
+
+    @field_validator("joint_width")
+    @classmethod
+    def validate_joint_width(cls, v):
+        return validate_numeric_input(v, 0.0, 50.0)
+
+    @field_validator("perimeter_gap")
+    @classmethod
+    def validate_perimeter_gap(cls, v):
+        return validate_numeric_input(v, 0.0, 200.0)
+
+
+_VALID_BOND_PATTERNS = (
+    "stack", "running", "herringbone", "diagonal",
+    "diagonal_herringbone", "double_herringbone", "diagonal_double_herringbone",
+)
+
+
+class TileBondSpec(BaseModel):
+    """The laying pattern. See tile_layout/bonds.py."""
+
+    pattern: str = "stack"
+    offset_fraction: float = 0.5  # fraction of tile width; 0.5 = brick bond; ignored for every herringbone-family bond
+
+    @field_validator("pattern")
+    @classmethod
+    def validate_pattern(cls, v):
+        if v not in _VALID_BOND_PATTERNS:
+            raise ValueError(
+                f"Invalid bond pattern '{v}'. Valid options: {', '.join(_VALID_BOND_PATTERNS)}"
+            )
+        return v
+
+    @field_validator("offset_fraction")
+    @classmethod
+    def validate_offset_fraction(cls, v):
+        if not (0.0 < v < 1.0):
+            raise ValueError("offset_fraction must be between 0 and 1 (exclusive)")
+        return v
+
+
+class TileLayoutRequest(BaseModel):
+    """Request model for tile/surface layout optimization."""
+
+    surface_width: float
+    surface_height: float
+    cutouts: list[TileCutoutSpec] = []
+    tile: TileSpec
+    joint: TileJointSpec = TileJointSpec()
+    bond: TileBondSpec = TileBondSpec()
+    min_edge_cut: float | None = None  # sliver threshold; e.g. 1/3 tile width
+    reuse_offcuts: bool = True
+    waste_percent: float = 10.0
+    candidate_count: int = 5
+    project_name: str | None = None
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "surface_width": 2400,
+                "surface_height": 1200,
+                "cutouts": [{"x": 1000, "y": 400, "width": 300, "height": 300, "label": "window"}],
+                "tile": {"width": 300, "height": 600, "allow_rotation": False},
+                "joint": {"joint_width": 3, "perimeter_gap": 0},
+                "bond": {"pattern": "running", "offset_fraction": 0.5},
+                "min_edge_cut": 100,
+                "reuse_offcuts": True,
+                "waste_percent": 10,
+                "candidate_count": 5,
+                "project_name": "Kitchen splashback",
+            }
+        }
+    }
+
+    @field_validator("surface_width", "surface_height")
+    @classmethod
+    def validate_surface_dimensions(cls, v):
+        return validate_numeric_input(v, 100.0, 20000.0)
+
+    @field_validator("min_edge_cut")
+    @classmethod
+    def validate_min_edge_cut(cls, v):
+        if v is None:
+            return None
+        return validate_numeric_input(v, 0.0, 3000.0)
+
+    @field_validator("waste_percent")
+    @classmethod
+    def validate_waste_percent(cls, v):
+        return validate_numeric_input(v, 0.0, 100.0)
+
+    @field_validator("candidate_count")
+    @classmethod
+    def validate_candidate_count(cls, v):
+        if not isinstance(v, int) or v < 1 or v > 20:
+            raise ValueError("candidate_count must be an integer between 1 and 20")
+        return v
+
+    @field_validator("cutouts")
+    @classmethod
+    def validate_cutouts(cls, v):
+        if len(v) > 20:
+            raise ValueError("Maximum 20 cutouts allowed")
+        return v
+
+    @field_validator("project_name")
+    @classmethod
+    def validate_project_name(cls, v):
+        return sanitize_project_name(v)
+
+
+class PlacedTileInfo(BaseModel):
+    """A single tile after clipping — properly typed, unlike
+    SheetLayoutInfo.parts (list[dict]), which is an untyped contract we
+    deliberately did not copy here (see .plans/tile-layout.md)."""
+
+    x: float
+    y: float
+    width: float
+    height: float
+    nominal_width: float
+    nominal_height: float
+    rotated: bool
+    kind: str  # "full" | "cut" | "notched"
+    is_sliver: bool
+    is_reused_offcut: bool  # satisfied from another tile's offcut, not bought fresh
+    fill_color: str  # matches the SVG's own fill for this tile — same size, same color
+    size_label: str | None = None
+    edge_lengths: list[float] | None = None
+    # Only set for a diagonal ("set on point") bond — the piece's true
+    # clipped polygon, since x/y/width/height are just its bounding box
+    # for a rotated piece (see tile_layout.geometry.PlacedTile.vertices).
+    # None for every axis-aligned bond, where x/y/width/height are exact.
+    vertices: list[tuple[float, float]] | None = None
+
+
+class TileLayoutCandidateResponse(BaseModel):
+    """One ranked candidate layout."""
+
+    label: str
+    offset_x: float
+    offset_y: float
+    rotated: bool
+    tiles: list[PlacedTileInfo]
+    full_tile_count: int
+    cut_tile_count: int
+    notched_count: int
+    tiles_to_purchase: int
+    tiles_to_purchase_with_waste: int
+    reused_offcut_count: int
+    min_edge_cut_width: float | None
+    min_edge_cut_height: float | None
+    # The diagonal-bond counterpart to the two fields above — one caliper-
+    # width span instead of an x/y pair, since a rotated piece's "cut
+    # width" isn't an axis-aligned fact anymore. None for every
+    # axis-aligned bond (see tile_layout.scoring.LayoutMetrics).
+    min_diagonal_cut_span: float | None
+    sliver_count: int
+    symmetry_delta_x: float
+    symmetry_delta_y: float
+    distinct_cut_sizes: int  # unique CUT/NOTCHED (width, height) pairs — fewer means fewer saw setups
+    coverage_area: float
+    waste_area: float
+    efficiency: float
+    is_pareto_optimal: bool
+    warnings: list[str]
+    visualization: str  # SVG data URL, per candidate
+    piece_diagrams: dict[str, str] = {}
+
+
+class TileLayoutResponse(BaseModel):
+    """Response model for tile/surface layout optimization."""
+
+    candidates: list[TileLayoutCandidateResponse]
+    recommended_index: int
+    surface_area: float
+    net_area: float
+    computation_time: float | None = None
+
+
 class CutListItemResponse(BaseModel):
     """Response model for a single cutlist item."""
 
@@ -865,7 +1109,7 @@ async def create_cutting_plan(
 
         logger.error(f"[{request_id}] Optimization failed with detailed error:")
         logger.error(f"[{request_id}] Error type: {type(e).__name__}")
-        logger.error(f"[{request_id}] Error message: {str(e)}")
+        logger.error(f"[{request_id}] Error message: {e!s}")
         logger.error(f"[{request_id}] Full traceback: {traceback.format_exc()}")
 
         log_optimization_result(
@@ -879,7 +1123,7 @@ async def create_cutting_plan(
             str(e),
         )
 
-        raise HTTPException(status_code=400, detail=f"Optimization failed: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Optimization failed: {e!s}")
 
 
 @cutting_router.post(
@@ -954,9 +1198,9 @@ async def create_cutting_plan_async(
         }
 
     except Exception as e:
-        logger.error(f"[{request_id}] Async task creation failed: {str(e)}")
+        logger.error(f"[{request_id}] Async task creation failed: {e!s}")
         raise HTTPException(
-            status_code=400, detail=f"Failed to create async task: {str(e)}"
+            status_code=400, detail=f"Failed to create async task: {e!s}"
         )
 
 
@@ -1003,7 +1247,7 @@ async def websocket_endpoint(websocket: WebSocket, task_id: str):
             try:
                 # Wait for client messages (or ping to keep alive)
                 await asyncio.wait_for(websocket.receive_text(), timeout=30.0)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 # Send ping to keep connection alive
                 await websocket.send_json({"type": "ping"})
             except WebSocketDisconnect:
@@ -1049,7 +1293,7 @@ async def health_check():
 
         return {
             "status": "healthy",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "version": __version__,
             "service": "planqer-api",
             "cache": {
@@ -1058,8 +1302,8 @@ async def health_check():
             },
         }
     except Exception as e:
-        logger.error(f"Health check failed: {str(e)}")
-        raise HTTPException(status_code=503, detail=f"Service unhealthy: {str(e)}")
+        logger.error(f"Health check failed: {e!s}")
+        raise HTTPException(status_code=503, detail=f"Service unhealthy: {e!s}")
 
 
 @app.get("/algorithms", summary="Get available optimization algorithms")
@@ -1235,7 +1479,7 @@ async def create_sheet_optimization(
             )
         except Exception as e:
             logger.error(
-                f"[{request_id}] Failed to generate sheet visualization: {str(e)}"
+                f"[{request_id}] Failed to generate sheet visualization: {e!s}"
             )
             import traceback
 
@@ -1262,10 +1506,164 @@ async def create_sheet_optimization(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"[{request_id}] Sheet optimization failed: {str(e)}")
+        logger.error(f"[{request_id}] Sheet optimization failed: {e!s}")
         raise HTTPException(
-            status_code=400, detail=f"Sheet optimization failed: {str(e)}"
+            status_code=400, detail=f"Sheet optimization failed: {e!s}"
         )
+
+
+@tile_router.post(
+    "",
+    response_model=TileLayoutResponse,
+    summary="Generate ranked tile/surface layout candidates",
+)
+@limiter.limit("10/minute")
+@track_request_metrics
+async def create_tile_layout(
+    request: Request,
+    tile_request: TileLayoutRequest,
+):
+    """
+    Compute how many tiles/boards/panels are needed to cover a surface, and
+    where to start the grid so cuts against an edge aren't ugly slivers.
+
+    Unlike sheet-optimization (irregular bin packing), this is a periodic
+    grid placement problem: the tile size and joint fix a lattice pitch, and
+    the only real decision is the lattice's start offset. This endpoint
+    samples that offset space, scores every resulting layout, and returns
+    the Pareto-optimal candidates — ranked by minimum edge-cut safety, tile
+    count, left/right + top/bottom symmetry, and distinct cut sizes (fewer
+    saw setups) — so the caller can pick the tradeoff that fits the job
+    rather than trust one auto-picked answer.
+    """
+    request_id = str(uuid4())[:8]
+
+    logger.info(
+        f"[{request_id}] Received /tile-layout request from {request.client.host} | "
+        f"Surface: {tile_request.surface_width}x{tile_request.surface_height} | "
+        f"Tile: {tile_request.tile.width}x{tile_request.tile.height} | "
+        f"Bond: {tile_request.bond.pattern} | "
+        f"Project: {tile_request.project_name or 'None'}"
+    )
+
+    try:
+        start_time = time.time()
+
+        surface = TileSurface(
+            width=tile_request.surface_width,
+            height=tile_request.surface_height,
+            cutouts=tuple(
+                TileCutout(x=c.x, y=c.y, width=c.width, height=c.height, label=c.label)
+                for c in tile_request.cutouts
+            ),
+        )
+        tile = TileGeometry(
+            width=tile_request.tile.width,
+            height=tile_request.tile.height,
+            allow_rotation=tile_request.tile.allow_rotation,
+        )
+        joint = TileJoint(
+            joint_width=tile_request.joint.joint_width,
+            perimeter_gap=tile_request.joint.perimeter_gap,
+        )
+
+        result = solve_tile_layout(
+            surface=surface,
+            tile=tile,
+            joint=joint,
+            bond_pattern=tile_request.bond.pattern,
+            offset_fraction=tile_request.bond.offset_fraction,
+            min_edge_cut=tile_request.min_edge_cut,
+            reuse_offcuts=tile_request.reuse_offcuts,
+            waste_percent=tile_request.waste_percent,
+            candidate_count=tile_request.candidate_count,
+        )
+
+        computation_time = time.time() - start_time
+
+        candidates_response = []
+        for candidate in result.candidates:
+            size_colors = assign_size_colors(candidate.tiles)
+            size_labels = assign_size_labels(candidate.tiles)
+            piece_diagrams = {}
+            for tile_item in candidate.tiles:
+                key = tile_size_key(tile_item)
+                if tile_item.vertices is not None and tile_item.kind != TileKind.FULL and size_labels[key] not in piece_diagrams:
+                    piece_diagrams[size_labels[key]] = generate_diagonal_piece_diagram(
+                        tile_item, size_labels[key], size_colors[key], 
+                        piece_width=tile_item.width, piece_height=tile_item.height
+                    )
+            reused_consumer_indices = {consumer for consumer, _source in candidate.offcuts.matches}
+            try:
+                visualization = generate_tile_layout_visualization(
+                    candidate, surface, tile_request.project_name
+                )
+            except Exception as e:
+                logger.error(f"[{request_id}] Failed to generate tile visualization: {e!s}")
+                visualization = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjRkZGRkZGIi8+PHRleHQgeD0iMjAwIiB5PSIxMDAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNiIgZmlsbD0iIzY2NiI+Tm8gdGlsZSBsYXlvdXQgYXZhaWxhYmxlPC90ZXh0Pjwvc3ZnPg=="
+
+            candidates_response.append(
+                TileLayoutCandidateResponse(
+                    label=candidate.label,
+                    offset_x=candidate.offset_x,
+                    offset_y=candidate.offset_y,
+                    rotated=candidate.rotated,
+                    tiles=[
+                        PlacedTileInfo(
+                            x=t.x, y=t.y, width=t.width, height=t.height,
+                            nominal_width=t.nominal_width, nominal_height=t.nominal_height,
+                            rotated=t.rotated, kind=t.kind.value, is_sliver=t.is_sliver,
+                            is_reused_offcut=i in reused_consumer_indices,
+                            fill_color=(
+                                FULL_TILE_FILL if t.kind == TileKind.FULL
+                                else size_colors[tile_size_key(t)]
+                            ),
+                            size_label=(None if t.kind == TileKind.FULL else size_labels[tile_size_key(t)]),
+                            edge_lengths=(polygon_edge_lengths(t.vertices) if t.vertices is not None else None),
+                            vertices=list(t.vertices) if t.vertices is not None else None,
+                        )
+                        for i, t in enumerate(candidate.tiles)
+                    ],
+                    full_tile_count=candidate.metrics.full_tile_count,
+                    cut_tile_count=candidate.metrics.cut_tile_count,
+                    notched_count=candidate.metrics.notched_count,
+                    tiles_to_purchase=candidate.tiles_to_purchase,
+                    tiles_to_purchase_with_waste=candidate.tiles_to_purchase_with_waste,
+                    reused_offcut_count=candidate.offcuts.reused_count,
+                    min_edge_cut_width=candidate.metrics.min_edge_cut_width,
+                    min_edge_cut_height=candidate.metrics.min_edge_cut_height,
+                    min_diagonal_cut_span=candidate.metrics.min_diagonal_cut_span,
+                    sliver_count=candidate.metrics.sliver_count,
+                    symmetry_delta_x=candidate.metrics.symmetry_delta_x,
+                    symmetry_delta_y=candidate.metrics.symmetry_delta_y,
+                    distinct_cut_sizes=candidate.metrics.distinct_cut_sizes,
+                    coverage_area=candidate.metrics.coverage_area,
+                    waste_area=candidate.metrics.waste_area,
+                    efficiency=candidate.metrics.efficiency,
+                    is_pareto_optimal=candidate.is_pareto_optimal,
+                    warnings=list(candidate.warnings),
+                    visualization=visualization,
+                    piece_diagrams=piece_diagrams,
+                )
+            )
+
+        logger.info(f"[{request_id}] Tile layout completed successfully")
+
+        return TileLayoutResponse(
+            candidates=candidates_response,
+            recommended_index=result.recommended_index,
+            surface_area=result.surface_area,
+            net_area=result.net_area,
+            computation_time=computation_time,
+        )
+
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"[{request_id}] Tile layout failed: {e!s}")
+        raise HTTPException(status_code=400, detail=f"Tile layout failed: {e!s}")
 
 
 @app.get("/sheet-algorithms", summary="Get available sheet optimization algorithms")
@@ -1321,6 +1719,7 @@ async def get_available_sheet_algorithms():
 @limiter.limit("5/minute")  # Lower rate limit for file processing
 async def create_3d_cutlist(
     request: Request,
+    current_user=Depends(get_current_user),
     file: UploadFile = File(..., description="STL file to process"),
     units: str = Form("mm", description="Units for dimensions (mm, cm, m, in, ft)"),
     round_precision: int = Form(
@@ -1467,7 +1866,7 @@ async def create_3d_cutlist(
         raise
     except Exception as e:
         processing_time = time.time() - start_time
-        logger.error(f"[{request_id}] 3D cutlist processing failed: {str(e)}")
+        logger.error(f"[{request_id}] 3D cutlist processing failed: {e!s}")
 
         log_error(
             logger,
@@ -1481,7 +1880,7 @@ async def create_3d_cutlist(
         )
 
         raise HTTPException(
-            status_code=500, detail=f"3D cutlist processing failed: {str(e)}"
+            status_code=500, detail=f"3D cutlist processing failed: {e!s}"
         )
 
 
@@ -1493,6 +1892,7 @@ async def create_3d_cutlist(
 @limiter.limit("3/minute")  # Lower rate limit for STEP processing (more intensive)
 async def create_step_cutlist(
     request: Request,
+    current_user=Depends(get_current_user),
     file: UploadFile = File(..., description="STEP file to process"),
     units: str = Form("mm", description="Units for dimensions (mm, cm, m, in, ft)"),
     round_precision: int = Form(
@@ -1667,7 +2067,7 @@ async def create_step_cutlist(
         raise
     except Exception as e:
         processing_time = time.time() - start_time
-        logger.error(f"[{request_id}] STEP cutlist processing failed: {str(e)}")
+        logger.error(f"[{request_id}] STEP cutlist processing failed: {e!s}")
 
         log_error(
             logger,
@@ -1681,7 +2081,7 @@ async def create_step_cutlist(
         )
 
         raise HTTPException(
-            status_code=500, detail=f"STEP cutlist processing failed: {str(e)}"
+            status_code=500, detail=f"STEP cutlist processing failed: {e!s}"
         )
 
 
@@ -1690,9 +2090,11 @@ app.include_router(auth_router)
 app.include_router(settings_router)
 app.include_router(projects_router)
 app.include_router(sheet_projects_router)
+app.include_router(tile_projects_router)
 app.include_router(project_groups_router)
 app.include_router(admin_router)
 app.include_router(cutting_router)
 app.include_router(sheet_router)
 app.include_router(threed_router)
 app.include_router(step_router)
+app.include_router(tile_router)

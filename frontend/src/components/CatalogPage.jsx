@@ -15,6 +15,7 @@ const NAV_BUTTON_RESET = { background: 'none', border: 0, borderBottom: '2px sol
 const BASE_NAV_LINKS = [
   { path: '/cutting', label: 'Board cutting' },
   { path: '/sheet-cutting', label: 'Sheet cutting' },
+  { path: '/tile-layout', label: 'Tile layout' },
   { path: '/model-cutlist', label: '3D model' },
   { path: '/help', label: 'Help' },
 ];
