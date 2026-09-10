@@ -569,6 +569,10 @@
   }
   @media (max-width: 640px) {
     .bond-preview { width: 52px; height: 52px; }
+    .tile-bond-control { margin-left: 0; }
+  }
+  @media (min-width: 641px) {
+    .tile-bond-control { margin-left: auto; }
   }
 
   .cell-input {

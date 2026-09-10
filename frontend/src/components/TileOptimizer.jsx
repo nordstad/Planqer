@@ -523,7 +523,7 @@ const TileOptimizer = () => {
                   <span style={{ fontSize: '13.5px', color: 'var(--ink-3)', fontWeight: 600 }}>mm</span>
                 </div>
               </div>
-              <div style={{ flex: 'none' }}>
+              <div className="tile-bond-control" style={{ flex: 'none' }}>
                 <div className="flex items-center gap-2">
                   <span className="bond-preview" style={{ color: 'var(--accent)' }}>
                     <BondPatternIcon pattern={bondPattern} size={44} />
