@@ -23,6 +23,7 @@ from planqer.tile_visualization import (
     FULL_TILE_FILL,
     TileSVGVisualizer,
     assign_size_colors,
+    generate_diagonal_piece_diagram,
     generate_saved_tile_diagram,
     generate_tile_layout_visualization,
     tile_size_key,
@@ -228,6 +229,60 @@ def test_diagonal_svg_labels_only_full_tiles():
 
     full_label = f"{full_tile.nominal_width:.0f}\u00d7{full_tile.nominal_height:.0f}"
     assert full_label in svg
+
+
+def test_diagonal_piece_template_keeps_description_text_outside_svg():
+    surface = Surface(width=1500, height=1200)
+    tile = Tile(width=300, height=150)
+    joint = JointSpec(joint_width=3)
+    result = solve_tile_layout(
+        surface, tile, joint, bond_pattern="diagonal", candidate_count=3, sample_steps=6,
+    )
+    candidate = result.candidates[result.recommended_index]
+    cut_tile = next(t for t in candidate.tiles if t.kind != TileKind.FULL and t.vertices is not None)
+
+    svg = _decode(generate_diagonal_piece_diagram(cut_tile, "#d9c98a"))
+
+    assert "Piece A" not in svg
+    assert "Final size:" not in svg
+    assert "Colored area = keep" not in svg
+    assert "CUT " in svg
+
+
+def test_diagonal_piece_template_measures_boundary_offsets_outside_piece():
+    vertices = ((-150.0, -213.0), (-150.0, 213.0), (62.8, 0.0))
+    tile = PlacedTile(
+        x=0, y=0, width=300, height=426, rotated=False, kind=TileKind.CUT,
+        nominal_width=300, nominal_height=600, vertices=vertices,
+        local_vertices=vertices,
+    )
+
+    svg = _decode(generate_diagonal_piece_diagram(tile, "#d9c98a"))
+
+    # The two 87mm corner offsets locate the cut intersections on the
+    # original 600mm tile; 426mm is the kept boundary and 301mm are the cuts.
+    assert svg.count("87 mm") == 2
+    assert "426 mm" in svg
+    assert svg.count("301 mm") == 2
+    assert svg.count("CUT 301 mm") == 2
+    assert svg.count('stroke="#d94801"') >= 15  # five dimensions, each with extension marks
+
+    labels = [
+        (float(x), float(y), text)
+        for x, y, text in re.findall(
+            r'<text x="([\d.-]+)" y="([\d.-]+)"[^>]*fill="#d94801">([^<]+)</text>', svg,
+        )
+    ]
+    boxes = [
+        (x - len(text) * 7.2 / 2, y - 14, x + len(text) * 7.2 / 2, y + 3)
+        for x, y, text in labels
+    ]
+    for i, box in enumerate(boxes):
+        for other in boxes[i + 1:]:
+            assert not (
+                box[0] < other[2] + 4 and box[2] + 4 > other[0]
+                and box[1] < other[3] + 4 and box[3] + 4 > other[1]
+            )
 
 
 def test_diagonal_svg_suppresses_labels_when_tiles_render_too_small():
