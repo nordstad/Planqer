@@ -564,8 +564,11 @@
 
   /* ── a swatch of what the selected bond pattern looks like ───────────── */
   .bond-preview {
-    flex: none; width: 38px; height: 38px; border-radius: 9px;
+    flex: none; width: 56px; height: 56px; border-radius: 11px;
     background: var(--accent-bg); display: flex; align-items: center; justify-content: center;
+  }
+  @media (max-width: 640px) {
+    .bond-preview { width: 52px; height: 52px; }
   }
 
   .cell-input {

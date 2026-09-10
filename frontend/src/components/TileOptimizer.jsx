@@ -524,13 +524,13 @@ const TileOptimizer = () => {
                 </div>
               </div>
               <div style={{ flex: 'none' }}>
-                <label className="form-label" htmlFor="tile-bond">Bond</label>
                 <div className="flex items-center gap-2">
                   <span className="bond-preview" style={{ color: 'var(--accent)' }}>
-                    <BondPatternIcon pattern={bondPattern} size={24} />
+                    <BondPatternIcon pattern={bondPattern} size={44} />
                   </span>
                   <select
                     id="tile-bond"
+                    aria-label="Bond pattern"
                     value={bondPattern}
                     onChange={(e) => setField(setBondPattern)(e.target.value)}
                     className="form-select"
