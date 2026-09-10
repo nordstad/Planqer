@@ -60,12 +60,14 @@ export const buildCutList = (tiles) => {
    const groups = new Map();
    let fullCount = 0;
    let fullColor = null;
+   let fullShape = null;
 
    tiles.forEach((tile) => {
-     if (tile.kind === 'full') {
-       fullCount += 1;
-       fullColor = fullColor ?? tile.fill_color;
-       return;
+      if (tile.kind === 'full') {
+        fullCount += 1;
+        fullColor = fullColor ?? tile.fill_color;
+        fullShape = fullShape ?? { vertices: tile.vertices, width: tile.width, height: tile.height };
+        return;
      }
      const width = Math.round(tile.width);
      const height = Math.round(tile.height);
@@ -79,6 +81,7 @@ export const buildCutList = (tiles) => {
         groups.set(key, {
           kind: tile.kind, width, height, count: 1, color: tile.fill_color,
           isDiagonal: !!tile.vertices,
+          shape: { vertices: tile.vertices, width: tile.width, height: tile.height },
           nominalWidth: tile.nominal_width, nominalHeight: tile.nominal_height,
           sliverCount: tile.is_sliver ? 1 : 0, reusedCount: tile.is_reused_offcut ? 1 : 0,
           label: tile.size_label, // piece label (A, B, C, etc.) for accessing piece_diagrams
@@ -88,7 +91,7 @@ export const buildCutList = (tiles) => {
    });
 
    const cutGroups = Array.from(groups.values()).sort((a, b) => (b.width * b.height) - (a.width * a.height));
-   return { fullCount, fullColor, cutGroups };
+   return { fullCount, fullColor, fullShape, cutGroups };
  };
 
 const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (c) => ({

@@ -26,5 +26,6 @@ describe('TileCutListTable', () => {
     expect(screen.getByText(/Edges: 402 · 300 · 102 · 424 mm/)).toBeInTheDocument();
     expect(screen.getByText(/The solid \(light\) area is what you keep/)).toBeInTheDocument();
     expect(screen.getByAltText('Cut template for piece E')).toBeInTheDocument();
+    expect(document.querySelector('svg polygon')).toBeInTheDocument();
   });
 });

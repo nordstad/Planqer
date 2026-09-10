@@ -23,25 +23,48 @@ const pieceMeta = (piece) => (
   </>
 );
 
-// A small square in the exact color the diagram drew that size in — the
-// diagram itself only labels tiles with text when there's room, but the
-// color survives at any scale, so this is how a busy layout stays legible:
-// same color in the list as on the tile.
-const Swatch = ({ color }) => (
-  <span
-    aria-hidden="true"
-    style={{
-      display: 'inline-block', width: '13px', height: '13px', borderRadius: '3px',
-      background: color, border: '1px solid var(--ink-4)', verticalAlign: 'middle', marginRight: '8px',
-    }}
-  />
-);
+// A compact outline of the same piece shown in the layout. Diagonal rows use
+// their actual polygon; axis-aligned rows fall back to a proportional rect.
+const Swatch = ({ color, shape }) => {
+  const vertices = shape?.vertices;
+  const sourceWidth = shape?.width || 1;
+  const sourceHeight = shape?.height || 1;
+  const points = vertices || [[0, 0], [sourceWidth, 0], [sourceWidth, sourceHeight], [0, sourceHeight]];
+  const xs = points.map(([x]) => x);
+  const ys = points.map(([, y]) => y);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  const rangeX = Math.max(maxX - minX, 1);
+  const rangeY = Math.max(maxY - minY, 1);
+  const scale = 20 / Math.max(rangeX, rangeY);
+  const offsetX = (28 - rangeX * scale) / 2;
+  const offsetY = (28 - rangeY * scale) / 2;
+  const normalized = points.map(([x, y]) => [
+    offsetX + (x - minX) * scale,
+    offsetY + (maxY - y) * scale,
+  ]);
+
+  return (
+    <svg
+      aria-hidden="true"
+      width="28"
+      height="28"
+      viewBox="0 0 28 28"
+      style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }}
+      focusable="false"
+    >
+      <polygon points={normalized.map(([x, y]) => `${x},${y}`).join(' ')} fill={color} stroke="var(--ink-4)" strokeWidth="1" />
+    </svg>
+  );
+};
 
 const TileCutListTable = ({ candidate }) => {
   const [template, setTemplate] = useState(null);
   if (!candidate || !candidate.tiles || candidate.tiles.length === 0) return null;
 
-  const { fullCount, fullColor, cutGroups } = buildCutList(candidate.tiles);
+  const { fullCount, fullColor, fullShape, cutGroups } = buildCutList(candidate.tiles);
   if (fullCount === 0 && cutGroups.length === 0) return null;
   const hasDiagonalCuts = cutGroups.some((g) => g.isDiagonal);
 
@@ -59,7 +82,7 @@ const TileCutListTable = ({ candidate }) => {
           {fullCount > 0 && (
             <tr>
               <td style={{ textAlign: 'left', color: 'var(--ink)' }}>
-                <Swatch color={fullColor} />Full tile
+                <Swatch color={fullColor} shape={fullShape} />Full tile
               </td>
               <td style={{ textAlign: 'left', color: 'var(--ink-2)' }}>No cut needed</td>
               <td>—</td>
@@ -69,7 +92,7 @@ const TileCutListTable = ({ candidate }) => {
           {cutGroups.map((group, i) => (
             <tr key={i}>
               <td style={{ textAlign: 'left', color: 'var(--ink)' }}>
-                <Swatch color={group.color} />{mm(group.width)} × {mm(group.height)}
+                <Swatch color={group.color} shape={group.shape} />{mm(group.width)} × {mm(group.height)}
                 {group.sliverCount > 0 && (
                   <span style={{ color: 'var(--revision)', fontWeight: 700, marginLeft: '8px' }}>
                     {group.sliverCount === group.count ? 'sliver' : `${group.sliverCount} sliver`}
