@@ -30,7 +30,10 @@ def test_create_backup_uses_sqlite_backup_api_and_writes_manifest(tmp_path: Path
     assert result.archive_path.exists()
 
     with tarfile.open(result.archive_path, "r:gz") as archive:
-        assert {member.name for member in archive.getmembers()} == {"manifest.json", "planqer.db"}
+        assert {member.name for member in archive.getmembers()} == {
+            "manifest.json",
+            "planqer.db",
+        }
         manifest_file = archive.extractfile("manifest.json")
         assert manifest_file is not None
         manifest = json.loads(manifest_file.read().decode("utf-8"))
@@ -47,7 +50,9 @@ def test_restore_backup_requires_force_when_database_exists(tmp_path: Path):
     target_path = tmp_path / "target.db"
     _create_database(source_path, project_name="backup")
     _create_database(target_path, project_name="current")
-    backup = create_backup(database_url=f"sqlite+aiosqlite:///{source_path}", output_dir=tmp_path)
+    backup = create_backup(
+        database_url=f"sqlite+aiosqlite:///{source_path}", output_dir=tmp_path
+    )
 
     with pytest.raises(BackupError, match="offline"):
         restore_backup(
@@ -71,7 +76,9 @@ def test_restore_backup_replaces_database_and_keeps_safety_copy(tmp_path: Path):
     target_path = tmp_path / "target.db"
     _create_database(source_path, project_name="backup")
     _create_database(target_path, project_name="current")
-    backup = create_backup(database_url=f"sqlite+aiosqlite:///{source_path}", output_dir=tmp_path)
+    backup = create_backup(
+        database_url=f"sqlite+aiosqlite:///{source_path}", output_dir=tmp_path
+    )
 
     result = restore_backup(
         backup.archive_path,
@@ -144,16 +151,22 @@ def test_restore_backup_rejects_schema_revision_mismatch(tmp_path: Path):
         )
 
 
-def test_database_path_uses_config_yaml_when_env_is_unset(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+def test_database_path_uses_config_yaml_when_env_is_unset(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
     database_path = tmp_path / "configured.db"
     config_path = tmp_path / "config.yaml"
-    config_path.write_text(f"database:\n  url: sqlite+aiosqlite:///{database_path}\n", encoding="utf-8")
+    config_path.write_text(
+        f"database:\n  url: sqlite+aiosqlite:///{database_path}\n", encoding="utf-8"
+    )
     monkeypatch.delenv("DATABASE_URL", raising=False)
 
     assert database_path_from_url(config_path=config_path) == database_path
 
 
-def test_cli_backup_prints_created_archive(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+def test_cli_backup_prints_created_archive(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
     database_path = tmp_path / "planqer.db"
     _create_database(database_path, project_name="kitchen")
 
@@ -179,7 +192,10 @@ def _create_database(path: Path, *, project_name: str) -> None:
         connection.execute("CREATE TABLE projects (name TEXT NOT NULL)")
         connection.execute("INSERT INTO projects (name) VALUES (?)", (project_name,))
         connection.execute("CREATE TABLE alembic_version (version_num TEXT NOT NULL)")
-        connection.execute("INSERT INTO alembic_version (version_num) VALUES (?)", ("008_add_tile_projects",))
+        connection.execute(
+            "INSERT INTO alembic_version (version_num) VALUES (?)",
+            ("008_add_tile_projects",),
+        )
         connection.commit()
     finally:
         connection.close()
@@ -194,7 +210,9 @@ def _project_names(path: Path) -> list[str]:
     return [row[0] for row in rows]
 
 
-def _manifest(sha256: str, *, alembic_revision: str = "008_add_tile_projects") -> dict[str, object]:
+def _manifest(
+    sha256: str, *, alembic_revision: str = "008_add_tile_projects"
+) -> dict[str, object]:
     return {
         "format": BACKUP_FORMAT,
         "created_at": "2026-08-26T21:15:30Z",

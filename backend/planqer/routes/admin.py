@@ -8,7 +8,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import func, select
 
 from planqer.auth import get_current_admin_user, get_password_hash
-from planqer.database import User, UserProject, UserSettings, UserSheetProject, get_session
+from planqer.database import (
+    User,
+    UserProject,
+    UserSettings,
+    UserSheetProject,
+    get_session,
+)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -41,7 +47,8 @@ class ResetPasswordRequest(BaseModel):
 
 @router.get("/users", response_model=list[UserListResponse])
 async def list_users(
-    admin_user: User = Depends(get_current_admin_user), session: AsyncSession = Depends(get_session)
+    admin_user: User = Depends(get_current_admin_user),
+    session: AsyncSession = Depends(get_session),
 ):
     stmt = (
         select(
@@ -51,7 +58,9 @@ async def list_users(
             User.is_admin,
             User.created_at,
             func.coalesce(func.count(UserProject.id), 0).label("project_count"),
-            func.coalesce(func.count(UserSheetProject.id), 0).label("sheet_project_count"),
+            func.coalesce(func.count(UserSheetProject.id), 0).label(
+                "sheet_project_count"
+            ),
         )
         .outerjoin(UserProject, User.id == UserProject.user_id)
         .outerjoin(UserSheetProject, User.id == UserSheetProject.user_id)
@@ -77,13 +86,22 @@ async def list_users(
 
 @router.get("/stats", response_model=AdminStatsResponse)
 async def get_admin_stats(
-    admin_user: User = Depends(get_current_admin_user), session: AsyncSession = Depends(get_session)
+    admin_user: User = Depends(get_current_admin_user),
+    session: AsyncSession = Depends(get_session),
 ):
     total_users = (await session.execute(select(func.count(User.id)))).scalar() or 0
-    active_users = (await session.execute(select(func.count(User.id)).where(User.is_active == True))).scalar() or 0
-    admin_users = (await session.execute(select(func.count(User.id)).where(User.is_admin == True))).scalar() or 0
-    total_projects = (await session.execute(select(func.count(UserProject.id)))).scalar() or 0
-    total_sheet_projects = (await session.execute(select(func.count(UserSheetProject.id)))).scalar() or 0
+    active_users = (
+        await session.execute(select(func.count(User.id)).where(User.is_active == True))
+    ).scalar() or 0
+    admin_users = (
+        await session.execute(select(func.count(User.id)).where(User.is_admin == True))
+    ).scalar() or 0
+    total_projects = (
+        await session.execute(select(func.count(UserProject.id)))
+    ).scalar() or 0
+    total_sheet_projects = (
+        await session.execute(select(func.count(UserSheetProject.id)))
+    ).scalar() or 0
 
     return AdminStatsResponse(
         total_users=total_users,
@@ -102,11 +120,18 @@ async def toggle_user_admin(
     session: AsyncSession = Depends(get_session),
 ):
     if user_id == admin_user.id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot modify your own admin status")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot modify your own admin status",
+        )
 
-    user = (await session.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+    user = (
+        await session.execute(select(User).where(User.id == user_id))
+    ).scalar_one_or_none()
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
 
     user.is_admin = request.is_admin
     await session.commit()
@@ -121,11 +146,18 @@ async def toggle_user_active(
     session: AsyncSession = Depends(get_session),
 ):
     if user_id == admin_user.id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot modify your own active status")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot modify your own active status",
+        )
 
-    user = (await session.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+    user = (
+        await session.execute(select(User).where(User.id == user_id))
+    ).scalar_one_or_none()
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
 
     user.is_active = not user.is_active
     await session.commit()
@@ -140,9 +172,13 @@ async def reset_user_password(
     admin_user: User = Depends(get_current_admin_user),
     session: AsyncSession = Depends(get_session),
 ):
-    user = (await session.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+    user = (
+        await session.execute(select(User).where(User.id == user_id))
+    ).scalar_one_or_none()
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
 
     user.hashed_password = get_password_hash(request.password)
     await session.commit()
@@ -157,16 +193,25 @@ async def delete_user(
     session: AsyncSession = Depends(get_session),
 ):
     if user_id == admin_user.id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot delete your own account")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot delete your own account",
+        )
 
-    user = (await session.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+    user = (
+        await session.execute(select(User).where(User.id == user_id))
+    ).scalar_one_or_none()
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
 
     # No ON DELETE CASCADE on these foreign keys, so related rows must go first.
     await session.execute(delete(UserSettings).where(UserSettings.user_id == user_id))
     await session.execute(delete(UserProject).where(UserProject.user_id == user_id))
-    await session.execute(delete(UserSheetProject).where(UserSheetProject.user_id == user_id))
+    await session.execute(
+        delete(UserSheetProject).where(UserSheetProject.user_id == user_id)
+    )
 
     await session.delete(user)
     await session.commit()

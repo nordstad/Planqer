@@ -63,7 +63,9 @@ def test_tile_layout_exact_division_has_zero_cut_candidate():
 
 def test_tile_layout_with_cutout():
     payload = dict(BASE_PAYLOAD)
-    payload["cutouts"] = [{"x": 100, "y": 100, "width": 100, "height": 100, "label": "socket"}]
+    payload["cutouts"] = [
+        {"x": 100, "y": 100, "width": 100, "height": 100, "label": "socket"}
+    ]
     response = client.post("/api/tile-layout", json=payload)
     assert response.status_code == 200
     data = response.json()
@@ -146,14 +148,18 @@ def test_tile_layout_allow_rotation():
     assert response.status_code == 200
 
 
-def test_tile_layout_reports_distinct_cut_sizes_and_matches_candidate_tiles(busy_candidate):
+def test_tile_layout_reports_distinct_cut_sizes_and_matches_candidate_tiles(
+    busy_candidate,
+):
     non_full_sizes = {
         (round(t["width"]), round(t["height"]))
         for t in busy_candidate["tiles"]
         if t["kind"] != "full"
     }
     assert busy_candidate["distinct_cut_sizes"] == len(non_full_sizes)
-    assert busy_candidate["distinct_cut_sizes"] > 1  # this surface genuinely has several edge-cut widths
+    assert (
+        busy_candidate["distinct_cut_sizes"] > 1
+    )  # this surface genuinely has several edge-cut widths
 
 
 def test_tile_layout_fill_color_matches_size_not_kind(busy_candidate):
@@ -169,7 +175,9 @@ def test_tile_layout_fill_color_matches_size_not_kind(busy_candidate):
         assert t["fill_color"] == color_by_size[key]
 
     # Full tiles all share one fixed color, distinct from every cut-size color.
-    full_colors = {t["fill_color"] for t in busy_candidate["tiles"] if t["kind"] == "full"}
+    full_colors = {
+        t["fill_color"] for t in busy_candidate["tiles"] if t["kind"] == "full"
+    }
     assert len(full_colors) == 1
     assert full_colors.isdisjoint(color_by_size.values())
 
@@ -206,7 +214,10 @@ def test_tile_layout_diagonal_bond():
 
     # Every diagonal piece carries its true polygon — unlike axis-aligned
     # bonds, x/y/width/height alone would only be its bounding box.
-    assert all(t["vertices"] is not None and len(t["vertices"]) >= 3 for t in candidate["tiles"])
+    assert all(
+        t["vertices"] is not None and len(t["vertices"]) >= 3
+        for t in candidate["tiles"]
+    )
     # The axis-aligned min_edge_cut_width/height are meaningless for a
     # rotated piece — None here, with min_diagonal_cut_span in their place.
     assert candidate["min_edge_cut_width"] is None
@@ -242,7 +253,10 @@ def test_tile_layout_diagonal_herringbone_bond():
     candidate = response.json()["candidates"][0]
     assert candidate["tiles_to_purchase"] >= 1
     assert candidate["full_tile_count"] > 0
-    assert all(t["vertices"] is not None and len(t["vertices"]) >= 3 for t in candidate["tiles"])
+    assert all(
+        t["vertices"] is not None and len(t["vertices"]) >= 3
+        for t in candidate["tiles"]
+    )
     assert candidate["min_edge_cut_width"] is None
     assert candidate["min_diagonal_cut_span"] is not None
 
@@ -273,6 +287,8 @@ def test_tile_layout_diagonal_double_herringbone_bond():
     candidate = response.json()["candidates"][0]
     assert candidate["tiles_to_purchase"] >= 1
     assert candidate["full_tile_count"] > 0
-    assert all(t["vertices"] is not None and len(t["vertices"]) >= 3 for t in candidate["tiles"])
+    assert all(
+        t["vertices"] is not None and len(t["vertices"]) >= 3
+        for t in candidate["tiles"]
+    )
     assert candidate["min_diagonal_cut_span"] is not None
-

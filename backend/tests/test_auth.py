@@ -10,6 +10,7 @@ from planqer.auth.security import get_password_hash, verify_password
 def app():
     """Get the FastAPI app for testing"""
     from planqer.api import app
+
     return app
 
 
@@ -23,10 +24,7 @@ def client(app):
 @pytest.fixture
 def unique_user():
     """Generate a unique user for each test"""
-    return {
-        "email": f"test-{uuid.uuid4()}@example.com",
-        "password": "testpassword123"
-    }
+    return {"email": f"test-{uuid.uuid4()}@example.com", "password": "testpassword123"}
 
 
 def test_register_user_success(client, unique_user):
@@ -54,10 +52,10 @@ def test_login_success(client, unique_user):
     """Test successful login"""
     client.post("/api/auth/register", json=unique_user)
 
-    response = client.post("/api/auth/login", json={
-        "email": unique_user["email"],
-        "password": unique_user["password"]
-    })
+    response = client.post(
+        "/api/auth/login",
+        json={"email": unique_user["email"], "password": unique_user["password"]},
+    )
 
     assert response.status_code == 200
     data = response.json()
@@ -67,10 +65,10 @@ def test_login_success(client, unique_user):
 
 def test_login_invalid_credentials(client):
     """Test login with invalid credentials"""
-    response = client.post("/api/auth/login", json={
-        "email": "nonexistent@example.com",
-        "password": "wrongpassword"
-    })
+    response = client.post(
+        "/api/auth/login",
+        json={"email": "nonexistent@example.com", "password": "wrongpassword"},
+    )
 
     assert response.status_code == 401
     assert "Incorrect email or password" in response.json()["detail"]
@@ -92,16 +90,14 @@ def test_password_verify_treats_overlong_passwords_as_invalid():
 def test_get_current_user(client, unique_user):
     """Test getting current user info with valid token"""
     client.post("/api/auth/register", json=unique_user)
-    login_response = client.post("/api/auth/login", json={
-        "email": unique_user["email"],
-        "password": unique_user["password"]
-    })
+    login_response = client.post(
+        "/api/auth/login",
+        json={"email": unique_user["email"], "password": unique_user["password"]},
+    )
 
     token = login_response.json()["access_token"]
 
-    response = client.get("/api/auth/me", headers={
-        "Authorization": f"Bearer {token}"
-    })
+    response = client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
 
     assert response.status_code == 200
     data = response.json()
@@ -111,9 +107,9 @@ def test_get_current_user(client, unique_user):
 
 def test_get_current_user_invalid_token(client):
     """Test getting current user with invalid token"""
-    response = client.get("/api/auth/me", headers={
-        "Authorization": "Bearer invalid_token"
-    })
+    response = client.get(
+        "/api/auth/me", headers={"Authorization": "Bearer invalid_token"}
+    )
 
     assert response.status_code == 401
     assert "Could not validate credentials" in response.json()["detail"]

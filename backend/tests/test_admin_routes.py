@@ -8,9 +8,10 @@ import uuid
 
 import pytest
 from fastapi.testclient import TestClient
-from planqer.database import User, engine
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
+
+from planqer.database import User, engine
 
 
 @pytest.fixture

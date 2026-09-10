@@ -52,7 +52,9 @@ def solved_result():
         return response.json()
 
 
-def _save_payload(result: dict, name: str = "Kitchen splashback", group_id: str | None = None) -> dict:
+def _save_payload(
+    result: dict, name: str = "Kitchen splashback", group_id: str | None = None
+) -> dict:
     """Shapes a save request the way TileOptimizer's real save call does:
     surface/tile/bond as the sub-request dicts already defined by
     TileLayoutRequest, plus the one candidate the user picked."""
@@ -89,7 +91,9 @@ def test_save_and_list_tile_project(client, solved_result):
     headers = _register_and_login(client)
     result = solved_result
 
-    response = client.post("/api/tile-projects/", json=_save_payload(result), headers=headers)
+    response = client.post(
+        "/api/tile-projects/", json=_save_payload(result), headers=headers
+    )
     assert response.status_code == 200
     saved = response.json()
     assert saved["name"] == "Kitchen splashback"
@@ -110,7 +114,9 @@ def test_saved_tile_project_keeps_the_candidate_it_was_given(client, solved_resu
     result = solved_result
     candidate = result["candidates"][result["recommended_index"]]
 
-    saved = client.post("/api/tile-projects/", json=_save_payload(result), headers=headers).json()
+    saved = client.post(
+        "/api/tile-projects/", json=_save_payload(result), headers=headers
+    ).json()
 
     assert saved["layout_result"]["label"] == candidate["label"]
     assert saved["layout_result"]["tiles_to_purchase"] == candidate["tiles_to_purchase"]
@@ -119,7 +125,9 @@ def test_saved_tile_project_keeps_the_candidate_it_was_given(client, solved_resu
 def test_get_single_tile_project(client, solved_result):
     headers = _register_and_login(client)
     result = solved_result
-    saved = client.post("/api/tile-projects/", json=_save_payload(result), headers=headers).json()
+    saved = client.post(
+        "/api/tile-projects/", json=_save_payload(result), headers=headers
+    ).json()
 
     response = client.get(f"/api/tile-projects/{saved['id']}", headers=headers)
     assert response.status_code == 200
@@ -129,10 +137,14 @@ def test_get_single_tile_project(client, solved_result):
 def test_rename_tile_project(client, solved_result):
     headers = _register_and_login(client)
     result = solved_result
-    saved = client.post("/api/tile-projects/", json=_save_payload(result), headers=headers).json()
+    saved = client.post(
+        "/api/tile-projects/", json=_save_payload(result), headers=headers
+    ).json()
 
     response = client.put(
-        f"/api/tile-projects/{saved['id']}", json={"name": "Bathroom floor"}, headers=headers
+        f"/api/tile-projects/{saved['id']}",
+        json={"name": "Bathroom floor"},
+        headers=headers,
     )
     assert response.status_code == 200
     assert response.json()["name"] == "Bathroom floor"
@@ -141,7 +153,9 @@ def test_rename_tile_project(client, solved_result):
 def test_delete_tile_project(client, solved_result):
     headers = _register_and_login(client)
     result = solved_result
-    saved = client.post("/api/tile-projects/", json=_save_payload(result), headers=headers).json()
+    saved = client.post(
+        "/api/tile-projects/", json=_save_payload(result), headers=headers
+    ).json()
 
     response = client.delete(f"/api/tile-projects/{saved['id']}", headers=headers)
     assert response.status_code == 200
@@ -150,11 +164,15 @@ def test_delete_tile_project(client, solved_result):
 
 def test_save_tile_project_into_project_group(client, solved_result):
     headers = _register_and_login(client)
-    group = client.post("/api/project-groups/", json={"name": "Kitchen"}, headers=headers).json()
+    group = client.post(
+        "/api/project-groups/", json={"name": "Kitchen"}, headers=headers
+    ).json()
     result = solved_result
 
     response = client.post(
-        "/api/tile-projects/", json=_save_payload(result, group_id=group["id"]), headers=headers
+        "/api/tile-projects/",
+        json=_save_payload(result, group_id=group["id"]),
+        headers=headers,
     )
     assert response.status_code == 200
     assert response.json()["project_group_id"] == group["id"]
@@ -162,11 +180,19 @@ def test_save_tile_project_into_project_group(client, solved_result):
 
 def test_delete_project_group_cascades_its_tile_projects(client, solved_result):
     headers = _register_and_login(client)
-    group = client.post("/api/project-groups/", json={"name": "Kitchen"}, headers=headers).json()
+    group = client.post(
+        "/api/project-groups/", json={"name": "Kitchen"}, headers=headers
+    ).json()
     result = solved_result
-    client.post("/api/tile-projects/", json=_save_payload(result, group_id=group["id"]), headers=headers)
+    client.post(
+        "/api/tile-projects/",
+        json=_save_payload(result, group_id=group["id"]),
+        headers=headers,
+    )
 
-    delete_response = client.delete(f"/api/project-groups/{group['id']}", headers=headers)
+    delete_response = client.delete(
+        f"/api/project-groups/{group['id']}", headers=headers
+    )
     assert delete_response.status_code == 200
     assert client.get("/api/tile-projects/", headers=headers).json() == []
 
@@ -174,7 +200,9 @@ def test_delete_project_group_cascades_its_tile_projects(client, solved_result):
 def test_saved_tile_project_serves_its_diagram_as_svg(client, solved_result):
     headers = _register_and_login(client)
     result = solved_result
-    saved = client.post("/api/tile-projects/", json=_save_payload(result), headers=headers).json()
+    saved = client.post(
+        "/api/tile-projects/", json=_save_payload(result), headers=headers
+    ).json()
 
     response = client.get(f"/api/tile-projects/{saved['id']}/image", headers=headers)
 
@@ -188,17 +216,32 @@ def test_updating_layout_result_redraws_the_saved_diagram(client, solved_result)
     the stored image must not drift from the stored data."""
     headers = _register_and_login(client)
     result = solved_result
-    saved = client.post("/api/tile-projects/", json=_save_payload(result), headers=headers).json()
-    first_image = client.get(f"/api/tile-projects/{saved['id']}/image", headers=headers).content
+    saved = client.post(
+        "/api/tile-projects/", json=_save_payload(result), headers=headers
+    ).json()
+    first_image = client.get(
+        f"/api/tile-projects/{saved['id']}/image", headers=headers
+    ).content
 
-    other_candidate = result["candidates"][-1] if len(result["candidates"]) > 1 else result["candidates"][0]
+    other_candidate = (
+        result["candidates"][-1]
+        if len(result["candidates"]) > 1
+        else result["candidates"][0]
+    )
     response = client.put(
-        f"/api/tile-projects/{saved['id']}", json={"layout_result": other_candidate}, headers=headers
+        f"/api/tile-projects/{saved['id']}",
+        json={"layout_result": other_candidate},
+        headers=headers,
     )
     assert response.status_code == 200
 
-    second_image = client.get(f"/api/tile-projects/{saved['id']}/image", headers=headers).content
-    if other_candidate["label"] != result["candidates"][result["recommended_index"]]["label"]:
+    second_image = client.get(
+        f"/api/tile-projects/{saved['id']}/image", headers=headers
+    ).content
+    if (
+        other_candidate["label"]
+        != result["candidates"][result["recommended_index"]]["label"]
+    ):
         assert first_image != second_image
 
 
@@ -232,7 +275,9 @@ def test_saved_diagonal_project_redraws_the_true_polygon_shape(client):
         "options_data": {"candidate_count": diagonal_payload["candidate_count"]},
         "layout_result": candidate,
     }
-    saved = client.post("/api/tile-projects/", json=save_payload, headers=headers).json()
+    saved = client.post(
+        "/api/tile-projects/", json=save_payload, headers=headers
+    ).json()
 
     response = client.get(f"/api/tile-projects/{saved['id']}/image", headers=headers)
 
@@ -273,7 +318,9 @@ def test_cannot_read_another_users_tile_project(client, solved_result):
     owner_headers = _register_and_login(client)
     other_headers = _register_and_login(client)
     result = solved_result
-    saved = client.post("/api/tile-projects/", json=_save_payload(result), headers=owner_headers).json()
+    saved = client.post(
+        "/api/tile-projects/", json=_save_payload(result), headers=owner_headers
+    ).json()
 
     response = client.get(f"/api/tile-projects/{saved['id']}", headers=other_headers)
     assert response.status_code == 404
@@ -283,20 +330,31 @@ def test_cannot_rename_another_users_tile_project(client, solved_result):
     owner_headers = _register_and_login(client)
     other_headers = _register_and_login(client)
     result = solved_result
-    saved = client.post("/api/tile-projects/", json=_save_payload(result), headers=owner_headers).json()
+    saved = client.post(
+        "/api/tile-projects/", json=_save_payload(result), headers=owner_headers
+    ).json()
 
     response = client.put(
-        f"/api/tile-projects/{saved['id']}", json={"name": "Hijacked"}, headers=other_headers
+        f"/api/tile-projects/{saved['id']}",
+        json={"name": "Hijacked"},
+        headers=other_headers,
     )
     assert response.status_code == 404
-    assert client.get(f"/api/tile-projects/{saved['id']}", headers=owner_headers).json()["name"] != "Hijacked"
+    assert (
+        client.get(f"/api/tile-projects/{saved['id']}", headers=owner_headers).json()[
+            "name"
+        ]
+        != "Hijacked"
+    )
 
 
 def test_cannot_delete_another_users_tile_project(client, solved_result):
     owner_headers = _register_and_login(client)
     other_headers = _register_and_login(client)
     result = solved_result
-    saved = client.post("/api/tile-projects/", json=_save_payload(result), headers=owner_headers).json()
+    saved = client.post(
+        "/api/tile-projects/", json=_save_payload(result), headers=owner_headers
+    ).json()
 
     response = client.delete(f"/api/tile-projects/{saved['id']}", headers=other_headers)
     assert response.status_code == 404
@@ -307,9 +365,13 @@ def test_cannot_download_another_users_tile_project_image(client, solved_result)
     owner_headers = _register_and_login(client)
     other_headers = _register_and_login(client)
     result = solved_result
-    saved = client.post("/api/tile-projects/", json=_save_payload(result), headers=owner_headers).json()
+    saved = client.post(
+        "/api/tile-projects/", json=_save_payload(result), headers=owner_headers
+    ).json()
 
-    response = client.get(f"/api/tile-projects/{saved['id']}/image", headers=other_headers)
+    response = client.get(
+        f"/api/tile-projects/{saved['id']}/image", headers=other_headers
+    )
     assert response.status_code == 404
 
 
@@ -318,7 +380,9 @@ def test_save_tile_project_into_nonexistent_group_404s(client, solved_result):
     result = solved_result
 
     response = client.post(
-        "/api/tile-projects/", json=_save_payload(result, group_id=str(uuid.uuid4())), headers=headers
+        "/api/tile-projects/",
+        json=_save_payload(result, group_id=str(uuid.uuid4())),
+        headers=headers,
     )
     assert response.status_code == 404
 
@@ -326,11 +390,15 @@ def test_save_tile_project_into_nonexistent_group_404s(client, solved_result):
 def test_save_tile_project_into_another_users_group_404s(client, solved_result):
     owner_headers = _register_and_login(client)
     other_headers = _register_and_login(client)
-    group = client.post("/api/project-groups/", json={"name": "Kitchen"}, headers=owner_headers).json()
+    group = client.post(
+        "/api/project-groups/", json={"name": "Kitchen"}, headers=owner_headers
+    ).json()
     result = solved_result
 
     response = client.post(
-        "/api/tile-projects/", json=_save_payload(result, group_id=group["id"]), headers=other_headers
+        "/api/tile-projects/",
+        json=_save_payload(result, group_id=group["id"]),
+        headers=other_headers,
     )
     assert response.status_code == 404
     assert client.get("/api/tile-projects/", headers=owner_headers).json() == []

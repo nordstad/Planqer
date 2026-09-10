@@ -47,17 +47,24 @@ from dataclasses import dataclass
 logger = logging.getLogger("planqer.step_reader")
 
 # Entity types that carry one solid body's geometry.
-SOLID_TYPES = frozenset({
-    "MANIFOLD_SOLID_BREP",
-    "BREP_WITH_VOIDS",
-    "FACETED_BREP",
-    "SHELL_BASED_SURFACE_MODEL",
-})
+SOLID_TYPES = frozenset(
+    {
+        "MANIFOLD_SOLID_BREP",
+        "BREP_WITH_VOIDS",
+        "FACETED_BREP",
+        "SHELL_BASED_SURFACE_MODEL",
+    }
+)
 
 # SI prefixes, as a factor on the base unit.
 SI_PREFIX = {
-    "MILLI": 0.001, "CENTI": 0.01, "DECI": 0.1, "DECA": 10.0,
-    "HECTO": 100.0, "KILO": 1000.0, "MICRO": 1e-6,
+    "MILLI": 0.001,
+    "CENTI": 0.01,
+    "DECI": 0.1,
+    "DECA": 10.0,
+    "HECTO": 100.0,
+    "KILO": 1000.0,
+    "MICRO": 1e-6,
 }
 
 _NUMBER = re.compile(r"-?\d+\.?\d*(?:[EeDd][-+]?\d+)?")
@@ -84,6 +91,7 @@ class StepBody:
 
 
 # ── the exchange format itself ────────────────────────────────────────────
+
 
 def _split_top_level(params: str) -> list[str]:
     """Split one entity's parameter list on commas outside quotes and nesting."""
@@ -136,7 +144,10 @@ def _refs(value: str) -> list[int]:
 
 def _floats(value: str) -> list[float]:
     # STEP writes reals as 1.E-3 and, in older files, 1.D-3.
-    return [float(m.group(0).replace("D", "E").replace("d", "e")) for m in _NUMBER.finditer(value)]
+    return [
+        float(m.group(0).replace("D", "E").replace("d", "e"))
+        for m in _NUMBER.finditer(value)
+    ]
 
 
 def parse_entities(text: str) -> dict[int, list[tuple[str, str]]]:
@@ -149,7 +160,7 @@ def parse_entities(text: str) -> dict[int, list[tuple[str, str]]]:
     start = text.find("DATA;")
     if start == -1:
         raise StepParseError("No DATA section — this file is not STEP exchange text.")
-    body = text[start + len("DATA;"):]
+    body = text[start + len("DATA;") :]
     end = body.rfind("ENDSEC;")
     if end != -1:
         body = body[:end]
@@ -178,7 +189,7 @@ def parse_entities(text: str) -> dict[int, list[tuple[str, str]]]:
                 continue
             ref = _REF.match(record.strip())
             if ref:
-                entities[int(ref.group(1))] = _parse_instances(record[head + 1:])
+                entities[int(ref.group(1))] = _parse_instances(record[head + 1 :])
             continue
         chunks.append(c)
         i += 1
@@ -213,12 +224,13 @@ def _parse_instances(text: str) -> list[tuple[str, str]]:
             elif c == ")":
                 depth -= 1
             k += 1
-        instances.append((m.group(0).upper(), text[j + 1:k - 1]))
+        instances.append((m.group(0).upper(), text[j + 1 : k - 1]))
         i = k
     return instances
 
 
 # ── the reader ────────────────────────────────────────────────────────────
+
 
 class StepModel:
     """One parsed STEP file, queried for the parts it holds."""
@@ -293,8 +305,9 @@ class StepModel:
         if conversion is not None:
             parts = _split_top_level(conversion)
             for measure_ref in _refs(parts[-1]):
-                measure = (self.param(measure_ref, "LENGTH_MEASURE_WITH_UNIT")
-                           or self.param(measure_ref, "MEASURE_WITH_UNIT"))
+                measure = self.param(
+                    measure_ref, "LENGTH_MEASURE_WITH_UNIT"
+                ) or self.param(measure_ref, "MEASURE_WITH_UNIT")
                 if not measure:
                     continue
                 factor = _split_top_level(measure)
@@ -322,7 +335,9 @@ class StepModel:
                     scale = self._length_scale_of(unit_ref)
                     if scale:
                         return scale
-        logger.info("No length unit on this shape's context; assuming the requested units")
+        logger.info(
+            "No length unit on this shape's context; assuming the requested units"
+        )
         return self.fallback_scale
 
     # -- assembly, materials --
@@ -348,7 +363,9 @@ class StepModel:
         """
         materials: dict[int, str] = {}
         for ref in self.by_type.get("PROPERTY_DEFINITION_REPRESENTATION", ()):
-            parts = _split_top_level(self.param(ref, "PROPERTY_DEFINITION_REPRESENTATION"))
+            parts = _split_top_level(
+                self.param(ref, "PROPERTY_DEFINITION_REPRESENTATION")
+            )
             definition = _refs(parts[0])
             representation = _refs(parts[1]) if len(parts) > 1 else []
             if not definition or not representation:
@@ -360,8 +377,9 @@ class StepModel:
             if not any("material" in label.lower() for label in labels):
                 continue
             product = self._product_of(definition[0])
-            representation_params = (self.param(representation[0], "REPRESENTATION")
-                                    or self.param(representation[0], "SHAPE_REPRESENTATION"))
+            representation_params = self.param(
+                representation[0], "REPRESENTATION"
+            ) or self.param(representation[0], "SHAPE_REPRESENTATION")
             if product is None or not representation_params:
                 continue
             for item in _refs(_split_top_level(representation_params)[1]):
@@ -425,8 +443,9 @@ class StepModel:
         for ref in self.by_type.get("SHAPE_REPRESENTATION_RELATIONSHIP", ()):
             if self.has(ref, "REPRESENTATION_RELATIONSHIP_WITH_TRANSFORMATION"):
                 continue
-            params = (self.param(ref, "REPRESENTATION_RELATIONSHIP")
-                      or self.param(ref, "SHAPE_REPRESENTATION_RELATIONSHIP"))
+            params = self.param(ref, "REPRESENTATION_RELATIONSHIP") or self.param(
+                ref, "SHAPE_REPRESENTATION_RELATIONSHIP"
+            )
             related = [_refs(part) for part in _split_top_level(params)]
             related = [group[0] for group in related if group]
             if len(related) >= 2:
@@ -434,8 +453,13 @@ class StepModel:
                 links[related[1]].append(related[0])
         return links
 
-    def _walk(self, root: int, owned: set[int], links: dict[int, list[int]],
-              stop_at_solids: bool) -> tuple[list[tuple[float, float, float]], list[int]]:
+    def _walk(
+        self,
+        root: int,
+        owned: set[int],
+        links: dict[int, list[int]],
+        stop_at_solids: bool,
+    ) -> tuple[list[tuple[float, float, float]], list[int]]:
         """Collect vertex coordinates under `root`, and the solid bodies beneath it."""
         seen: set[int] = set()
         stack = [root]
@@ -447,8 +471,10 @@ class StepModel:
                 continue
             seen.add(current)
 
-            if stop_at_solids and current != root and any(
-                name in SOLID_TYPES for name, _ in self.entities[current]
+            if (
+                stop_at_solids
+                and current != root
+                and any(name in SOLID_TYPES for name, _ in self.entities[current])
             ):
                 solids.append(current)
                 continue
@@ -482,8 +508,13 @@ class StepModel:
         found: list[StepBody] = []
         for representation, product in owners.items():
             scale = self._scale_for_representation(representation)
-            points, solids = self._walk(representation, owned, links, stop_at_solids=True)
-            clouds = [self._walk(solid, owned, links, stop_at_solids=False)[0] for solid in solids]
+            points, solids = self._walk(
+                representation, owned, links, stop_at_solids=True
+            )
+            clouds = [
+                self._walk(solid, owned, links, stop_at_solids=False)[0]
+                for solid in solids
+            ]
             if not clouds:
                 clouds = [points]
 
@@ -501,17 +532,19 @@ class StepModel:
                     for axis in (0, 1, 2)
                 )
                 thickness, width, length = extents
-                found.append(StepBody(
-                    name=self._product_name.get(product, "Part"),
-                    length=length,
-                    width=width,
-                    thickness=thickness,
-                    quantity=quantity,
-                    volume=length * width * thickness,
-                    material=self._material.get(product),
-                    assembly_path=self._path_to(product),
-                    cad_id=cad_id,
-                ))
+                found.append(
+                    StepBody(
+                        name=self._product_name.get(product, "Part"),
+                        length=length,
+                        width=width,
+                        thickness=thickness,
+                        quantity=quantity,
+                        volume=length * width * thickness,
+                        material=self._material.get(product),
+                        assembly_path=self._path_to(product),
+                        cad_id=cad_id,
+                    )
+                )
         return found
 
 

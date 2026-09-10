@@ -23,9 +23,9 @@ _EPS = 1e-6
 
 @dataclass(frozen=True)
 class OffcutResult:
-    raw_tile_count: int          # one purchased tile per placed piece, no reuse
-    reused_count: int            # requirements satisfied from another tile's offcut
-    tiles_to_purchase: int       # raw_tile_count - reused_count
+    raw_tile_count: int  # one purchased tile per placed piece, no reuse
+    reused_count: int  # requirements satisfied from another tile's offcut
+    tiles_to_purchase: int  # raw_tile_count - reused_count
     matches: tuple[tuple[int, int], ...]  # (consumer_placed_index, source_placed_index)
 
 
@@ -41,9 +41,13 @@ def _offcuts_from(index: int, t: PlacedTile) -> list[tuple[float, float, int]]:
     return offcuts
 
 
-def _fits(offcut_w: float, offcut_h: float, need_w: float, need_h: float, allow_rotation: bool) -> bool:
+def _fits(
+    offcut_w: float, offcut_h: float, need_w: float, need_h: float, allow_rotation: bool
+) -> bool:
     straight_fit = offcut_w + _EPS >= need_w and offcut_h + _EPS >= need_h
-    rotated_fit = allow_rotation and offcut_h + _EPS >= need_w and offcut_w + _EPS >= need_h
+    rotated_fit = (
+        allow_rotation and offcut_h + _EPS >= need_w and offcut_w + _EPS >= need_h
+    )
     return straight_fit or rotated_fit
 
 
@@ -169,7 +173,10 @@ def match_diagonal_offcuts(placed_tiles: list[PlacedTile]) -> OffcutResult:
         for j, legs_j in candidates[idx + 1 :]:
             if j in used:
                 continue
-            if abs(legs_i[0] - legs_j[0]) < _LEG_TOL and abs(legs_i[1] - legs_j[1]) < _LEG_TOL:
+            if (
+                abs(legs_i[0] - legs_j[0]) < _LEG_TOL
+                and abs(legs_i[1] - legs_j[1]) < _LEG_TOL
+            ):
                 matches.append((i, j))
                 used.add(i)
                 used.add(j)

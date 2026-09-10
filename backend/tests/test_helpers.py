@@ -1,4 +1,3 @@
-import pytest
 from planqer.cache import generate_request_hash
 from planqer.helpers import check_waste_warning, compute_metrics
 

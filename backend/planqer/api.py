@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import math
 import os
 import re
 import time
@@ -175,7 +176,7 @@ def validate_numeric_input(
     # Check for NaN and infinity
     if (
         not isinstance(value, (int, float))
-        or value != value
+        or math.isnan(value)
         or value == float("inf")
         or value == float("-inf")
     ):
@@ -193,7 +194,7 @@ def sanitize_parts_dict(parts: dict) -> dict[float, int]:
     Sanitize the parts dictionary to ensure safe numeric values.
     """
     if not isinstance(parts, dict):
-        raise ValueError("Parts must be a dictionary")
+        raise ValueError("Parts must be a dictionary")  # noqa: TRY004
 
     # Limit number of parts to prevent DoS attacks
     if len(parts) > 1000:
@@ -220,7 +221,7 @@ def sanitize_board_lengths(boards: list) -> list[float]:
     Sanitize the board lengths list to ensure safe numeric values.
     """
     if not isinstance(boards, list):
-        raise ValueError("Board lengths must be a list")
+        raise ValueError("Board lengths must be a list")  # noqa: TRY004
 
     # Limit number of board lengths to prevent DoS attacks
     if len(boards) > 100:
@@ -575,7 +576,7 @@ class SheetOptimizationRequest(BaseModel):
     @classmethod
     def validate_parts_dict(cls, v):
         if not isinstance(v, dict):
-            raise ValueError("Parts must be a dictionary")
+            raise ValueError("Parts must be a dictionary")  # noqa: TRY004
 
         if len(v) == 0:
             raise ValueError("At least one part must be provided")
@@ -669,8 +670,13 @@ class TileJointSpec(BaseModel):
 
 
 _VALID_BOND_PATTERNS = (
-    "stack", "running", "herringbone", "diagonal",
-    "diagonal_herringbone", "double_herringbone", "diagonal_double_herringbone",
+    "stack",
+    "running",
+    "herringbone",
+    "diagonal",
+    "diagonal_herringbone",
+    "double_herringbone",
+    "diagonal_double_herringbone",
 )
 
 
@@ -717,7 +723,15 @@ class TileLayoutRequest(BaseModel):
             "example": {
                 "surface_width": 2400,
                 "surface_height": 1200,
-                "cutouts": [{"x": 1000, "y": 400, "width": 300, "height": 300, "label": "window"}],
+                "cutouts": [
+                    {
+                        "x": 1000,
+                        "y": 400,
+                        "width": 300,
+                        "height": 300,
+                        "label": "window",
+                    }
+                ],
                 "tile": {"width": 300, "height": 600, "allow_rotation": False},
                 "joint": {"joint_width": 3, "perimeter_gap": 0},
                 "bond": {"pattern": "running", "offset_fraction": 0.5},
@@ -816,7 +830,9 @@ class TileLayoutCandidateResponse(BaseModel):
     sliver_count: int
     symmetry_delta_x: float
     symmetry_delta_y: float
-    distinct_cut_sizes: int  # unique CUT/NOTCHED (width, height) pairs — fewer means fewer saw setups
+    distinct_cut_sizes: (
+        int  # unique CUT/NOTCHED (width, height) pairs — fewer means fewer saw setups
+    )
     coverage_area: float
     waste_area: float
     efficiency: float
@@ -1507,9 +1523,7 @@ async def create_sheet_optimization(
         raise
     except Exception as e:
         logger.error(f"[{request_id}] Sheet optimization failed: {e!s}")
-        raise HTTPException(
-            status_code=400, detail=f"Sheet optimization failed: {e!s}"
-        )
+        raise HTTPException(status_code=400, detail=f"Sheet optimization failed: {e!s}")
 
 
 @tile_router.post(
@@ -1588,17 +1602,26 @@ async def create_tile_layout(
             piece_diagrams = {}
             for tile_item in candidate.tiles:
                 key = tile_size_key(tile_item)
-                if tile_item.vertices is not None and tile_item.kind != TileKind.FULL and size_labels[key] not in piece_diagrams:
+                if (
+                    tile_item.vertices is not None
+                    and tile_item.kind != TileKind.FULL
+                    and size_labels[key] not in piece_diagrams
+                ):
                     piece_diagrams[size_labels[key]] = generate_diagonal_piece_diagram(
-                        tile_item, size_colors[key],
+                        tile_item,
+                        size_colors[key],
                     )
-            reused_consumer_indices = {consumer for consumer, _source in candidate.offcuts.matches}
+            reused_consumer_indices = {
+                consumer for consumer, _source in candidate.offcuts.matches
+            }
             try:
                 visualization = generate_tile_layout_visualization(
                     candidate, surface, tile_request.project_name
                 )
             except Exception as e:
-                logger.error(f"[{request_id}] Failed to generate tile visualization: {e!s}")
+                logger.error(
+                    f"[{request_id}] Failed to generate tile visualization: {e!s}"
+                )
                 visualization = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjRkZGRkZGIi8+PHRleHQgeD0iMjAwIiB5PSIxMDAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNiIgZmlsbD0iIzY2NiI+Tm8gdGlsZSBsYXlvdXQgYXZhaWxhYmxlPC90ZXh0Pjwvc3ZnPg=="
 
             candidates_response.append(
@@ -1609,17 +1632,34 @@ async def create_tile_layout(
                     rotated=candidate.rotated,
                     tiles=[
                         PlacedTileInfo(
-                            x=t.x, y=t.y, width=t.width, height=t.height,
-                            nominal_width=t.nominal_width, nominal_height=t.nominal_height,
-                            rotated=t.rotated, kind=t.kind.value, is_sliver=t.is_sliver,
+                            x=t.x,
+                            y=t.y,
+                            width=t.width,
+                            height=t.height,
+                            nominal_width=t.nominal_width,
+                            nominal_height=t.nominal_height,
+                            rotated=t.rotated,
+                            kind=t.kind.value,
+                            is_sliver=t.is_sliver,
                             is_reused_offcut=i in reused_consumer_indices,
                             fill_color=(
-                                FULL_TILE_FILL if t.kind == TileKind.FULL
+                                FULL_TILE_FILL
+                                if t.kind == TileKind.FULL
                                 else size_colors[tile_size_key(t)]
                             ),
-                            size_label=(None if t.kind == TileKind.FULL else size_labels[tile_size_key(t)]),
-                            edge_lengths=(polygon_edge_lengths(t.vertices) if t.vertices is not None else None),
-                            vertices=list(t.vertices) if t.vertices is not None else None,
+                            size_label=(
+                                None
+                                if t.kind == TileKind.FULL
+                                else size_labels[tile_size_key(t)]
+                            ),
+                            edge_lengths=(
+                                polygon_edge_lengths(t.vertices)
+                                if t.vertices is not None
+                                else None
+                            ),
+                            vertices=list(t.vertices)
+                            if t.vertices is not None
+                            else None,
                         )
                         for i, t in enumerate(candidate.tiles)
                     ],
@@ -1967,11 +2007,11 @@ async def create_step_cutlist(
 
         # Extract unique materials
         materials_used = list(
-            set(
+            {
                 item.material
                 for item in cutlist_items
                 if item.material and item.material != "Unknown"
-            )
+            }
         )
 
         # Build assembly structure (simplified for now)

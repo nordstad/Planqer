@@ -49,7 +49,7 @@ def get_cached_optimization(
     optimization_func,
     algorithm_name: str = "default",
     optimize_for: str = "waste",
-    board_costs: dict = None,
+    board_costs: dict | None = None,
 ) -> tuple[float, float, list[list[float]], float]:
     """
     Get optimization result from cache or compute and cache it.
@@ -64,8 +64,6 @@ def get_cached_optimization(
     Returns:
         Tuple of (optimal_board_length, cost, cut_list, total_waste, algorithm_used, computation_time)
     """
-    global _optimization_cache, _cache_access_order
-
     request_hash = generate_request_hash(
         parts, boards, kerf, algorithm_name, optimize_for, board_costs
     )
@@ -104,6 +102,5 @@ def get_cache_info():
 
 def clear_cache():
     """Clear the optimization cache."""
-    global _optimization_cache, _cache_access_order
     _optimization_cache.clear()
     _cache_access_order.clear()

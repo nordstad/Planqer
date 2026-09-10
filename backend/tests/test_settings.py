@@ -2,6 +2,7 @@ import uuid
 
 import pytest
 from fastapi.testclient import TestClient
+
 from planqer.database import UserSettings
 from planqer.routes.settings import settings_to_response
 

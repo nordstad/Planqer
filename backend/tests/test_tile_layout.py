@@ -33,6 +33,7 @@ from planqer.tile_layout.scoring import score_layout
 
 # ── Surface / Cutout validation ──────────────────────────────────────────
 
+
 def test_surface_rejects_non_positive_dimensions():
     with pytest.raises(ValueError):
         Surface(width=0, height=100)
@@ -42,7 +43,11 @@ def test_surface_rejects_non_positive_dimensions():
 
 def test_surface_rejects_cutout_outside_bounds():
     with pytest.raises(ValueError):
-        Surface(width=1000, height=1000, cutouts=(Cutout(x=900, y=0, width=200, height=200),))
+        Surface(
+            width=1000,
+            height=1000,
+            cutouts=(Cutout(x=900, y=0, width=200, height=200),),
+        )
 
 
 def test_surface_rejects_overlapping_cutouts():
@@ -55,19 +60,24 @@ def test_surface_rejects_overlapping_cutouts():
 
 
 def test_surface_net_area_subtracts_cutouts():
-    surface = Surface(width=1000, height=1000, cutouts=(Cutout(x=0, y=0, width=100, height=200),))
+    surface = Surface(
+        width=1000, height=1000, cutouts=(Cutout(x=0, y=0, width=100, height=200),)
+    )
     assert surface.gross_area == 1_000_000
     assert surface.net_area == 1_000_000 - 20_000
 
 
 # ── place_and_clip ────────────────────────────────────────────────────────
 
+
 def test_full_tile_placed_entirely_inside_surface():
     surface = Surface(width=1000, height=1000)
     tile = Tile(width=300, height=300)
     joint = JointSpec(joint_width=0)
 
-    placed = place_and_clip(x=100, y=100, rotated=False, tile=tile, surface=surface, joint=joint)
+    placed = place_and_clip(
+        x=100, y=100, rotated=False, tile=tile, surface=surface, joint=joint
+    )
 
     assert placed is not None
     assert placed.kind == TileKind.FULL
@@ -80,7 +90,9 @@ def test_tile_clipped_at_surface_boundary_is_cut():
     joint = JointSpec(joint_width=0)
 
     # Placed so it overhangs the right edge by 200mm.
-    placed = place_and_clip(x=900, y=0, rotated=False, tile=tile, surface=surface, joint=joint)
+    placed = place_and_clip(
+        x=900, y=0, rotated=False, tile=tile, surface=surface, joint=joint
+    )
 
     assert placed is not None
     assert placed.kind == TileKind.CUT
@@ -94,7 +106,9 @@ def test_tile_entirely_outside_surface_is_none():
     tile = Tile(width=300, height=600)
     joint = JointSpec(joint_width=0)
 
-    placed = place_and_clip(x=1000, y=0, rotated=False, tile=tile, surface=surface, joint=joint)
+    placed = place_and_clip(
+        x=1000, y=0, rotated=False, tile=tile, surface=surface, joint=joint
+    )
 
     assert placed is None
 
@@ -105,7 +119,9 @@ def test_perimeter_gap_shrinks_usable_area():
     joint = JointSpec(joint_width=0, perimeter_gap=10)
 
     # A tile placed flush with the true edge is clipped back by the gap.
-    placed = place_and_clip(x=0, y=0, rotated=False, tile=tile, surface=surface, joint=joint)
+    placed = place_and_clip(
+        x=0, y=0, rotated=False, tile=tile, surface=surface, joint=joint
+    )
 
     assert placed is not None
     assert placed.x == pytest.approx(10)
@@ -114,23 +130,31 @@ def test_perimeter_gap_shrinks_usable_area():
 
 
 def test_tile_fully_inside_cutout_is_discarded():
-    surface = Surface(width=1000, height=1000, cutouts=(Cutout(x=0, y=0, width=400, height=400),))
+    surface = Surface(
+        width=1000, height=1000, cutouts=(Cutout(x=0, y=0, width=400, height=400),)
+    )
     tile = Tile(width=100, height=100)
     joint = JointSpec(joint_width=0)
 
-    placed = place_and_clip(x=100, y=100, rotated=False, tile=tile, surface=surface, joint=joint)
+    placed = place_and_clip(
+        x=100, y=100, rotated=False, tile=tile, surface=surface, joint=joint
+    )
 
     assert placed is None
 
 
 def test_tile_partially_overlapping_cutout_is_notched():
-    surface = Surface(width=1000, height=1000, cutouts=(Cutout(x=250, y=0, width=100, height=100),))
+    surface = Surface(
+        width=1000, height=1000, cutouts=(Cutout(x=250, y=0, width=100, height=100),)
+    )
     tile = Tile(width=300, height=300)
     joint = JointSpec(joint_width=0)
 
     # Tile spans x:[200,500), y:[0,300); cutout spans x:[250,350), y:[0,100)
     # -> overlap is x:[250,350)∩[200,500)=100 wide, y:[0,100) -> 100x100 = 10,000
-    placed = place_and_clip(x=200, y=0, rotated=False, tile=tile, surface=surface, joint=joint)
+    placed = place_and_clip(
+        x=200, y=0, rotated=False, tile=tile, surface=surface, joint=joint
+    )
 
     assert placed is not None
     assert placed.kind == TileKind.NOTCHED
@@ -142,7 +166,9 @@ def test_rotation_swaps_dimensions():
     tile = Tile(width=300, height=150, allow_rotation=True)
     joint = JointSpec(joint_width=0)
 
-    placed = place_and_clip(x=0, y=0, rotated=True, tile=tile, surface=surface, joint=joint)
+    placed = place_and_clip(
+        x=0, y=0, rotated=True, tile=tile, surface=surface, joint=joint
+    )
 
     assert placed is not None
     assert placed.nominal_width == 150
@@ -156,12 +182,15 @@ def test_rotation_swaps_dimensions():
 # 70.7106781... from the center, on the N/E/S/W compass points. That
 # constant recurs throughout these hand-computed cases.
 
+
 def test_diagonal_full_tile_entirely_inside_surface_is_full():
     surface = Surface(width=200, height=200)
     tile = Tile(width=100, height=100)
     joint = JointSpec(joint_width=0)
 
-    placed = place_and_clip_diagonal(cx=100, cy=100, tile=tile, surface=surface, joint=joint)
+    placed = place_and_clip_diagonal(
+        cx=100, cy=100, tile=tile, surface=surface, joint=joint
+    )
 
     assert placed is not None
     assert placed.kind == TileKind.FULL
@@ -178,7 +207,9 @@ def test_diagonal_area_uses_true_polygon_area_not_bounding_box():
     tile = Tile(width=100, height=100)
     joint = JointSpec(joint_width=0)
 
-    placed = place_and_clip_diagonal(cx=100, cy=100, tile=tile, surface=surface, joint=joint)
+    placed = place_and_clip_diagonal(
+        cx=100, cy=100, tile=tile, surface=surface, joint=joint
+    )
 
     assert placed.width == pytest.approx(100 * 1.4142135623730951)  # bounding box side
     assert placed.area == pytest.approx(10_000)  # true polygon area, not width*height
@@ -193,7 +224,9 @@ def test_diagonal_tile_clipped_at_one_edge_leaves_a_pentagon():
     tile = Tile(width=100, height=100)
     joint = JointSpec(joint_width=0)
 
-    placed = place_and_clip_diagonal(cx=30, cy=100, tile=tile, surface=surface, joint=joint)
+    placed = place_and_clip_diagonal(
+        cx=30, cy=100, tile=tile, surface=surface, joint=joint
+    )
 
     assert placed is not None
     assert placed.kind == TileKind.CUT
@@ -211,7 +244,9 @@ def test_diagonal_tile_mostly_outside_leaves_a_small_triangle():
     tile = Tile(width=100, height=100)
     joint = JointSpec(joint_width=0)
 
-    placed = place_and_clip_diagonal(cx=-50, cy=100, tile=tile, surface=surface, joint=joint)
+    placed = place_and_clip_diagonal(
+        cx=-50, cy=100, tile=tile, surface=surface, joint=joint
+    )
 
     assert placed is not None
     assert placed.kind == TileKind.CUT
@@ -224,7 +259,9 @@ def test_diagonal_tile_entirely_outside_surface_is_none():
     tile = Tile(width=100, height=100)
     joint = JointSpec(joint_width=0)
 
-    placed = place_and_clip_diagonal(cx=-200, cy=100, tile=tile, surface=surface, joint=joint)
+    placed = place_and_clip_diagonal(
+        cx=-200, cy=100, tile=tile, surface=surface, joint=joint
+    )
 
     assert placed is None
 
@@ -235,11 +272,15 @@ def test_diagonal_tile_partially_overlapping_cutout_is_notched():
     # quadrant overlaps exactly the diamond's NE quarter -- a right
     # triangle with both legs 50*sqrt(2), i.e. area (50*sqrt(2))^2 / 2 ==
     # 2500 exactly.
-    surface = Surface(width=400, height=400, cutouts=(Cutout(x=200, y=200, width=100, height=100),))
+    surface = Surface(
+        width=400, height=400, cutouts=(Cutout(x=200, y=200, width=100, height=100),)
+    )
     tile = Tile(width=100, height=100)
     joint = JointSpec(joint_width=0)
 
-    placed = place_and_clip_diagonal(cx=200, cy=200, tile=tile, surface=surface, joint=joint)
+    placed = place_and_clip_diagonal(
+        cx=200, cy=200, tile=tile, surface=surface, joint=joint
+    )
 
     assert placed is not None
     assert placed.kind == TileKind.NOTCHED
@@ -252,11 +293,15 @@ def test_diagonal_tile_partially_overlapping_cutout_is_notched():
 
 
 def test_diagonal_tile_fully_inside_cutout_is_discarded():
-    surface = Surface(width=400, height=400, cutouts=(Cutout(x=0, y=0, width=400, height=400),))
+    surface = Surface(
+        width=400, height=400, cutouts=(Cutout(x=0, y=0, width=400, height=400),)
+    )
     tile = Tile(width=100, height=100)
     joint = JointSpec(joint_width=0)
 
-    placed = place_and_clip_diagonal(cx=200, cy=200, tile=tile, surface=surface, joint=joint)
+    placed = place_and_clip_diagonal(
+        cx=200, cy=200, tile=tile, surface=surface, joint=joint
+    )
 
     assert placed is None
 
@@ -270,9 +315,17 @@ def test_place_and_clip_at_angle_45_matches_place_and_clip_diagonal():
     tile = Tile(width=100, height=100)
     joint = JointSpec(joint_width=0)
 
-    via_wrapper = place_and_clip_diagonal(cx=30, cy=100, tile=tile, surface=surface, joint=joint)
+    via_wrapper = place_and_clip_diagonal(
+        cx=30, cy=100, tile=tile, surface=surface, joint=joint
+    )
     via_general = place_and_clip_at_angle(
-        cx=30, cy=100, width=tile.width, height=tile.height, angle_deg=45.0, surface=surface, joint=joint,
+        cx=30,
+        cy=100,
+        width=tile.width,
+        height=tile.height,
+        angle_deg=45.0,
+        surface=surface,
+        joint=joint,
     )
 
     assert via_wrapper.vertices == via_general.vertices
@@ -281,13 +334,16 @@ def test_place_and_clip_at_angle_45_matches_place_and_clip_diagonal():
 
 # ── Bonds ─────────────────────────────────────────────────────────────────
 
+
 def test_stack_bond_covers_exact_grid_with_no_partial_tiles():
     # 3 columns x 2 rows exactly, pitch 303 x 603 (300+3 joint, 600+3 joint)
     surface = Surface(width=909, height=1206)
     tile = Tile(width=300, height=600)
     joint = JointSpec(joint_width=3)
 
-    positions = list(StackBond().raw_positions(surface, tile, joint, offset_x=0, offset_y=0))
+    positions = list(
+        StackBond().raw_positions(surface, tile, joint, offset_x=0, offset_y=0)
+    )
     placed = [
         p
         for (x, y, rotated) in positions
@@ -305,7 +361,9 @@ def test_stack_bond_produces_one_cut_column_when_width_does_not_divide_evenly():
     tile = Tile(width=300, height=600)
     joint = JointSpec(joint_width=0)
 
-    positions = list(StackBond().raw_positions(surface, tile, joint, offset_x=0, offset_y=0))
+    positions = list(
+        StackBond().raw_positions(surface, tile, joint, offset_x=0, offset_y=0)
+    )
     placed = [
         p
         for (x, y, rotated) in positions
@@ -352,7 +410,9 @@ def test_running_bond_rejects_offset_fraction_out_of_range():
 def _clipped(bond, surface, tile, joint, offset_x=0.0, offset_y=0.0):
     return [
         p
-        for (x, y, rotated) in bond.raw_positions(surface, tile, joint, offset_x, offset_y)
+        for (x, y, rotated) in bond.raw_positions(
+            surface, tile, joint, offset_x, offset_y
+        )
         if (p := place_and_clip(x, y, rotated, tile, surface, joint)) is not None
     ]
 
@@ -362,18 +422,27 @@ def _no_overlaps(tiles):
 
     def overlaps(a, b):
         return not (
-            a.x + a.width <= b.x + eps or b.x + b.width <= a.x + eps
-            or a.y + a.height <= b.y + eps or b.y + b.height <= a.y + eps
+            a.x + a.width <= b.x + eps
+            or b.x + b.width <= a.x + eps
+            or a.y + a.height <= b.y + eps
+            or b.y + b.height <= a.y + eps
         )
 
-    return not any(overlaps(tiles[i], tiles[j]) for i in range(len(tiles)) for j in range(i + 1, len(tiles)))
+    return not any(
+        overlaps(tiles[i], tiles[j])
+        for i in range(len(tiles))
+        for j in range(i + 1, len(tiles))
+    )
 
 
-@pytest.mark.parametrize("width,height,joint_width", [
-    (300, 150, 3),   # classic 2:1 plank
-    (300, 100, 0),   # 3:1 plank, no grout
-    (200, 180, 4),   # a ratio close to square, real joint
-])
+@pytest.mark.parametrize(
+    "width,height,joint_width",
+    [
+        (300, 150, 3),  # classic 2:1 plank
+        (300, 100, 0),  # 3:1 plank, no grout
+        (200, 180, 4),  # a ratio close to square, real joint
+    ],
+)
 def test_herringbone_bond_never_overlaps(width, height, joint_width):
     """Verified constructively (see bonds.HerringboneBond's docstring) for
     any tile aspect ratio and joint width — this exercises that guarantee
@@ -420,7 +489,9 @@ def test_herringbone_bond_leaves_no_gap():
 def _diagonal_clipped(bond, surface, tile, joint, offset_x=0.0, offset_y=0.0):
     return [
         p
-        for (cx, cy, _rotated) in bond.raw_positions(surface, tile, joint, offset_x, offset_y)
+        for (cx, cy, _rotated) in bond.raw_positions(
+            surface, tile, joint, offset_x, offset_y
+        )
         if (p := place_and_clip_diagonal(cx, cy, tile, surface, joint)) is not None
     ]
 
@@ -428,7 +499,12 @@ def _diagonal_clipped(bond, surface, tile, joint, offset_x=0.0, offset_y=0.0):
 def _tile_polygon(t: PlacedTile) -> list[tuple[float, float]]:
     if t.vertices is not None:
         return list(t.vertices)
-    return [(t.x, t.y), (t.x + t.width, t.y), (t.x + t.width, t.y + t.height), (t.x, t.y + t.height)]
+    return [
+        (t.x, t.y),
+        (t.x + t.width, t.y),
+        (t.x + t.width, t.y + t.height),
+        (t.x, t.y + t.height),
+    ]
 
 
 def _convex_polygon_overlap_area(a, b) -> float:
@@ -445,7 +521,9 @@ def _convex_polygon_overlap_area(a, b) -> float:
         p1, p2 = b[i], b[(i + 1) % n]
 
         def inside(p, p1=p1, p2=p2):
-            return (p2[0] - p1[0]) * (p[1] - p1[1]) - (p2[1] - p1[1]) * (p[0] - p1[0]) >= -1e-9
+            return (p2[0] - p1[0]) * (p[1] - p1[1]) - (p2[1] - p1[1]) * (
+                p[0] - p1[0]
+            ) >= -1e-9
 
         def intersect(s, e, p1=p1, p2=p2):
             x1, y1 = s
@@ -493,11 +571,14 @@ def _no_polygon_overlaps(tiles) -> bool:
     return True
 
 
-@pytest.mark.parametrize("width,height,joint_width", [
-    (100, 100, 3),  # square
-    (300, 150, 3),  # 2:1 plank
-    (300, 100, 0),  # 3:1 plank, no grout
-])
+@pytest.mark.parametrize(
+    "width,height,joint_width",
+    [
+        (100, 100, 3),  # square
+        (300, 150, 3),  # 2:1 plank
+        (300, 100, 0),  # 3:1 plank, no grout
+    ],
+)
 def test_diagonal_bond_never_overlaps(width, height, joint_width):
     """Verified against the real geometry pipeline with a proper polygon
     overlap check (bounding-box overlap alone would false-positive on
@@ -533,8 +614,12 @@ def test_diagonal_bond_respects_the_joint_gap():
     surface = Surface(width=1000, height=1000)
     tile = Tile(width=100, height=100)
 
-    no_joint = _diagonal_clipped(DiagonalBond(), surface, tile, JointSpec(joint_width=0))
-    with_joint = _diagonal_clipped(DiagonalBond(), surface, tile, JointSpec(joint_width=5))
+    no_joint = _diagonal_clipped(
+        DiagonalBond(), surface, tile, JointSpec(joint_width=0)
+    )
+    with_joint = _diagonal_clipped(
+        DiagonalBond(), surface, tile, JointSpec(joint_width=5)
+    )
 
     assert sum(p.area for p in with_joint) < sum(p.area for p in no_joint)
 
@@ -546,7 +631,9 @@ def _diagonal_herringbone_clipped(surface, tile, joint, offset_x=0.0, offset_y=0
     solver._generate_layout's dispatch for this bond)."""
     l, s = max(tile.width, tile.height), min(tile.width, tile.height)
     placed = []
-    for cx, cy, is_v in DiagonalHerringboneBond().raw_positions(surface, tile, joint, offset_x, offset_y):
+    for cx, cy, is_v in DiagonalHerringboneBond().raw_positions(
+        surface, tile, joint, offset_x, offset_y
+    ):
         width, height = (s, l) if is_v else (l, s)
         p = place_and_clip_at_angle(cx, cy, width, height, 45.0, surface, joint)
         if p is not None:
@@ -554,11 +641,14 @@ def _diagonal_herringbone_clipped(surface, tile, joint, offset_x=0.0, offset_y=0
     return placed
 
 
-@pytest.mark.parametrize("width,height,joint_width", [
-    (300, 150, 3),   # classic 2:1 plank
-    (300, 100, 0),   # 3:1 plank, no grout
-    (200, 180, 4),   # a ratio close to square, real joint
-])
+@pytest.mark.parametrize(
+    "width,height,joint_width",
+    [
+        (300, 150, 3),  # classic 2:1 plank
+        (300, 100, 0),  # 3:1 plank, no grout
+        (200, 180, 4),  # a ratio close to square, real joint
+    ],
+)
 def test_diagonal_herringbone_never_overlaps(width, height, joint_width):
     surface = Surface(width=1500, height=1200)
     tile = Tile(width=width, height=height)
@@ -599,11 +689,14 @@ def test_diagonal_herringbone_places_both_piece_shapes():
     assert (150, 300) in nominal_shapes
 
 
-@pytest.mark.parametrize("width,height,joint_width", [
-    (300, 150, 3),   # classic 2:1 plank
-    (300, 100, 0),   # 3:1 plank, no grout
-    (200, 180, 4),   # a ratio close to square, real joint
-])
+@pytest.mark.parametrize(
+    "width,height,joint_width",
+    [
+        (300, 150, 3),  # classic 2:1 plank
+        (300, 100, 0),  # 3:1 plank, no grout
+        (200, 180, 4),  # a ratio close to square, real joint
+    ],
+)
 def test_double_herringbone_never_overlaps(width, height, joint_width):
     """Double herringbone: each arm of the classic weave is a *pair* of
     planks instead of one — verified constructively (see
@@ -644,13 +737,20 @@ def test_double_herringbone_places_pairs_of_identical_planks():
 
     full = [p for p in placed if p.kind == TileKind.FULL]
     nominal_shapes = {(round(p.nominal_width), round(p.nominal_height)) for p in full}
-    assert nominal_shapes == {(300, 150), (150, 300)}  # same two sizes as plain herringbone, not doubled
+    assert nominal_shapes == {
+        (300, 150),
+        (150, 300),
+    }  # same two sizes as plain herringbone, not doubled
 
 
-def _diagonal_double_herringbone_clipped(surface, tile, joint, offset_x=0.0, offset_y=0.0):
+def _diagonal_double_herringbone_clipped(
+    surface, tile, joint, offset_x=0.0, offset_y=0.0
+):
     l, s = max(tile.width, tile.height), min(tile.width, tile.height)
     placed = []
-    for cx, cy, is_v in DiagonalDoubleHerringboneBond().raw_positions(surface, tile, joint, offset_x, offset_y):
+    for cx, cy, is_v in DiagonalDoubleHerringboneBond().raw_positions(
+        surface, tile, joint, offset_x, offset_y
+    ):
         width, height = (s, l) if is_v else (l, s)
         p = place_and_clip_at_angle(cx, cy, width, height, 45.0, surface, joint)
         if p is not None:
@@ -658,11 +758,14 @@ def _diagonal_double_herringbone_clipped(surface, tile, joint, offset_x=0.0, off
     return placed
 
 
-@pytest.mark.parametrize("width,height,joint_width", [
-    (300, 150, 3),
-    (300, 100, 0),
-    (200, 180, 4),
-])
+@pytest.mark.parametrize(
+    "width,height,joint_width",
+    [
+        (300, 150, 3),
+        (300, 100, 0),
+        (200, 180, 4),
+    ],
+)
 def test_diagonal_double_herringbone_never_overlaps(width, height, joint_width):
     surface = Surface(width=1500, height=1200)
     tile = Tile(width=width, height=height)
@@ -687,13 +790,16 @@ def test_diagonal_double_herringbone_leaves_no_gap_at_zero_joint():
 
 # ── Scoring ───────────────────────────────────────────────────────────────
 
+
 def _placed_layout_for_1000x600():
     """The hand-computed 4-tile layout from
     test_stack_bond_produces_one_cut_column_when_width_does_not_divide_evenly."""
     surface = Surface(width=1000, height=600)
     tile = Tile(width=300, height=600)
     joint = JointSpec(joint_width=0)
-    positions = list(StackBond().raw_positions(surface, tile, joint, offset_x=0, offset_y=0))
+    positions = list(
+        StackBond().raw_positions(surface, tile, joint, offset_x=0, offset_y=0)
+    )
     placed = [
         p
         for (x, y, rotated) in positions
@@ -727,7 +833,9 @@ def test_distinct_cut_sizes_ignores_full_tiles_and_groups_by_rounded_size():
     surface = Surface(width=1000, height=600)
     tile = Tile(width=300, height=600)
     joint = JointSpec(joint_width=0)
-    positions = list(StackBond().raw_positions(surface, tile, joint, offset_x=0, offset_y=0))
+    positions = list(
+        StackBond().raw_positions(surface, tile, joint, offset_x=0, offset_y=0)
+    )
     placed = [
         p
         for (x, y, rotated) in positions
@@ -747,7 +855,13 @@ def test_distinct_cut_sizes_groups_notched_and_cut_of_the_same_size_together():
     # same measurement for a cutter, even though one also needs a notch —
     # they must count as one distinct size, not two.
     surface = Surface(width=1000, height=1000)
-    common = dict(width=100, height=100, rotated=False, nominal_width=100, nominal_height=100)
+    common = {
+        "width": 100,
+        "height": 100,
+        "rotated": False,
+        "nominal_width": 100,
+        "nominal_height": 100,
+    }
     placed = [
         PlacedTile(x=0, y=0, kind=TileKind.CUT, **common),
         PlacedTile(x=200, y=0, kind=TileKind.NOTCHED, notch_area=25, **common),
@@ -758,12 +872,12 @@ def test_distinct_cut_sizes_groups_notched_and_cut_of_the_same_size_together():
 
     assert metrics.distinct_cut_sizes == 1
 
-
-
     surface = Surface(width=909, height=1206)
     tile = Tile(width=300, height=600)
     joint = JointSpec(joint_width=3)
-    positions = list(StackBond().raw_positions(surface, tile, joint, offset_x=0, offset_y=0))
+    positions = list(
+        StackBond().raw_positions(surface, tile, joint, offset_x=0, offset_y=0)
+    )
     placed = [
         p
         for (x, y, rotated) in positions
@@ -810,7 +924,9 @@ def test_symmetry_delta_zero_when_layout_is_centered():
     joint = JointSpec(joint_width=0)
     # 3 tiles at pitch 300 covering 900mm, centered leaves 50mm each side.
     offset_x = (1000 - 900) / 2
-    positions = list(StackBond().raw_positions(surface, tile, joint, offset_x=offset_x, offset_y=0))
+    positions = list(
+        StackBond().raw_positions(surface, tile, joint, offset_x=offset_x, offset_y=0)
+    )
     placed = [
         p
         for (x, y, rotated) in positions
@@ -827,7 +943,9 @@ def test_symmetry_delta_nonzero_when_layout_is_not_centered():
 
     _scored, metrics = score_layout(placed, surface)
 
-    assert metrics.symmetry_delta_x == pytest.approx(200)  # 300 (right, full) vs 100 (left? )
+    assert metrics.symmetry_delta_x == pytest.approx(
+        200
+    )  # 300 (right, full) vs 100 (left? )
 
 
 def test_diagonal_min_cut_span_uses_caliper_width_not_bounding_box():
@@ -837,9 +955,15 @@ def test_diagonal_min_cut_span_uses_caliper_width_not_bounding_box():
     tile = Tile(width=100, height=100)
     joint = JointSpec(joint_width=0)
 
-    full = place_and_clip_diagonal(cx=100, cy=100, tile=tile, surface=surface, joint=joint)
-    pentagon = place_and_clip_diagonal(cx=30, cy=100, tile=tile, surface=surface, joint=joint)
-    triangle = place_and_clip_diagonal(cx=-50, cy=100, tile=tile, surface=surface, joint=joint)
+    full = place_and_clip_diagonal(
+        cx=100, cy=100, tile=tile, surface=surface, joint=joint
+    )
+    pentagon = place_and_clip_diagonal(
+        cx=30, cy=100, tile=tile, surface=surface, joint=joint
+    )
+    triangle = place_and_clip_diagonal(
+        cx=-50, cy=100, tile=tile, surface=surface, joint=joint
+    )
 
     _scored, metrics = score_layout([full, pentagon, triangle], surface)
 
@@ -865,8 +989,12 @@ def test_diagonal_symmetry_is_a_real_zero_not_computed():
     tile = Tile(width=100, height=100)
     joint = JointSpec(joint_width=0)
 
-    pentagon = place_and_clip_diagonal(cx=30, cy=100, tile=tile, surface=surface, joint=joint)
-    triangle = place_and_clip_diagonal(cx=-50, cy=100, tile=tile, surface=surface, joint=joint)
+    pentagon = place_and_clip_diagonal(
+        cx=30, cy=100, tile=tile, surface=surface, joint=joint
+    )
+    triangle = place_and_clip_diagonal(
+        cx=-50, cy=100, tile=tile, surface=surface, joint=joint
+    )
 
     _scored, metrics = score_layout([pentagon, triangle], surface)
 
@@ -879,12 +1007,18 @@ def test_diagonal_sliver_detection_uses_caliper_width():
     tile = Tile(width=100, height=100)
     joint = JointSpec(joint_width=0)
 
-    pentagon = place_and_clip_diagonal(cx=30, cy=100, tile=tile, surface=surface, joint=joint)
-    triangle = place_and_clip_diagonal(cx=-50, cy=100, tile=tile, surface=surface, joint=joint)
+    pentagon = place_and_clip_diagonal(
+        cx=30, cy=100, tile=tile, surface=surface, joint=joint
+    )
+    triangle = place_and_clip_diagonal(
+        cx=-50, cy=100, tile=tile, surface=surface, joint=joint
+    )
     span = 50 * (2**0.5 - 1)  # ~20.71mm, the triangle's known min caliper width
 
     scored, metrics = score_layout(
-        [pentagon, triangle], surface, min_edge_cut=span + 1,
+        [pentagon, triangle],
+        surface,
+        min_edge_cut=span + 1,
     )
 
     slivers = {id(t) for t in scored if t.is_sliver}
@@ -902,9 +1036,23 @@ def test_diagonal_distinct_cut_sizes_disambiguates_shapes_with_the_same_bounding
     just because width/height round the same."""
     surface = Surface(width=200, height=200)
     common_2d = [(0.0, 0.0), (10.0, 0.0), (0.0, 10.0)]  # triangle, bbox 10x10
-    common_pentagon = [(0.0, 0.0), (10.0, 0.0), (10.0, 5.0), (5.0, 10.0), (0.0, 10.0)]  # bbox 10x10 too
+    common_pentagon = [
+        (0.0, 0.0),
+        (10.0, 0.0),
+        (10.0, 5.0),
+        (5.0, 10.0),
+        (0.0, 10.0),
+    ]  # bbox 10x10 too
 
-    common = {"x": 0, "y": 0, "width": 10, "height": 10, "rotated": False, "nominal_width": 100, "nominal_height": 100}
+    common = {
+        "x": 0,
+        "y": 0,
+        "width": 10,
+        "height": 10,
+        "rotated": False,
+        "nominal_width": 100,
+        "nominal_height": 100,
+    }
     triangle = PlacedTile(kind=TileKind.CUT, vertices=tuple(common_2d), **common)
     pentagon = PlacedTile(kind=TileKind.CUT, vertices=tuple(common_pentagon), **common)
 
@@ -915,10 +1063,19 @@ def test_diagonal_distinct_cut_sizes_disambiguates_shapes_with_the_same_bounding
 
 # ── Offcut reuse ──────────────────────────────────────────────────────────
 
-def _tile_at(x, y, width, height, kind=TileKind.CUT, nominal_width=300, nominal_height=600):
+
+def _tile_at(
+    x, y, width, height, kind=TileKind.CUT, nominal_width=300, nominal_height=600
+):
     return PlacedTile(
-        x=x, y=y, width=width, height=height, rotated=False,
-        kind=kind, nominal_width=nominal_width, nominal_height=nominal_height,
+        x=x,
+        y=y,
+        width=width,
+        height=height,
+        rotated=False,
+        kind=kind,
+        nominal_width=nominal_width,
+        nominal_height=nominal_height,
     )
 
 
@@ -950,7 +1107,7 @@ def test_offcut_from_one_cut_tile_can_satisfy_another():
 def test_offcut_too_small_is_not_matched():
     tile = Tile(width=300, height=600)
     placed = [
-        _tile_at(0, 0, 280, 600),   # offcut only 20mm wide
+        _tile_at(0, 0, 280, 600),  # offcut only 20mm wide
         _tile_at(300, 0, 100, 600),  # needs 100mm — offcut can't cover it
     ]
 
@@ -963,8 +1120,16 @@ def test_offcut_too_small_is_not_matched():
 def test_full_tiles_do_not_generate_or_consume_offcuts():
     tile = Tile(width=300, height=600)
     placed = [
-        PlacedTile(x=0, y=0, width=300, height=600, rotated=False, kind=TileKind.FULL,
-                   nominal_width=300, nominal_height=600),
+        PlacedTile(
+            x=0,
+            y=0,
+            width=300,
+            height=600,
+            rotated=False,
+            kind=TileKind.FULL,
+            nominal_width=300,
+            nominal_height=600,
+        ),
         _tile_at(300, 0, 100, 600),
     ]
 
@@ -978,7 +1143,7 @@ def test_full_tiles_do_not_generate_or_consume_offcuts():
 def test_rotation_allows_matching_a_swapped_offcut():
     tile = Tile(width=300, height=600, allow_rotation=True)
     placed = [
-        _tile_at(0, 0, 300, 500),    # offcut: 300 x 100
+        _tile_at(0, 0, 300, 500),  # offcut: 300 x 100
         _tile_at(300, 0, 100, 300),  # needs 100 x 300 — fits the offcut rotated
     ]
 
@@ -989,6 +1154,7 @@ def test_rotation_allows_matching_a_swapped_offcut():
 
 # ── Diagonal offcut reuse ─────────────────────────────────────────────────
 
+
 def test_diagonal_offcuts_pairs_congruent_triangular_slivers():
     # cx=-50 and cx=250 are symmetric around the surface's x=100 centerline
     # (each poking 50mm past its own boundary), so the two triangular
@@ -998,8 +1164,12 @@ def test_diagonal_offcuts_pairs_congruent_triangular_slivers():
     tile = Tile(width=100, height=100)
     joint = JointSpec(joint_width=0)
 
-    tri_a = place_and_clip_diagonal(cx=-50, cy=100, tile=tile, surface=surface, joint=joint)
-    tri_b = place_and_clip_diagonal(cx=250, cy=100, tile=tile, surface=surface, joint=joint)
+    tri_a = place_and_clip_diagonal(
+        cx=-50, cy=100, tile=tile, surface=surface, joint=joint
+    )
+    tri_b = place_and_clip_diagonal(
+        cx=250, cy=100, tile=tile, surface=surface, joint=joint
+    )
     assert tri_a.kind == TileKind.CUT and len(tri_a.vertices) == 3
     assert tri_b.kind == TileKind.CUT and len(tri_b.vertices) == 3
 
@@ -1016,8 +1186,12 @@ def test_diagonal_offcuts_does_not_pair_different_sized_slivers():
     tile = Tile(width=100, height=100)
     joint = JointSpec(joint_width=0)
 
-    small = place_and_clip_diagonal(cx=-50, cy=100, tile=tile, surface=surface, joint=joint)
-    bigger = place_and_clip_diagonal(cx=-30, cy=100, tile=tile, surface=surface, joint=joint)
+    small = place_and_clip_diagonal(
+        cx=-50, cy=100, tile=tile, surface=surface, joint=joint
+    )
+    bigger = place_and_clip_diagonal(
+        cx=-30, cy=100, tile=tile, surface=surface, joint=joint
+    )
 
     result = match_diagonal_offcuts([small, bigger])
 
@@ -1032,8 +1206,12 @@ def test_diagonal_offcuts_ignores_pentagons_and_full_tiles():
     tile = Tile(width=100, height=100)
     joint = JointSpec(joint_width=0)
 
-    full = place_and_clip_diagonal(cx=100, cy=100, tile=tile, surface=surface, joint=joint)
-    pentagon = place_and_clip_diagonal(cx=30, cy=100, tile=tile, surface=surface, joint=joint)
+    full = place_and_clip_diagonal(
+        cx=100, cy=100, tile=tile, surface=surface, joint=joint
+    )
+    pentagon = place_and_clip_diagonal(
+        cx=30, cy=100, tile=tile, surface=surface, joint=joint
+    )
     assert full.kind == TileKind.FULL
     assert pentagon.kind == TileKind.CUT and len(pentagon.vertices) == 5
 
@@ -1048,7 +1226,9 @@ def test_diagonal_offcuts_does_not_match_a_triangle_to_itself():
     tile = Tile(width=100, height=100)
     joint = JointSpec(joint_width=0)
 
-    tri = place_and_clip_diagonal(cx=-50, cy=100, tile=tile, surface=surface, joint=joint)
+    tri = place_and_clip_diagonal(
+        cx=-50, cy=100, tile=tile, surface=surface, joint=joint
+    )
 
     result = match_diagonal_offcuts([tri])
 

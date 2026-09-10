@@ -1,4 +1,3 @@
-import pytest
 from planqer.cutting import min_boards_required_with_cut_list
 
 

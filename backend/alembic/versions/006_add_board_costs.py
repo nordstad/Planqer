@@ -10,12 +10,14 @@ Revises: 005_add_project_groups
 Create Date: 2026-08-24 00:00:00.000000
 
 """
-from alembic import op
+
 import sqlalchemy as sa
 
+from alembic import op
+
 # revision identifiers
-revision = '006_add_board_costs'
-down_revision = '005_add_project_groups'
+revision = "006_add_board_costs"
+down_revision = "005_add_project_groups"
 branch_labels = None
 depends_on = None
 
@@ -23,10 +25,10 @@ depends_on = None
 def upgrade():
     # Nullable: every plan saved before this has no prices to record, and a
     # plan costed on waste alone never will.
-    with op.batch_alter_table('user_projects') as batch_op:
-        batch_op.add_column(sa.Column('board_costs', sa.String(), nullable=True))
+    with op.batch_alter_table("user_projects") as batch_op:
+        batch_op.add_column(sa.Column("board_costs", sa.String(), nullable=True))
 
 
 def downgrade():
-    with op.batch_alter_table('user_projects') as batch_op:
-        batch_op.drop_column('board_costs')
+    with op.batch_alter_table("user_projects") as batch_op:
+        batch_op.drop_column("board_costs")

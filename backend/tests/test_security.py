@@ -4,7 +4,14 @@ Security tests for input sanitization and validation.
 
 import pytest
 from fastapi.testclient import TestClient
-from planqer.api import app, sanitize_project_name, validate_numeric_input, sanitize_parts_dict, sanitize_board_lengths
+
+from planqer.api import (
+    app,
+    sanitize_board_lengths,
+    sanitize_parts_dict,
+    sanitize_project_name,
+    validate_numeric_input,
+)
 
 client = TestClient(app)
 
@@ -22,18 +29,18 @@ def test_sanitize_project_name_dangerous_chars():
     result = sanitize_project_name("<script>alert('xss')</script>")
     assert "<" not in result and ">" not in result
     assert "script" in result  # Safe parts remain
-    
+
     # SQL injection attempt
     result = sanitize_project_name("'; DROP TABLE users; --")
     assert "DROP TABLE users" in result
     assert "'" not in result and ";" not in result
-    
+
     # Path traversal attempt
     result = sanitize_project_name("../../../etc/passwd")
     assert ".." not in result and "/" not in result
     assert "etcpasswd" in result  # Safe parts remain
     assert result == ".etcpasswd"  # Multiple dots converted to single dot
-    
+
     # Null byte injection
     result = sanitize_project_name("test\x00malicious")
     assert "\x00" not in result
@@ -64,17 +71,17 @@ def test_validate_numeric_input_valid():
 def test_validate_numeric_input_invalid():
     """Test invalid numeric inputs."""
     with pytest.raises(ValueError, match="Invalid numeric value"):
-        validate_numeric_input(float('nan'))
-        
+        validate_numeric_input(float("nan"))
+
     with pytest.raises(ValueError, match="Invalid numeric value"):
-        validate_numeric_input(float('inf'))
-        
+        validate_numeric_input(float("inf"))
+
     with pytest.raises(ValueError, match="Invalid numeric value"):
-        validate_numeric_input(float('-inf'))
-        
+        validate_numeric_input(float("-inf"))
+
     with pytest.raises(ValueError, match="must be between"):
         validate_numeric_input(1000, 1, 100)
-        
+
     with pytest.raises(ValueError, match="must be between"):
         validate_numeric_input(-5, 1, 100)
 
@@ -85,7 +92,7 @@ def test_api_malicious_project_name():
         "parts": {"100": 1},
         "available_board_lengths": [200],
         "saw_blade_width": 3.0,
-        "project_name": "<script>alert('xss')</script>"
+        "project_name": "<script>alert('xss')</script>",
     }
     response = client.post("/api/cutting-plans", json=payload)
     assert response.status_code == 200
@@ -137,7 +144,7 @@ def test_api_invalid_kerf_values():
     }
     response = client.post("/api/cutting-plans", json=payload)
     assert response.status_code == 422
-    
+
     # Extremely large kerf
     payload = {
         "parts": {"100": 1},
@@ -170,7 +177,7 @@ def test_api_invalid_quantities():
     }
     response = client.post("/api/cutting-plans", json=payload)
     assert response.status_code == 422
-    
+
     # Negative quantity
     payload = {
         "parts": {"100": -5},
@@ -179,7 +186,7 @@ def test_api_invalid_quantities():
     }
     response = client.post("/api/cutting-plans", json=payload)
     assert response.status_code == 422
-    
+
     # Extremely large quantity (DoS protection)
     payload = {
         "parts": {"100": 50000},
@@ -196,18 +203,17 @@ def test_api_valid_sanitized_request():
         "parts": {"100.5": 5, "200": 3},
         "available_board_lengths": [300, 400],
         "saw_blade_width": 3.2,
-        "project_name": "My Test Project (v1.0)"
+        "project_name": "My Test Project (v1.0)",
     }
     response = client.post("/api/cutting-plans", json=payload)
     assert response.status_code == 200
-    
+
     data = response.json()
     assert "optimal_board_length" in data
     assert "cost" in data
     assert "total_waste" in data
     assert "cut_list" in data
     assert "visualization" in data
-
 
 
 def test_sanitize_parts_dict_valid():

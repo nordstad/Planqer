@@ -79,14 +79,20 @@ def _render_saved_layout(optimization_result: dict | None, name: str) -> str | N
         return generate_saved_sheet_diagram(optimization_result, name)
     except Exception as e:
         # A missing diagram is worth far less than a lost layout — keep the save.
-        logger.warning(f"Failed to render diagram for saved sheet project '{name}': {e}")
+        logger.warning(
+            f"Failed to render diagram for saved sheet project '{name}': {e}"
+        )
         return None
 
 
 def sheet_project_to_response(project: UserSheetProject) -> SheetProjectResponse:
     try:
         parts_data = json.loads(project.parts_data)
-        optimization_result = json.loads(project.optimization_result) if project.optimization_result else None
+        optimization_result = (
+            json.loads(project.optimization_result)
+            if project.optimization_result
+            else None
+        )
     except (json.JSONDecodeError, TypeError):
         parts_data = []
         optimization_result = None
@@ -110,20 +116,25 @@ def sheet_project_to_response(project: UserSheetProject) -> SheetProjectResponse
     )
 
 
-async def _get_owned_sheet_project(project_id: UUID, current_user: User, session: AsyncSession) -> UserSheetProject:
+async def _get_owned_sheet_project(
+    project_id: UUID, current_user: User, session: AsyncSession
+) -> UserSheetProject:
     stmt = select(UserSheetProject).where(
         UserSheetProject.id == project_id, UserSheetProject.user_id == current_user.id
     )
     result = await session.execute(stmt)
     project = result.scalar_one_or_none()
     if not project:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sheet project not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Sheet project not found"
+        )
     return project
 
 
 @router.get("/", response_model=list[SheetProjectResponse])
 async def get_user_sheet_projects(
-    current_user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
 ):
     stmt = (
         select(UserSheetProject)
@@ -143,7 +154,9 @@ async def create_sheet_project(
     if project_data.project_group_id is not None:
         await _get_owned_group(project_data.project_group_id, current_user, session)
 
-    svg_data_url = _render_saved_layout(project_data.optimization_result, project_data.name)
+    svg_data_url = _render_saved_layout(
+        project_data.optimization_result, project_data.name
+    )
 
     project = UserSheetProject(
         user_id=current_user.id,
@@ -156,7 +169,9 @@ async def create_sheet_project(
         material_type=project_data.material_type,
         algorithm=project_data.algorithm,
         allow_rotation=project_data.allow_rotation,
-        optimization_result=json.dumps(project_data.optimization_result) if project_data.optimization_result else None,
+        optimization_result=json.dumps(project_data.optimization_result)
+        if project_data.optimization_result
+        else None,
         cutlist_image=svg_data_url,
         cutlist_image_svg=svg_data_url,
     )
@@ -237,21 +252,30 @@ async def get_sheet_project_image(
 
     selected_image = project.cutlist_image_svg or project.cutlist_image
     if not selected_image:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No diagram was saved with this layout")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No diagram was saved with this layout",
+        )
 
     if not selected_image.strip():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image data is empty")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Image data is empty"
+        )
 
-    if selected_image.startswith("data:image/png;base64,") or selected_image.startswith("data:image/svg+xml;base64,"):
+    if selected_image.startswith(
+        ("data:image/png;base64,", "data:image/svg+xml;base64,")
+    ):
         image_data = selected_image.split(",", 1)[1]
     else:
         image_data = selected_image
 
     if not image_data.strip():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Base64 image data is empty")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Base64 image data is empty"
+        )
 
     try:
-        if not re.match(r'^[A-Za-z0-9+/]*={0,2}$', image_data):
+        if not re.match(r"^[A-Za-z0-9+/]*={0,2}$", image_data):
             raise ValueError("Invalid base64 format")
 
         image_bytes = base64.b64decode(image_data, validate=True)
@@ -263,7 +287,7 @@ async def get_sheet_project_image(
         else:
             media_type, file_extension = "image/png", "png"
 
-        project_name_safe = re.sub(r'[^\w\-_\. ]', '', project.name)
+        project_name_safe = re.sub(r"[^\w\-_\. ]", "", project.name)
         filename = f"{project_name_safe} - Sheet Layout.{file_extension}"
 
         return Response(
@@ -275,5 +299,10 @@ async def get_sheet_project_image(
             },
         )
     except Exception as e:
-        logger.error(f"Failed to decode base64 image data for sheet project {project_id}: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to decode image data: {e}")
+        logger.error(
+            f"Failed to decode base64 image data for sheet project {project_id}: {e}"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to decode image data: {e}",
+        )

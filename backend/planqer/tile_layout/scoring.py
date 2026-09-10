@@ -54,7 +54,7 @@ class LayoutMetrics:
     waste_area: float
     efficiency: float  # coverage_area / surface.net_area
 
-    min_edge_cut_width: float | None   # None if no axis-aligned tile was cut in x
+    min_edge_cut_width: float | None  # None if no axis-aligned tile was cut in x
     min_edge_cut_height: float | None  # None if no axis-aligned tile was cut in y
     # The diagonal-bond counterpart to the two fields above: a rotated
     # piece's "cut width" isn't an x-axis or y-axis fact anymore, so this
@@ -109,10 +109,14 @@ def score_layout(
     # diagonal tiles are explicitly excluded here rather than silently
     # producing a number that looks like a real cut width but isn't one.
     cut_widths = [
-        t.width for t in placed_tiles if t.vertices is None and t.width < t.nominal_width - _EPS
+        t.width
+        for t in placed_tiles
+        if t.vertices is None and t.width < t.nominal_width - _EPS
     ]
     cut_heights = [
-        t.height for t in placed_tiles if t.vertices is None and t.height < t.nominal_height - _EPS
+        t.height
+        for t in placed_tiles
+        if t.vertices is None and t.height < t.nominal_height - _EPS
     ]
     min_edge_cut_width = min(cut_widths) if cut_widths else None
     min_edge_cut_height = min(cut_heights) if cut_heights else None
@@ -141,9 +145,13 @@ def score_layout(
         top_y = max(t.y + t.height for t in placed_tiles)
 
         left_widths = [t.width for t in placed_tiles if abs(t.x - left_x) < _EPS]
-        right_widths = [t.width for t in placed_tiles if abs((t.x + t.width) - right_x) < _EPS]
+        right_widths = [
+            t.width for t in placed_tiles if abs((t.x + t.width) - right_x) < _EPS
+        ]
         bottom_heights = [t.height for t in placed_tiles if abs(t.y - bottom_y) < _EPS]
-        top_heights = [t.height for t in placed_tiles if abs((t.y + t.height) - top_y) < _EPS]
+        top_heights = [
+            t.height for t in placed_tiles if abs((t.y + t.height) - top_y) < _EPS
+        ]
 
         symmetry_delta_x = abs(min(left_widths) - min(right_widths))
         symmetry_delta_y = abs(min(bottom_heights) - min(top_heights))
@@ -156,7 +164,9 @@ def score_layout(
             return (round(t.width), round(t.height), len(t.vertices), round(t.area))
         return (round(t.width), round(t.height))
 
-    distinct_cut_sizes = len({_size_key(t) for t in placed_tiles if t.kind != TileKind.FULL})
+    distinct_cut_sizes = len(
+        {_size_key(t) for t in placed_tiles if t.kind != TileKind.FULL}
+    )
 
     sliver_count = 0
     scored_tiles: list[PlacedTile] = []
@@ -169,7 +179,9 @@ def score_layout(
             else:
                 cut_in_x = t.width < t.nominal_width - _EPS
                 cut_in_y = t.height < t.nominal_height - _EPS
-                if (cut_in_x and t.width < min_edge_cut) or (cut_in_y and t.height < min_edge_cut):
+                if (cut_in_x and t.width < min_edge_cut) or (
+                    cut_in_y and t.height < min_edge_cut
+                ):
                     is_sliver = True
         if is_sliver:
             sliver_count += 1

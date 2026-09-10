@@ -8,7 +8,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
 from planqer.auth import get_current_user
-from planqer.database import ProjectGroup, User, UserProject, UserSheetProject, UserTileProject, get_session
+from planqer.database import (
+    ProjectGroup,
+    User,
+    UserProject,
+    UserSheetProject,
+    UserTileProject,
+    get_session,
+)
 
 router = APIRouter(prefix="/project-groups", tags=["project-groups"])
 logger = logging.getLogger("planqer.routes.project_groups")
@@ -34,18 +41,25 @@ def group_to_response(group: ProjectGroup) -> ProjectGroupResponse:
     )
 
 
-async def _get_owned_group(group_id: UUID, current_user: User, session: AsyncSession) -> ProjectGroup:
-    stmt = select(ProjectGroup).where(ProjectGroup.id == group_id, ProjectGroup.user_id == current_user.id)
+async def _get_owned_group(
+    group_id: UUID, current_user: User, session: AsyncSession
+) -> ProjectGroup:
+    stmt = select(ProjectGroup).where(
+        ProjectGroup.id == group_id, ProjectGroup.user_id == current_user.id
+    )
     result = await session.execute(stmt)
     group = result.scalar_one_or_none()
     if not group:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+        )
     return group
 
 
 @router.get("/", response_model=list[ProjectGroupResponse])
 async def list_project_groups(
-    current_user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
 ):
     stmt = (
         select(ProjectGroup)

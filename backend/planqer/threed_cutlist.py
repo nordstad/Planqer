@@ -134,7 +134,7 @@ class STLProcessor:
 
         except Exception as e:
             raise HTTPException(
-                status_code=400, detail=f"Failed to load STL file: {str(e)}"
+                status_code=400, detail=f"Failed to load STL file: {e!s}"
             )
 
     def _split_components(self, mesh: trimesh.Trimesh) -> list[trimesh.Trimesh]:
@@ -252,9 +252,7 @@ class STLProcessor:
 
         except Exception as e:
             logger.error(f"STL processing failed: {e}")
-            raise HTTPException(
-                status_code=500, detail=f"STL processing failed: {str(e)}"
-            )
+            raise HTTPException(status_code=500, detail=f"STL processing failed: {e!s}")
 
     def convert_to_planqer_parts(
         self, cutlist_items: list[CutListItem]

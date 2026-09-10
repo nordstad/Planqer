@@ -5,12 +5,12 @@ Admin user management script for Planqer.
 Creates admin users, promotes existing users to admin, and lists users on a
 self-hosted instance.
 """
+
 import asyncio
 import getpass
 import os
 import re
 import sys
-from typing import Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
@@ -20,25 +20,27 @@ from planqer.database import User, engine
 
 
 def validate_email(email: str) -> bool:
-    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
     return re.match(pattern, email) is not None
 
 
 def validate_password(password: str) -> tuple[bool, str]:
     if len(password) < 8:
         return False, "Password must be at least 8 characters long"
-    if not re.search(r'[A-Z]', password):
+    if not re.search(r"[A-Z]", password):
         return False, "Password must contain at least one uppercase letter"
-    if not re.search(r'[a-z]', password):
+    if not re.search(r"[a-z]", password):
         return False, "Password must contain at least one lowercase letter"
-    if not re.search(r'\d', password):
+    if not re.search(r"\d", password):
         return False, "Password must contain at least one digit"
     if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
         return False, "Password must contain at least one special character"
     return True, ""
 
 
-def get_secure_password(email: str, prompt: str = "Enter password for admin user '{email}': ") -> str:
+def get_secure_password(
+    email: str, prompt: str = "Enter password for admin user '{email}': "
+) -> str:
     while True:
         password = getpass.getpass(prompt.format(email=email))
         if not password:
@@ -46,7 +48,9 @@ def get_secure_password(email: str, prompt: str = "Enter password for admin user
             continue
 
         if not validate_password(password)[0]:
-            print("Password does not meet the required policy. Please choose a different password.")
+            print(
+                "Password does not meet the required policy. Please choose a different password."
+            )
             continue
 
         if password != getpass.getpass("Confirm password: "):
@@ -68,7 +72,9 @@ def get_email_input() -> str:
         return email
 
 
-async def create_admin_user(email: str, password: Optional[str] = None, force: bool = False):
+async def create_admin_user(
+    email: str, password: str | None = None, force: bool = False
+):
     async with AsyncSession(engine) as session:
         stmt = select(User).where(User.email == email)
         result = await session.execute(stmt)
@@ -80,7 +86,11 @@ async def create_admin_user(email: str, password: Optional[str] = None, force: b
                 return existing_user
 
             if not force:
-                confirm = input(f"User '{email}' exists. Promote to admin? (y/N): ").strip().lower()
+                confirm = (
+                    input(f"User '{email}' exists. Promote to admin? (y/N): ")
+                    .strip()
+                    .lower()
+                )
                 if confirm not in ["y", "yes"]:
                     print("Operation cancelled.")
                     return None
@@ -105,7 +115,10 @@ async def create_admin_user(email: str, password: Optional[str] = None, force: b
                 return None
 
         admin_user = User(
-            email=email, hashed_password=get_password_hash(password), is_active=True, is_admin=True
+            email=email,
+            hashed_password=get_password_hash(password),
+            is_active=True,
+            is_admin=True,
         )
 
         session.add(admin_user)
@@ -116,7 +129,9 @@ async def create_admin_user(email: str, password: Optional[str] = None, force: b
         return admin_user
 
 
-async def set_user_password(email: str, password: Optional[str] = None, force: bool = False):
+async def set_user_password(
+    email: str, password: str | None = None, force: bool = False
+):
     async with AsyncSession(engine) as session:
         stmt = select(User).where(User.email == email)
         result = await session.execute(stmt)
@@ -127,13 +142,17 @@ async def set_user_password(email: str, password: Optional[str] = None, force: b
             return None
 
         if not force:
-            confirm = input(f"Set a new password for '{email}'? (y/N): ").strip().lower()
+            confirm = (
+                input(f"Set a new password for '{email}'? (y/N): ").strip().lower()
+            )
             if confirm not in ["y", "yes"]:
                 print("Operation cancelled.")
                 return None
 
         if not password:
-            password = get_secure_password(email, prompt="Enter new password for '{email}': ")
+            password = get_secure_password(
+                email, prompt="Enter new password for '{email}': "
+            )
         else:
             if not validate_password(password)[0]:
                 print("Password validation failed. Please choose a different password.")
@@ -183,9 +202,15 @@ def print_usage():
     print("Usage:")
     print("  python create_admin.py                       # Interactive mode")
     print("  python create_admin.py list                   # List all users")
-    print("  python create_admin.py <email>                # Create/promote user (interactive)")
-    print("  python create_admin.py <email> --force        # Create/promote user (no prompts)")
-    print("  python create_admin.py set-password <email>   # Reset a user's password (e.g. after a lockout)")
+    print(
+        "  python create_admin.py <email>                # Create/promote user (interactive)"
+    )
+    print(
+        "  python create_admin.py <email> --force        # Create/promote user (no prompts)"
+    )
+    print(
+        "  python create_admin.py set-password <email>   # Reset a user's password (e.g. after a lockout)"
+    )
     print()
     print("Environment Variables:")
     print("  PLANQER_ADMIN_EMAIL      Admin email address")

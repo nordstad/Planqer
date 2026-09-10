@@ -3,7 +3,6 @@ from pathlib import Path
 import yaml
 
 
-
 def load_config(config_file: Path) -> dict:
     with config_file.open("r") as f:
         config = yaml.safe_load(f)

@@ -16,10 +16,11 @@ at true scale. Nothing extra needs to be drawn for a joint.
 
 import base64
 import colorsys
+import itertools
 import math
 from xml.sax.saxutils import escape
 
-from .tile_layout.geometry import TileKind, polygon_edge_lengths
+from .tile_layout.geometry import TileKind
 from .visualization_constants import get_css_styles
 
 # Muted, desaturated tones shared with the cutting/sheet visualizers — kept
@@ -57,7 +58,7 @@ def _generate_size_palette(count: int) -> list[str]:
         lightness = 0.68 + ((i * 0.38196601125) % 1.0) * 0.16
         saturation = 0.42 + ((i * 0.2360679775) % 1.0) * 0.16
         r, g, b = colorsys.hls_to_rgb(hue_deg / 360, lightness, saturation)
-        colors.append("#{:02x}{:02x}{:02x}".format(int(r * 255), int(g * 255), int(b * 255)))
+        colors.append(f"#{int(r * 255):02x}{int(g * 255):02x}{int(b * 255):02x}")
     return colors
 
 
@@ -83,8 +84,12 @@ def tile_size_key(t) -> tuple:
     diagonal existed."""
     if t.vertices is not None:
         return (
-            round(t.width), round(t.height), round(t.nominal_width),
-            round(t.nominal_height), len(t.vertices), round(t.area),
+            round(t.width),
+            round(t.height),
+            round(t.nominal_width),
+            round(t.nominal_height),
+            len(t.vertices),
+            round(t.area),
         )
     return (round(t.width), round(t.height))
 
@@ -143,7 +148,7 @@ class TileSVGVisualizer:
       <line x1="0" y1="0" x2="0" y2="6" stroke="rgba(22,21,15,0.4)" stroke-width="1.5"/>
     </pattern>
     <style>
-{get_css_styles('tile')}
+{get_css_styles("tile")}
     </style>
   </defs>
   <rect width="100%" height="100%" fill="{_BACKGROUND}"/>
@@ -153,19 +158,36 @@ class TileSVGVisualizer:
         svg_b64 = base64.b64encode(svg_content.encode("utf-8")).decode("utf-8")
         return f"data:image/svg+xml;base64,{svg_b64}"
 
-    def _create_header_section(self, project_name: str | None, label: str | None) -> str:
+    def _create_header_section(
+        self, project_name: str | None, label: str | None
+    ) -> str:
         parts = []
         y = 16
         if project_name:
-            parts.append(f'<text x="24" y="{y}" class="figure-caption" text-anchor="start">{escape(project_name)}</text>')
+            parts.append(
+                f'<text x="24" y="{y}" class="figure-caption" text-anchor="start">{escape(project_name)}</text>'
+            )
             y += 18
         if label:
-            parts.append(f'<text x="24" y="{y}" class="surface-info" text-anchor="start">{escape(label)}</text>')
+            parts.append(
+                f'<text x="24" y="{y}" class="surface-info" text-anchor="start">{escape(label)}</text>'
+            )
         return "".join(parts)
 
-    def _create_tile_rect(self, x: float, y: float, width: float, height: float,
-                           fill: str, is_notched: bool, is_sliver: bool,
-                            scale: float, x_off: float, y_off: float, label: str | None = None) -> str:
+    def _create_tile_rect(
+        self,
+        x: float,
+        y: float,
+        width: float,
+        height: float,
+        fill: str,
+        is_notched: bool,
+        is_sliver: bool,
+        scale: float,
+        x_off: float,
+        y_off: float,
+        label: str | None = None,
+    ) -> str:
         px, py = x_off + x * scale, y_off + y * scale
         pw, ph = width * scale, height * scale
         stroke = _SLIVER_STROKE if is_sliver else _INK
@@ -199,13 +221,26 @@ class TileSVGVisualizer:
                     f'text-anchor="middle" dominant-baseline="middle">SLIVER</text>'
                 )
         if label and pw > 22 and ph > 22:
-            elements.append(f'<text x="{px + 8:.1f}" y="{py + 11:.1f}" class="tile-label" font-weight="bold">{escape(label)}</text>')
+            elements.append(
+                f'<text x="{px + 8:.1f}" y="{py + 11:.1f}" class="tile-label" font-weight="bold">{escape(label)}</text>'
+            )
 
         return "".join(elements)
 
-    def _create_tile_polygon(self, vertices, fill: str, is_notched: bool, is_sliver: bool,
-                               is_full: bool, nominal_width: float, nominal_height: float,
-                               scale: float, x_off: float, y_off: float, label: str | None = None) -> str:
+    def _create_tile_polygon(
+        self,
+        vertices,
+        fill: str,
+        is_notched: bool,
+        is_sliver: bool,
+        is_full: bool,
+        nominal_width: float,
+        nominal_height: float,
+        scale: float,
+        x_off: float,
+        y_off: float,
+        label: str | None = None,
+    ) -> str:
         """Diagonal counterpart to _create_tile_rect: the piece is an
         arbitrary convex polygon (see geometry.place_and_clip_diagonal),
         not a rectangle, so it's drawn as <polygon>, not <rect>. Only a
@@ -214,11 +249,15 @@ class TileSVGVisualizer:
         the way an axis-aligned piece is labeled would misrepresent an
         irregular shape as a rectangle. The drawn outline itself, at true
         scale, is what a CUT/NOTCHED piece's own shape communicates."""
-        points = " ".join(f"{x_off + vx * scale:.1f},{y_off + vy * scale:.1f}" for vx, vy in vertices)
+        points = " ".join(
+            f"{x_off + vx * scale:.1f},{y_off + vy * scale:.1f}" for vx, vy in vertices
+        )
         stroke = _SLIVER_STROKE if is_sliver else _INK
         stroke_width = 2 if is_sliver else 1
 
-        elements = [f'<polygon points="{points}" fill="{fill}" stroke="{stroke}" stroke-width="{stroke_width}"/>']
+        elements = [
+            f'<polygon points="{points}" fill="{fill}" stroke="{stroke}" stroke-width="{stroke_width}"/>'
+        ]
         if is_notched:
             elements.append(f'<polygon points="{points}" fill="url(#notch-overlay)"/>')
 
@@ -248,11 +287,15 @@ class TileSVGVisualizer:
         if label and nominal_width * scale > 22 and nominal_height * scale > 22:
             xs = [x_off + vx * scale for vx, _vy in vertices]
             ys = [y_off + vy * scale for _vx, vy in vertices]
-            elements.append(f'<text x="{sum(xs) / len(xs):.1f}" y="{min(ys) + 11:.1f}" class="tile-label" font-weight="bold">{escape(label)}</text>')
+            elements.append(
+                f'<text x="{sum(xs) / len(xs):.1f}" y="{min(ys) + 11:.1f}" class="tile-label" font-weight="bold">{escape(label)}</text>'
+            )
 
         return "".join(elements)
 
-    def _create_cutout_rect(self, cutout, scale: float, x_off: float, y_off: float) -> str:
+    def _create_cutout_rect(
+        self, cutout, scale: float, x_off: float, y_off: float
+    ) -> str:
         px, py = x_off + cutout.x * scale, y_off + cutout.y * scale
         pw, ph = cutout.width * scale, cutout.height * scale
         elements = [
@@ -271,29 +314,43 @@ class TileSVGVisualizer:
     def _create_legend(self, x: int, y: int, distinct_cut_sizes: int) -> str:
         parts = []
         cx = x
-        parts.append(f'<rect x="{cx}" y="{y - 8}" width="10" height="10" fill="{FULL_TILE_FILL}" stroke="{_INK}"/>')
-        parts.append(f'<text x="{cx + 14}" y="{y}" class="legend-text">Full tile</text>')
+        parts.append(
+            f'<rect x="{cx}" y="{y - 8}" width="10" height="10" fill="{FULL_TILE_FILL}" stroke="{_INK}"/>'
+        )
+        parts.append(
+            f'<text x="{cx + 14}" y="{y}" class="legend-text">Full tile</text>'
+        )
         cx += 90
 
         # A hatch sample over a neutral chip, since "notched" is the overlay
         # pattern now, not a fixed fill color — its own size still gets a
         # color from the palette on the tiles themselves.
-        parts.append(f'<rect x="{cx}" y="{y - 8}" width="10" height="10" fill="{_BACKGROUND}" stroke="{_INK}"/>')
-        parts.append(f'<rect x="{cx}" y="{y - 8}" width="10" height="10" fill="url(#notch-overlay)"/>')
+        parts.append(
+            f'<rect x="{cx}" y="{y - 8}" width="10" height="10" fill="{_BACKGROUND}" stroke="{_INK}"/>'
+        )
+        parts.append(
+            f'<rect x="{cx}" y="{y - 8}" width="10" height="10" fill="url(#notch-overlay)"/>'
+        )
         parts.append(f'<text x="{cx + 14}" y="{y}" class="legend-text">Notched</text>')
         cx += 90
 
-        parts.append(f'<rect x="{cx}" y="{y - 8}" width="10" height="10" fill="none" stroke="{_SLIVER_STROKE}" stroke-width="2"/>')
+        parts.append(
+            f'<rect x="{cx}" y="{y - 8}" width="10" height="10" fill="none" stroke="{_SLIVER_STROKE}" stroke-width="2"/>'
+        )
         parts.append(f'<text x="{cx + 14}" y="{y}" class="legend-text">Sliver</text>')
         cx += 90
 
         if distinct_cut_sizes > 0:
             note = f"{distinct_cut_sizes} cut size{'s' if distinct_cut_sizes != 1 else ''} \u2014 see the cut list below"
-            parts.append(f'<text x="{cx}" y="{y}" class="legend-text">{escape(note)} · letters match the cut list</text>')
+            parts.append(
+                f'<text x="{cx}" y="{y}" class="legend-text">{escape(note)} · letters match the cut list</text>'
+            )
 
         return "".join(parts)
 
-    def generate_layout_visualization(self, candidate, surface, project_name: str | None = None) -> str:
+    def generate_layout_visualization(
+        self, candidate, surface, project_name: str | None = None
+    ) -> str:
         """`candidate` is a solver.LayoutCandidate; `surface` is a
         geometry.Surface (needed for cutouts and true dimensions)."""
         if candidate is None or not candidate.tiles:
@@ -336,22 +393,44 @@ class TileSVGVisualizer:
                 fill = size_colors[tile_size_key(tile)]
                 label_tag = size_labels[tile_size_key(tile)]
             if tile.vertices is not None:
-                svg_parts.append(self._create_tile_polygon(
-                    tile.vertices, fill, tile.kind == TileKind.NOTCHED, tile.is_sliver,
-                    tile.kind == TileKind.FULL, tile.nominal_width, tile.nominal_height,
-                    scale, x_off, y_off, label_tag,
-                ))
+                svg_parts.append(
+                    self._create_tile_polygon(
+                        tile.vertices,
+                        fill,
+                        tile.kind == TileKind.NOTCHED,
+                        tile.is_sliver,
+                        tile.kind == TileKind.FULL,
+                        tile.nominal_width,
+                        tile.nominal_height,
+                        scale,
+                        x_off,
+                        y_off,
+                        label_tag,
+                    )
+                )
             else:
-                svg_parts.append(self._create_tile_rect(
-                    tile.x, tile.y, tile.width, tile.height, fill,
-                    tile.kind == TileKind.NOTCHED, tile.is_sliver,
-                    scale, x_off, y_off, label_tag,
-                ))
+                svg_parts.append(
+                    self._create_tile_rect(
+                        tile.x,
+                        tile.y,
+                        tile.width,
+                        tile.height,
+                        fill,
+                        tile.kind == TileKind.NOTCHED,
+                        tile.is_sliver,
+                        scale,
+                        x_off,
+                        y_off,
+                        label_tag,
+                    )
+                )
 
         for cutout in surface.cutouts:
             svg_parts.append(self._create_cutout_rect(cutout, scale, x_off, y_off))
 
-        svg_parts.append(self._create_legend(x_off, int(y_off + surface_h + 24), len(size_colors)))
+        svg_parts.append(
+            self._create_legend(x_off, int(y_off + surface_h + 24), len(size_colors))
+        )
         svg_parts.append("</svg>")
         return "".join(svg_parts)
 
@@ -370,7 +449,7 @@ def generate_diagonal_piece_diagram(tile, fill: str) -> str:
     Text describing the piece belongs outside this SVG. Keeping the diagram
     image-only prevents long labels from being clipped when the image is
     displayed at a different size and keeps that information selectable.
-    
+
     Args:
         tile: PlacedTile object with nominal dimensions and vertices
         fill: Fill color for the kept area
@@ -378,14 +457,16 @@ def generate_diagonal_piece_diagram(tile, fill: str) -> str:
     width, height = tile.nominal_width, tile.nominal_height
     padding = 120
     scale = min(360 / width, 280 / height, 1.0)
-    
+
     local = tile.local_vertices or ()
     svg_width = width * scale + padding * 2
     svg_height = height * scale + padding * 2
     ox, oy = padding, padding
-    
+
     def point(vertex):
-        return ox + (vertex[0] + width / 2) * scale, oy + (height / 2 - vertex[1]) * scale
+        return ox + (vertex[0] + width / 2) * scale, oy + (
+            height / 2 - vertex[1]
+        ) * scale
 
     polygon = " ".join(f"{x:.1f},{y:.1f}" for x, y in (point(v) for v in local))
     full_points = (
@@ -400,15 +481,20 @@ def generate_diagonal_piece_diagram(tile, fill: str) -> str:
         f'<rect width="100%" height="100%" fill="{_BACKGROUND}"/>',
     ]
 
-    elements.extend([
-        f'<polygon points="{full_points}" fill="url(#waste)" stroke="{_INK}" stroke-width="2"/>',
-        f'<polygon points="{polygon}" fill="{fill}" stroke="{_INK}" stroke-width="1.5"/>',
-    ])
-    
-    signed_area = sum(
-        start[0] * end[1] - end[0] * start[1]
-        for start, end in zip(local, local[1:] + local[:1])
-    ) / 2
+    elements.extend(
+        [
+            f'<polygon points="{full_points}" fill="url(#waste)" stroke="{_INK}" stroke-width="2"/>',
+            f'<polygon points="{polygon}" fill="{fill}" stroke="{_INK}" stroke-width="1.5"/>',
+        ]
+    )
+
+    signed_area = (
+        sum(
+            start[0] * end[1] - end[0] * start[1]
+            for start, end in zip(local, local[1:] + local[:1])
+        )
+        / 2
+    )
     centroid = (
         sum(vertex[0] for vertex in local) / len(local),
         sum(vertex[1] for vertex in local) / len(local),
@@ -424,8 +510,10 @@ def generate_diagonal_piece_diagram(tile, fill: str) -> str:
         else:
             candidate = (-dy / length, dx / length)
         midpoint = ((start[0] + end[0]) / 2, (start[1] + end[1]) / 2)
-        if (candidate[0] * (midpoint[0] - reference[0])
-                + candidate[1] * (midpoint[1] - reference[1])) < 0:
+        if (
+            candidate[0] * (midpoint[0] - reference[0])
+            + candidate[1] * (midpoint[1] - reference[1])
+        ) < 0:
             return -candidate[0], -candidate[1]
         return candidate
 
@@ -437,12 +525,14 @@ def generate_diagonal_piece_diagram(tile, fill: str) -> str:
         screen_normal = (normal[0], -normal[1])
         text_width = max(12, len(label) * 7.2)
         text_height = 14
-        midpoint_x, midpoint_y = (sx + ex) / 2, (sy + ey) / 2
+        _midpoint_x, _midpoint_y = (sx + ex) / 2, (sy + ey) / 2
 
         def overlaps(box):
             return any(
-                box[0] < other[2] + 4 and box[2] + 4 > other[0]
-                and box[1] < other[3] + 4 and box[3] + 4 > other[1]
+                box[0] < other[2] + 4
+                and box[2] + 4 > other[0]
+                and box[1] < other[3] + 4
+                and box[3] + 4 > other[1]
                 for other in label_boxes
             )
 
@@ -452,10 +542,17 @@ def generate_diagonal_piece_diagram(tile, fill: str) -> str:
             ox2, oy2 = ex + screen_normal[0] * offset, ey + screen_normal[1] * offset
             text_x, text_y = (ox1 + ox2) / 2, (oy1 + oy2) / 2 - 5
             box = (
-                text_x - text_width / 2, text_y - text_height,
-                text_x + text_width / 2, text_y + 3,
+                text_x - text_width / 2,
+                text_y - text_height,
+                text_x + text_width / 2,
+                text_y + 3,
             )
-            if not overlaps(box) and min(box) >= 4 and box[2] <= svg_width - 4 and box[3] <= svg_height - 4:
+            if (
+                not overlaps(box)
+                and min(box) >= 4
+                and box[2] <= svg_width - 4
+                and box[3] <= svg_height - 4
+            ):
                 label_boxes.append(box)
                 break
             offset += 22
@@ -501,7 +598,7 @@ def generate_diagonal_piece_diagram(tile, fill: str) -> str:
             boundary_points.sort(key=lambda vertex: vertex[1])
         else:
             boundary_points.sort(key=lambda vertex: vertex[0])
-        for start, end in zip(boundary_points, boundary_points[1:]):
+        for start, end in itertools.pairwise(boundary_points):
             segment_length = math.hypot(end[0] - start[0], end[1] - start[1])
             if segment_length < 1e-3:
                 continue
@@ -510,53 +607,69 @@ def generate_diagonal_piece_diagram(tile, fill: str) -> str:
                 or (start == edge_end and end == edge_start)
                 for edge_start, edge_end in zip(local, local[1:] + local[:1])
             )
-            has_cut_intersection = start in boundary_vertices or end in boundary_vertices
+            has_cut_intersection = (
+                start in boundary_vertices or end in boundary_vertices
+            )
             if has_cut_intersection and not is_polygon_edge:
                 add_dimension(
-                    start, end, outward_normal(start, end, centroid), f"{segment_length:.0f} mm",
+                    start,
+                    end,
+                    outward_normal(start, end, centroid),
+                    f"{segment_length:.0f} mm",
                 )
 
     # Add dimension lines for each edge of the piece polygon. The labels are
     # deliberately offset away from the kept polygon, including cut edges.
     for i, start in enumerate(local):
         end = local[(i + 1) % len(local)]
-        
+
         # Convert to screen coordinates
         sx, sy = point(start)
         ex, ey = point(end)
         length = math.hypot(end[0] - start[0], end[1] - start[1])
-        
+
         # Check if this is a cut edge (not on boundary)
         on_boundary = (
-            abs(start[0] - end[0]) < 1e-6 and abs(abs(start[0]) - width / 2) < 1e-3
-            or abs(start[1] - end[1]) < 1e-6 and abs(abs(start[1]) - height / 2) < 1e-3
+            abs(start[0] - end[0]) < 1e-6
+            and abs(abs(start[0]) - width / 2) < 1e-3
+            or abs(start[1] - end[1]) < 1e-6
+            and abs(abs(start[1]) - height / 2) < 1e-3
         )
-        
+
         normal = outward_normal(start, end, centroid)
         if on_boundary:
             add_dimension(start, end, normal, f"{length:.0f} mm")
         else:
             # This is a cut edge - draw the actual saw line, then annotate it
             # with a second dimension line outside the kept polygon.
-            elements.append(f'<line x1="{sx:.1f}" y1="{sy:.1f}" x2="{ex:.1f}" y2="{ey:.1f}" stroke="#d94801" stroke-width="3"/>')
+            elements.append(
+                f'<line x1="{sx:.1f}" y1="{sy:.1f}" x2="{ex:.1f}" y2="{ey:.1f}" stroke="#d94801" stroke-width="3"/>'
+            )
             add_dimension(start, end, normal, f"CUT {length:.0f} mm")
-    
+
     elements.append("</svg>")
     visualizer = TileSVGVisualizer()
     return visualizer.svg_to_base64("".join(elements))
 
 
-
-def generate_tile_layout_visualization(candidate, surface, project_name: str | None = None) -> str:
+def generate_tile_layout_visualization(
+    candidate, surface, project_name: str | None = None
+) -> str:
     """Generate a tile layout visualization. Compatible with the API response format."""
     visualizer = TileSVGVisualizer()
-    svg_content = visualizer.generate_layout_visualization(candidate, surface, project_name)
+    svg_content = visualizer.generate_layout_visualization(
+        candidate, surface, project_name
+    )
     return visualizer.svg_to_base64(svg_content)
 
 
-def generate_saved_tile_diagram(candidate, surface, project_name: str | None = None) -> str:
+def generate_saved_tile_diagram(
+    candidate, surface, project_name: str | None = None
+) -> str:
     """Generate the SVG data URL stored with a saved tile project. See
     svg_visualization.generate_saved_diagram for why there is no PNG here."""
     visualizer = TileSVGVisualizer()
-    svg_content = visualizer.generate_layout_visualization(candidate, surface, project_name)
+    svg_content = visualizer.generate_layout_visualization(
+        candidate, surface, project_name
+    )
     return visualizer.svg_to_base64(svg_content)

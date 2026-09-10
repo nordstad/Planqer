@@ -37,17 +37,25 @@ def _decode(data_url: str) -> str:
 
 
 def _solve_simple():
-    surface = Surface(width=909, height=1206, cutouts=(Cutout(x=100, y=100, width=100, height=100, label="socket"),))
+    surface = Surface(
+        width=909,
+        height=1206,
+        cutouts=(Cutout(x=100, y=100, width=100, height=100, label="socket"),),
+    )
     tile = Tile(width=300, height=600)
     joint = JointSpec(joint_width=3)
-    return surface, solve_tile_layout(surface, tile, joint, bond_pattern="stack", candidate_count=3, sample_steps=6)
+    return surface, solve_tile_layout(
+        surface, tile, joint, bond_pattern="stack", candidate_count=3, sample_steps=6
+    )
 
 
 def test_visualization_is_a_valid_svg_data_url():
     surface, result = _solve_simple()
     candidate = result.candidates[result.recommended_index]
 
-    data_url = generate_tile_layout_visualization(candidate, surface, project_name="Kitchen splashback")
+    data_url = generate_tile_layout_visualization(
+        candidate, surface, project_name="Kitchen splashback"
+    )
     svg = _decode(data_url)
 
     assert svg.startswith("<?xml")
@@ -63,9 +71,15 @@ def test_svg_has_intrinsic_dimensions_and_no_css_variables():
     svg = _decode(generate_tile_layout_visualization(candidate, surface))
 
     svg_tag = re.search(r"<svg[^>]*>", svg).group(0)
-    assert re.search(r'width="\d', svg_tag), "svg root must carry an intrinsic width attribute"
-    assert re.search(r'height="\d', svg_tag), "svg root must carry an intrinsic height attribute"
-    assert "var(" not in svg, "tile SVG must use literal hex colors, not CSS custom properties"
+    assert re.search(r'width="\d', svg_tag), (
+        "svg root must carry an intrinsic width attribute"
+    )
+    assert re.search(r'height="\d', svg_tag), (
+        "svg root must carry an intrinsic height attribute"
+    )
+    assert "var(" not in svg, (
+        "tile SVG must use literal hex colors, not CSS custom properties"
+    )
 
 
 def test_svg_renders_a_rect_per_placed_tile():
@@ -83,8 +97,13 @@ def test_sliver_tiles_get_the_revision_red_stroke():
     tile = Tile(width=300, height=600)
     joint = JointSpec(joint_width=0)
     result = solve_tile_layout(
-        surface, tile, joint, bond_pattern="stack", candidate_count=3,
-        sample_steps=4, min_edge_cut=250,
+        surface,
+        tile,
+        joint,
+        bond_pattern="stack",
+        candidate_count=3,
+        sample_steps=4,
+        min_edge_cut=250,
     )
     sliver_candidate = next(c for c in result.candidates if c.metrics.sliver_count > 0)
 
@@ -111,12 +130,20 @@ def test_generate_saved_tile_diagram_matches_live_contract():
 
 
 def test_assign_size_colors_ignores_full_tiles_and_is_deterministic():
-    common = dict(rotated=False, nominal_width=100, nominal_height=100)
+    common = {"rotated": False, "nominal_width": 100, "nominal_height": 100}
     tiles = [
         PlacedTile(x=0, y=0, width=100, height=100, kind=TileKind.FULL, **common),
         PlacedTile(x=0, y=0, width=50, height=100, kind=TileKind.CUT, **common),
         PlacedTile(x=0, y=0, width=50, height=100, kind=TileKind.CUT, **common),
-        PlacedTile(x=0, y=0, width=30, height=100, kind=TileKind.NOTCHED, notch_area=10, **common),
+        PlacedTile(
+            x=0,
+            y=0,
+            width=30,
+            height=100,
+            kind=TileKind.NOTCHED,
+            notch_area=10,
+            **common,
+        ),
     ]
 
     colors = assign_size_colors(tiles)
@@ -131,7 +158,7 @@ def test_assign_size_colors_ignores_full_tiles_and_is_deterministic():
 
 
 def test_size_colors_never_collide_with_the_fixed_full_tile_color():
-    surface, result = _solve_simple()
+    _surface, result = _solve_simple()
     for candidate in result.candidates:
         colors = assign_size_colors(candidate.tiles)
         assert FULL_TILE_FILL not in colors.values()
@@ -142,8 +169,13 @@ def test_svg_uses_a_distinct_color_per_cut_size():
     tile = Tile(width=300, height=600)
     joint = JointSpec(joint_width=3)
     result = solve_tile_layout(
-        surface, tile, joint, bond_pattern="running", offset_fraction=0.5,
-        candidate_count=3, sample_steps=8,
+        surface,
+        tile,
+        joint,
+        bond_pattern="running",
+        offset_fraction=0.5,
+        candidate_count=3,
+        sample_steps=8,
     )
     candidate = result.candidates[result.recommended_index]
     colors = assign_size_colors(candidate.tiles)
@@ -157,11 +189,20 @@ def test_svg_uses_a_distinct_color_per_cut_size():
 def test_tile_size_key_disambiguates_polygons_sharing_a_bounding_box():
     # A triangle and a pentagon can share a bounding box (both clipped from
     # the same corner region) -- the key must not conflate them.
-    common = {"x": 0, "y": 0, "width": 10, "height": 10, "rotated": False,
-              "nominal_width": 100, "nominal_height": 100, "kind": TileKind.CUT}
+    common = {
+        "x": 0,
+        "y": 0,
+        "width": 10,
+        "height": 10,
+        "rotated": False,
+        "nominal_width": 100,
+        "nominal_height": 100,
+        "kind": TileKind.CUT,
+    }
     triangle = PlacedTile(vertices=((0.0, 0.0), (10.0, 0.0), (0.0, 10.0)), **common)
     pentagon = PlacedTile(
-        vertices=((0.0, 0.0), (10.0, 0.0), (10.0, 5.0), (5.0, 10.0), (0.0, 10.0)), **common,
+        vertices=((0.0, 0.0), (10.0, 0.0), (10.0, 5.0), (5.0, 10.0), (0.0, 10.0)),
+        **common,
     )
 
     assert tile_size_key(triangle) != tile_size_key(pentagon)
@@ -170,8 +211,14 @@ def test_tile_size_key_disambiguates_polygons_sharing_a_bounding_box():
 def test_tile_size_key_includes_nominal_shape_for_axis_aligned_tiles():
     """Axis-aligned pieces with different source tile shapes must not collide."""
     tile = PlacedTile(
-        x=0, y=0, width=50, height=100, rotated=False,
-        kind=TileKind.CUT, nominal_width=100, nominal_height=100,
+        x=0,
+        y=0,
+        width=50,
+        height=100,
+        rotated=False,
+        kind=TileKind.CUT,
+        nominal_width=100,
+        nominal_height=100,
     )
     assert tile_size_key(tile) == (50, 100)
 
@@ -181,7 +228,12 @@ def test_diagonal_svg_draws_polygons_not_rects_for_tiles():
     tile = Tile(width=300, height=150)
     joint = JointSpec(joint_width=3)
     result = solve_tile_layout(
-        surface, tile, joint, bond_pattern="diagonal", candidate_count=3, sample_steps=6,
+        surface,
+        tile,
+        joint,
+        bond_pattern="diagonal",
+        candidate_count=3,
+        sample_steps=6,
     )
     candidate = result.candidates[result.recommended_index]
 
@@ -197,7 +249,12 @@ def test_diagonal_svg_has_intrinsic_dimensions_and_no_css_variables():
     tile = Tile(width=300, height=150)
     joint = JointSpec(joint_width=3)
     result = solve_tile_layout(
-        surface, tile, joint, bond_pattern="diagonal", candidate_count=3, sample_steps=6,
+        surface,
+        tile,
+        joint,
+        bond_pattern="diagonal",
+        candidate_count=3,
+        sample_steps=6,
     )
     candidate = result.candidates[result.recommended_index]
 
@@ -219,10 +276,17 @@ def test_diagonal_svg_labels_only_full_tiles():
     tile = Tile(width=300, height=150)
     joint = JointSpec(joint_width=3)
     result = solve_tile_layout(
-        surface, tile, joint, bond_pattern="diagonal", candidate_count=3, sample_steps=6,
+        surface,
+        tile,
+        joint,
+        bond_pattern="diagonal",
+        candidate_count=3,
+        sample_steps=6,
     )
     candidate = result.candidates[result.recommended_index]
-    assert any(t.kind != TileKind.FULL for t in candidate.tiles)  # sanity: real cut pieces exist
+    assert any(
+        t.kind != TileKind.FULL for t in candidate.tiles
+    )  # sanity: real cut pieces exist
     full_tile = next(t for t in candidate.tiles if t.kind == TileKind.FULL)
 
     svg = _decode(generate_tile_layout_visualization(candidate, surface))
@@ -236,10 +300,17 @@ def test_diagonal_piece_template_keeps_description_text_outside_svg():
     tile = Tile(width=300, height=150)
     joint = JointSpec(joint_width=3)
     result = solve_tile_layout(
-        surface, tile, joint, bond_pattern="diagonal", candidate_count=3, sample_steps=6,
+        surface,
+        tile,
+        joint,
+        bond_pattern="diagonal",
+        candidate_count=3,
+        sample_steps=6,
     )
     candidate = result.candidates[result.recommended_index]
-    cut_tile = next(t for t in candidate.tiles if t.kind != TileKind.FULL and t.vertices is not None)
+    cut_tile = next(
+        t for t in candidate.tiles if t.kind != TileKind.FULL and t.vertices is not None
+    )
 
     svg = _decode(generate_diagonal_piece_diagram(cut_tile, "#d9c98a"))
 
@@ -252,8 +323,15 @@ def test_diagonal_piece_template_keeps_description_text_outside_svg():
 def test_diagonal_piece_template_measures_boundary_offsets_outside_piece():
     vertices = ((-150.0, -213.0), (-150.0, 213.0), (62.8, 0.0))
     tile = PlacedTile(
-        x=0, y=0, width=300, height=426, rotated=False, kind=TileKind.CUT,
-        nominal_width=300, nominal_height=600, vertices=vertices,
+        x=0,
+        y=0,
+        width=300,
+        height=426,
+        rotated=False,
+        kind=TileKind.CUT,
+        nominal_width=300,
+        nominal_height=600,
+        vertices=vertices,
         local_vertices=vertices,
     )
 
@@ -265,12 +343,15 @@ def test_diagonal_piece_template_measures_boundary_offsets_outside_piece():
     assert "426 mm" in svg
     assert svg.count("301 mm") == 2
     assert svg.count("CUT 301 mm") == 2
-    assert svg.count('stroke="#d94801"') >= 15  # five dimensions, each with extension marks
+    assert (
+        svg.count('stroke="#d94801"') >= 15
+    )  # five dimensions, each with extension marks
 
     labels = [
         (float(x), float(y), text)
         for x, y, text in re.findall(
-            r'<text x="([\d.-]+)" y="([\d.-]+)"[^>]*fill="#d94801">([^<]+)</text>', svg,
+            r'<text x="([\d.-]+)" y="([\d.-]+)"[^>]*fill="#d94801">([^<]+)</text>',
+            svg,
         )
     ]
     boxes = [
@@ -278,10 +359,12 @@ def test_diagonal_piece_template_measures_boundary_offsets_outside_piece():
         for x, y, text in labels
     ]
     for i, box in enumerate(boxes):
-        for other in boxes[i + 1:]:
+        for other in boxes[i + 1 :]:
             assert not (
-                box[0] < other[2] + 4 and box[2] + 4 > other[0]
-                and box[1] < other[3] + 4 and box[3] + 4 > other[1]
+                box[0] < other[2] + 4
+                and box[2] + 4 > other[0]
+                and box[1] < other[3] + 4
+                and box[3] + 4 > other[1]
             )
 
 
@@ -296,14 +379,23 @@ def test_diagonal_svg_suppresses_labels_when_tiles_render_too_small():
     tile = Tile(width=300, height=100)
     joint = JointSpec(joint_width=3)
     result = solve_tile_layout(
-        surface, tile, joint, bond_pattern="diagonal_herringbone", candidate_count=3, sample_steps=6,
+        surface,
+        tile,
+        joint,
+        bond_pattern="diagonal_herringbone",
+        candidate_count=3,
+        sample_steps=6,
     )
     candidate = result.candidates[result.recommended_index]
-    assert candidate.metrics.full_tile_count > 0  # sanity: labels would exist if not suppressed
+    assert (
+        candidate.metrics.full_tile_count > 0
+    )  # sanity: labels would exist if not suppressed
 
     svg = _decode(generate_tile_layout_visualization(candidate, surface))
 
-    assert svg.count("tile-label") == 1  # only the CSS class definition, no rendered <text> elements
+    assert (
+        svg.count("tile-label") == 1
+    )  # only the CSS class definition, no rendered <text> elements
 
 
 def test_diagonal_herringbone_svg_shows_labels_when_there_is_room():
@@ -313,7 +405,12 @@ def test_diagonal_herringbone_svg_shows_labels_when_there_is_room():
     tile = Tile(width=300, height=150)
     joint = JointSpec(joint_width=3)
     result = solve_tile_layout(
-        surface, tile, joint, bond_pattern="diagonal_herringbone", candidate_count=3, sample_steps=6,
+        surface,
+        tile,
+        joint,
+        bond_pattern="diagonal_herringbone",
+        candidate_count=3,
+        sample_steps=6,
     )
     candidate = result.candidates[result.recommended_index]
 

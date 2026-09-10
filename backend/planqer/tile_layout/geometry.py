@@ -15,8 +15,8 @@ from enum import Enum
 class TileKind(str, Enum):
     """How a placed tile relates to the surface and any cutouts."""
 
-    FULL = "full"        # unmodified tile, no boundary or cutout clipping
-    CUT = "cut"          # clipped by the surface boundary only (straight cut)
+    FULL = "full"  # unmodified tile, no boundary or cutout clipping
+    CUT = "cut"  # clipped by the surface boundary only (straight cut)
     NOTCHED = "notched"  # overlaps a cutout; the piece needs a notch cut too
 
 
@@ -161,7 +161,14 @@ class PlacedTile:
 
 
 def _rect_intersection(
-    ax: float, ay: float, aw: float, ah: float, bx: float, by: float, bw: float, bh: float
+    ax: float,
+    ay: float,
+    aw: float,
+    ah: float,
+    bx: float,
+    by: float,
+    bw: float,
+    bh: float,
 ) -> tuple[float, float, float, float] | None:
     """Axis-aligned rectangle intersection. Returns (x, y, w, h) or None."""
     left = max(ax, bx)
@@ -209,7 +216,9 @@ def place_and_clip(
     notch_area = 0.0
     remaining_area = cw * ch
     for cutout in surface.cutouts:
-        overlap = _rect_intersection(cx, cy, cw, ch, cutout.x, cutout.y, cutout.width, cutout.height)
+        overlap = _rect_intersection(
+            cx, cy, cw, ch, cutout.x, cutout.y, cutout.width, cutout.height
+        )
         if overlap is not None:
             notch_area += overlap[2] * overlap[3]
 
@@ -257,7 +266,9 @@ _EPS = 1e-9
 _HALF_SQRT2 = 0.7071067811865476  # cos(45deg) == sin(45deg)
 
 
-def _polygon_area(vertices: "tuple[tuple[float, float], ...] | list[tuple[float, float]]") -> float:
+def _polygon_area(
+    vertices: "tuple[tuple[float, float], ...] | list[tuple[float, float]]",
+) -> float:
     """Shoelace formula. Assumes a simple (non-self-intersecting) polygon;
     every polygon this module produces is convex, which qualifies."""
     n = len(vertices)
@@ -271,7 +282,9 @@ def _polygon_area(vertices: "tuple[tuple[float, float], ...] | list[tuple[float,
     return abs(total) / 2.0
 
 
-def polygon_edge_lengths(vertices: tuple[tuple[float, float], ...] | list[tuple[float, float]]) -> list[float]:
+def polygon_edge_lengths(
+    vertices: tuple[tuple[float, float], ...] | list[tuple[float, float]],
+) -> list[float]:
     """Return polygon edge lengths in the same order as its vertices."""
     return [
         math.hypot(
@@ -282,13 +295,14 @@ def polygon_edge_lengths(vertices: tuple[tuple[float, float], ...] | list[tuple[
     ]
 
 
-def _to_local_frame(vertices: list[tuple[float, float]], cx: float, cy: float, angle_deg: float):
+def _to_local_frame(
+    vertices: list[tuple[float, float]], cx: float, cy: float, angle_deg: float
+):
     """Undo placement rotation so the nominal tile is axis-aligned."""
     theta = math.radians(-angle_deg)
     c, s = math.cos(theta), math.sin(theta)
     return tuple(
-        (c * (x - cx) - s * (y - cy), c * (y - cy) + s * (x - cx))
-        for x, y in vertices
+        (c * (x - cx) - s * (y - cy), c * (y - cy) + s * (x - cx)) for x, y in vertices
     )
 
 
@@ -333,10 +347,18 @@ def _clip_convex_polygon(
     ymin, ymax = ry, ry + rh
 
     poly = list(vertices)
-    poly = clip_half_plane(poly, lambda p: p[0] >= xmin - _EPS, lambda a, b: intersect_x(a, b, xmin))
-    poly = clip_half_plane(poly, lambda p: p[0] <= xmax + _EPS, lambda a, b: intersect_x(a, b, xmax))
-    poly = clip_half_plane(poly, lambda p: p[1] >= ymin - _EPS, lambda a, b: intersect_y(a, b, ymin))
-    poly = clip_half_plane(poly, lambda p: p[1] <= ymax + _EPS, lambda a, b: intersect_y(a, b, ymax))
+    poly = clip_half_plane(
+        poly, lambda p: p[0] >= xmin - _EPS, lambda a, b: intersect_x(a, b, xmin)
+    )
+    poly = clip_half_plane(
+        poly, lambda p: p[0] <= xmax + _EPS, lambda a, b: intersect_x(a, b, xmax)
+    )
+    poly = clip_half_plane(
+        poly, lambda p: p[1] >= ymin - _EPS, lambda a, b: intersect_y(a, b, ymin)
+    )
+    poly = clip_half_plane(
+        poly, lambda p: p[1] <= ymax + _EPS, lambda a, b: intersect_y(a, b, ymax)
+    )
     return poly
 
 
@@ -359,7 +381,9 @@ def _rotated_rect_vertices(
     return [(cx + c * x - s * y, cy + s * x + c * y) for x, y in corners]
 
 
-def _diamond_vertices(cx: float, cy: float, width: float, height: float) -> list[tuple[float, float]]:
+def _diamond_vertices(
+    cx: float, cy: float, width: float, height: float
+) -> list[tuple[float, float]]:
     """The 4 corners of a width x height rectangle, centered at (cx, cy),
     rotated 45 degrees about its own center. Returned counter-clockwise
     (south, east, north, west), matching this module's other convex
@@ -411,7 +435,9 @@ def place_and_clip_at_angle(
     # (already boundary-clipped) polygon can simply be summed.
     notch_area = 0.0
     for cutout in surface.cutouts:
-        overlap = _clip_convex_polygon(clipped, cutout.x, cutout.y, cutout.width, cutout.height)
+        overlap = _clip_convex_polygon(
+            clipped, cutout.x, cutout.y, cutout.width, cutout.height
+        )
         if len(overlap) >= 3:
             notch_area += _polygon_area(overlap)
 
@@ -461,4 +487,6 @@ def place_and_clip_diagonal(
     Returns None if the tile falls entirely outside the usable surface, or
     entirely inside a cutout.
     """
-    return place_and_clip_at_angle(cx, cy, tile.width, tile.height, 45.0, surface, joint)
+    return place_and_clip_at_angle(
+        cx, cy, tile.width, tile.height, 45.0, surface, joint
+    )

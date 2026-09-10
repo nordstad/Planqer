@@ -2,11 +2,12 @@ import json
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
-from planqer.auth import get_current_user
-from planqer.database import User, UserSettings, get_session
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
+
+from planqer.auth import get_current_user
+from planqer.database import User, UserSettings, get_session
 
 router = APIRouter(prefix="/settings", tags=["user-settings"])
 

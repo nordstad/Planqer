@@ -10,7 +10,12 @@ from sqlmodel import SQLModel
 from alembic import context
 
 # Import all models so they are registered on SQLModel.metadata
-from planqer.database.models import User, UserProject, UserSettings, UserSheetProject  # noqa: F401
+from planqer.database.models import (  # noqa: F401
+    User,
+    UserProject,
+    UserSettings,
+    UserSheetProject,
+)
 
 config = context.config
 

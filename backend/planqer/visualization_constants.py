@@ -10,7 +10,7 @@ FALLBACK_FONT = "Arial, sans-serif"
 # Color constants
 COLORS = {
     "primary_text": "#16150f",
-    "secondary_text": "#4a483d", 
+    "secondary_text": "#4a483d",
     "light_text": "#6f6d61",
     "dark_text": "#16150f",
     "white": "#ecebe4",
@@ -42,19 +42,20 @@ SVG_STYLES = {
         "surface_info": f"font-family: {SYSTEM_FONT_STACK}; font-size: 12px; fill: {COLORS['secondary_text']};",
         "legend_text": f"font-family: {SYSTEM_FONT_STACK}; font-size: 9px; fill: {COLORS['light_text']};",
         "sliver_label": f"font-family: {SYSTEM_FONT_STACK}; font-size: 9px; font-weight: bold; fill: #cc2200;",
-    }
+    },
 }
+
 
 def get_css_styles(visualization_type: str) -> str:
     """Get CSS styles for a specific visualization type."""
     if visualization_type not in SVG_STYLES:
         raise ValueError(f"Unknown visualization type: {visualization_type}")
-    
+
     styles = SVG_STYLES[visualization_type]
     css_rules = []
-    
+
     for class_name, style in styles.items():
-        css_class = class_name.replace('_', '-')  # Convert snake_case to kebab-case
+        css_class = class_name.replace("_", "-")  # Convert snake_case to kebab-case
         css_rules.append(f"      .{css_class} {{ {style} }}")
-    
+
     return "\n".join(css_rules)

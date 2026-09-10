@@ -57,7 +57,9 @@ def create_backup(
 ) -> BackupResult:
     """Create a compressed backup archive for the configured SQLite database."""
 
-    database_path = database_path_from_url(database_url, base_dir=base_dir, config_path=config_path)
+    database_path = database_path_from_url(
+        database_url, base_dir=base_dir, config_path=config_path
+    )
     if not database_path.exists():
         raise BackupError(f"Database does not exist: {database_path}")
 
@@ -68,7 +70,9 @@ def create_backup(
     timestamp = created_at.strftime("%Y-%m-%dT%H%M%SZ")
     archive_path = _unique_path(backup_dir / f"planqer-backup-{timestamp}.tar.gz")
 
-    with tempfile.TemporaryDirectory(prefix="planqer-backup-", dir=backup_dir) as temp_dir_name:
+    with tempfile.TemporaryDirectory(
+        prefix="planqer-backup-", dir=backup_dir
+    ) as temp_dir_name:
         temp_dir = Path(temp_dir_name)
         database_copy = temp_dir / DATABASE_FILENAME
         _copy_sqlite_database(database_path, database_copy)
@@ -86,13 +90,17 @@ def create_backup(
             },
         }
         manifest_path = temp_dir / MANIFEST_FILENAME
-        manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        manifest_path.write_text(
+            json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
 
         with tarfile.open(archive_path, "w:gz") as archive:
             archive.add(manifest_path, arcname=MANIFEST_FILENAME)
             archive.add(database_copy, arcname=DATABASE_FILENAME)
 
-    return BackupResult(archive_path=archive_path, database_path=database_path, manifest=manifest)
+    return BackupResult(
+        archive_path=archive_path, database_path=database_path, manifest=manifest
+    )
 
 
 def restore_backup(
@@ -116,12 +124,18 @@ def restore_backup(
     if not archive_path.exists():
         raise BackupError(f"Backup archive does not exist: {archive_path}")
 
-    database_path = database_path_from_url(database_url, base_dir=base_dir, config_path=config_path)
+    database_path = database_path_from_url(
+        database_url, base_dir=base_dir, config_path=config_path
+    )
     if database_path.exists() and not force:
-        raise BackupError(f"Database already exists: {database_path}. Re-run restore with --force.")
+        raise BackupError(
+            f"Database already exists: {database_path}. Re-run restore with --force."
+        )
 
     database_path.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix="planqer-restore-", dir=database_path.parent) as temp_dir_name:
+    with tempfile.TemporaryDirectory(
+        prefix="planqer-restore-", dir=database_path.parent
+    ) as temp_dir_name:
         temp_dir = Path(temp_dir_name)
         manifest, restored_database = _extract_backup_archive(archive_path, temp_dir)
         _validate_sqlite_database(restored_database)
@@ -134,7 +148,11 @@ def restore_backup(
         shutil.copy2(restored_database, replacement)
         os.replace(replacement, database_path)
 
-    return RestoreResult(database_path=database_path, safety_copy_path=safety_copy_path, manifest=manifest)
+    return RestoreResult(
+        database_path=database_path,
+        safety_copy_path=safety_copy_path,
+        manifest=manifest,
+    )
 
 
 def database_path_from_url(
@@ -148,7 +166,9 @@ def database_path_from_url(
     raw_url = database_url or configured_database_url(config_path=config_path)
     url = make_url(raw_url)
     if not url.drivername.startswith("sqlite"):
-        raise BackupError(f"Only SQLite databases are supported for backup and restore, got: {url.drivername}")
+        raise BackupError(
+            f"Only SQLite databases are supported for backup and restore, got: {url.drivername}"
+        )
     if not url.database or url.database == ":memory:":
         raise BackupError("In-memory SQLite databases cannot be backed up or restored.")
 
@@ -181,7 +201,9 @@ def _copy_sqlite_database(source: Path, destination: Path) -> None:
         source_connection.close()
 
 
-def _extract_backup_archive(archive_path: Path, destination_dir: Path) -> tuple[dict[str, Any], Path]:
+def _extract_backup_archive(
+    archive_path: Path, destination_dir: Path
+) -> tuple[dict[str, Any], Path]:
     with tarfile.open(archive_path, "r:gz") as archive:
         member_names = {member.name for member in archive.getmembers()}
         expected_names = {MANIFEST_FILENAME, DATABASE_FILENAME}
@@ -222,10 +244,16 @@ def _validate_manifest(manifest: dict[str, Any]) -> None:
     if database.get("type") != "sqlite":
         raise BackupError(f"Unsupported backup database type: {database.get('type')!r}")
     if database.get("filename") != DATABASE_FILENAME:
-        raise BackupError(f"Unsupported backup database filename: {database.get('filename')!r}")
+        raise BackupError(
+            f"Unsupported backup database filename: {database.get('filename')!r}"
+        )
     checksum = _require_non_empty_string(database, "sha256")
-    if len(checksum) != 64 or any(character not in "0123456789abcdef" for character in checksum):
-        raise BackupError("Backup manifest database.sha256 must be a lowercase SHA-256 hex digest.")
+    if len(checksum) != 64 or any(
+        character not in "0123456789abcdef" for character in checksum
+    ):
+        raise BackupError(
+            "Backup manifest database.sha256 must be a lowercase SHA-256 hex digest."
+        )
 
     backup_revision = _require_non_empty_string(database, "alembic_revision")
     current_revision = _current_alembic_head()
@@ -246,7 +274,9 @@ def _parse_created_at(value: str) -> None:
     try:
         datetime.fromisoformat(value)
     except ValueError as error:
-        raise BackupError("Backup manifest created_at is not a valid ISO timestamp.") from error
+        raise BackupError(
+            "Backup manifest created_at is not a valid ISO timestamp."
+        ) from error
 
 
 def _current_alembic_head() -> str:
@@ -258,10 +288,14 @@ def _current_alembic_head() -> str:
     return head
 
 
-def _validate_archive_checksum(manifest: dict[str, Any], restored_database: Path) -> None:
+def _validate_archive_checksum(
+    manifest: dict[str, Any], restored_database: Path
+) -> None:
     expected_sha256 = manifest["database"]["sha256"]
     if _sha256(restored_database) != expected_sha256:
-        raise BackupError("Backup archive database checksum does not match the manifest.")
+        raise BackupError(
+            "Backup archive database checksum does not match the manifest."
+        )
 
 
 def _validate_sqlite_database(database_path: Path) -> None:
@@ -292,7 +326,9 @@ def _read_alembic_revision(database_path: Path) -> str | None:
         ).fetchone()
         if row is None:
             return None
-        version_row = connection.execute("SELECT version_num FROM alembic_version LIMIT 1").fetchone()
+        version_row = connection.execute(
+            "SELECT version_num FROM alembic_version LIMIT 1"
+        ).fetchone()
     finally:
         connection.close()
 

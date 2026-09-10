@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Optional
 from uuid import UUID, uuid4
 
 from sqlalchemy import Column, DateTime
@@ -14,11 +13,11 @@ class User(SQLModel, table=True):
     hashed_password: str
     is_active: bool = Field(default=True)
     is_admin: bool = Field(default=False)
-    created_at: Optional[datetime] = Field(
+    created_at: datetime | None = Field(
         default_factory=lambda: datetime.now(),
         sa_column=Column(DateTime(timezone=False), nullable=False),
     )
-    updated_at: Optional[datetime] = Field(
+    updated_at: datetime | None = Field(
         default_factory=lambda: datetime.now(),
         sa_column=Column(DateTime(timezone=False), nullable=False),
     )
@@ -38,11 +37,11 @@ class UserSettings(SQLModel, table=True):
     preferred_algorithm: str = Field(default="auto")
     preferred_units: str = Field(default="mm")
 
-    created_at: Optional[datetime] = Field(
+    created_at: datetime | None = Field(
         default_factory=lambda: datetime.now(),
         sa_column=Column(DateTime(timezone=False), nullable=False),
     )
-    updated_at: Optional[datetime] = Field(
+    updated_at: datetime | None = Field(
         default_factory=lambda: datetime.now(),
         sa_column=Column(DateTime(timezone=False), nullable=False),
     )
@@ -62,11 +61,11 @@ class ProjectGroup(SQLModel, table=True):
 
     name: str
 
-    created_at: Optional[datetime] = Field(
+    created_at: datetime | None = Field(
         default_factory=lambda: datetime.now(),
         sa_column=Column(DateTime(timezone=False), nullable=False),
     )
-    updated_at: Optional[datetime] = Field(
+    updated_at: datetime | None = Field(
         default_factory=lambda: datetime.now(),
         sa_column=Column(DateTime(timezone=False), nullable=False),
     )
@@ -77,9 +76,7 @@ class UserProject(SQLModel, table=True):
 
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     user_id: UUID = Field(foreign_key="users.id")
-    project_group_id: Optional[UUID] = Field(
-        default=None, foreign_key="project_groups.id"
-    )
+    project_group_id: UUID | None = Field(default=None, foreign_key="project_groups.id")
 
     name: str
     parts_data: str
@@ -101,11 +98,11 @@ class UserProject(SQLModel, table=True):
     # with a migration if the row size ever matters.
     cutlist_image_png: str | None = None
 
-    created_at: Optional[datetime] = Field(
+    created_at: datetime | None = Field(
         default_factory=lambda: datetime.now(),
         sa_column=Column(DateTime(timezone=False), nullable=False),
     )
-    updated_at: Optional[datetime] = Field(
+    updated_at: datetime | None = Field(
         default_factory=lambda: datetime.now(),
         sa_column=Column(DateTime(timezone=False), nullable=False),
     )
@@ -116,9 +113,7 @@ class UserSheetProject(SQLModel, table=True):
 
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     user_id: UUID = Field(foreign_key="users.id")
-    project_group_id: Optional[UUID] = Field(
-        default=None, foreign_key="project_groups.id"
-    )
+    project_group_id: UUID | None = Field(default=None, foreign_key="project_groups.id")
 
     name: str
     parts_data: str  # JSON array of sheet parts: width, height, quantity, name, id
@@ -133,11 +128,11 @@ class UserSheetProject(SQLModel, table=True):
     cutlist_image_svg: str | None = None
     cutlist_image_png: str | None = None  # ponytail: unused, see UserProject
 
-    created_at: Optional[datetime] = Field(
+    created_at: datetime | None = Field(
         default_factory=lambda: datetime.now(),
         sa_column=Column(DateTime(timezone=False), nullable=False),
     )
-    updated_at: Optional[datetime] = Field(
+    updated_at: datetime | None = Field(
         default_factory=lambda: datetime.now(),
         sa_column=Column(DateTime(timezone=False), nullable=False),
     )
@@ -158,9 +153,7 @@ class UserTileProject(SQLModel, table=True):
 
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     user_id: UUID = Field(foreign_key="users.id")
-    project_group_id: Optional[UUID] = Field(
-        default=None, foreign_key="project_groups.id"
-    )
+    project_group_id: UUID | None = Field(default=None, foreign_key="project_groups.id")
 
     name: str
     surface_data: str  # JSON: {width, height, cutouts: [{x,y,width,height,label}]}
@@ -169,15 +162,17 @@ class UserTileProject(SQLModel, table=True):
     options_data: str = Field(
         default="{}"
     )  # JSON: {min_edge_cut, reuse_offcuts, waste_percent, candidate_count}
-    layout_result: str | None = None  # JSON: the selected candidate, as returned by /api/tile-layout
+    layout_result: str | None = (
+        None  # JSON: the selected candidate, as returned by /api/tile-layout
+    )
     cutlist_image: str | None = None
     cutlist_image_svg: str | None = None
 
-    created_at: Optional[datetime] = Field(
+    created_at: datetime | None = Field(
         default_factory=lambda: datetime.now(),
         sa_column=Column(DateTime(timezone=False), nullable=False),
     )
-    updated_at: Optional[datetime] = Field(
+    updated_at: datetime | None = Field(
         default_factory=lambda: datetime.now(),
         sa_column=Column(DateTime(timezone=False), nullable=False),
     )

@@ -19,7 +19,9 @@ from planqer.tile_layout.solver import build_bond, solve_tile_layout
 
 def test_build_bond_rejects_unknown_pattern():
     with pytest.raises(ValueError):
-        build_bond("chevron")  # mitred herringbone variant — not implemented, see .plans/tile-layout.md
+        build_bond(
+            "chevron"
+        )  # mitred herringbone variant — not implemented, see .plans/tile-layout.md
 
 
 def test_solve_rejects_candidate_count_below_one():
@@ -33,7 +35,9 @@ def test_solve_rejects_candidate_count_below_one():
 def test_solve_raises_when_tile_never_fits():
     # A cutout spanning the entire surface: every candidate tile placement
     # falls entirely inside it and is discarded, so no tile is ever placed.
-    surface = Surface(width=300, height=300, cutouts=(Cutout(x=0, y=0, width=300, height=300),))
+    surface = Surface(
+        width=300, height=300, cutouts=(Cutout(x=0, y=0, width=300, height=300),)
+    )
     tile = Tile(width=100, height=100)
     joint = JointSpec(joint_width=3)
     with pytest.raises(ValueError):
@@ -76,8 +80,13 @@ def test_every_candidate_has_a_descriptive_label():
     joint = JointSpec(joint_width=3)
 
     result = solve_tile_layout(
-        surface, tile, joint, bond_pattern="running", offset_fraction=0.5,
-        candidate_count=5, sample_steps=8,
+        surface,
+        tile,
+        joint,
+        bond_pattern="running",
+        offset_fraction=0.5,
+        candidate_count=5,
+        sample_steps=8,
     )
 
     for c in result.candidates:
@@ -94,8 +103,13 @@ def test_fewest_cuts_can_win_its_own_label():
     joint = JointSpec(joint_width=3)
 
     result = solve_tile_layout(
-        surface, tile, joint, bond_pattern="running", offset_fraction=0.5,
-        candidate_count=5, sample_steps=16,
+        surface,
+        tile,
+        joint,
+        bond_pattern="running",
+        offset_fraction=0.5,
+        candidate_count=5,
+        sample_steps=16,
     )
 
     assert any("Fewest cuts" in c.label for c in result.candidates)
@@ -112,10 +126,16 @@ def test_distinct_cut_sizes_is_a_real_pareto_axis_not_just_a_label():
     from planqer.tile_layout.solver import _dominates
 
     worse_on_everything_else = {
-        "safety": 10.0, "symmetry": 5.0, "tiles_count": 20, "distinct_cuts": 3,
+        "safety": 10.0,
+        "symmetry": 5.0,
+        "tiles_count": 20,
+        "distinct_cuts": 3,
     }
     better_cuts_only = {
-        "safety": 10.0, "symmetry": 5.0, "tiles_count": 20, "distinct_cuts": 2,
+        "safety": 10.0,
+        "symmetry": 5.0,
+        "tiles_count": 20,
+        "distinct_cuts": 2,
     }
     assert _dominates(better_cuts_only, worse_on_everything_else)
     assert not _dominates(worse_on_everything_else, better_cuts_only)
@@ -127,8 +147,13 @@ def test_waste_percent_inflates_purchase_count():
     joint = JointSpec(joint_width=3)
 
     result = solve_tile_layout(
-        surface, tile, joint, bond_pattern="stack", candidate_count=5,
-        sample_steps=4, waste_percent=10.0,
+        surface,
+        tile,
+        joint,
+        bond_pattern="stack",
+        candidate_count=5,
+        sample_steps=4,
+        waste_percent=10.0,
     )
 
     zero_cut = next(c for c in result.candidates if c.metrics.cut_tile_count == 0)
@@ -142,12 +167,22 @@ def test_reuse_offcuts_never_increases_purchase_count():
     joint = JointSpec(joint_width=3)
 
     with_reuse = solve_tile_layout(
-        surface, tile, joint, bond_pattern="stack", candidate_count=5,
-        sample_steps=8, reuse_offcuts=True,
+        surface,
+        tile,
+        joint,
+        bond_pattern="stack",
+        candidate_count=5,
+        sample_steps=8,
+        reuse_offcuts=True,
     )
     without_reuse = solve_tile_layout(
-        surface, tile, joint, bond_pattern="stack", candidate_count=5,
-        sample_steps=8, reuse_offcuts=False,
+        surface,
+        tile,
+        joint,
+        bond_pattern="stack",
+        candidate_count=5,
+        sample_steps=8,
+        reuse_offcuts=False,
     )
 
     # Compare the best (recommended) candidate from each run.
@@ -166,16 +201,25 @@ def test_min_edge_cut_produces_sliver_warning():
     joint = JointSpec(joint_width=0)
 
     result = solve_tile_layout(
-        surface, tile, joint, bond_pattern="stack", candidate_count=5,
-        sample_steps=4, min_edge_cut=250,
+        surface,
+        tile,
+        joint,
+        bond_pattern="stack",
+        candidate_count=5,
+        sample_steps=4,
+        min_edge_cut=250,
     )
 
-    assert any(c.metrics.sliver_count > 0 and any("sliver" in w for w in c.warnings)
-               for c in result.candidates)
+    assert any(
+        c.metrics.sliver_count > 0 and any("sliver" in w for w in c.warnings)
+        for c in result.candidates
+    )
 
 
 def test_cutout_produces_notch_warning():
-    surface = Surface(width=1200, height=1200, cutouts=(Cutout(x=500, y=500, width=200, height=200),))
+    surface = Surface(
+        width=1200, height=1200, cutouts=(Cutout(x=500, y=500, width=200, height=200),)
+    )
     tile = Tile(width=300, height=300)
     joint = JointSpec(joint_width=3)
 
@@ -222,11 +266,18 @@ def test_herringbone_solves_end_to_end_with_a_flush_corner_candidate():
     joint = JointSpec(joint_width=3)
 
     result = solve_tile_layout(
-        surface, tile, joint, bond_pattern="herringbone", candidate_count=20, sample_steps=8,
+        surface,
+        tile,
+        joint,
+        bond_pattern="herringbone",
+        candidate_count=20,
+        sample_steps=8,
     )
 
     assert len(result.candidates) > 0
-    corner = next((c for c in result.candidates if "bottom-left corner" in c.label), None)
+    corner = next(
+        (c for c in result.candidates if "bottom-left corner" in c.label), None
+    )
     assert corner is not None
     origin_tile = next(t for t in corner.tiles if t.x < 1e-6 and t.y < 1e-6)
     assert origin_tile.kind.value == "full"
@@ -242,7 +293,12 @@ def test_herringbone_allow_rotation_does_not_duplicate_candidates():
     joint = JointSpec(joint_width=3)
 
     result = solve_tile_layout(
-        surface, tile, joint, bond_pattern="herringbone", candidate_count=10, sample_steps=8,
+        surface,
+        tile,
+        joint,
+        bond_pattern="herringbone",
+        candidate_count=10,
+        sample_steps=8,
     )
 
     assert all(not c.rotated for c in result.candidates)
@@ -258,7 +314,12 @@ def test_diagonal_solves_end_to_end():
     joint = JointSpec(joint_width=3)
 
     result = solve_tile_layout(
-        surface, tile, joint, bond_pattern="diagonal", candidate_count=10, sample_steps=8,
+        surface,
+        tile,
+        joint,
+        bond_pattern="diagonal",
+        candidate_count=10,
+        sample_steps=8,
     )
 
     assert len(result.candidates) > 0
@@ -271,7 +332,10 @@ def test_diagonal_solves_end_to_end():
     # the axis-aligned-only min_edge_cut_width/height (see scoring.py).
     assert any(c.metrics.min_diagonal_cut_span is not None for c in result.candidates)
     assert all(c.metrics.min_edge_cut_width is None for c in result.candidates)
-    assert all(c.metrics.symmetry_delta_x == 0.0 and c.metrics.symmetry_delta_y == 0.0 for c in result.candidates)
+    assert all(
+        c.metrics.symmetry_delta_x == 0.0 and c.metrics.symmetry_delta_y == 0.0
+        for c in result.candidates
+    )
     # match_diagonal_offcuts (triangle-pair reuse) is wired up end to end —
     # a real surface produces enough matching boundary slivers that at
     # least one candidate shows real reuse, not just the zero-reuse
@@ -290,7 +354,12 @@ def test_diagonal_has_no_flush_corner_canonical_candidates():
     joint = JointSpec(joint_width=3)
 
     result = solve_tile_layout(
-        surface, tile, joint, bond_pattern="diagonal", candidate_count=10, sample_steps=8,
+        surface,
+        tile,
+        joint,
+        bond_pattern="diagonal",
+        candidate_count=10,
+        sample_steps=8,
     )
 
     assert all("corner" not in c.label for c in result.candidates)
@@ -302,7 +371,12 @@ def test_diagonal_allow_rotation_can_surface_a_rotated_candidate():
     joint = JointSpec(joint_width=3)
 
     result = solve_tile_layout(
-        surface, tile, joint, bond_pattern="diagonal", candidate_count=20, sample_steps=8,
+        surface,
+        tile,
+        joint,
+        bond_pattern="diagonal",
+        candidate_count=20,
+        sample_steps=8,
     )
 
     assert any(c.rotated for c in result.candidates)
@@ -318,14 +392,22 @@ def test_diagonal_herringbone_solves_end_to_end():
     joint = JointSpec(joint_width=3)
 
     result = solve_tile_layout(
-        surface, tile, joint, bond_pattern="diagonal_herringbone", candidate_count=10, sample_steps=8,
+        surface,
+        tile,
+        joint,
+        bond_pattern="diagonal_herringbone",
+        candidate_count=10,
+        sample_steps=8,
     )
 
     assert len(result.candidates) > 0
     assert all(t.vertices is not None for c in result.candidates for t in c.tiles)
     assert any(c.metrics.min_diagonal_cut_span is not None for c in result.candidates)
     assert all(c.metrics.min_edge_cut_width is None for c in result.candidates)
-    assert all(c.metrics.symmetry_delta_x == 0.0 and c.metrics.symmetry_delta_y == 0.0 for c in result.candidates)
+    assert all(
+        c.metrics.symmetry_delta_x == 0.0 and c.metrics.symmetry_delta_y == 0.0
+        for c in result.candidates
+    )
 
 
 def test_diagonal_herringbone_has_no_flush_corner_canonical_candidates():
@@ -334,7 +416,12 @@ def test_diagonal_herringbone_has_no_flush_corner_canonical_candidates():
     joint = JointSpec(joint_width=3)
 
     result = solve_tile_layout(
-        surface, tile, joint, bond_pattern="diagonal_herringbone", candidate_count=10, sample_steps=8,
+        surface,
+        tile,
+        joint,
+        bond_pattern="diagonal_herringbone",
+        candidate_count=10,
+        sample_steps=8,
     )
 
     assert all("corner" not in c.label for c in result.candidates)
@@ -350,7 +437,12 @@ def test_diagonal_herringbone_allow_rotation_does_not_duplicate_candidates():
     joint = JointSpec(joint_width=3)
 
     result = solve_tile_layout(
-        surface, tile, joint, bond_pattern="diagonal_herringbone", candidate_count=10, sample_steps=8,
+        surface,
+        tile,
+        joint,
+        bond_pattern="diagonal_herringbone",
+        candidate_count=10,
+        sample_steps=8,
     )
 
     assert all(not c.rotated for c in result.candidates)
@@ -361,7 +453,9 @@ def test_build_bond_double_herringbone_returns_double_herringbone_bond():
 
 
 def test_build_bond_diagonal_double_herringbone_returns_diagonal_double_herringbone_bond():
-    assert isinstance(build_bond("diagonal_double_herringbone"), DiagonalDoubleHerringboneBond)
+    assert isinstance(
+        build_bond("diagonal_double_herringbone"), DiagonalDoubleHerringboneBond
+    )
 
 
 def test_double_herringbone_solves_end_to_end_with_a_flush_corner_candidate():
@@ -373,7 +467,12 @@ def test_double_herringbone_solves_end_to_end_with_a_flush_corner_candidate():
     joint = JointSpec(joint_width=3)
 
     result = solve_tile_layout(
-        surface, tile, joint, bond_pattern="double_herringbone", candidate_count=20, sample_steps=8,
+        surface,
+        tile,
+        joint,
+        bond_pattern="double_herringbone",
+        candidate_count=20,
+        sample_steps=8,
     )
 
     assert len(result.candidates) > 0
@@ -386,7 +485,12 @@ def test_double_herringbone_allow_rotation_does_not_duplicate_candidates():
     joint = JointSpec(joint_width=3)
 
     result = solve_tile_layout(
-        surface, tile, joint, bond_pattern="double_herringbone", candidate_count=10, sample_steps=8,
+        surface,
+        tile,
+        joint,
+        bond_pattern="double_herringbone",
+        candidate_count=10,
+        sample_steps=8,
     )
 
     assert all(not c.rotated for c in result.candidates)
@@ -398,7 +502,12 @@ def test_diagonal_double_herringbone_solves_end_to_end():
     joint = JointSpec(joint_width=3)
 
     result = solve_tile_layout(
-        surface, tile, joint, bond_pattern="diagonal_double_herringbone", candidate_count=10, sample_steps=8,
+        surface,
+        tile,
+        joint,
+        bond_pattern="diagonal_double_herringbone",
+        candidate_count=10,
+        sample_steps=8,
     )
 
     assert len(result.candidates) > 0

@@ -65,3 +65,9 @@ filterwarnings = [
 # TestClient runs the ASGI app on a background thread; without this, coverage
 # only sees the main thread and silently under-reports every route handler.
 concurrency = ["thread", "greenlet"]
+
+[tool.ruff.lint]
+# FastAPI dependencies are intentionally declared as parameter defaults, and
+# these handlers deliberately catch/log broad failures at API boundaries.
+# Database timestamps are naive because the schema uses timezone=False.
+ignore = ["B008", "BLE001", "DTZ005"]

@@ -57,8 +57,8 @@ class LayoutCandidate:
     tiles: tuple[PlacedTile, ...]
     metrics: LayoutMetrics
     offcuts: OffcutResult
-    tiles_to_purchase: int              # after offcut reuse (if enabled)
-    tiles_to_purchase_with_waste: int   # tiles_to_purchase inflated by waste_percent
+    tiles_to_purchase: int  # after offcut reuse (if enabled)
+    tiles_to_purchase_with_waste: int  # tiles_to_purchase inflated by waste_percent
     warnings: tuple[str, ...]
     is_pareto_optimal: bool
 
@@ -89,7 +89,9 @@ def build_bond(pattern: str, offset_fraction: float = 0.5) -> BondGenerator:
     raise ValueError(f"Unknown bond pattern: {pattern!r}")
 
 
-def _flush_offset(low: bool, span: float, gap: float, tile_dim: float, pitch: float) -> float:
+def _flush_offset(
+    low: bool, span: float, gap: float, tile_dim: float, pitch: float
+) -> float:
     """The offset (mod pitch) that puts a full tile flush with the surface's
     low edge (x=gap or y=gap) or high edge (x=span-gap or y=span-gap)."""
     target = gap if low else (span - gap - tile_dim)
@@ -106,7 +108,9 @@ def _generate_layout(
 ) -> list[PlacedTile]:
     placed = []
     is_diagonal = isinstance(bond, DiagonalBond)
-    is_diagonal_herringbone = isinstance(bond, (DiagonalHerringboneBond, DiagonalDoubleHerringboneBond))
+    is_diagonal_herringbone = isinstance(
+        bond, (DiagonalHerringboneBond, DiagonalDoubleHerringboneBond)
+    )
     l, s = max(tile.width, tile.height), min(tile.width, tile.height)
     for x, y, rotated in bond.raw_positions(surface, tile, joint, offset_x, offset_y):
         if is_diagonal:
@@ -136,9 +140,15 @@ def _signature(metrics: LayoutMetrics) -> tuple:
         metrics.full_tile_count,
         metrics.cut_tile_count,
         metrics.notched_count,
-        round(metrics.min_edge_cut_width, 3) if metrics.min_edge_cut_width is not None else -1,
-        round(metrics.min_edge_cut_height, 3) if metrics.min_edge_cut_height is not None else -1,
-        round(metrics.min_diagonal_cut_span, 3) if metrics.min_diagonal_cut_span is not None else -1,
+        round(metrics.min_edge_cut_width, 3)
+        if metrics.min_edge_cut_width is not None
+        else -1,
+        round(metrics.min_edge_cut_height, 3)
+        if metrics.min_edge_cut_height is not None
+        else -1,
+        round(metrics.min_diagonal_cut_span, 3)
+        if metrics.min_diagonal_cut_span is not None
+        else -1,
         round(metrics.symmetry_delta_x, 3),
         round(metrics.symmetry_delta_y, 3),
     )
@@ -179,7 +189,9 @@ def _dominates(a: dict, b: dict) -> bool:
 
 
 def _pareto_front(entries: list[dict]) -> list[dict]:
-    return [e for e in entries if not any(_dominates(o, e) for o in entries if o is not e)]
+    return [
+        e for e in entries if not any(_dominates(o, e) for o in entries if o is not e)
+    ]
 
 
 def _build_candidate(
@@ -215,19 +227,27 @@ def _build_candidate(
         tiles_to_purchase = offcut_result.tiles_to_purchase
     else:
         offcut_result = OffcutResult(
-            raw_tile_count=len(scored_tiles), reused_count=0,
-            tiles_to_purchase=len(scored_tiles), matches=(),
+            raw_tile_count=len(scored_tiles),
+            reused_count=0,
+            tiles_to_purchase=len(scored_tiles),
+            matches=(),
         )
         tiles_to_purchase = len(scored_tiles)
 
-    tiles_to_purchase_with_waste = math.ceil(tiles_to_purchase * (1 + max(waste_percent, 0) / 100))
+    tiles_to_purchase_with_waste = math.ceil(
+        tiles_to_purchase * (1 + max(waste_percent, 0) / 100)
+    )
 
     warnings = []
     if metrics.sliver_count > 0:
-        threshold_note = f" (below the {min_edge_cut:g}mm threshold)" if min_edge_cut else ""
+        threshold_note = (
+            f" (below the {min_edge_cut:g}mm threshold)" if min_edge_cut else ""
+        )
         warnings.append(f"{metrics.sliver_count} piece(s) are slivers{threshold_note}")
     if metrics.notched_count > 0:
-        warnings.append(f"{metrics.notched_count} piece(s) require a notch cut around a cutout")
+        warnings.append(
+            f"{metrics.notched_count} piece(s) require a notch cut around a cutout"
+        )
 
     return {
         "label": label,
@@ -263,11 +283,17 @@ def _orientations(tile: Tile, bond_pattern: str) -> list[tuple[Tile, bool]]:
     if (
         tile.allow_rotation
         and tile.width != tile.height
-        and bond_pattern not in (
-            "herringbone", "diagonal_herringbone", "double_herringbone", "diagonal_double_herringbone",
+        and bond_pattern
+        not in (
+            "herringbone",
+            "diagonal_herringbone",
+            "double_herringbone",
+            "diagonal_double_herringbone",
         )
     ):
-        swapped = Tile(width=tile.height, height=tile.width, allow_rotation=tile.allow_rotation)
+        swapped = Tile(
+            width=tile.height, height=tile.width, allow_rotation=tile.allow_rotation
+        )
         orientations.append((swapped, True))
     return orientations
 
@@ -284,8 +310,12 @@ def _canonical_candidates(
 
     candidates = []
     for (low_x, low_y), label in _CORNER_LABELS.items():
-        ox = _flush_offset(low_x, surface.width, joint.perimeter_gap, working_tile.width, pitch_x)
-        oy = _flush_offset(low_y, surface.height, joint.perimeter_gap, working_tile.height, pitch_y)
+        ox = _flush_offset(
+            low_x, surface.width, joint.perimeter_gap, working_tile.width, pitch_x
+        )
+        oy = _flush_offset(
+            low_y, surface.height, joint.perimeter_gap, working_tile.height, pitch_y
+        )
         candidates.append((label + suffix, ox, oy))
     return candidates
 
@@ -330,28 +360,54 @@ def solve_tile_layout(
         # isn't a candidate that exists for any of them. Double herringbone
         # (wall-aligned) is unaffected — a flush corner is just as
         # meaningful for it as for plain herringbone.
-        if bond_pattern not in ("diagonal", "diagonal_herringbone", "diagonal_double_herringbone"):
-            for label, ox, oy in _canonical_candidates(working_tile, rotated_flag, surface, joint):
-                _consider(_build_candidate(
-                    label=label, offset_x=ox, offset_y=oy, rotated=rotated_flag,
-                    bond=bond, surface=surface, tile=working_tile, joint=joint,
-                    min_edge_cut=min_edge_cut, reuse_offcuts=reuse_offcuts,
-                    waste_percent=waste_percent,
-                ))
+        if bond_pattern not in (
+            "diagonal",
+            "diagonal_herringbone",
+            "diagonal_double_herringbone",
+        ):
+            for label, ox, oy in _canonical_candidates(
+                working_tile, rotated_flag, surface, joint
+            ):
+                _consider(
+                    _build_candidate(
+                        label=label,
+                        offset_x=ox,
+                        offset_y=oy,
+                        rotated=rotated_flag,
+                        bond=bond,
+                        surface=surface,
+                        tile=working_tile,
+                        joint=joint,
+                        min_edge_cut=min_edge_cut,
+                        reuse_offcuts=reuse_offcuts,
+                        waste_percent=waste_percent,
+                    )
+                )
 
         for i in range(sample_steps):
             ox = pitch_x * i / sample_steps
             for j in range(sample_steps):
                 oy = pitch_y * j / sample_steps
-                _consider(_build_candidate(
-                    label="Alternative", offset_x=ox, offset_y=oy, rotated=rotated_flag,
-                    bond=bond, surface=surface, tile=working_tile, joint=joint,
-                    min_edge_cut=min_edge_cut, reuse_offcuts=reuse_offcuts,
-                    waste_percent=waste_percent,
-                ))
+                _consider(
+                    _build_candidate(
+                        label="Alternative",
+                        offset_x=ox,
+                        offset_y=oy,
+                        rotated=rotated_flag,
+                        bond=bond,
+                        surface=surface,
+                        tile=working_tile,
+                        joint=joint,
+                        min_edge_cut=min_edge_cut,
+                        reuse_offcuts=reuse_offcuts,
+                        waste_percent=waste_percent,
+                    )
+                )
 
     if not pool:
-        raise ValueError("No tile could be placed on this surface with the given settings")
+        raise ValueError(
+            "No tile could be placed on this surface with the given settings"
+        )
 
     entries = list(pool.values())
     pareto = _pareto_front(entries)

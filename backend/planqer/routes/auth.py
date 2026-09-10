@@ -5,7 +5,12 @@ from pydantic import BaseModel, EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import func, select
 
-from planqer.auth import create_access_token, get_current_user, get_password_hash, verify_password
+from planqer.auth import (
+    create_access_token,
+    get_current_user,
+    get_password_hash,
+    verify_password,
+)
 from planqer.database import User, UserSettings, get_session
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
@@ -45,17 +50,25 @@ async def get_setup_status(session: AsyncSession = Depends(get_session)):
     return SetupStatusResponse(needs_setup=user_count == 0)
 
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-async def register_user(user_data: UserCreate, session: AsyncSession = Depends(get_session)):
+@router.post(
+    "/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED
+)
+async def register_user(
+    user_data: UserCreate, session: AsyncSession = Depends(get_session)
+):
     stmt = select(User).where(User.email == user_data.email)
     result = await session.execute(stmt)
     existing_user = result.scalar_one_or_none()
 
     if existing_user:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered"
+        )
 
     # The first account on a fresh self-hosted instance becomes its admin automatically.
-    is_first_user = ((await session.execute(select(func.count(User.id)))).scalar() or 0) == 0
+    is_first_user = (
+        (await session.execute(select(func.count(User.id)))).scalar() or 0
+    ) == 0
 
     db_user = User(
         email=user_data.email,
@@ -71,12 +84,17 @@ async def register_user(user_data: UserCreate, session: AsyncSession = Depends(g
     await session.commit()
 
     return UserResponse(
-        id=db_user.id, email=db_user.email, is_active=db_user.is_active, is_admin=db_user.is_admin
+        id=db_user.id,
+        email=db_user.email,
+        is_active=db_user.is_active,
+        is_admin=db_user.is_admin,
     )
 
 
 @router.post("/login", response_model=Token)
-async def login_user(user_data: UserLogin, session: AsyncSession = Depends(get_session)):
+async def login_user(
+    user_data: UserLogin, session: AsyncSession = Depends(get_session)
+):
     stmt = select(User).where(User.email == user_data.email)
     result = await session.execute(stmt)
     user = result.scalar_one_or_none()
@@ -89,7 +107,9 @@ async def login_user(user_data: UserLogin, session: AsyncSession = Depends(get_s
         )
 
     if not user.is_active:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user"
+        )
 
     access_token = create_access_token(data={"sub": str(user.id)})
 

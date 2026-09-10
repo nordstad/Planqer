@@ -7,11 +7,11 @@ from .sheet_projects import router as sheet_projects_router
 from .tile_projects import router as tile_projects_router
 
 __all__ = [
+    "admin_router",
     "auth_router",
-    "settings_router",
+    "project_groups_router",
     "projects_router",
+    "settings_router",
     "sheet_projects_router",
     "tile_projects_router",
-    "project_groups_router",
-    "admin_router",
 ]

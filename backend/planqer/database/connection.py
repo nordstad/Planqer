@@ -12,7 +12,11 @@ config = load_config(CONFIG_PATH)
 
 DEFAULT_DATABASE_URL = "sqlite+aiosqlite:///./data/planqer.db"
 
-DATABASE_URL = os.getenv("DATABASE_URL") or config.get("database", {}).get("url") or DEFAULT_DATABASE_URL
+DATABASE_URL = (
+    os.getenv("DATABASE_URL")
+    or config.get("database", {}).get("url")
+    or DEFAULT_DATABASE_URL
+)
 
 if DATABASE_URL == DEFAULT_DATABASE_URL:
     Path("./data").mkdir(parents=True, exist_ok=True)

@@ -59,7 +59,9 @@ class UpdateTileProjectRequest(BaseModel):
     layout_result: dict | None = None
 
 
-def _render_saved_layout(surface_data: dict | None, layout_result: dict | None, name: str) -> str | None:
+def _render_saved_layout(
+    surface_data: dict | None, layout_result: dict | None, name: str
+) -> str | None:
     """Redraw the layout's diagram, now captioned with the name the user gave
     it. Drawn from the submitted candidate rather than by re-solving: the
     tile solver samples an offset grid, and re-running it is not guaranteed
@@ -77,22 +79,36 @@ def _render_saved_layout(surface_data: dict | None, layout_result: dict | None, 
 
     try:
         cutouts = tuple(
-            Cutout(x=c["x"], y=c["y"], width=c["width"], height=c["height"], label=c.get("label"))
+            Cutout(
+                x=c["x"],
+                y=c["y"],
+                width=c["width"],
+                height=c["height"],
+                label=c.get("label"),
+            )
             for c in surface_data.get("cutouts", [])
         )
-        surface = Surface(width=surface_data["width"], height=surface_data["height"], cutouts=cutouts)
+        surface = Surface(
+            width=surface_data["width"], height=surface_data["height"], cutouts=cutouts
+        )
         tiles = tuple(
             PlacedTile(
-                x=t["x"], y=t["y"], width=t["width"], height=t["height"],
+                x=t["x"],
+                y=t["y"],
+                width=t["width"],
+                height=t["height"],
                 nominal_width=t.get("nominal_width", t["width"]),
                 nominal_height=t.get("nominal_height", t["height"]),
-                rotated=t.get("rotated", False), kind=TileKind(t["kind"]),
+                rotated=t.get("rotated", False),
+                kind=TileKind(t["kind"]),
                 is_sliver=t.get("is_sliver", False),
                 # A diagonal ("set on point") piece's true shape — x/y/width/
                 # height above are only its bounding box for these; without
                 # this, a saved diagonal project's re-render would silently
                 # draw a rectangle instead of the real polygon.
-                vertices=tuple(tuple(v) for v in t["vertices"]) if t.get("vertices") else None,
+                vertices=tuple(tuple(v) for v in t["vertices"])
+                if t.get("vertices")
+                else None,
             )
             for t in layout_result["tiles"]
         )
@@ -134,20 +150,25 @@ def tile_project_to_response(project: UserTileProject) -> TileProjectResponse:
     )
 
 
-async def _get_owned_tile_project(project_id: UUID, current_user: User, session: AsyncSession) -> UserTileProject:
+async def _get_owned_tile_project(
+    project_id: UUID, current_user: User, session: AsyncSession
+) -> UserTileProject:
     stmt = select(UserTileProject).where(
         UserTileProject.id == project_id, UserTileProject.user_id == current_user.id
     )
     result = await session.execute(stmt)
     project = result.scalar_one_or_none()
     if not project:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tile project not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Tile project not found"
+        )
     return project
 
 
 @router.get("/", response_model=list[TileProjectResponse])
 async def get_user_tile_projects(
-    current_user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
 ):
     stmt = (
         select(UserTileProject)
@@ -167,7 +188,9 @@ async def create_tile_project(
     if project_data.project_group_id is not None:
         await _get_owned_group(project_data.project_group_id, current_user, session)
 
-    svg_data_url = _render_saved_layout(project_data.surface_data, project_data.layout_result, project_data.name)
+    svg_data_url = _render_saved_layout(
+        project_data.surface_data, project_data.layout_result, project_data.name
+    )
 
     project = UserTileProject(
         user_id=current_user.id,
@@ -177,7 +200,9 @@ async def create_tile_project(
         tile_data=json.dumps(project_data.tile_data),
         bond_data=json.dumps(project_data.bond_data),
         options_data=json.dumps(project_data.options_data or {}),
-        layout_result=json.dumps(project_data.layout_result) if project_data.layout_result else None,
+        layout_result=json.dumps(project_data.layout_result)
+        if project_data.layout_result
+        else None,
         cutlist_image=svg_data_url,
         cutlist_image_svg=svg_data_url,
     )
@@ -223,9 +248,15 @@ async def update_tile_project(
 
     # A rename or a new candidate both change what the diagram should show —
     # re-render it so the saved image never drifts from the saved data.
-    if project_data.name is not None or project_data.surface_data is not None or project_data.layout_result is not None:
+    if (
+        project_data.name is not None
+        or project_data.surface_data is not None
+        or project_data.layout_result is not None
+    ):
         svg_data_url = _render_saved_layout(
-            _load_json_dict(project.surface_data), _load_json_dict(project.layout_result), project.name
+            _load_json_dict(project.surface_data),
+            _load_json_dict(project.layout_result),
+            project.name,
         )
         if svg_data_url:
             project.cutlist_image = svg_data_url
@@ -262,21 +293,30 @@ async def get_tile_project_image(
 
     selected_image = project.cutlist_image_svg or project.cutlist_image
     if not selected_image:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No diagram was saved with this layout")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No diagram was saved with this layout",
+        )
 
     if not selected_image.strip():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image data is empty")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Image data is empty"
+        )
 
-    if selected_image.startswith("data:image/png;base64,") or selected_image.startswith("data:image/svg+xml;base64,"):
+    if selected_image.startswith(
+        ("data:image/png;base64,", "data:image/svg+xml;base64,")
+    ):
         image_data = selected_image.split(",", 1)[1]
     else:
         image_data = selected_image
 
     if not image_data.strip():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Base64 image data is empty")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Base64 image data is empty"
+        )
 
     try:
-        if not re.match(r'^[A-Za-z0-9+/]*={0,2}$', image_data):
+        if not re.match(r"^[A-Za-z0-9+/]*={0,2}$", image_data):
             raise ValueError("Invalid base64 format")
 
         image_bytes = base64.b64decode(image_data, validate=True)
@@ -288,7 +328,7 @@ async def get_tile_project_image(
         else:
             media_type, file_extension = "image/png", "png"
 
-        project_name_safe = re.sub(r'[^\w\-_\. ]', '', project.name)
+        project_name_safe = re.sub(r"[^\w\-_\. ]", "", project.name)
         filename = f"{project_name_safe} - Tile Layout.{file_extension}"
 
         return Response(
@@ -300,5 +340,10 @@ async def get_tile_project_image(
             },
         )
     except Exception as e:
-        logger.error(f"Failed to decode base64 image data for tile project {project_id}: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to decode image data: {e}")
+        logger.error(
+            f"Failed to decode base64 image data for tile project {project_id}: {e}"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to decode image data: {e}",
+        )

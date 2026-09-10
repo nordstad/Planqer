@@ -41,7 +41,12 @@ class BondGenerator(Protocol):
     """Generates raw (pre-clip) tile positions for one candidate offset."""
 
     def raw_positions(
-        self, surface: Surface, tile: Tile, joint: JointSpec, offset_x: float, offset_y: float
+        self,
+        surface: Surface,
+        tile: Tile,
+        joint: JointSpec,
+        offset_x: float,
+        offset_y: float,
     ) -> Iterator[tuple[float, float, bool]]:
         """Yields (x, y, rotated) for every tile whose raw footprint could
         overlap the surface. Rotation is always False in the MVP bonds;
@@ -54,7 +59,12 @@ class StackBond:
     """Grid bond: every row and column aligned, 0% offset between rows."""
 
     def raw_positions(
-        self, surface: Surface, tile: Tile, joint: JointSpec, offset_x: float, offset_y: float
+        self,
+        surface: Surface,
+        tile: Tile,
+        joint: JointSpec,
+        offset_x: float,
+        offset_y: float,
     ) -> Iterator[tuple[float, float, bool]]:
         pitch_x = tile.width + joint.joint_width
         pitch_y = tile.height + joint.joint_width
@@ -83,7 +93,12 @@ class RunningBond:
             raise ValueError("offset_fraction must be between 0 and 1 (exclusive)")
 
     def raw_positions(
-        self, surface: Surface, tile: Tile, joint: JointSpec, offset_x: float, offset_y: float
+        self,
+        surface: Surface,
+        tile: Tile,
+        joint: JointSpec,
+        offset_x: float,
+        offset_y: float,
     ) -> Iterator[tuple[float, float, bool]]:
         pitch_x = tile.width + joint.joint_width
         pitch_y = tile.height + joint.joint_width
@@ -124,7 +139,12 @@ class HerringboneBond:
     """
 
     def raw_positions(
-        self, surface: Surface, tile: Tile, joint: JointSpec, offset_x: float, offset_y: float
+        self,
+        surface: Surface,
+        tile: Tile,
+        joint: JointSpec,
+        offset_x: float,
+        offset_y: float,
     ) -> Iterator[tuple[float, float, bool]]:
         g = joint.joint_width
         wide = tile.width >= tile.height
@@ -192,7 +212,12 @@ class DiagonalBond:
     """
 
     def raw_positions(
-        self, surface: Surface, tile: Tile, joint: JointSpec, offset_x: float, offset_y: float
+        self,
+        surface: Surface,
+        tile: Tile,
+        joint: JointSpec,
+        offset_x: float,
+        offset_y: float,
     ) -> Iterator[tuple[float, float, bool]]:
         pitch_lx = tile.width + joint.joint_width
         pitch_ly = tile.height + joint.joint_width
@@ -249,7 +274,12 @@ class DiagonalHerringboneBond:
     """
 
     def raw_positions(
-        self, surface: Surface, tile: Tile, joint: JointSpec, offset_x: float, offset_y: float
+        self,
+        surface: Surface,
+        tile: Tile,
+        joint: JointSpec,
+        offset_x: float,
+        offset_y: float,
     ) -> Iterator[tuple[float, float, bool]]:
         g = joint.joint_width
         l, s = max(tile.width, tile.height), min(tile.width, tile.height)
@@ -302,7 +332,12 @@ class DoubleHerringboneBond:
     """
 
     def raw_positions(
-        self, surface: Surface, tile: Tile, joint: JointSpec, offset_x: float, offset_y: float
+        self,
+        surface: Surface,
+        tile: Tile,
+        joint: JointSpec,
+        offset_x: float,
+        offset_y: float,
     ) -> Iterator[tuple[float, float, bool]]:
         g = joint.joint_width
         wide = tile.width >= tile.height
@@ -348,7 +383,12 @@ class DiagonalDoubleHerringboneBond:
     rotation)."""
 
     def raw_positions(
-        self, surface: Surface, tile: Tile, joint: JointSpec, offset_x: float, offset_y: float
+        self,
+        surface: Surface,
+        tile: Tile,
+        joint: JointSpec,
+        offset_x: float,
+        offset_y: float,
     ) -> Iterator[tuple[float, float, bool]]:
         g = joint.joint_width
         l, s = max(tile.width, tile.height), min(tile.width, tile.height)
