@@ -98,22 +98,33 @@ const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (c) => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
 }[c]));
 
-// A plain-HTML rendering of the same table, for the print document — that
-// document is built as a raw string for a hidden iframe, not React, so this
-// duplicates the JSX version's structure rather than sharing components.
-// Kept deliberately plain (no color swatches): print is black-and-white-safe
-// by default in most browsers unless the user opts into "print background
-// graphics", so a colored square could silently vanish on a printed page.
-// The size numbers and kind text carry the same information on paper.
+/*
+  A plain-HTML rendering of the cut list, for the print document — that
+  document is built as a raw string for a hidden iframe, not React, so this
+  duplicates TileCutListTable's structure rather than sharing components.
+  Kept deliberately plain (no color swatches): print is black-and-white-safe
+  by default in most browsers unless the user opts into "print background
+  graphics", so a colored square could silently vanish on a printed page.
+  The size numbers and kind text carry the same information on paper.
+
+  Returns `{ summaryHtml, pieceBlocks }` rather than one flat string: the
+  summary table belongs directly under the layout diagram (it's the "what to
+  cut" list), while a diagonal piece's own cut template is a full working
+  drawing in its own right and reads best as its own page, not squeezed into
+  a table cell alongside a dozen other rows (see printProject.js, which puts
+  each entry in pieceBlocks on a page of its own).
+*/
 export const buildCutListHtml = (candidate) => {
-  if (!candidate?.tiles?.length) return '';
+  if (!candidate?.tiles?.length) return null;
   const { fullCount, cutGroups } = buildCutList(candidate.tiles);
-  if (fullCount === 0 && cutGroups.length === 0) return '';
+  if (fullCount === 0 && cutGroups.length === 0) return null;
 
   const rows = [];
   if (fullCount > 0) {
     rows.push(`<tr><td>Full tile</td><td>No cut needed</td><td>—</td><td>${fullCount}</td></tr>`);
   }
+
+  const pieceBlocks = [];
   cutGroups.forEach((g) => {
     const sliver = g.sliverCount > 0
       ? ` <b>(${g.sliverCount === g.count ? 'sliver' : `${g.sliverCount} sliver`})</b>`
@@ -124,20 +135,35 @@ export const buildCutListHtml = (candidate) => {
     const detail = g.isDiagonal && g.edgeLengths
       ? ` (${g.edgeLengths.map((length) => Math.round(length)).join(' · ')} mm)`
       : '';
-    const labeledKind = `${kind}${detail}${g.isDiagonal && g.label ? ` [${g.label}]` : ''}`;
+    const template = candidate.piece_diagrams?.[g.label];
+    const labeledKind = escapeHtml(
+      `${kind}${detail}${g.isDiagonal && g.label ? ` [${g.label}]` : ''}`,
+    );
+    const pieceRef = template ? ` <span class="cut-list-ref">\u2014 template, see below</span>` : '';
     const offcut = g.reusedCount > 0 ? `${g.reusedCount} of ${g.count}` : '—';
-    const template = candidate.piece_diagrams?.[g.label]
-      ? `<div class="piece-template-meta"><b>Piece ${escapeHtml(g.label)} - ${mm(g.nominalWidth)} \u00d7 ${mm(g.nominalHeight)} mm tile</b><br>Final size: ${mm(g.width)} \u00d7 ${mm(g.height)} mm${g.edgeLengths ? ` | Edges: ${g.edgeLengths.map((length) => mm(length)).join(' \u00b7 ')} mm` : ''}</div><img src="${candidate.piece_diagrams[g.label]}" alt="Cut template for piece ${escapeHtml(g.label)}" class="piece-template" /><p class="piece-template-note"><b>How to cut:</b> The solid (light) area is what you keep. The hatched (gray) area is waste. The orange line shows where to cut with your saw.</p>`
-      : '';
     rows.push(
       `<tr><td>${mm(g.width)} \u00d7 ${mm(g.height)}${sliver}</td>`
-      + `<td>${escapeHtml(labeledKind)}${template}</td><td>${offcut}</td><td>${g.count}</td></tr>`,
+      + `<td>${labeledKind}${pieceRef}</td><td>${offcut}</td><td>${g.count}</td></tr>`,
     );
+
+    if (template) {
+      pieceBlocks.push(`
+        <section class="piece-page">
+          <header class="piece-head">
+            <h3>Piece ${escapeHtml(g.label)} \u2014 ${mm(g.nominalWidth)} \u00d7 ${mm(g.nominalHeight)} mm tile</h3>
+            <p>Final size ${mm(g.width)} \u00d7 ${mm(g.height)} mm${g.edgeLengths ? ` \u00b7 Edges ${g.edgeLengths.map((length) => mm(length)).join(' \u00b7 ')} mm` : ''}</p>
+          </header>
+          <img src="${template}" alt="Cut template for piece ${escapeHtml(g.label)}" class="piece-template" />
+          <p class="piece-legend">Solid area = keep &nbsp;\u00b7&nbsp; Hatched area = waste &nbsp;\u00b7&nbsp; Orange line = saw cut</p>
+        </section>`);
+    }
   });
 
-  return `
+  const summaryHtml = `
     <table class="cut-list">
       <thead><tr><th>Size mm</th><th>Kind</th><th>From offcut</th><th>Qty</th></tr></thead>
       <tbody>${rows.join('')}</tbody>
     </table>`;
+
+  return { summaryHtml, pieceBlocks };
 };

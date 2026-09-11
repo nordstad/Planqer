@@ -52,6 +52,15 @@ const formatDate = (dateString) => {
 
 const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
+// What each diagram's marks mean, kept plan-type specific — a board's kerf
+// line isn't a sheet's rotated part, and the tile diagram's own caption
+// already covers slivers, so it stays out of this shared line.
+const legendFor = (project) => {
+  if (project.projectType === 'sheet') return 'Hatched area = waste \u00b7 Dashed outline = part turned 90\u00b0';
+  if (project.projectType === 'tile') return 'Amber lines = joints \u00b7 Red outline = sliver below the guard';
+  return 'Grey area = waste \u00b7 Red line = saw kerf';
+};
+
 // The three saved project shapes don't share a "parts" concept — a tile
 // layout has no parts list, just a chosen candidate — so this returns the
 // three facts renderPlan/handlePrintAll actually print (type, count, stock)
@@ -111,10 +120,28 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
   const [pendingDelete, setPendingDelete] = useState(null);
   const [paperSize, setPaperSize] = useState('a4');
   const [printing, setPrinting] = useState(false);
+  // Which plans are checked for export, inside the project you're viewing.
+  // Empty means "none picked" — handlePrintAll then falls back to every
+  // printable plan, so the default gesture stays "print the whole project".
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
 
   useEffect(() => {
     if (user) loadProjects();
   }, [user]);
+
+  // A fresh selection per project — ticking a plan in Kitchen shouldn't
+  // still be ticked after navigating to Bathroom.
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [groupId]);
+
+  const toggleSelected = (id) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
 
   const loadProjects = async () => {
     try {
@@ -188,9 +215,11 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
     }
   };
 
-  // One document, every plan on its own page, via the browser's print
-  // dialog — which is also where "save as PDF" lives. See printProject.js
-  // for how each diagram picks the page orientation that renders it largest.
+  // One document, every chosen plan on its own page, via the browser's
+  // print dialog — which is also where "save as PDF" lives. See
+  // printProject.js for how each diagram picks the page orientation that
+  // renders it largest, and how a tile plan's cut templates get their own
+  // pages instead of crowding the summary table.
   const handlePrintAll = async (plans, title) => {
     const printable = plans.filter((p) => p.has_svg_image || p.cutlist_image);
     if (printable.length === 0) return;
@@ -202,17 +231,16 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
         const pf = planFacts(p);
         return {
           name: p.name,
-          facts: [pf.type, pf.count, pf.stock, `saved ${formatDate(p.created_at)}`],
+          kind: pf.type,
+          qty: pf.count,
+          stock: pf.stock,
+          savedDate: formatDate(p.created_at),
           svgBlob: await downloadProjectImage(p.id, p.projectType),
-          extraHtml: p.projectType === 'tile' ? buildCutListHtml(p.layout_result) : undefined,
+          legend: legendFor(p),
+          extra: p.projectType === 'tile' ? (buildCutListHtml(p.layout_result) ?? undefined) : undefined,
         };
       }));
-      await printProjectPlans({
-        title,
-        meta: `${plural(printable.length, 'plan')} · printed ${formatDate(new Date())}`,
-        paper: paperSize,
-        plans: withDiagrams,
-      });
+      await printProjectPlans({ title, paper: paperSize, plans: withDiagrams });
     } catch (err) {
       setError('Could not build the printable project — ' + err.message);
     } finally {
@@ -330,14 +358,31 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
   );
 
   /* ── one saved plan: its own diagram, its facts, its two exports ─────── */
+  // `selectable` is only passed from inside an opened project, where the
+  // print controls live — a plan shown loose on the index page has nothing
+  // to be selected for yet.
 
-   const renderPlan = (project) => {
+   const renderPlan = (project, { selectable = false } = {}) => {
      const hasDiagram = Boolean(project.has_svg_image || project.cutlist_image);
      const facts = planFacts(project);
 
      return (
        <div key={project.id}>
          <article className="plan-item">
+           {selectable && (
+             <label
+               className="plan-select"
+               title={hasDiagram ? 'Include this plan when exporting' : 'No diagram was saved with this plan, so it cannot be exported'}
+             >
+               <input
+                 type="checkbox"
+                 checked={selectedIds.has(project.id)}
+                 onChange={() => toggleSelected(project.id)}
+                 disabled={!hasDiagram}
+                 aria-label={`Select ${project.name} for export`}
+               />
+             </label>
+           )}
            <button
              type="button"
              className="plan-item-thumb"
@@ -438,7 +483,11 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
 
     const plans = plansIn(groupId);
     const title = group ? group.name : 'Not in any project';
-    const printableCount = plans.filter((p) => p.has_svg_image || p.cutlist_image).length;
+    const printablePlans = plans.filter((p) => p.has_svg_image || p.cutlist_image);
+    const printableCount = printablePlans.length;
+    const selectedPlans = printablePlans.filter((p) => selectedIds.has(p.id));
+    const plansToPrint = selectedPlans.length > 0 ? selectedPlans : printablePlans;
+    const allSelected = printableCount > 0 && selectedPlans.length === printableCount;
 
     return (
       <>
@@ -491,11 +540,15 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
                   </select>
                   <button
                     className="btn"
-                    onClick={() => handlePrintAll(plans, title)}
+                    onClick={() => handlePrintAll(plansToPrint, title)}
                     disabled={printing}
-                    title="One document with every plan on its own page — print it or save it as a PDF"
+                    title={'Opens your browser\u2019s print dialog — choose "Save as PDF" there to download a file instead of printing'}
                   >
-                    {printing ? 'Preparing…' : `Print ${plural(printableCount, 'plan')}`}
+                    {printing
+                      ? 'Preparing…'
+                      : selectedPlans.length > 0
+                        ? `Print selected (${selectedPlans.length})`
+                        : `Print all ${plural(printableCount, 'plan')}`}
                   </button>
                 </span>
               )}
@@ -512,8 +565,30 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
           )}
         </header>
 
+        {printableCount > 1 && (
+          <div className="print-hint">
+            <span className="print-hint-select">
+              {selectedPlans.length > 0 ? (
+                <button type="button" className="link-btn" onClick={() => setSelectedIds(new Set())}>
+                  Clear selection
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="link-btn"
+                  onClick={() => setSelectedIds(new Set(printablePlans.map((p) => p.id)))}
+                >
+                  Select all
+                </button>
+              )}
+              {allSelected && <span> — every plan is picked, same as printing all</span>}
+            </span>
+            <span className="folio">Tick a plan to export only that one, or a few — leave none ticked to export everything</span>
+          </div>
+        )}
+
         {plans.length > 0 ? (
-          <div className="plan-list">{plans.map(renderPlan)}</div>
+          <div className="plan-list">{plans.map((p) => renderPlan(p, { selectable: printableCount > 1 }))}</div>
         ) : (
           <div className="proj-blank">
             <p>
