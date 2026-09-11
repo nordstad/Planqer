@@ -43,8 +43,25 @@ const PAPERS = {
 };
 
 const MARGIN_MM = 12;
-// Vertical room reserved on a plan's page for its own header block.
-const PLAN_HEAD_MM = 28;
+// Vertical room reserved on a plan's page for its own header block, and on a
+// piece-template page for its header + the legend line under the diagram.
+// Both headers are forced to one line each in CSS (ellipsis, no wrapping) so
+// this reservation is exact rather than a guess about how much text wraps —
+// an <img> is atomic and can't be partly pushed to the next page, so if the
+// header ever rendered even a millimetre taller than this, the whole diagram
+// would jump to a fresh page and leave the rest of the current one blank.
+// SAFETY_MM is extra slack on top of that for cross-browser font-metric
+// differences (ascent/descent, default line-height) this file can't measure.
+const PLAN_HEAD_MM = 30;
+const PIECE_HEAD_MM = 34;
+const SAFETY_MM = 6;
+
+// A candidate orientation has to render the diagram meaningfully larger to
+// be worth using — a project with plans flipping between portrait and
+// landscape for a few percent of extra size reads as inconsistent more than
+// it reads as optimized. 18% is comfortably past normal SVG aspect-ratio
+// noise, so a flip only happens when it visibly matters.
+const LANDSCAPE_MIN_GAIN = 1.18;
 
 const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (c) => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
@@ -97,10 +114,11 @@ const buildHtml = ({ title, meta, paper, plans }) => {
   const showOverview = plans.length > 1;
 
   const sections = plans.map((plan, i) => {
-    const availPortraitH = innerH - PLAN_HEAD_MM;
-    const availLandscapeH = innerW - PLAN_HEAD_MM;
-    const landscape = fittedArea(plan.width, plan.height, innerH, availLandscapeH)
-      > fittedArea(plan.width, plan.height, innerW, availPortraitH);
+    const availPortraitH = innerH - PLAN_HEAD_MM - SAFETY_MM;
+    const availLandscapeH = innerW - PLAN_HEAD_MM - SAFETY_MM;
+    const portraitArea = fittedArea(plan.width, plan.height, innerW, availPortraitH);
+    const landscapeArea = fittedArea(plan.width, plan.height, innerH, availLandscapeH);
+    const landscape = landscapeArea > portraitArea * LANDSCAPE_MIN_GAIN;
     const maxH = landscape ? availLandscapeH : availPortraitH;
     const facts = [plan.kind, plan.qty, plan.stock, `saved ${plan.savedDate}`].filter(Boolean);
 
@@ -142,11 +160,17 @@ const buildHtml = ({ title, meta, paper, plans }) => {
   }
   .overview-table td { border-bottom: 0.2mm solid #e3e1d6; }
 
-  /* ── each plan: header, then the diagram — the thing decided already ── */
-  .plan { break-after: page; page-break-after: always; }
+  /* ── each plan: header, then the diagram — the thing decided already ──
+     Every header line is forced to one row (no wrap, ellipsis overflow) so
+     its rendered height always matches PLAN_HEAD_MM exactly — see that
+     constant's comment for why a wrapped line here would blank out a page. */
+  .plan { break-after: page; page-break-after: always; break-inside: avoid; page-break-inside: avoid; }
   .plan:last-child { break-after: auto; page-break-after: auto; }
   .plan--landscape { page: landscape; }
   .plan-head { padding-bottom: 2.5mm; margin-bottom: 4mm; border-bottom: 0.25mm solid #c9c7ba; }
+  .plan-kicker, .plan-head h2, .plan-facts {
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
   .plan-kicker {
     font-size: 8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
     color: #6b6a60; margin-bottom: 1.5mm;
@@ -168,13 +192,25 @@ const buildHtml = ({ title, meta, paper, plans }) => {
   .cut-list thead { display: table-header-group; } /* repeats on each printed page if the list spans more than one */
   .cut-list-ref { color: #6b6a60; font-style: italic; }
 
-  /* ── a diagonal piece's own cut template: one full page, not a table cell ── */
-  .piece-page { break-before: page; page-break-before: always; break-inside: avoid; }
+  /* ── a diagonal piece's own cut template: one full page, not a table cell.
+     Always portrait — piece pages don't opt into the landscape named page,
+     so this reserves height against the plain portrait inner height. The
+     max-height is set here rather than hardcoded, so it's correct for
+     whichever paper size this document is actually using. */
+  .piece-page { break-before: page; page-break-before: always; break-inside: avoid; page-break-inside: avoid; }
   .piece-head { border-bottom: 0.25mm solid #c9c7ba; padding-bottom: 2.5mm; margin-bottom: 6mm; }
+  .piece-head h3, .piece-head p { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .piece-head h3 { font-size: 13pt; font-weight: 700; }
   .piece-head p { font-size: 9pt; color: #6b6a60; margin-top: 1mm; }
-  .piece-template { display: block; width: 100%; max-height: 200mm; object-fit: contain; margin: 0 auto; }
+  .piece-template {
+    display: block; width: 100%; max-height: ${Math.max(60, innerH - PIECE_HEAD_MM - SAFETY_MM)}mm;
+    object-fit: contain; margin: 0 auto;
+  }
   .piece-legend { font-size: 8.5pt; color: #6b6a60; text-align: center; margin-top: 4mm; }
+  /* Shown only if a piece's cut-template image itself fails to load — the
+     cut-size table already has this piece's numbers either way, so a
+     missing drawing here is a degraded page, not a missing fact. */
+  .piece-template-missing { font-size: 9pt; color: #6b6a60; text-align: center; padding: 20mm 0; }
 </style>
 </head>
 <body>

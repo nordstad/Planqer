@@ -153,7 +153,12 @@ export const buildCutListHtml = (candidate) => {
             <h3>Piece ${escapeHtml(g.label)} \u2014 ${mm(g.nominalWidth)} \u00d7 ${mm(g.nominalHeight)} mm tile</h3>
             <p>Final size ${mm(g.width)} \u00d7 ${mm(g.height)} mm${g.edgeLengths ? ` \u00b7 Edges ${g.edgeLengths.map((length) => mm(length)).join(' \u00b7 ')} mm` : ''}</p>
           </header>
-          <img src="${template}" alt="Cut template for piece ${escapeHtml(g.label)}" class="piece-template" />
+          <img
+            src="${template}"
+            alt="Cut template for piece ${escapeHtml(g.label)}"
+            class="piece-template"
+            onerror="this.outerHTML='<p class=&quot;piece-template-missing&quot;>This cut template could not be rendered \u2014 the diagram and cut-size table above still cover this piece.</p>'"
+          />
           <p class="piece-legend">Solid area = keep &nbsp;\u00b7&nbsp; Hatched area = waste &nbsp;\u00b7&nbsp; Orange line = saw cut</p>
         </section>`);
     }
