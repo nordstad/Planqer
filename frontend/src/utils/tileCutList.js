@@ -107,12 +107,20 @@ const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (c) => ({
   graphics", so a colored square could silently vanish on a printed page.
   The size numbers and kind text carry the same information on paper.
 
-  Returns `{ summaryHtml, pieceBlocks }` rather than one flat string: the
-  summary table belongs directly under the layout diagram (it's the "what to
-  cut" list), while a diagonal piece's own cut template is a full working
-  drawing in its own right and reads best as its own page, not squeezed into
-  a table cell alongside a dozen other rows (see printProject.js, which puts
-  each entry in pieceBlocks on a page of its own).
+  Returns `{ summaryHtml, pieces }` rather than one flat string: the summary
+  table belongs directly under the layout diagram (it's the "what to cut"
+  list), while a diagonal piece's own cut template is a full working drawing
+  in its own right and reads best as its own page (see printProject.js).
+  `pieces` is structured data, not pre-rendered markup — printProject.js
+  measures each piece's own image (same way it already measures the main
+  diagram) before laying out its page, rather than trusting CSS's
+  object-fit to size it correctly at print time, which is what actually
+  produced the blank piece-template pages this shape replaced: a piece
+  whose cut template happens to be wide (landscape-shaped even though the
+  page itself stays portrait) rendered at an unpredictable size under
+  object-fit: contain, tall enough on some browsers' print engines to
+  overflow past the header's own space and get pushed to a fresh page,
+  leaving the one it started on blank.
 */
 export const buildCutListHtml = (candidate) => {
   if (!candidate?.tiles?.length) return null;
@@ -124,7 +132,7 @@ export const buildCutListHtml = (candidate) => {
     rows.push(`<tr><td>Full tile</td><td>No cut needed</td><td>—</td><td>${fullCount}</td></tr>`);
   }
 
-  const pieceBlocks = [];
+  const pieces = [];
   cutGroups.forEach((g) => {
     const sliver = g.sliverCount > 0
       ? ` <b>(${g.sliverCount === g.count ? 'sliver' : `${g.sliverCount} sliver`})</b>`
@@ -147,20 +155,13 @@ export const buildCutListHtml = (candidate) => {
     );
 
     if (template) {
-      pieceBlocks.push(`
-        <section class="piece-page">
-          <header class="piece-head">
-            <h3>Piece ${escapeHtml(g.label)} \u2014 ${mm(g.nominalWidth)} \u00d7 ${mm(g.nominalHeight)} mm tile</h3>
-            <p>Final size ${mm(g.width)} \u00d7 ${mm(g.height)} mm${g.edgeLengths ? ` \u00b7 Edges ${g.edgeLengths.map((length) => mm(length)).join(' \u00b7 ')} mm` : ''}</p>
-          </header>
-          <img
-            src="${template}"
-            alt="Cut template for piece ${escapeHtml(g.label)}"
-            class="piece-template"
-            onerror="this.outerHTML='<p class=&quot;piece-template-missing&quot;>This cut template could not be rendered \u2014 the diagram and cut-size table above still cover this piece.</p>'"
-          />
-          <p class="piece-legend">Solid area = keep &nbsp;\u00b7&nbsp; Hatched area = waste &nbsp;\u00b7&nbsp; Orange line = saw cut</p>
-        </section>`);
+      pieces.push({
+        label: g.label,
+        templateSrc: template,
+        headHtml: `
+          <h3>Piece ${escapeHtml(g.label)} \u2014 ${mm(g.nominalWidth)} \u00d7 ${mm(g.nominalHeight)} mm tile</h3>
+          <p>Final size ${mm(g.width)} \u00d7 ${mm(g.height)} mm${g.edgeLengths ? ` \u00b7 Edges ${g.edgeLengths.map((length) => mm(length)).join(' \u00b7 ')} mm` : ''}</p>`,
+      });
     }
   });
 
@@ -170,5 +171,6 @@ export const buildCutListHtml = (candidate) => {
       <tbody>${rows.join('')}</tbody>
     </table>`;
 
-  return { summaryHtml, pieceBlocks };
+  return { summaryHtml, pieces };
 };
+

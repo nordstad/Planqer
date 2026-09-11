@@ -31,9 +31,15 @@
   A plan can optionally carry:
   - `legend`   a short line of what the diagram's marks mean (kept plan-type
                specific — a board's kerf line isn't a sheet's rotated part)
-  - `extra`    `{ summaryHtml, pieceBlocks }` from utils/tileCutList.js — a
-               cut-size summary placed right under the diagram, and full-page
-               cut templates for diagonal pieces placed after it. Board and
+  - `extra`    `{ summaryHtml, pieces }` from utils/tileCutList.js — a
+               cut-size summary placed right under the diagram, and structured
+               data (not markup) for each diagonal piece's own cut template.
+               printProjectPlans measures every piece's image the same way it
+               measures the main diagram, and buildPieceSection lays it out
+               with an exact computed size — trusting CSS's object-fit to
+               size these against a guessed max-height was the actual, still-
+               unfixed cause of blank piece-template pages, after two earlier
+               fixes addressed different bugs in the same symptom. Board and
                sheet plans set neither and print exactly as before.
 */
 
@@ -72,17 +78,25 @@ const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (c) => ({
 
 const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
-// An SVG blob's intrinsic size, read by letting the browser load it once.
-const measureSvg = (blob) => new Promise((resolve, reject) => {
-  const url = URL.createObjectURL(blob);
+// Any image src's intrinsic size, read by letting the browser load it once —
+// works the same for a blob: URL or a data: URI.
+const loadImageSize = (src) => new Promise((resolve, reject) => {
   const image = new Image();
-  image.onload = () => resolve({ url, width: image.naturalWidth || 1, height: image.naturalHeight || 1 });
-  image.onerror = () => {
-    URL.revokeObjectURL(url);
-    reject(new Error('a saved diagram could not be read'));
-  };
-  image.src = url;
+  image.onload = () => resolve({ width: image.naturalWidth || 1, height: image.naturalHeight || 1 });
+  image.onerror = () => reject(new Error('an image could not be read'));
+  image.src = src;
 });
+
+const measureSvg = async (blob) => {
+  const url = URL.createObjectURL(blob);
+  try {
+    const size = await loadImageSize(url);
+    return { url, ...size };
+  } catch {
+    URL.revokeObjectURL(url);
+    throw new Error('a saved diagram could not be read');
+  }
+};
 
 // The fitted area of an image inside a box, for comparing orientations.
 const fittedArea = (imgW, imgH, boxW, boxH) => {
@@ -109,6 +123,38 @@ const buildOverview = (title, meta, plans) => `
       </tbody>
     </table>
   </section>`;
+
+const buildPieceSection = (piece, innerW, innerH) => {
+  const availW = innerW;
+  const availH = Math.max(60, innerH - PIECE_HEAD_MM - SAFETY_MM);
+
+  // Measured successfully: an exact width and height in mm, scaled to fit —
+  // no CSS max-height/object-fit guess for the print engine to get wrong.
+  // Unmeasured (the image failed to load before we even got this far): skip
+  // the <img> entirely rather than embed one already known to be broken.
+  let body;
+  if (piece.width && piece.height) {
+    const scale = Math.min(availW / piece.width, availH / piece.height);
+    const w = piece.width * scale;
+    const h = piece.height * scale;
+    body = `<img
+        src="${piece.templateSrc}"
+        alt="Cut template for piece ${escapeHtml(piece.label)}"
+        class="piece-template"
+        style="width:${w}mm;height:${h}mm"
+        onerror="this.outerHTML='<p class=&quot;piece-template-missing&quot;>This cut template could not be rendered \u2014 the diagram and cut-size table above still cover this piece.</p>'"
+      />`;
+  } else {
+    body = `<p class="piece-template-missing">This cut template could not be rendered \u2014 the diagram and cut-size table above still cover this piece.</p>`;
+  }
+
+  return `
+    <section class="piece-page">
+      <header class="piece-head">${piece.headHtml}</header>
+      ${body}
+      <p class="piece-legend">Solid area = keep &nbsp;\u00b7&nbsp; Hatched area = waste &nbsp;\u00b7&nbsp; Orange line = saw cut</p>
+    </section>`;
+};
 
 const buildHtml = ({ title, meta, paper, plans }) => {
   const spec = PAPERS[paper] ?? PAPERS.a4;
@@ -138,7 +184,7 @@ const buildHtml = ({ title, meta, paper, plans }) => {
         </div>
         ${plan.extra?.summaryHtml || ''}
       </section>
-      ${(plan.extra?.pieceBlocks || []).join('\n')}`;
+      ${(plan.extra?.pieces || []).map((piece) => buildPieceSection(piece, innerW, innerH)).join('\n')}`;
   }).join('\n');
 
   return `<!DOCTYPE html>
@@ -207,19 +253,16 @@ const buildHtml = ({ title, meta, paper, plans }) => {
   .cut-list-ref { color: #6b6a60; font-style: italic; }
 
   /* ── a diagonal piece's own cut template: one full page, not a table cell.
-     Always portrait — piece pages don't opt into the landscape named page,
-     so this reserves height against the plain portrait inner height. The
-     max-height is set here rather than hardcoded, so it's correct for
-     whichever paper size this document is actually using. */
+     Always portrait — piece pages don't opt into the landscape named page.
+     No max-height/object-fit here: each piece's own width/height (set
+     inline, in mm, by buildPieceSection once its image has been measured)
+     is what actually sizes it, the same way the main diagram is sized. */
   .piece-page { break-before: page; page-break-before: always; break-inside: avoid; page-break-inside: avoid; }
   .piece-head { border-bottom: 0.25mm solid #c9c7ba; padding-bottom: 2.5mm; margin-bottom: 6mm; }
   .piece-head h3, .piece-head p { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .piece-head h3 { font-size: 13pt; font-weight: 700; }
   .piece-head p { font-size: 9pt; color: #6b6a60; margin-top: 1mm; }
-  .piece-template {
-    display: block; width: 100%; max-height: ${Math.max(60, innerH - PIECE_HEAD_MM - SAFETY_MM)}mm;
-    object-fit: contain; margin: 0 auto;
-  }
+  .piece-template { display: block; margin: 0 auto; }
   .piece-legend { font-size: 8.5pt; color: #6b6a60; text-align: center; margin-top: 4mm; }
   /* Shown only if a piece's cut-template image itself fails to load — the
      cut-size table already has this piece's numbers either way, so a
@@ -253,13 +296,30 @@ const whenImagesLoaded = (doc) => Promise.all(
  * @param {Array<{
  *   name: string, kind: string, qty: string, stock: string, savedDate: string,
  *   svgBlob: Blob, legend?: string,
- *   extra?: { summaryHtml: string, pieceBlocks: string[] },
+ *   extra?: { summaryHtml: string, pieces: Array<{label, templateSrc, headHtml}> },
  * }>} args.plans
  */
 export const printProjectPlans = async ({ title, paper, plans }) => {
-  const measured = await Promise.all(
-    plans.map(async (plan) => ({ ...plan, ...(await measureSvg(plan.svgBlob)) })),
-  );
+  const measured = await Promise.all(plans.map(async (plan) => {
+    const sized = { ...plan, ...(await measureSvg(plan.svgBlob)) };
+    const pieces = plan.extra?.pieces;
+    if (!pieces?.length) return sized;
+
+    // Each piece's own cut-template image, measured the same way the main
+    // diagram is — see the file header comment for why trusting CSS to size
+    // these (object-fit: contain against a guessed max-height) was the
+    // actual, still-unfixed cause of blank piece-template pages. A piece
+    // whose image fails to load here (width/height left undefined) still
+    // gets its own page, via buildPieceSection's fallback text.
+    const measuredPieces = await Promise.all(pieces.map(async (piece) => {
+      try {
+        return { ...piece, ...(await loadImageSize(piece.templateSrc)) };
+      } catch {
+        return piece;
+      }
+    }));
+    return { ...sized, extra: { ...plan.extra, pieces: measuredPieces } };
+  }));
 
   const iframe = document.createElement('iframe');
   iframe.setAttribute('aria-hidden', 'true');
