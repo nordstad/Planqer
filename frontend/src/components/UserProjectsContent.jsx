@@ -487,7 +487,6 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
     const printableCount = printablePlans.length;
     const selectedPlans = printablePlans.filter((p) => selectedIds.has(p.id));
     const plansToPrint = selectedPlans.length > 0 ? selectedPlans : printablePlans;
-    const allSelected = printableCount > 0 && selectedPlans.length === printableCount;
 
     return (
       <>
@@ -526,6 +525,27 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
 
           {(printableCount > 0 || group) && (
             <span className="proj-head-act">
+              {printableCount > 1 && (
+                selectedPlans.length > 0 ? (
+                  <button
+                    type="button"
+                    className="link-btn"
+                    onClick={() => setSelectedIds(new Set())}
+                    title="Go back to exporting every plan in this project"
+                  >
+                    Clear selection ({selectedPlans.length})
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="link-btn"
+                    onClick={() => setSelectedIds(new Set(printablePlans.map((p) => p.id)))}
+                    title="Tick every plan below, so you can untick the ones you don't want"
+                  >
+                    Select all
+                  </button>
+                )
+              )}
               {printableCount > 0 && (
                 <span className="print-set">
                   <select
@@ -564,28 +584,6 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
             </span>
           )}
         </header>
-
-        {printableCount > 1 && (
-          <div className="print-hint">
-            <span className="print-hint-select">
-              {selectedPlans.length > 0 ? (
-                <button type="button" className="link-btn" onClick={() => setSelectedIds(new Set())}>
-                  Clear selection
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="link-btn"
-                  onClick={() => setSelectedIds(new Set(printablePlans.map((p) => p.id)))}
-                >
-                  Select all
-                </button>
-              )}
-              {allSelected && <span> — every plan is picked, same as printing all</span>}
-            </span>
-            <span className="folio">Tick a plan to export only that one, or a few — leave none ticked to export everything</span>
-          </div>
-        )}
 
         {plans.length > 0 ? (
           <div className="plan-list">{plans.map((p) => renderPlan(p, { selectable: printableCount > 1 }))}</div>
