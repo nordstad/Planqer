@@ -31,6 +31,7 @@ import Loader from './Loader';
 import PlanThumb from './PlanThumb';
 import ConfirmDialog from './ConfirmDialog';
 import TileCutListTable from './TileCutListTable';
+import PrintMenu from './PrintMenu';
 import { ArrowLeft, ArrowRight, Pencil } from './icons';
 
 // The plans nobody filed. A route segment, not a group id.
@@ -486,7 +487,6 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
     const printablePlans = plans.filter((p) => p.has_svg_image || p.cutlist_image);
     const printableCount = printablePlans.length;
     const selectedPlans = printablePlans.filter((p) => selectedIds.has(p.id));
-    const plansToPrint = selectedPlans.length > 0 ? selectedPlans : printablePlans;
 
     return (
       <>
@@ -525,52 +525,16 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
 
           {(printableCount > 0 || group) && (
             <span className="proj-head-act">
-              {printableCount > 1 && (
-                selectedPlans.length > 0 ? (
-                  <button
-                    type="button"
-                    className="link-btn"
-                    onClick={() => setSelectedIds(new Set())}
-                    title="Go back to exporting every plan in this project"
-                  >
-                    Clear selection ({selectedPlans.length})
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    className="link-btn"
-                    onClick={() => setSelectedIds(new Set(printablePlans.map((p) => p.id)))}
-                    title="Tick every plan below, so you can untick the ones you don't want"
-                  >
-                    Select all
-                  </button>
-                )
-              )}
               {printableCount > 0 && (
-                <span className="print-set">
-                  <select
-                    className="form-select print-paper"
-                    value={paperSize}
-                    onChange={(e) => setPaperSize(e.target.value)}
-                    aria-label="Paper size for printing"
-                    title="Paper size"
-                  >
-                    <option value="a4">A4</option>
-                    <option value="letter">Letter</option>
-                  </select>
-                  <button
-                    className="btn"
-                    onClick={() => handlePrintAll(plansToPrint, title)}
-                    disabled={printing}
-                    title={'Opens your browser\u2019s print dialog — choose "Save as PDF" there to download a file instead of printing'}
-                  >
-                    {printing
-                      ? 'Preparing…'
-                      : selectedPlans.length > 0
-                        ? `Print selected (${selectedPlans.length})`
-                        : `Print all ${plural(printableCount, 'plan')}`}
-                  </button>
-                </span>
+                <PrintMenu
+                  paperSize={paperSize}
+                  onPaperSizeChange={setPaperSize}
+                  printableCount={printableCount}
+                  selectedCount={selectedPlans.length}
+                  printing={printing}
+                  onPrintAll={() => handlePrintAll(printablePlans, title)}
+                  onPrintSelected={() => handlePrintAll(selectedPlans, title)}
+                />
               )}
               {group && (
                 <button
