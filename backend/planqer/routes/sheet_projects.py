@@ -2,6 +2,7 @@ import base64
 import json
 import logging
 import re
+from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -54,7 +55,8 @@ class CreateSheetProjectRequest(BaseModel):
 
 
 class UpdateSheetProjectRequest(BaseModel):
-    name: str | None = None
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    project_group_id: UUID | None = None
     parts_data: list | None = None
     sheet_width: float | None = None
     sheet_height: float | None = None
@@ -202,8 +204,13 @@ async def update_sheet_project(
 ):
     project = await _get_owned_sheet_project(project_id, current_user, session)
 
+    if project_data.project_group_id is not None:
+        await _get_owned_group(project_data.project_group_id, current_user, session)
+
     if project_data.name is not None:
         project.name = project_data.name
+    if "project_group_id" in project_data.model_fields_set:
+        project.project_group_id = project_data.project_group_id
     if project_data.parts_data is not None:
         project.parts_data = json.dumps(project_data.parts_data)
     if project_data.sheet_width is not None:
@@ -214,12 +221,23 @@ async def update_sheet_project(
         project.kerf_width = project_data.kerf_width
     if project_data.material_type is not None:
         project.material_type = project_data.material_type
-    if project_data.algorithm is not None:
+    if "algorithm" in project_data.model_fields_set:
         project.algorithm = project_data.algorithm
     if project_data.allow_rotation is not None:
         project.allow_rotation = project_data.allow_rotation
     if project_data.optimization_result is not None:
         project.optimization_result = json.dumps(project_data.optimization_result)
+
+    svg_data_url = _render_saved_layout(
+        project_data.optimization_result
+        if project_data.optimization_result is not None
+        else json.loads(project.optimization_result) if project.optimization_result else None,
+        project.name,
+    )
+    if svg_data_url:
+        project.cutlist_image = svg_data_url
+        project.cutlist_image_svg = svg_data_url
+    project.updated_at = datetime.now()
 
     await session.commit()
     await session.refresh(project)

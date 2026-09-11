@@ -52,7 +52,13 @@ class ProjectCreateRequest(BaseModel):
 
 
 class ProjectUpdateRequest(BaseModel):
-    name: str
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    project_group_id: UUID | None = None
+    parts_data: dict | None = None
+    board_lengths: list[float] | None = None
+    saw_blade_width: float | None = None
+    board_costs: dict | None = None
+    optimization_result: dict | None = None
 
 
 def _render_saved_diagram(
@@ -204,7 +210,43 @@ async def update_project(
     session: AsyncSession = Depends(get_session),
 ):
     project = await _get_owned_project(project_id, current_user, session)
-    project.name = update_data.name
+    if update_data.project_group_id is not None:
+        await _get_owned_group(update_data.project_group_id, current_user, session)
+
+    if update_data.name is not None:
+        project.name = update_data.name
+    if "project_group_id" in update_data.model_fields_set:
+        project.project_group_id = update_data.project_group_id
+    if update_data.parts_data is not None:
+        project.parts_data = json.dumps(update_data.parts_data)
+    if update_data.board_lengths is not None:
+        project.board_lengths = json.dumps(update_data.board_lengths)
+    if update_data.saw_blade_width is not None:
+        project.saw_blade_width = update_data.saw_blade_width
+    if "board_costs" in update_data.model_fields_set:
+        project.board_costs = (
+            json.dumps(update_data.board_costs) if update_data.board_costs else None
+        )
+    if update_data.optimization_result is not None:
+        project.optimization_result = json.dumps(update_data.optimization_result)
+
+    if (
+        update_data.name is not None
+        or update_data.saw_blade_width is not None
+        or update_data.optimization_result is not None
+    ):
+        current_result = (
+            update_data.optimization_result
+            if update_data.optimization_result is not None
+            else json.loads(project.optimization_result) if project.optimization_result else None
+        )
+        svg_data_url = _render_saved_diagram(
+            current_result,
+            update_data.saw_blade_width if update_data.saw_blade_width is not None else project.saw_blade_width,
+            project.name,
+        )
+        project.cutlist_image = svg_data_url
+        project.cutlist_image_svg = svg_data_url
     project.updated_at = datetime.now()
 
     await session.commit()

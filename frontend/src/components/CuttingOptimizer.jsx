@@ -71,6 +71,8 @@ const CuttingOptimizer = () => {
   const [saveAttempted, setSaveAttempted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(null);
+  const [editingProject, setEditingProject] = useState(null);
+  const [saveMode, setSaveMode] = useState('new');
 
   /* loading one back */
   const [userProjects, setUserProjects] = useState([]);
@@ -239,6 +241,8 @@ const CuttingOptimizer = () => {
     setSawKerf(project.saw_blade_width.toString());
     setSelectedGroupId(project.project_group_id || '');
     setProjectName(project.name);
+    setEditingProject(project);
+    setSaveMode('update');
 
     // A plan's prices come back with it — a supplier's quote belongs to the job,
     // not to the app, so a loaded plan is ready to re-run at the prices it was
@@ -394,6 +398,7 @@ const CuttingOptimizer = () => {
     setSaving(true);
     try {
       const project = await saveProject({
+        id: saveMode === 'update' ? editingProject?.id : undefined,
         name: projectName.trim(),
         projectGroupId: selectedGroupId,
         parts,
@@ -410,7 +415,9 @@ const CuttingOptimizer = () => {
         result,
       });
       setSaved(project);
-      setUserProjects(prev => [project, ...prev]);
+      setUserProjects(prev => saveMode === 'update'
+        ? prev.map(p => p.id === project.id ? project : p)
+        : [project, ...prev]);
     } catch (error) {
       setApiError(error.message || 'Could not save this plan');
     }
@@ -752,6 +759,42 @@ const CuttingOptimizer = () => {
           ) : (
             <>
               <div style={{ marginBottom: '24px' }}>
+                <label className="form-label" htmlFor="board-save-mode">Save as</label>
+                <select
+                  id="board-save-mode"
+                  className="form-select"
+                  value={saveMode}
+                  onChange={(e) => {
+                    const mode = e.target.value;
+                    setSaveMode(mode);
+                    if (mode === 'update' && !editingProject && userProjects.length) {
+                      setEditingProject(userProjects[0]);
+                      setProjectName(userProjects[0].name);
+                      setSelectedGroupId(userProjects[0].project_group_id || '');
+                    }
+                  }}
+                >
+                  <option value="new">Create a new plan</option>
+                  <option value="update" disabled={!userProjects.length}>Update existing plan</option>
+                </select>
+                {saveMode === 'update' && editingProject && (
+                  <select
+                    className="form-select"
+                    style={{ marginTop: '10px' }}
+                    aria-label="Plan to update"
+                    value={editingProject.id}
+                    onChange={(e) => {
+                      const target = userProjects.find(p => p.id === e.target.value);
+                      setEditingProject(target);
+                      setProjectName(target.name);
+                      setSelectedGroupId(target.project_group_id || '');
+                    }}
+                  >
+                    {userProjects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  </select>
+                )}
+              </div>
+              <div style={{ marginBottom: '24px' }}>
                 <ProjectPicker
                   groups={projectGroups}
                   value={selectedGroupId}
@@ -797,7 +840,7 @@ const CuttingOptimizer = () => {
             ) : (
               <div className="step-foot-act">
                 <button type="submit" className="btn-order" disabled={saving}>
-                  {saving ? <><Loader /> Saving</> : 'Save plan'}
+                  {saving ? <><Loader /> Saving</> : saveMode === 'update' ? 'Update plan' : 'Save plan'}
                 </button>
               </div>
             )}

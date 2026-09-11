@@ -187,7 +187,7 @@ export const getUserProjects = async () => {
 /* Keeping a plan is its own step: running one on /cutting-plans computes and
    returns, and nothing is stored until the user has named it here. The diagram
    is redrawn server-side from optimization_result, so none is sent. */
-export const saveProject = async ({ name, projectGroupId, parts, boards, sawKerf, boardCosts, result }) => {
+export const saveProject = async ({ id, name, projectGroupId, parts, boards, sawKerf, boardCosts, result }) => {
   const partsPayload = {};
   parts.forEach((part) => {
     const len = parseFloat(part.length);
@@ -198,7 +198,7 @@ export const saveProject = async ({ name, projectGroupId, parts, boards, sawKerf
   });
 
   try {
-    const response = await axios.post(`${API_URL}/api/projects/`, {
+    const payload = {
       name,
       project_group_id: projectGroupId || null,
       parts_data: partsPayload,
@@ -208,7 +208,10 @@ export const saveProject = async ({ name, projectGroupId, parts, boards, sawKerf
       // an empty pricing panel that looks like a deliberate zero.
       board_costs: boardCosts || null,
       optimization_result: result,
-    });
+    };
+    const response = id
+      ? await axios.put(`${API_URL}/api/projects/${id}`, payload)
+      : await axios.post(`${API_URL}/api/projects/`, payload);
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
@@ -245,10 +248,10 @@ export const getUserSheetProjects = async () => {
 };
 
 export const saveSheetProject = async ({
-  name, projectGroupId, parts, sheetWidth, sheetHeight, kerfWidth, materialType, algorithm, allowRotation, result,
+  id, name, projectGroupId, parts, sheetWidth, sheetHeight, kerfWidth, materialType, algorithm, allowRotation, result,
 }) => {
   try {
-    const response = await axios.post(`${API_URL}/api/sheet-projects/`, {
+    const payload = {
       name,
       project_group_id: projectGroupId || null,
       parts_data: parts.map((part, index) => ({
@@ -264,7 +267,10 @@ export const saveSheetProject = async ({
       algorithm: algorithm || null,
       allow_rotation: allowRotation !== false,
       optimization_result: result,
-    });
+    };
+    const response = id
+      ? await axios.put(`${API_URL}/api/sheet-projects/${id}`, payload)
+      : await axios.post(`${API_URL}/api/sheet-projects/`, payload);
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
@@ -305,11 +311,11 @@ export const getUserTileProjects = async () => {
    the user names it here. The diagram is redrawn server-side from
    surface_data + layout_result, so no image is sent over the wire. */
 export const saveTileProject = async ({
-  name, projectGroupId, surfaceWidth, surfaceHeight, cutouts, tile, joint, bond,
+  id, name, projectGroupId, surfaceWidth, surfaceHeight, cutouts, tile, joint, bond,
   minEdgeCut, reuseOffcuts, wastePercent, candidateCount, candidate,
 }) => {
   try {
-    const response = await axios.post(`${API_URL}/api/tile-projects/`, {
+    const payload = {
       name,
       project_group_id: projectGroupId || null,
       surface_data: {
@@ -341,7 +347,10 @@ export const saveTileProject = async ({
         candidate_count: parseInt(candidateCount, 10),
       },
       layout_result: candidate,
-    });
+    };
+    const response = id
+      ? await axios.put(`${API_URL}/api/tile-projects/${id}`, payload)
+      : await axios.post(`${API_URL}/api/tile-projects/`, payload);
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
