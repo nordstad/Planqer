@@ -465,6 +465,21 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
     <div className="alert-danger" role="alert" style={{ marginBottom: '18px' }}>{error}</div>
   );
 
+  // Rendered once, reused by both returns below (project view and index) —
+  // the project view's own return used to omit this entirely, so clicking
+  // Delete there set pendingDelete with nothing on screen to confirm it,
+  // and the dialog only appeared once you navigated to whichever view did
+  // render it, asking about a plan you'd since left.
+  const confirmDialog = (
+    <ConfirmDialog
+      open={!!pendingDelete}
+      title="Delete"
+      message={pendingDelete?.message}
+      onConfirm={() => { pendingDelete.run(); setPendingDelete(null); }}
+      onCancel={() => setPendingDelete(null)}
+    />
+  );
+
   /* ── inside one project ─────────────────────────────────────────────── */
 
   if (groupId) {
@@ -560,6 +575,8 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
             <Link to="/cutting" className="btn btn-primary">Plan a cut</Link>
           </div>
         )}
+
+        {confirmDialog}
       </>
     );
   }
@@ -647,13 +664,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
         </section>
       )}
 
-      <ConfirmDialog
-        open={!!pendingDelete}
-        title="Delete"
-        message={pendingDelete?.message}
-        onConfirm={() => { pendingDelete.run(); setPendingDelete(null); }}
-        onCancel={() => setPendingDelete(null)}
-      />
+      {confirmDialog}
     </>
   );
 };
