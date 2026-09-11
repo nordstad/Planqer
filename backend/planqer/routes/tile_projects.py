@@ -2,6 +2,7 @@ import base64
 import json
 import logging
 import re
+from datetime import datetime
 from types import SimpleNamespace
 from uuid import UUID
 
@@ -51,7 +52,8 @@ class CreateTileProjectRequest(BaseModel):
 
 
 class UpdateTileProjectRequest(BaseModel):
-    name: str | None = None
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    project_group_id: UUID | None = None
     surface_data: dict | None = None
     tile_data: dict | None = None
     bond_data: dict | None = None
@@ -233,8 +235,13 @@ async def update_tile_project(
 ):
     project = await _get_owned_tile_project(project_id, current_user, session)
 
+    if project_data.project_group_id is not None:
+        await _get_owned_group(project_data.project_group_id, current_user, session)
+
     if project_data.name is not None:
         project.name = project_data.name
+    if "project_group_id" in project_data.model_fields_set:
+        project.project_group_id = project_data.project_group_id
     if project_data.surface_data is not None:
         project.surface_data = json.dumps(project_data.surface_data)
     if project_data.tile_data is not None:
@@ -246,21 +253,17 @@ async def update_tile_project(
     if project_data.layout_result is not None:
         project.layout_result = json.dumps(project_data.layout_result)
 
-    # A rename or a new candidate both change what the diagram should show —
-    # re-render it so the saved image never drifts from the saved data.
-    if (
-        project_data.name is not None
-        or project_data.surface_data is not None
-        or project_data.layout_result is not None
-    ):
-        svg_data_url = _render_saved_layout(
-            _load_json_dict(project.surface_data),
-            _load_json_dict(project.layout_result),
-            project.name,
-        )
-        if svg_data_url:
-            project.cutlist_image = svg_data_url
-            project.cutlist_image_svg = svg_data_url
+    # A rename or changed layout inputs both change what the diagram should show.
+    svg_data_url = _render_saved_layout(
+        _load_json_dict(project.surface_data),
+        _load_json_dict(project.layout_result),
+        project.name,
+    )
+    if svg_data_url:
+        project.cutlist_image = svg_data_url
+        project.cutlist_image_svg = svg_data_url
+
+    project.updated_at = datetime.now()
 
     await session.commit()
     await session.refresh(project)
