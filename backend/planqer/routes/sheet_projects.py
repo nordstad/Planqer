@@ -231,7 +231,9 @@ async def update_sheet_project(
     svg_data_url = _render_saved_layout(
         project_data.optimization_result
         if project_data.optimization_result is not None
-        else json.loads(project.optimization_result) if project.optimization_result else None,
+        else json.loads(project.optimization_result)
+        if project.optimization_result
+        else None,
         project.name,
     )
     if svg_data_url:
