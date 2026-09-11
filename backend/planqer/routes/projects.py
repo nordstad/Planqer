@@ -238,11 +238,15 @@ async def update_project(
         current_result = (
             update_data.optimization_result
             if update_data.optimization_result is not None
-            else json.loads(project.optimization_result) if project.optimization_result else None
+            else json.loads(project.optimization_result)
+            if project.optimization_result
+            else None
         )
         svg_data_url = _render_saved_diagram(
             current_result,
-            update_data.saw_blade_width if update_data.saw_blade_width is not None else project.saw_blade_width,
+            update_data.saw_blade_width
+            if update_data.saw_blade_width is not None
+            else project.saw_blade_width,
             project.name,
         )
         project.cutlist_image = svg_data_url
