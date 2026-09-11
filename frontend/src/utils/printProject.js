@@ -54,7 +54,10 @@ const MARGIN_MM = 12;
 // differences (ascent/descent, default line-height) this file can't measure.
 const PLAN_HEAD_MM = 30;
 const PIECE_HEAD_MM = 34;
-const SAFETY_MM = 6;
+// Legend is now the third thing in the same break-inside: avoid figure as
+// the header and diagram (see the .plan-figure comment below) — this covers
+// its one line too, on top of cross-browser font-metric slack.
+const SAFETY_MM = 10;
 
 // A candidate orientation has to render the diagram meaningfully larger to
 // be worth using — a project with plans flipping between portrait and
@@ -124,13 +127,15 @@ const buildHtml = ({ title, meta, paper, plans }) => {
 
     return `
       <section class="plan${landscape ? ' plan--landscape' : ''}">
-        <header class="plan-head">
-          <p class="plan-kicker">${escapeHtml(title)} &nbsp;\u00b7&nbsp; Plan ${i + 1} of ${plans.length}</p>
-          <h2>${escapeHtml(plan.name)}</h2>
-          <p class="plan-facts">${facts.map(escapeHtml).join(' &nbsp;\u00b7&nbsp; ')}</p>
-        </header>
-        <img src="${plan.url}" alt="" style="max-height:${maxH}mm" />
-        ${plan.legend ? `<p class="plan-legend">${escapeHtml(plan.legend)}</p>` : ''}
+        <div class="plan-figure">
+          <header class="plan-head">
+            <p class="plan-kicker">${escapeHtml(title)} &nbsp;\u00b7&nbsp; Plan ${i + 1} of ${plans.length}</p>
+            <h2>${escapeHtml(plan.name)}</h2>
+            <p class="plan-facts">${facts.map(escapeHtml).join(' &nbsp;\u00b7&nbsp; ')}</p>
+          </header>
+          <img src="${plan.url}" alt="" style="max-height:${maxH}mm" />
+          ${plan.legend ? `<p class="plan-legend">${escapeHtml(plan.legend)}</p>` : ''}
+        </div>
         ${plan.extra?.summaryHtml || ''}
       </section>
       ${(plan.extra?.pieceBlocks || []).join('\n')}`;
@@ -160,13 +165,22 @@ const buildHtml = ({ title, meta, paper, plans }) => {
   }
   .overview-table td { border-bottom: 0.2mm solid #e3e1d6; }
 
-  /* ── each plan: header, then the diagram — the thing decided already ──
-     Every header line is forced to one row (no wrap, ellipsis overflow) so
-     its rendered height always matches PLAN_HEAD_MM exactly — see that
-     constant's comment for why a wrapped line here would blank out a page. */
-  .plan { break-after: page; page-break-after: always; break-inside: avoid; page-break-inside: avoid; }
+  /* ── each plan: header + diagram travel together; the cut-list table
+     doesn't ────────────────────────────────────────────────────────────
+     A tile plan's cut-size table can run to a dozen-plus rows — taller than
+     any single page once it follows a header and a full-page diagram. Only
+     .plan-figure (header, diagram, legend) gets break-inside: avoid; if that
+     were on the whole .plan section, a long table would force the *entire*
+     section — including the diagram — to hunt for a page big enough to hold
+     all of it at once, which no page is, so the diagram silently lost that
+     fight and got pushed past its own header (see the outer comment on
+     PLAN_HEAD_MM for the header-height half of this; that alone wasn't the
+     bug — this was). The table is free to spill onto as many further pages
+     as it needs; .cut-list's own thead/tr rules already handle that well. */
+  .plan { break-after: page; page-break-after: always; }
   .plan:last-child { break-after: auto; page-break-after: auto; }
   .plan--landscape { page: landscape; }
+  .plan-figure { break-inside: avoid; page-break-inside: avoid; }
   .plan-head { padding-bottom: 2.5mm; margin-bottom: 4mm; border-bottom: 0.25mm solid #c9c7ba; }
   .plan-kicker, .plan-head h2, .plan-facts {
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
