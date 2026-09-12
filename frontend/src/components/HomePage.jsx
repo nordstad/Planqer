@@ -153,8 +153,8 @@ const HomePage = () => {
     <footer className="hp-footer">
       <div>
         <Link to="/help">Help &amp; documentation</Link>
-        <a href="https://gitlab.com/borkempire/planqer" target="_blank" rel="noopener noreferrer">
-          Source on GitLab
+        <a href="https://github.com/nordstad/Planqer" target="_blank" rel="noopener noreferrer">
+          Source on GitHub
         </a>
         <a href="https://opensource.org/licenses/MIT" target="_blank" rel="noopener noreferrer">
           MIT licence
