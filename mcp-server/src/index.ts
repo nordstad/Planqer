@@ -162,7 +162,7 @@ class PlanqerServer {
     this.server = new Server(
       {
         name: 'planqer-mcp-server',
-        version: '1.0.0',
+        version: '0.3.3',
       },
       {
         capabilities: {
