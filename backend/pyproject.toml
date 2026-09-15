@@ -23,7 +23,7 @@ dependencies = [
     "prometheus-client>=0.20.0,<1.0.0",
     "structlog>=24.4.0,<27.0.0",
     "trimesh>=4.0.0",     # For 3D STL processing
-    "numpy>=1.26.0,<2.0.0",  # Required by trimesh; NumPy 2.x wheels require newer x86 CPUs
+    "numpy>=1.26.0,<3.0.0",  # Required by trimesh; NumPy 2.x wheels require newer x86 CPUs
     "python-multipart",   # For file uploads
     "networkx>=2.8.0",    # Graph engine for trimesh component splitting
     "scipy>=1.10.0",      # Required for trimesh operations
