@@ -19,8 +19,10 @@ const APP_PORT = '3001';
 const API_PORT = '8002';
 
 const getApiUrl = () => {
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
+  const configuredApiUrl = import.meta.env.VITE_API_URL ||
+    (typeof window !== 'undefined' ? window.__PLANQER_API_URL__ : '');
+  if (configuredApiUrl) {
+    return configuredApiUrl;
   }
 
   if (typeof window === 'undefined') {
