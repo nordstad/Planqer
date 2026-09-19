@@ -248,7 +248,7 @@ async def handle_call_tool(
 
 server = Server(
     "planqer-mcp-server",
-    version="0.3.3",
+    version="0.4.1",
     on_list_tools=handle_list_tools,
     on_call_tool=handle_call_tool,
 )
@@ -601,7 +601,7 @@ async def main():
             write_stream,
             InitializationOptions(
                 server_name="planqer-mcp-server",
-                server_version="0.3.3",
+                server_version="0.4.1",
                 capabilities=server.get_capabilities(
                     notification_options=NotificationOptions(),
                     experimental_capabilities={},
