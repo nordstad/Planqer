@@ -30,10 +30,11 @@ storage.
 <!-- markdownlint-disable MD013 MD033 -->
 <table>
 <tr>
-<td width="25%"><a href="docs/assets/screenshots/board-cutting-result.png"><img src="docs/assets/screenshots/board-cutting-result.png" alt="Board cutting result"></a><br><sub>Board cutting</sub></td>
-<td width="25%"><a href="docs/assets/screenshots/sheet-cutting-result.png"><img src="docs/assets/screenshots/sheet-cutting-result.png" alt="Sheet cutting result"></a><br><sub>Sheet cutting</sub></td>
-<td width="25%"><a href="docs/assets/screenshots/model-cutlist.png"><img src="docs/assets/screenshots/model-cutlist.png" alt="3D model upload"></a><br><sub>3D model → cutlist</sub></td>
-<td width="25%"><a href="docs/assets/screenshots/dashboard.png"><img src="docs/assets/screenshots/dashboard.png" alt="Project dashboard"></a><br><sub>Saved projects</sub></td>
+<td width="20%"><a href="docs/assets/screenshots/board-cutting-result.png"><img src="docs/assets/screenshots/board-cutting-result.png" alt="Board cutting result"></a><br><sub>Board cutting</sub></td>
+<td width="20%"><a href="docs/assets/screenshots/sheet-cutting-result.png"><img src="docs/assets/screenshots/sheet-cutting-result.png" alt="Sheet cutting result"></a><br><sub>Sheet cutting</sub></td>
+<td width="20%"><a href="docs/assets/screenshots/tile-layout.png"><img src="docs/assets/screenshots/tile-layout.png" alt="Tile layout surface setup"></a><br><sub>Tile layout</sub></td>
+<td width="20%"><a href="docs/assets/screenshots/model-cutlist.png"><img src="docs/assets/screenshots/model-cutlist.png" alt="3D model upload"></a><br><sub>3D model → cutlist</sub></td>
+<td width="20%"><a href="docs/assets/screenshots/dashboard.png"><img src="docs/assets/screenshots/dashboard.png" alt="Project dashboard"></a><br><sub>Saved projects</sub></td>
 </tr>
 </table>
 <!-- markdownlint-enable MD013 MD033 -->
@@ -93,6 +94,30 @@ registration will silently fail as CORS-blocked requests:*
 ```bash
 PLANQER_CORS_ORIGINS=http://192.168.1.50:3001 docker compose up -d --build
 ```
+
+---
+
+## Secret Scanning
+
+Planqer uses [Betterleaks](https://github.com/betterleaks/betterleaks) to check
+staged changes for accidentally committed secrets.
+
+Install the pre-commit tool and enable the repository hook:
+
+```bash
+python -m pip install pre-commit
+pre-commit install
+```
+
+The hook runs automatically before each commit. To run it manually:
+
+```bash
+pre-commit run betterleaks
+pre-commit run betterleaks --all-files
+```
+
+The hook is installed per clone and is not enabled by `git clone` automatically.
+Do not use `git commit --no-verify`, which bypasses the check.
 
 ---
 
