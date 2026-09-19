@@ -64,10 +64,24 @@ The easiest way to run Planqer is with Docker Compose. Two ways to do it:
   directory — Compose reads it automatically:
 
   ```bash
-  curl -o .env https://raw.githubusercontent.com/nordstad/Planqer/main/.env.example
+   curl -o .env https://raw.githubusercontent.com/nordstad/Planqer/main/.env.example
+   ```
+
+  To upgrade an existing release installation, set `PLANQER_VERSION` in
+  `.env`, then pull and recreate the containers:
+
+  ```bash
+  docker compose -f docker-compose.release.yml pull
+  docker compose -f docker-compose.release.yml up -d
   ```
 
-   See [Configuration](docs/reference/configuration.md) for what each variable
+  For a one-off upgrade without editing `.env`, prefix both commands with
+  `PLANQER_VERSION=0.4.1`.
+
+  Run these commands from the directory containing both files. The Compose
+  volume preserves local accounts and saved projects across upgrades.
+
+  See [Configuration](docs/reference/configuration.md) for what each variable
    does.
 
 - **Build from source** — uses `docker-compose.yml`:

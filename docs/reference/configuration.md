@@ -8,10 +8,12 @@ running Docker Compose. Copy [`.env.example`](https://github.com/nordstad/Planqe
 to `.env` as a starting point.
 
 Changed `.env` after containers already exist? A plain restart won't pick it
-up - env vars are only applied when a container is created. Recreate them:
+up - env vars are only applied when a container is created. For a release
+installation, pull the selected images and recreate them:
 
 ```bash
-docker compose up -d --force-recreate
+docker compose -f docker-compose.release.yml pull
+docker compose -f docker-compose.release.yml up -d --force-recreate
 ```
 
 Use `docker-compose.release.yml` for normal installs from published GHCR
@@ -70,7 +72,7 @@ docker compose --profile mcp up -d
 
 ```bash
 # Backend
-PLANQER_VERSION=0.2.0
+PLANQER_VERSION=0.4.1
 SECRET_KEY=<random-32-byte-hex>
 PLANQER_CORS_ORIGINS=https://planqer.example.com,https://cuts.example.com
 

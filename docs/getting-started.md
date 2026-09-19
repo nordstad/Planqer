@@ -38,9 +38,35 @@ Open:
     see [Backup and restore](guide/backup-and-restore.md) before restoring one.
 
 !!! note "Release image version"
-    The release compose file uses `PLANQER_VERSION=0.1.0` by default. Set
-    `PLANQER_VERSION=latest` only if you intentionally want the newest
-    published release image.
+    The release compose file uses `latest` by default. Set
+    `PLANQER_VERSION` in `.env` to pin a specific release image.
+
+## Upgrade
+
+Run these commands from the directory containing `docker-compose.release.yml`
+and `.env`:
+
+```bash
+docker compose -f docker-compose.release.yml pull
+docker compose -f docker-compose.release.yml up -d
+```
+
+To pin a release, set the version in `.env` before running the commands:
+
+```dotenv
+PLANQER_VERSION=0.4.1
+```
+
+Verify that the running containers use the requested images:
+
+```bash
+docker compose -f docker-compose.release.yml ps
+docker inspect planqer-web-backend --format '{{.Config.Image}}'
+```
+
+The output should include `ghcr.io/nordstad/planqer-backend:0.4.1` (and the
+corresponding frontend tag). The named `backend_data` volume is preserved by
+this procedure, so local accounts and saved projects remain available.
 
 ## Private package access
 
