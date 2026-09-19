@@ -8,6 +8,10 @@ updates:
       backend-python:
         patterns:
           - "*"
+    ignore:
+      # NumPy 2.x requires CPU features unavailable on supported legacy hosts.
+      - dependency-name: "numpy"
+        versions: [">= 2.0.0"]
 
   - package-ecosystem: "uv"
     directory: "/mcp-server"
