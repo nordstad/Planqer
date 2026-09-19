@@ -33,6 +33,6 @@ describe('HomePage', () => {
       </MemoryRouter>
     );
 
-    expect(await screen.findByText(/No cloud account.*v0\.4\.0/)).toBeInTheDocument();
+    expect(await screen.findByText(/No cloud account.*v0\.4\.1/)).toBeInTheDocument();
   });
 });
