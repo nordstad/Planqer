@@ -1,0 +1,17 @@
+.git
+.github
+.claude
+.plans
+frontend
+mcp-server
+docs
+tests
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+**/.venv
+**/node_modules
+**/*.pyc
+*.db
+*.sqlite
+*.sqlite3

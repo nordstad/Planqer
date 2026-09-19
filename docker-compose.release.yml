@@ -37,6 +37,7 @@ services:
 
   mcp-server:
     container_name: planqer-mcp-server
+    profiles: [mcp]
     image: ghcr.io/nordstad/planqer-mcp-server:${PLANQER_VERSION:-latest}
     environment:
       - PLANQER_API_URL=http://backend:8002/api
