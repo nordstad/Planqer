@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import CatalogPage from './CatalogPage';
 import { BoardIcon, SheetIcon, CubeIcon, TileIcon, ArrowRight } from './icons';
 import { getHealth, getLatestRelease } from '../utils/api';
+import packageJson from '../../package.json';
 
 // Compares two dotted version strings, e.g. isNewer('0.2.0', '0.1.0') -> true
 const isNewer = (latest, current) => {
@@ -88,7 +89,7 @@ const CutPlanPreview = () => (
 );
 
 const HomePage = () => {
-  const [version, setVersion] = useState(null);
+  const [version, setVersion] = useState(packageJson.version);
   const [latestVersion, setLatestVersion] = useState(null);
 
   useEffect(() => {
