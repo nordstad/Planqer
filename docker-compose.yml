@@ -44,6 +44,7 @@ services:
 
   mcp-server:
     container_name: planqer-mcp-server
+    profiles: [mcp]
     build:
       context: ./mcp-server
       dockerfile: Dockerfile

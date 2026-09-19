@@ -61,6 +61,19 @@ changes:
 docker compose up -d --build
 ```
 
+The MCP server is optional and is not built or started by default. Enable it
+when you need a containerized MCP client:
+
+```bash
+docker compose --profile mcp up -d --build
+```
+
+For the published images, use the same profile with the release Compose file:
+
+```bash
+docker compose -f docker-compose.release.yml --profile mcp up -d
+```
+
 ## Plan your first cut
 
 1. Open <http://localhost:3001> and choose **Board cutting**, **Sheet cutting**,

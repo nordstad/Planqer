@@ -55,6 +55,13 @@ in `backend/config.yaml`, not environment variables.
 
 ## MCP server
 
+The MCP service is optional in both Compose files. Enable it with the `mcp`
+profile when using a containerized MCP client:
+
+```bash
+docker compose --profile mcp up -d
+```
+
 - `PLANQER_API_URL`: defaults to `http://localhost:8002/api`. Where the MCP
   server sends optimization requests. The Docker Compose files point this at
   the `backend` service on the compose network.
