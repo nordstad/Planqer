@@ -169,5 +169,6 @@ The core optimization logic is in `/backend/planqer/cutting.py` with the main fu
 - Use `uv` instead of `pip` for Python dependency management.
 - Use Pytest for unit tests, written as functions, not classes.
 - Always lint markdown to remove lint warnings.
+- Always update every locale file when adding or changing translation keys; do not rely on English fallback strings.
 - Don't import `Dict`, `List`, `Tuple` from `typing` — use the built-in
   `dict`, `list`, `tuple` generics instead.

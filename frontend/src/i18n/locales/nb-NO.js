@@ -135,6 +135,18 @@ const locale = {
   auditUi: { ...en.auditUi, kerfWide: 'Dette sagsporet er bredere enn alle sagblader – 2 til 4 mm er vanlig', priceRequired: 'Skriv inn pris per meter før planen prises', stockPriceRequired: 'Hver lagerlengde trenger en pris før planen prises', unknownError: 'Ukjent feil', nameRequired: 'Gi planen et navn så du finner den igjen', createProjectFailed: 'Kunne ikke opprette prosjektet', saveFailed: 'Kunne ikke lagre planen', pricesChanged: 'Prisene er endret – planen er fortsatt beregnet med de gamle prisene', priceStock: 'Prislegg lageret for å se hva planen koster', ungrouped: 'Uten prosjekt', fixLayout: 'Rett de markerte linjene så kan layouten kjøres', sheetKerfHint: 'Hvert kutt gjør så mye materiale til støv – planen tar hensyn til det', sheetStockHint: 'Kontroller dette mot platen før du planlegger. Mål platen din, pakkingen avhenger av det.' },
 };
 
+Object.assign(locale.projectUi, {
+  modify: 'Endre',
+  selectPlan: 'Velg planen "{{name}}"',
+  printOne: 'Skriv ut',
+  printDiagrams: 'Skriv ut diagrammer ({{count}})',
+  printShoppingList: 'Dette skal kjøpes',
+  printProject: 'Skriv ut prosjekt',
+  printSelected: 'Skriv ut valgte ({{count}})',
+  selectAllPlans: 'Velg alle',
+  clearSelection: 'Fjern valg',
+});
+
 Object.assign(locale.ui, {
   boardLengthAria: 'Bordlengde i millimeter, rad {{row}}', removeBoardAria: 'Fjern bordlengde, rad {{row}}', strikeLine: 'Rett denne linjen',
   partLengthAria: 'Dellengde i millimeter, del {{item}}', quantityAria: 'Antall, del {{item}}', removePartAria: 'Fjern del, del {{item}}',
@@ -164,6 +176,11 @@ Object.assign(locale.ui, {
   changeSurface: 'Endre overflaten', saveLayout: 'Lagre layout', saveLayoutButton: 'Lagre layout', updateLayout: 'Oppdater layout',
   tilesAroundOpening: 'Fliser kappet rundt en åpning', offcutsReused: 'Gjenbrukte restbiter', sliversBelow: 'Smale biter under grensen', materialUsed: 'Brukt materiale', offcutExplanation: 'Restbiten er kostnaden for materialet som blir igjen etter kappingen.',
 });
+Object.assign(locale.ui, {
+  updatePlanTitle: 'Oppdater lagret plan',
+  updatePlanConfirm: 'Dette erstatter det lagrede resultatet for "{{name}}". Vil du fortsette?',
+});
+
 Object.assign(locale.legacy, {
   fileSize: '{{format}} filstørrelse', material: 'Materiale', status: 'Status',
 });
