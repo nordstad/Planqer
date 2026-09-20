@@ -29,7 +29,7 @@ jest.mock('../utils/api', () => ({
 }));
 
 jest.mock('../contexts/AuthContext', () => ({
-  useAuth: () => ({ user: { id: 'user-1', email: 'user@example.com' }, logout: jest.fn() }),
+  useAuth: () => ({ user: mockUser, logout: jest.fn() }),
 }));
 
 jest.mock('../utils/printProject', () => ({
@@ -42,6 +42,7 @@ const group = {
   created_at: '2026-08-26T00:00:00Z',
   updated_at: '2026-08-26T00:00:00Z',
 };
+const mockUser = { id: 'user-1', email: 'user@example.com' };
 const plan = {
   id: 'plan-1',
   project_group_id: group.id,
@@ -50,6 +51,7 @@ const plan = {
   parts_data: { 100: 1 },
   board_lengths: [300],
   saw_blade_width: 3,
+  optimization_result: { cut_list: [[300, 100]], board_lengths_used: [300] },
   created_at: '2026-08-26T00:00:00Z',
   updated_at: '2026-08-26T00:00:00Z',
 };
@@ -61,6 +63,23 @@ const renderDetail = () => render(
     </LanguageProvider>
   </MemoryRouter>,
 );
+
+const sheetPlan = {
+  id: 'sheet-plan-1',
+  project_group_id: group.id,
+  name: 'Sheet cut list',
+  parts_data: [{ name: 'Shelf', width: 400, height: 200, quantity: 1 }],
+  sheet_width: 1200,
+  sheet_height: 2500,
+  material_type: 'plywood',
+  created_at: '2026-08-26T00:00:00Z',
+  updated_at: '2026-08-26T00:00:00Z',
+  optimization_result: {
+    sheets: [{ parts_count: 1, efficiency: 0.8, sheet_width: 1200, sheet_height: 2500, parts: [
+      { part_id: 'Shelf', width: 400, height: 200, x: 0, y: 0, rotated: false },
+    ] }],
+  },
+};
 
 beforeEach(() => {
   getUserProjects.mockResolvedValue([plan]);
@@ -100,4 +119,21 @@ it('prints a plan from the project detail route', async () => {
   fireEvent.click(await screen.findByRole('button', { name: 'Print 1 plan' }));
 
   await waitFor(() => expect(printProjectPlans).toHaveBeenCalled());
+});
+
+it('shows a cutlist for saved board plans', async () => {
+  renderDetail();
+
+  expect(await screen.findByRole('heading', { name: 'Cut list', level: 2 })).toBeInTheDocument();
+  expect(screen.getByText('300 · 100')).toBeInTheDocument();
+});
+
+it('shows a cutlist for saved sheet plans', async () => {
+  getUserProjects.mockResolvedValue([]);
+  getUserSheetProjects.mockResolvedValue([sheetPlan]);
+  renderDetail();
+
+  expect(await screen.findByRole('heading', { name: 'Cut list', level: 2 })).toBeInTheDocument();
+  expect(screen.getByText('Shelf')).toBeInTheDocument();
+  expect(screen.getByText('400 × 200')).toBeInTheDocument();
 });

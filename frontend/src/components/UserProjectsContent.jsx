@@ -32,6 +32,7 @@ import Loader from './Loader';
 import PlanThumb from './PlanThumb';
 import ConfirmDialog from './ConfirmDialog';
 import TileCutListTable from './TileCutListTable';
+import SavedCutList from './SavedCutList';
 import { ArrowLeft, ArrowRight, Pencil } from './icons';
 
 // The plans nobody filed. A route segment, not a group id.
@@ -410,13 +411,14 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
              </button>
            </div>
          </article>
-         {project.projectType === 'tile' && project.layout_result && (
-           <div style={{ marginTop: '22px', marginBottom: '28px' }}>
-             <TileCutListTable candidate={project.layout_result} />
-           </div>
-         )}
-       </div>
-     );
+          {project.projectType === 'tile' && project.layout_result && (
+            <div style={{ marginTop: '22px', marginBottom: '28px' }}>
+              <TileCutListTable candidate={project.layout_result} />
+            </div>
+          )}
+          {project.projectType !== 'tile' && <SavedCutList project={project} />}
+        </div>
+      );
    };
 
   if (loading) {
