@@ -121,7 +121,7 @@ const locale = {
     parts: 'Parts', thePlan: 'The plan', theLayout: 'The layout', save: 'Save', layout: 'Layout', keep: 'Keep', surface: 'Surface', model: 'Model', cutlists: 'Cutlists',
     someLinesNeedFixing: 'Some lines need fixing', someFieldsNeedFixing: 'Some fields need fixing', partsSummary: '{{count}} parts · {{demand}} mm · {{kerf}} mm kerf', boardsSummary: '{{count}} boards · {{offcut}} mm offcut', runsFromParts: 'Runs from your parts', solvesFromSurface: 'Solves from your surface', savedAs: 'Saved as {{name}}', nameAndKeep: 'Name it and keep it', waitsForPlan: 'Waits for a plan', waitsForLayout: 'Waits for a layout',
     requiredParts: 'Required parts', requiredPartsIntro: 'Every length you need, and how many of each. Planqer works out how much stock to buy and where each cut goes.', partsToCut: 'Parts to cut', partsToCutIntro: 'Every rectangle you need out of sheet stock. Planqer packs them onto as few sheets as it can and shows where each one sits.', loadSavedPlan: 'Load a saved plan', item: 'Item', lengthMm: 'Length mm', sizeMm: 'Size mm', qty: 'Qty', total: 'Total', name: 'Name', addPart: 'Add part', addOpening: 'Add opening', pasteParts: 'Paste several lines at once — one length and quantity per line', sawBlade: 'Saw blade', kerfHint: 'Every cut turns this much material into dust — the plan accounts for it', stockAvailable: 'Stock available', supplierStock: 'What your supplier sells, not what you need', stock: 'Stock', metres: 'Metres', offered: 'Offered', lengthCount_one: '{{count}} length', lengthCount_other: '{{count}} lengths', addStockLength: 'Add stock length',
-    sheetSource: "The sheet you're cutting from", sheetSourceHint: "What you're cutting out of, not what you need", width: 'Width', height: 'Height', material: 'Material', packing: 'Packing', packSheets: 'Pack the sheets',
+     sheetSource: "The sheet you're cutting from", sheetSourceHint: "What you're cutting out of, not what you need", width: 'Width', height: 'Height', material: 'Material', packing: 'Packing', packSheets: 'Plan the sheet cuts',
     surfaceTitle: "The surface you're tiling", surfaceIntro: "Its size, any openings in it, and the tile you're laying. Planqer works out where to start the grid so cuts against the far edge aren't ugly slivers.", surfaceHint: "The wall, floor, or roof you're covering", openings: 'Openings', openingsHint: 'Windows, doors, sockets, an extractor hood', positionMm: 'Position mm', label: 'Label', noOpenings: 'No openings — a plain rectangle.', tile: 'Tile', tileHint: 'What a yard actually sells changes between jobs', allowRotation: 'Allow the whole layout to run turned 90°', rotationHint: 'Tries the pattern both ways and keeps whichever fits better. Off when the tile has a grain or a directional face.', jointBond: 'Joint & bond', jointBondHint: 'The grout gap, and how each row shifts from the last', solving: 'Solving', solveLayout: 'Solve the layout',
     uploadModel: 'Upload a model', uploadModelIntro: 'An STL or a STEP file — the model you already designed. Planqer measures every solid in it and sorts them into cutlists you can plan and save.', dropModel: 'Drop your model here', browseFiles: 'Browse files', readingModel: 'Reading model', readModel: 'Read the model', removeFile: 'Remove file', planCuts: 'Plan a cut',
   },
@@ -175,8 +175,16 @@ Object.assign(locale.projectUi, {
 });
 
 Object.assign(locale.ui, {
+  materialPine: 'Pine', materialSpruce: 'Spruce', materialOak: 'Oak', materialBeech: 'Beech', materialBirch: 'Birch', materialPressureTreated: 'Pressure-treated', materialCustom: 'Custom', customMaterialPlaceholder: 'Enter material',
+  materialCeramic: 'Ceramic tile', materialPorcelain: 'Porcelain tile', materialStone: 'Stone tile', materialGlass: 'Glass tile',
   updatePlanTitle: 'Update saved plan',
   updatePlanConfirm: 'This will replace the saved result for "{{name}}". Continue?',
 });
+
+Object.assign(locale.workflow, {
+  materialProfile: 'Material and profile', chooseMaterial: 'Choose material', thickness: 'Thickness', thicknessMm: 'Thickness (mm)', widthMm: 'Width (mm)', packSheets: 'Plan the sheet cuts',
+});
+
+Object.assign(locale.auditUi, { materialRequired: 'Choose a material and enter its dimensions before planning', sheetThicknessRequired: 'Enter the sheet thickness before planning', sheetMaterialRequired: 'Choose a sheet material before planning', tileMaterialRequired: 'Choose a tile material and enter its thickness before solving' });
 
 export default locale;

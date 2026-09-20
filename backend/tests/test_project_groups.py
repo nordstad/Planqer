@@ -76,6 +76,9 @@ def _save_payload(
         "parts_data": CUTTING_PAYLOAD["parts"],
         "board_lengths": CUTTING_PAYLOAD["available_board_lengths"],
         "saw_blade_width": CUTTING_PAYLOAD["saw_blade_width"],
+        "material_type": "oak",
+        "board_thickness": 45,
+        "board_width": 45,
         "optimization_result": SOLVED_PLAN,
     }
 
@@ -96,6 +99,8 @@ def _save_sheet_payload(
         "sheet_width": SHEET_PAYLOAD["sheet_width"],
         "sheet_height": SHEET_PAYLOAD["sheet_height"],
         "kerf_width": SHEET_PAYLOAD["kerf_width"],
+        "material_type": "plywood",
+        "sheet_thickness": 12,
         "optimization_result": layout,
     }
 
@@ -266,6 +271,9 @@ def test_unpriced_board_plan_stores_no_prices(client):
     ).json()
 
     assert saved["board_costs"] is None
+    assert saved["material_type"] == "oak"
+    assert saved["board_thickness"] == 45
+    assert saved["board_width"] == 45
 
 
 def test_saved_board_plan_keeps_the_plan_it_was_given(client):

@@ -51,7 +51,8 @@ it('renders translated labels on the tile layout save step', async () => {
     </MemoryRouter>,
   );
 
-  fireEvent.click(await screen.findByRole('button', { name: /Solve the layout/i }));
+   fireEvent.change(await screen.findByLabelText('Thickness (mm)'), { target: { value: '10' } });
+   fireEvent.click(await screen.findByRole('button', { name: /Solve the layout/i }));
   await screen.findByRole('heading', { name: 'Pick a layout' });
   fireEvent.click(await screen.findByRole('button', { name: /Name it/i }));
 
@@ -69,7 +70,7 @@ it('restores a saved tile plan addressed by the edit query', async () => {
     name: 'Saved tile layout',
     project_group_id: null,
     surface_data: { width: 2400, height: 1200, cutouts: [] },
-    tile_data: { width: 300, height: 600, allow_rotation: true },
+     tile_data: { width: 300, height: 600, allow_rotation: true, material_type: 'porcelain', thickness: 10 },
     bond_data: { pattern: 'stack', offset_fraction: 0.5, joint_width: 3, perimeter_gap: 0 },
     options_data: { min_edge_cut: null, reuse_offcuts: true, waste_percent: 10, candidate_count: 5 },
   }]);
@@ -84,5 +85,5 @@ it('restores a saved tile plan addressed by the edit query', async () => {
   expect(await screen.findByDisplayValue('2400')).toBeInTheDocument();
   expect(screen.getByDisplayValue('1200')).toBeInTheDocument();
   expect(screen.getByDisplayValue('300')).toBeInTheDocument();
-  expect(screen.getByDisplayValue('600')).toBeInTheDocument();
+   expect(screen.getByDisplayValue('600')).toBeInTheDocument();
 });

@@ -189,7 +189,7 @@ export const getUserProjects = async () => {
 /* Keeping a plan is its own step: running one on /cutting-plans computes and
    returns, and nothing is stored until the user has named it here. The diagram
    is redrawn server-side from optimization_result, so none is sent. */
-export const saveProject = async ({ id, name, projectGroupId, parts, boards, sawKerf, boardCosts, result }) => {
+export const saveProject = async ({ id, name, projectGroupId, parts, boards, sawKerf, materialType = '', boardThickness = 0, boardWidth = 0, boardCosts, result }) => {
   const partsPayload = {};
   parts.forEach((part) => {
     const len = parseFloat(part.length);
@@ -206,6 +206,9 @@ export const saveProject = async ({ id, name, projectGroupId, parts, boards, saw
       parts_data: partsPayload,
       board_lengths: boards.map((b) => parseFloat(b)).filter((n) => !isNaN(n)),
       saw_blade_width: parseFloat(sawKerf),
+      material_type: materialType,
+      board_thickness: parseFloat(boardThickness),
+      board_width: parseFloat(boardWidth),
       // Null when the plan was never priced, so an unpriced plan doesn't store
       // an empty pricing panel that looks like a deliberate zero.
       board_costs: boardCosts || null,
@@ -250,7 +253,7 @@ export const getUserSheetProjects = async () => {
 };
 
 export const saveSheetProject = async ({
-  id, name, projectGroupId, parts, sheetWidth, sheetHeight, kerfWidth, materialType, algorithm, allowRotation, result,
+  id, name, projectGroupId, parts, sheetWidth, sheetHeight, sheetThickness = 0, kerfWidth, materialType, algorithm, allowRotation, result,
 }) => {
   try {
     const payload = {
@@ -264,6 +267,7 @@ export const saveSheetProject = async ({
       })),
       sheet_width: parseFloat(sheetWidth),
       sheet_height: parseFloat(sheetHeight),
+      sheet_thickness: parseFloat(sheetThickness),
       kerf_width: parseFloat(kerfWidth),
       material_type: materialType || 'plywood',
       algorithm: algorithm || null,
@@ -335,6 +339,8 @@ export const saveTileProject = async ({
         width: parseFloat(tile.width),
         height: parseFloat(tile.height),
         allow_rotation: !!tile.allowRotation,
+        material_type: tile.materialType,
+        thickness: parseFloat(tile.thickness),
       },
       bond_data: {
         pattern: bond.pattern,

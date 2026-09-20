@@ -43,3 +43,15 @@ it('restores a saved sheet plan addressed by the edit query', async () => {
   expect(screen.getByDisplayValue('2400')).toBeInTheDocument();
   expect(screen.getByDisplayValue('3')).toBeInTheDocument();
 });
+
+it('explains why sheet planning is disabled when thickness is missing', async () => {
+  window.history.replaceState({}, '', '/sheet-cutting');
+  render(
+    <MemoryRouter initialEntries={['/sheet-cutting']}>
+      <LanguageProvider><SheetOptimizer /></LanguageProvider>
+    </MemoryRouter>,
+  );
+
+  expect(screen.getByRole('button', { name: /plan the sheet cuts/i })).toBeDisabled();
+  expect(await screen.findByText(/enter the sheet thickness before planning/i)).toBeInTheDocument();
+});

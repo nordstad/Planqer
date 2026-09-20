@@ -34,6 +34,12 @@ const renderOptimizer = () =>
     </MemoryRouter>
   );
 
+const fillMaterial = () => {
+  fireEvent.change(screen.getByLabelText('Material'), { target: { value: 'oak' } });
+  fireEvent.change(screen.getByLabelText('Thickness (mm)'), { target: { value: '45' } });
+  fireEvent.change(screen.getByLabelText('Width (mm)'), { target: { value: '45' } });
+};
+
 beforeEach(() => {
   getProjectGroups.mockResolvedValue([]);
   getUserProjects.mockResolvedValue([]);
@@ -50,10 +56,12 @@ describe('CuttingOptimizer', () => {
   it('shows a cutting plan after planning the cuts', async () => {
     renderOptimizer();
     await screen.findByRole('heading', { name: /Required parts/i });
+    fillMaterial();
     fireEvent.click(screen.getByRole('button', { name: /Plan the cuts/i }));
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: /Your cutting plan/i })).toBeInTheDocument();
     });
+    expect(screen.getByTestId('plan-material-summary')).toHaveTextContent('Oak · 45 × 45 mm');
   });
 
   it('restores a saved plan addressed by the edit query', async () => {
@@ -87,6 +95,7 @@ describe('CuttingOptimizer', () => {
 
     renderOptimizer();
     await screen.findByDisplayValue('100');
+    fillMaterial();
     fireEvent.click(screen.getByRole('button', { name: /Plan the cuts/i }));
     await screen.findByRole('heading', { name: /Your cutting plan/i });
     fireEvent.click(screen.getByRole('button', { name: /Name and save/i }));

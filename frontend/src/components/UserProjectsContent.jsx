@@ -27,6 +27,7 @@ import {
 import { svgBlobToPngBlob } from '../utils/svgToPng';
 import { printProjectPlans } from '../utils/printProject';
 import { buildMaterialListHtml } from '../utils/materialList';
+import { materialLabel } from '../utils/materialLabel';
 import { buildCutListHtml } from '../utils/tileCutList';
 import { useAuth } from '../contexts/AuthContext';
 import Loader from './Loader';
@@ -68,7 +69,7 @@ const planFacts = (project, t) => {
     return {
       type: t('common.sheetCutting'),
       count: t(count === 1 ? 'workflow.sheetPartsSummary_one' : 'workflow.sheetPartsSummary', { count }),
-      stock: `${project.sheet_width}×${project.sheet_height}mm · ${project.material_type}`,
+      stock: `${materialLabel(project.material_type || 'sheet', t)} · ${project.sheet_thickness || '—'}mm`,
     };
   }
   if (project.projectType === 'tile') {
@@ -76,7 +77,7 @@ const planFacts = (project, t) => {
     return {
       type: t('common.tileLayout'),
       count: Number.isFinite(toBuy) ? `${toBuy} ${t('ui.tilesToBuy')}` : '—',
-      stock: `${project.surface_data.width}×${project.surface_data.height}mm · ${project.tile_data.width}×${project.tile_data.height} tile`,
+      stock: `${materialLabel(project.tile_data?.material_type || 'tile', t)} · ${project.tile_data?.thickness || '—'}×${project.tile_data.width}×${project.tile_data.height}mm`,
     };
   }
   const count = project.parts_data && typeof project.parts_data === 'object'
@@ -85,7 +86,7 @@ const planFacts = (project, t) => {
   return {
     type: t('common.boardCutting'),
     count: t(count === 1 ? 'workflow.partsSummary_one' : 'workflow.partsSummary', { count, demand: '—', kerf: project.saw_blade_width }),
-    stock: `${project.board_lengths.join(', ')}mm · ${project.saw_blade_width}mm kerf`,
+    stock: `${materialLabel(project.material_type || 'board', t)} · ${project.board_thickness || '—'}×${project.board_width || '—'}mm`,
   };
 };
 
@@ -421,11 +422,11 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
                  </button>
                </h3>
              )}
-             <p className="plan-item-facts">
-               <span className="plan-item-type">{facts.type}</span>
-               <span>{facts.count}</span>
-               <span>{facts.stock}</span>
-             </p>
+              <p className="plan-item-facts">
+                <span className="plan-item-type">{facts.type}</span>
+                <span>{facts.count}</span>
+              </p>
+              <p className="plan-item-material">{facts.stock}</p>
               <p className="plan-item-date">{t('projectUi.saved', { date: formatDate(project.created_at) })}</p>
            </div>
 

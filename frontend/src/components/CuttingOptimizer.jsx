@@ -21,6 +21,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { optimizeCutting, saveProject, getProjectGroups, createProjectGroup, getUserProjects, getUserSettings } from '../utils/api';
+import { materialLabel } from '../utils/materialLabel';
 import { validateBoards, validateParts } from '../utils/validators';
 import { useDebounce } from '../hooks/useDebounce';
 import { useAuth } from '../contexts/AuthContext';
@@ -57,6 +58,10 @@ const CuttingOptimizer = () => {
   ]);
   const [boards, setBoards] = useState(["2500", "3600", "4200", "5100"]);
   const [sawKerf, setSawKerf] = useState("3"); // millimetres, whole numbers
+  const [materialType, setMaterialType] = useState('');
+  const [customMaterial, setCustomMaterial] = useState('');
+  const [boardThickness, setBoardThickness] = useState('');
+  const [boardWidth, setBoardWidth] = useState('');
   const [currency, setCurrency] = useState(DEFAULT_CURRENCY);
 
   const [result, setResult] = useState(null);
@@ -243,6 +248,10 @@ const CuttingOptimizer = () => {
     })));
     setBoards(project.board_lengths.map(String));
     setSawKerf(project.saw_blade_width.toString());
+    setMaterialType(project.material_type || '');
+    setCustomMaterial('');
+    setBoardThickness(project.board_thickness ? String(project.board_thickness) : '');
+    setBoardWidth(project.board_width ? String(project.board_width) : '');
     setSelectedGroupId(project.project_group_id || '');
     setProjectName(project.name);
     setEditingProject(project);
@@ -278,7 +287,9 @@ const CuttingOptimizer = () => {
   const partCount = parts.reduce((n, p) => n + (parseInt(p.quantity, 10) || 0), 0);
   const demand = parts.reduce(
     (sum, p) => sum + (parseFloat(p.length) || 0) * (parseFloat(p.quantity) || 0), 0);
-  const hasErrors = inputErrors.parts.some(Boolean) || inputErrors.boards.some(Boolean) || !!inputErrors.sawKerf;
+  const material = materialType === 'custom' ? customMaterial.trim() : materialType;
+  const hasErrors = inputErrors.parts.some(Boolean) || inputErrors.boards.some(Boolean) || !!inputErrors.sawKerf
+    || !material || !parseFloat(boardThickness) || !parseFloat(boardWidth);
   const validBoards = boards.filter(b => b && !isNaN(parseFloat(b)));
 
   /* Only the solver's own figures go in the answer. Deriving a second yield here
@@ -412,6 +423,9 @@ const CuttingOptimizer = () => {
         parts,
         boards,
         sawKerf,
+        materialType: material,
+        boardThickness,
+        boardWidth,
         // Only recorded when the plan on screen was actually costed — otherwise
         // half-typed prices would be saved as if they had produced this plan.
         boardCosts: pricesApplied ? {
@@ -558,6 +572,35 @@ const CuttingOptimizer = () => {
             </p>
           </div>
 
+          <section style={{ marginTop: '26px', paddingTop: '22px', borderTop: '1px solid var(--rule-hair)' }}>
+            <div className="section-rule"><h2 className="section-title">{t('workflow.materialProfile')}</h2></div>
+            <div className="grid gap-x-8 gap-y-5 md:grid-cols-3">
+              <div>
+                <label className="form-label" htmlFor="board-material">{t('workflow.material')}</label>
+                <select id="board-material" value={materialType} onChange={(e) => { retirePlan(); setMaterialType(e.target.value); }} className="form-select" required>
+                  <option value="">{t('workflow.chooseMaterial')}</option>
+                  <option value="pine">{t('ui.materialPine')}</option>
+                  <option value="spruce">{t('ui.materialSpruce')}</option>
+                  <option value="oak">{t('ui.materialOak')}</option>
+                  <option value="beech">{t('ui.materialBeech')}</option>
+                  <option value="birch">{t('ui.materialBirch')}</option>
+                  <option value="pressure-treated">{t('ui.materialPressureTreated')}</option>
+                  <option value="custom">{t('ui.materialCustom')}</option>
+                </select>
+                {materialType === 'custom' && <input id="custom-material" className="form-input" style={{ marginTop: '8px' }} value={customMaterial} onChange={(e) => { retirePlan(); setCustomMaterial(e.target.value); }} placeholder={t('ui.customMaterialPlaceholder')} required />}
+              </div>
+              <div>
+                <label className="form-label" htmlFor="board-thickness">{t('workflow.thicknessMm')}</label>
+                <input id="board-thickness" type="number" min="0.1" step="0.1" value={boardThickness} onChange={(e) => { retirePlan(); setBoardThickness(e.target.value); }} className="form-input" required />
+              </div>
+              <div>
+                <label className="form-label" htmlFor="board-width">{t('workflow.widthMm')}</label>
+                <input id="board-width" type="number" min="0.1" step="0.1" value={boardWidth} onChange={(e) => { retirePlan(); setBoardWidth(e.target.value); }} className="form-input" required />
+              </div>
+            </div>
+            {(!material || !parseFloat(boardThickness) || !parseFloat(boardWidth)) && <p className="text-danger text-[12.5px] font-semibold" style={{ marginTop: '10px' }}>{t('auditUi.materialRequired')}</p>}
+          </section>
+
           {/* Stock stays in plain sight. It was folded away on the first pass on
               the theory that most people never touch it, which is wrong: what a
               yard actually stocks changes between jobs, and a plan against the
@@ -654,6 +697,9 @@ const CuttingOptimizer = () => {
               <p className="step-lede">
                 {t('workflow.cuttingPlanIntro')}
               </p>
+              <p className="plan-material-summary" data-testid="plan-material-summary">
+                {materialLabel(material, t)} · {boardThickness} × {boardWidth} mm
+              </p>
             </div>
           </div>
 
@@ -694,7 +740,7 @@ const CuttingOptimizer = () => {
               </dl>
             </div>
 
-            <ResultDisplay result={result} projectName={projectName} />
+             <ResultDisplay result={result} projectName={projectName} materialType={material} boardThickness={parseFloat(boardThickness)} boardWidth={parseFloat(boardWidth)} />
           </div>
 
           <div style={{ marginTop: '34px' }}>

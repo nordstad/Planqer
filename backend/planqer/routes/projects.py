@@ -27,6 +27,9 @@ class ProjectResponse(BaseModel):
     parts_data: dict
     board_lengths: list[int]
     saw_blade_width: float
+    material_type: str
+    board_thickness: float
+    board_width: float
     board_costs: dict | None = None
     optimization_result: dict | None = None
     cutlist_image: str | None = None
@@ -44,6 +47,9 @@ class ProjectCreateRequest(BaseModel):
     parts_data: dict
     board_lengths: list[float]
     saw_blade_width: float
+    material_type: str = ""
+    board_thickness: float = 0
+    board_width: float = 0
     # The prices behind this plan's cost analysis, if it was priced. Stored so
     # loading the plan restores the pricing panel — supplier prices and stocked
     # lengths differ per job, so they belong to the plan, not to the app.
@@ -57,6 +63,9 @@ class ProjectUpdateRequest(BaseModel):
     parts_data: dict | None = None
     board_lengths: list[float] | None = None
     saw_blade_width: float | None = None
+    material_type: str | None = None
+    board_thickness: float | None = None
+    board_width: float | None = None
     board_costs: dict | None = None
     optimization_result: dict | None = None
 
@@ -117,6 +126,9 @@ def project_to_response(project: UserProject) -> ProjectResponse:
         parts_data=parts_data,
         board_lengths=board_lengths,
         saw_blade_width=project.saw_blade_width,
+        material_type=project.material_type,
+        board_thickness=project.board_thickness,
+        board_width=project.board_width,
         board_costs=board_costs,
         optimization_result=optimization_result,
         cutlist_image=project.cutlist_image,
@@ -177,6 +189,9 @@ async def create_project(
         parts_data=json.dumps(project_data.parts_data),
         board_lengths=json.dumps(project_data.board_lengths),
         saw_blade_width=project_data.saw_blade_width,
+        material_type=project_data.material_type,
+        board_thickness=project_data.board_thickness,
+        board_width=project_data.board_width,
         board_costs=json.dumps(project_data.board_costs)
         if project_data.board_costs
         else None,
@@ -223,6 +238,12 @@ async def update_project(
         project.board_lengths = json.dumps(update_data.board_lengths)
     if update_data.saw_blade_width is not None:
         project.saw_blade_width = update_data.saw_blade_width
+    if update_data.material_type is not None:
+        project.material_type = update_data.material_type
+    if update_data.board_thickness is not None:
+        project.board_thickness = update_data.board_thickness
+    if update_data.board_width is not None:
+        project.board_width = update_data.board_width
     if "board_costs" in update_data.model_fields_set:
         project.board_costs = (
             json.dumps(update_data.board_costs) if update_data.board_costs else None

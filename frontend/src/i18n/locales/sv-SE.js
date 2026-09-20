@@ -147,6 +147,8 @@ Object.assign(locale.projectUi, {
 });
 
 Object.assign(locale.ui, {
+  materialPine: 'Furu', materialSpruce: 'Gran', materialOak: 'Ek', materialBeech: 'Bok', materialBirch: 'Björk', materialPressureTreated: 'Tryckimpregnerat', materialCustom: 'Anpassat', customMaterialPlaceholder: 'Ange material',
+  materialCeramic: 'Keramikkakel', materialPorcelain: 'Porslinskakel', materialStone: 'Stenkakel', materialGlass: 'Glaskakel',
   boardLengthAria: 'Brädlängd i millimeter, rad {{row}}', removeBoardAria: 'Ta bort brädlängd, rad {{row}}', strikeLine: 'Rätta den här raden',
   partLengthAria: 'Dellängd i millimeter, del {{item}}', quantityAria: 'Antal, del {{item}}', removePartAria: 'Ta bort del, del {{item}}',
   cutoutPositionAria: 'Urtagets {{axis}}-position i millimeter, del {{item}}', cutoutSizeAria: 'Urtagets {{axis}} i millimeter, del {{item}}', cutoutLabelAria: 'Urtagets etikett, del {{item}}', removeCutoutAria: 'Ta bort urtag, del {{item}}', window: 'Fönster', optional: 'Valfritt',
@@ -175,6 +177,12 @@ Object.assign(locale.ui, {
   changeSurface: 'Ändra ytan', saveLayout: 'Spara layout', saveLayoutButton: 'Spara layout', updateLayout: 'Uppdatera layout',
   tilesAroundOpening: 'Kakel kapat runt en öppning', offcutsReused: 'Återanvända restbitar', sliversBelow: 'Smala bitar under gränsen', materialUsed: 'Använt material', offcutExplanation: 'Restbiten är kostnaden för material som blir kvar efter kapningen.',
 });
+
+Object.assign(locale.workflow, {
+  materialProfile: 'Material och profil', chooseMaterial: 'Välj material', thickness: 'Tjocklek', thicknessMm: 'Tjocklek (mm)', widthMm: 'Bredd (mm)', packSheets: 'Planera skivkapningen',
+});
+
+Object.assign(locale.auditUi, { materialRequired: 'Välj material och ange måtten innan du planerar', sheetThicknessRequired: 'Ange skivans tjocklek innan du planerar', sheetMaterialRequired: 'Välj skivmaterial innan du planerar', tileMaterialRequired: 'Välj kakelmaterial och ange tjockleken innan du löser layouten' });
 
 Object.assign(locale.ui, {
   updatePlanTitle: 'Uppdatera sparad plan',

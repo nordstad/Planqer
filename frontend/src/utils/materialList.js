@@ -1,3 +1,5 @@
+import { materialLabel } from './materialLabel';
+
 const mm = (value) => (Number.isFinite(value) ? Math.round(value).toLocaleString('sv-SE') : '—');
 
 const boardRows = (project) => {
@@ -14,8 +16,10 @@ const boardRows = (project) => {
 
   return Object.entries(byLength).map(([size, quantity]) => ({
     plan: project.name,
-    material: 'board',
-    size: `${mm(parseFloat(size))} mm`,
+    material: project.material_type || 'board',
+    size: project.board_thickness && project.board_width
+      ? `${mm(project.board_thickness)} × ${mm(project.board_width)} × ${mm(parseFloat(size))} mm`
+      : `${mm(parseFloat(size))} mm`,
     quantity,
   }));
 };
@@ -31,7 +35,9 @@ const sheetRows = (project) => {
     return {
       plan: project.name,
       material: project.material_type || 'sheet',
-      size: `${mm(parseFloat(width))} × ${mm(parseFloat(height))} mm`,
+      size: project.sheet_thickness
+        ? `${mm(project.sheet_thickness)} × ${mm(parseFloat(width))} × ${mm(parseFloat(height))} mm`
+        : `${mm(parseFloat(width))} × ${mm(parseFloat(height))} mm`,
       quantity,
     };
   });
@@ -46,8 +52,10 @@ const tileRows = (project) => {
 
   return [{
     plan: project.name,
-    material: 'tile',
-    size: `${mm(width)} × ${mm(height)} mm`,
+    material: project.tile_data?.material_type || 'tile',
+    size: project.tile_data?.thickness
+      ? `${mm(project.tile_data.thickness)} × ${mm(width)} × ${mm(height)} mm`
+      : `${mm(width)} × ${mm(height)} mm`,
     quantity,
   }];
 };
@@ -65,18 +73,12 @@ const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (c) => ({
 export const buildMaterialListHtml = (projects, t) => {
   const rows = buildMaterialRows(projects);
   if (!rows.length) return '';
-  const materialLabel = (material) => {
-    if (material === 'board') return t('ui.board');
-    if (material === 'tile') return t('workflow.tile');
-    return material;
-  };
-
   return `
     <section class="shopping-list">
       <h2>${escapeHtml(t('workflow.whatToBuy'))}</h2>
       <table class="shopping-table">
         <thead><tr><th>${escapeHtml(t('workflow.planName'))}</th><th>${escapeHtml(t('legacy.material'))}</th><th>${escapeHtml(t('workflow.sizeMm'))}</th><th>${escapeHtml(t('ui.qty'))}</th></tr></thead>
-        <tbody>${rows.map((row) => `<tr><td>${escapeHtml(row.plan)}</td><td>${escapeHtml(materialLabel(row.material))}</td><td>${escapeHtml(row.size)}</td><td>${row.quantity}</td></tr>`).join('')}</tbody>
+       <tbody>${rows.map((row) => `<tr><td>${escapeHtml(row.plan)}</td><td>${escapeHtml(materialLabel(row.material, t))}</td><td>${escapeHtml(row.size)}</td><td>${row.quantity}</td></tr>`).join('')}</tbody>
       </table>
     </section>`;
 };

@@ -77,6 +77,9 @@ const TileOptimizer = () => {
 
   const [tileWidth, setTileWidth] = useState('300');
   const [tileHeight, setTileHeight] = useState('600');
+  const [materialType, setMaterialType] = useState('ceramic');
+  const [customMaterial, setCustomMaterial] = useState('');
+  const [tileThickness, setTileThickness] = useState('');
   const [allowRotation, setAllowRotation] = useState(false);
 
   const [jointWidth, setJointWidth] = useState('3');
@@ -196,6 +199,9 @@ const TileOptimizer = () => {
     })));
     setTileWidth(project.tile_data.width.toString());
     setTileHeight(project.tile_data.height.toString());
+    setMaterialType(project.tile_data.material_type || 'ceramic');
+    setCustomMaterial('');
+    setTileThickness(project.tile_data.thickness ? String(project.tile_data.thickness) : '');
     setAllowRotation(!!project.tile_data.allow_rotation);
     setJointWidth((project.bond_data.joint_width ?? 3).toString());
     setPerimeterGap((project.bond_data.perimeter_gap ?? 0).toString());
@@ -228,7 +234,9 @@ const TileOptimizer = () => {
     || !!inputErrors.surfaceWidth || !!inputErrors.surfaceHeight
     || !!inputErrors.tileWidth || !!inputErrors.tileHeight
     || !!inputErrors.jointWidth || !!inputErrors.perimeterGap
-    || !!inputErrors.minEdgeCut || !!inputErrors.wastePercent || !!inputErrors.candidateCount;
+     || !!inputErrors.minEdgeCut || !!inputErrors.wastePercent || !!inputErrors.candidateCount
+     || !tileThickness || parseFloat(tileThickness) <= 0
+     || !materialType || (materialType === 'custom' && !customMaterial.trim());
 
   const bondSummary = bondPattern === 'running'
     ? `${t('tileUi.running')} ${Math.round(parseFloat(offsetFraction) * 100)}%`
@@ -258,7 +266,7 @@ const TileOptimizer = () => {
     try {
       const response = await optimizeTileLayout({
         surfaceWidth, surfaceHeight, cutouts,
-        tile: { width: tileWidth, height: tileHeight, allowRotation },
+         tile: { width: tileWidth, height: tileHeight, allowRotation, materialType: materialType === 'custom' ? customMaterial.trim() : materialType, thickness: tileThickness },
         joint: { jointWidth, perimeterGap },
         bond: { pattern: bondPattern, offsetFraction },
         minEdgeCut, reuseOffcuts, wastePercent, candidateCount,
@@ -299,7 +307,7 @@ const TileOptimizer = () => {
         name: projectName.trim(),
         projectGroupId: selectedGroupId,
         surfaceWidth, surfaceHeight, cutouts,
-        tile: { width: tileWidth, height: tileHeight, allowRotation },
+         tile: { width: tileWidth, height: tileHeight, allowRotation, materialType: materialType === 'custom' ? customMaterial.trim() : materialType, thickness: tileThickness },
         joint: { jointWidth, perimeterGap },
         bond: { pattern: bondPattern, offsetFraction },
         minEdgeCut, reuseOffcuts, wastePercent, candidateCount,
@@ -498,6 +506,24 @@ const TileOptimizer = () => {
             <p className={inputErrors.tileWidth || inputErrors.tileHeight ? 'text-danger text-[12.5px] font-semibold' : 'synthetic'} style={{ marginTop: '10px' }}>
                {inputErrors.tileWidth || inputErrors.tileHeight || t('tileUi.tileRange')}
             </p>
+            <div className="grid gap-x-8 gap-y-5 md:grid-cols-2" style={{ marginTop: '18px' }}>
+              <div>
+                <label className="form-label" htmlFor="tile-material">{t('workflow.material')}</label>
+                <select id="tile-material" value={materialType} onChange={(e) => setField(setMaterialType)(e.target.value)} className="form-select" required>
+                  <option value="ceramic">{t('ui.materialCeramic')}</option>
+                  <option value="porcelain">{t('ui.materialPorcelain')}</option>
+                  <option value="stone">{t('ui.materialStone')}</option>
+                  <option value="glass">{t('ui.materialGlass')}</option>
+                  <option value="custom">{t('ui.materialCustom')}</option>
+                </select>
+                {materialType === 'custom' && <input id="custom-tile-material" className="form-input" style={{ marginTop: '8px' }} value={customMaterial} onChange={(e) => setField(setCustomMaterial)(e.target.value)} placeholder={t('ui.customMaterialPlaceholder')} required />}
+              </div>
+              <div>
+                <label className="form-label" htmlFor="tile-thickness">{t('workflow.thicknessMm')}</label>
+                <input id="tile-thickness" type="number" min="0.1" step="0.1" value={tileThickness} onChange={(e) => setField(setTileThickness)(e.target.value)} className={`form-input ${!tileThickness || parseFloat(tileThickness) <= 0 ? 'form-input-error' : ''}`} required />
+              </div>
+            </div>
+            {(!tileThickness || parseFloat(tileThickness) <= 0 || (materialType === 'custom' && !customMaterial.trim())) && <p className="text-danger text-[12.5px] font-semibold" style={{ marginTop: '10px' }}>{t('auditUi.tileMaterialRequired')}</p>}
             <label className="flex items-start gap-3" style={{ marginTop: '14px', cursor: 'pointer' }}>
               <input
                 type="checkbox"
