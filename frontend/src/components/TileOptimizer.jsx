@@ -720,11 +720,11 @@ const TileOptimizer = () => {
         <form className="step-view is-form" onSubmit={handleSave}>
           <div className="step-head" style={{ marginBottom: '22px' }}>
              <div>
-               <h1 className="step-h1">{saved ? t('workflow.layoutSaved') : t('workflow.saveLayout')}</h1>
+                <h1 className="step-h1">{saved ? t('ui.layoutSaved') : t('ui.saveLayout')}</h1>
               <p className="step-lede">
                 {saved
-                   ? t('workflow.keptPlan')
-                   : t('workflow.namePlan')}
+                    ? t('ui.keptPlan')
+                    : t('ui.namePlan')}
               </p>
             </div>
           </div>
@@ -735,16 +735,16 @@ const TileOptimizer = () => {
               <div>
                    <b>{t('workflow.savedAs', { name: saved.name })}</b>
                 <p>
-                  {savedGroupName
-                   ? <>{t('workflow.filedUnder', { group: savedGroupName })}</>
-                     : <>{t('workflow.unfiled')}</>}
+                    {savedGroupName
+                    ? <>{t('ui.filedUnder', { group: savedGroupName })}</>
+                      : <>{t('ui.unfiled')}</>}
                 </p>
               </div>
             </div>
           ) : (
             <>
               <div style={{ marginBottom: '24px' }}>
-                 <label className="form-label" htmlFor="tile-save-mode">{t('workflow.saveAs')}</label>
+                  <label className="form-label" htmlFor="tile-save-mode">{t('ui.saveAs')}</label>
                 <select
                   id="tile-save-mode"
                   className="form-select"
@@ -759,14 +759,14 @@ const TileOptimizer = () => {
                     }
                   }}
                 >
-                   <option value="new">{t('workflow.createNewPlan')}</option>
-                   <option value="update" disabled={!userProjects.length}>{t('workflow.updateExistingPlan')}</option>
+                    <option value="new">{t('ui.createNewPlan')}</option>
+                    <option value="update" disabled={!userProjects.length}>{t('ui.updateExistingPlan')}</option>
                 </select>
                 {saveMode === 'update' && editingProject && (
                   <select
                     className="form-select"
                     style={{ marginTop: '10px' }}
-                     aria-label={t('workflow.planToUpdate')}
+                      aria-label={t('ui.planToUpdate')}
                     value={editingProject.id}
                     onChange={(e) => {
                       const target = userProjects.find(p => p.id === e.target.value);
@@ -789,7 +789,7 @@ const TileOptimizer = () => {
               </div>
 
               <div>
-                 <label className="form-label" htmlFor="tile-plan-name">{t('workflow.planNamePlaceholder')}</label>
+                  <label className="form-label" htmlFor="tile-plan-name">{t('ui.planNamePlaceholder')}</label>
                 <input
                   id="tile-plan-name"
                   type="text"
@@ -806,7 +806,7 @@ const TileOptimizer = () => {
                   style={{ marginTop: '7px' }}
                   role={nameError ? 'alert' : undefined}
                 >
-                   {nameError || t('workflow.savedNameHint')}
+                    {nameError || t('ui.savedNameHint')}
                 </p>
               </div>
             </>
@@ -819,7 +819,7 @@ const TileOptimizer = () => {
             {saved ? (
               <div className="step-foot-act">
                 <Link to="/dashboard" className="btn-order">
-                   {t('workflow.openDashboard')} <ArrowRight size={15} />
+                   {t('ui.openDashboard')} <ArrowRight size={15} />
                 </Link>
               </div>
             ) : (
