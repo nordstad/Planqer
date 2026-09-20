@@ -324,9 +324,11 @@ const TileOptimizer = () => {
       label: t('workflow.layout'),
       reachable: !!result,
       summary: result
-        ? `${selected.tiles_to_purchase_with_waste} tiles · smallest cut ${
-             smallestCutMm(selected) === null ? t('ui.noneCut') : `${mm(smallestCutMm(selected))} mm`
-          } · ${selected.reused_offcut_count} offcuts reused`
+         ? t('ui.tileSummary', {
+             count: selected.tiles_to_purchase_with_waste,
+             cut: smallestCutMm(selected) === null ? t('ui.noneCut') : `${mm(smallestCutMm(selected))} mm`,
+             offcuts: selected.reused_offcut_count,
+           })
         : '',
       locked: t('workflow.solvesFromSurface'),
     },

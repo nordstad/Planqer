@@ -1,6 +1,8 @@
-import en from './en-GB';
+import base from './en-GB';
 
-export default {
+const en = { ui: {}, legacy: {}, tileUi: {}, projectUi: base.projectUi, modelUi: base.modelUi, auditUi: base.auditUi };
+
+const locale = {
   common: {
     language: 'Språk',
     saveSettings: 'Lagre innstillinger',
@@ -132,3 +134,59 @@ export default {
   modelUi: { ...en.modelUi, kerfZero: 'Et sagspor på null ville planlagt kutt uten materialtap', kerfWide: 'Dette sagsporet er bredere enn alle sagblader – 2 til 4 mm er vanlig', sheetWidthPositive: 'Platens bredde må være et positivt tall', sheetHeightPositive: 'Platens høyde må være et positivt tall', sheetKerfAria: 'Platens sagspor i millimeter', acceptedModelFiles: 'STL, STEP eller STP · opptil 50 MB', planCutlist: 'Planlegg {{count}} kappliste', planCutlists: 'Planlegg {{count}} kapplister', savedCount: 'Lagret {{saved}} av {{total}}', signInCutlist: 'Logg inn eller opprett en lokal konto for å planlegge og lagre kapplister.', cutlistsSaved: 'Kapplister lagret', planAndSave: 'Planlegg og lagre', cutlistsSavedCount: '{{saved}} av {{total}} planlagt og lagret på denne instansen.', batchPlanIntro: 'Angi lager og sagspor én gang – hver valgte kappliste planlegges mot dem og legges i ett prosjekt.', saved: 'Lagret', willBeSaved: 'Blir planlagt og lagret', backToCutlists: 'Tilbake til kapplistene' },
   auditUi: { ...en.auditUi, kerfWide: 'Dette sagsporet er bredere enn alle sagblader – 2 til 4 mm er vanlig', priceRequired: 'Skriv inn pris per meter før planen prises', stockPriceRequired: 'Hver lagerlengde trenger en pris før planen prises', unknownError: 'Ukjent feil', nameRequired: 'Gi planen et navn så du finner den igjen', createProjectFailed: 'Kunne ikke opprette prosjektet', saveFailed: 'Kunne ikke lagre planen', pricesChanged: 'Prisene er endret – planen er fortsatt beregnet med de gamle prisene', priceStock: 'Prislegg lageret for å se hva planen koster', ungrouped: 'Uten prosjekt', fixLayout: 'Rett de markerte linjene så kan layouten kjøres', sheetKerfHint: 'Hvert kutt gjør så mye materiale til støv – planen tar hensyn til det', sheetStockHint: 'Kontroller dette mot platen før du planlegger. Mål platen din, pakkingen avhenger av det.' },
 };
+
+Object.assign(locale.ui, {
+  boardLengthAria: 'Bordlengde i millimeter, rad {{row}}', removeBoardAria: 'Fjern bordlengde, rad {{row}}', strikeLine: 'Rett denne linjen',
+  partLengthAria: 'Dellengde i millimeter, del {{item}}', quantityAria: 'Antall, del {{item}}', removePartAria: 'Fjern del, del {{item}}',
+  cutoutPositionAria: 'Utsparingens {{axis}}-posisjon i millimeter, del {{item}}', cutoutSizeAria: 'Utsparingens {{axis}} i millimeter, del {{item}}', cutoutLabelAria: 'Utsparingens etikett, del {{item}}', removeCutoutAria: 'Fjern utsparing, del {{item}}', window: 'Vindu', optional: 'Valgfritt',
+  confirmTitle: 'Er du sikker?', projectInfoLabel: 'Hva et prosjekt er', projectInfo: 'Et prosjekt samler flere planer for samme byggejobb.', newProjectName: 'Nytt prosjektnavn', projectPlaceholder: 'Spisestuestol',
+  loadSavedPlan: 'Last inn lagret plan', savedPlans: 'DINE LAGREDE PLANER', nothingSavedShort: 'Ingenting er lagret ennå. Kjør en plan og gi den navn så havner den her.', renameDeleteHint: 'Gi nytt navn eller slett en lagret plan fra dashbordet.',
+  whatPageReturns: 'Hva siden gir deg og begrensningene',
+  boardsHint: 'Bord, innkjøpsliste, kapperekkefølge og restbit',
+  sheetsHint: 'Plater, én layout per plate, vendte deler og svinn',
+  modelHint: 'Bord og plater, gruppert etter størrelse – klare for riktig optimerer',
+  partsAgainstStock: '{{parts}} deler mot {{stock}} lager{{unit}}',
+  stockUnit: 'lengde', stockUnits: 'lengder',
+  checkStock: 'Kontroller disse mot leverandøren før du planlegger. Lengdene og eventuelle priser lagres med planen.',
+  bladeTakes: 'Sagbladet tar',
+  pricedForPlan: 'Prissatt · {{total}} {{currency}} for hele planen',
+  tileSummary: '{{count}} fliser å kjøpe · minste kutt {{cut}} · {{offcuts}} restbiter gjenbrukt',
+  forAllParts: 'for alle {{count}} deler', changeParts: 'Endre delene', backToSave: 'Tilbake til lagring', nameAndSave: 'Gi navn og lagre', keptPlan: 'Lagret på denne instansen under kontoen din.', namePlan: 'Gi planen et navn, velg hvor den hører hjemme, og lagre den på denne instansen.', filedUnder: 'Plassert under {{group}}.', unfiled: 'Uten prosjekt. Åpne den fra dashbordet.',
+  planNamePlaceholder: 'Plannavn', savedNameHint: 'Navnet vises på det lagrede diagrammet.', planToUpdate: 'Plan som skal oppdateres', close: 'Lukk', load: 'Last inn', actions: 'Handlinger', planProgress: 'Planens fremdrift', working: 'Arbeider',
+  readyToRead: 'Klar til å leses', chooseFileContinue: 'Velg en fil for å fortsette', include: 'Inkluder', cutlist: 'Kappliste', planAlone: 'Planlegg alene', cutlistsFound: 'Kapplister funnet', cutlistsIntro: 'Hver unike størrelse i {{model}}, gruppert slik at du kan planlegge dem sammen eller separat.',
+  readsFromModel: 'Leser fra modellen din', planAndKeep: 'Planlegg og lagre dem', waitsForCutlists: 'Venter på valgte kapplister', modelFileRequired: 'Velg en modellfil', noModelComponents: 'Fant ingen bord- eller platekomponenter i filen.', modelReadFailed: 'Kunne ikke lese modellen', noFileYet: 'Ingen fil ennå',
+  enlargeBoardDiagram: 'Forstørr kapplanens diagram', boardDiagramAlt: 'Kapplandiagram: hvert bord med kappene i rekkefølge', diagramCaption: '{{count}} bord · samme skala · sagspor i rødt · klikk for å forstørre', cuttingPlanDiagram: 'Kapplandiagram', cuttingPlan: 'KAPPLAN', lengthMm: 'Lengde mm', qty: 'Antall',
+  turned90: 'rotert 90°', hatchingWaste: 'Skravering viser svinn. Streket omriss er en del som er rotert 90°.', part: 'Del', sheet: 'Plate', atXY: 'Ved x, y', turned: 'Rotert', area: 'Areal', sheetLayoutDiagram: 'Platelayoutdiagram', sheetLayout: 'PLATELAYOUT', sheetDiagramAlt: 'Platelayoutdiagram: alle plater med delene plassert',
+  pricePerMetre: 'Pris per meter · {{currency}}', onePriceAll: 'Samme pris for alle lengder', allStock: 'Alt lager', appliesTo: 'Gjelder', uniform: 'Lik', priceAria: 'Lik pris per meter i {{currency}}', priceLengthAria: 'Pris per meter for lengden {{length}} mm', addStockToPrice: 'Legg til lagerlengder på delsteget for å prise dem', perBoard: 'Per bord',
+  whatChase: 'Hva skal planen optimalisere?', leastWaste: 'Minst svinn', leastWasteHint: 'Færrest millimeter som kastes', leastMoney: 'Lavest kostnad', leastMoneyHint: 'Billigere lager selv om mer restbit blir igjen', pricing: 'Prissetter planen', changedPrices: 'Du har endret prisene siden planen ble priset. Alt nedenfor gjelder det forrige settet – bruk endringene for å prise på nytt.', whatCosts: 'Hva planen koster', allFigures: 'Alle beløp i {{currency}}', ownPrices: 'Dine priser brukes på lageret planen faktisk kjøper – Planqer henter ingen leverandørpriser.', inOffcut: 'I restbiten', perMetreParts: 'Per meter deler', chasing: 'Optimaliserer for', changedSince: 'Hva som endret seg siden forrige kjøring', figure: 'Verdi', diagramRedrawn: 'En endring i bord eller restbit gjorde at kapplanens diagram ovenfor ble tegnet på nytt.', buy: 'Dette kjøper du', noPrices: 'Planen på skjermen har ingen priser ennå. Prislegg den så vises kostnaden her.', unchanged: 'uendret',
+  fullTile: 'Hel flis', noCutNeeded: 'Ingen kapping nødvendig', sliver: 'smal bit', sliverCount: '{{count}} smale biter', diagonalOpening: 'Diagonal, kappet rundt en åpning', diagonal: 'Diagonal', viewCut: 'Vis kutt {{label}}', openingDiagram: 'Kapp rundt en åpning – se diagrammet', straightCut: 'Rett kutt', cutTemplate: 'KAPPMAL {{label}}', cutTemplateAria: 'Kappmal {{label}}', howToCut: 'Slik kapper du:', cutInstructions: 'Det solide lyse området er det du beholder. Skravert grått er svinn. Den oransje linjen viser hvor du skal kappe.', kind: 'Type', fromOffcut: 'Fra restbit', pieceMeta: 'Del {{label}} – {{width}}×{{height}} mm flis', finalSize: 'Ferdig størrelse: {{width}}×{{height}} mm', edges: 'Kanter',
+  tilesToBuy: 'fliser å kjøpe', tightestCut: 'Smaleste kutt', noneCut: 'Ingen kapping', distinctCutSizes: 'Ulike kappmål',
+  changeSurface: 'Endre overflaten', saveLayout: 'Lagre layout', saveLayoutButton: 'Lagre layout', updateLayout: 'Oppdater layout',
+  tilesAroundOpening: 'Fliser kappet rundt en åpning', offcutsReused: 'Gjenbrukte restbiter', sliversBelow: 'Smale biter under grensen', materialUsed: 'Brukt materiale', offcutExplanation: 'Restbiten er kostnaden for materialet som blir igjen etter kappingen.',
+});
+Object.assign(locale.legacy, {
+  fileSize: '{{format}} filstørrelse', material: 'Materiale', status: 'Status',
+});
+Object.assign(locale.tileUi, {
+  sliverSummary: 'Smaleste kutt', off: 'av', thresholdUnit: 'mm – en kappet bit som er smalere enn dette markeres',
+  ruleOfThumb: 'En vanlig tommelfingerregel er en tredjedel av flisens egen bredde.',
+  extraTiles: '% ekstra flis for svinn og feil', reuseHint: 'Restbiter kan fylle andre kutt og redusere antallet hele fliser.',
+  fixFields: 'Rett feltene ovenfor så kan layouten kjøres', pickLayout: 'Velg en layout',
+  pickLayoutIntro: 'Rangert alternativer, ikke ett automatisk svar – kantmargin, flisforbruk og symmetri kan stå mot hverandre.',
+  tilesToBuy: 'fliser å kjøpe', fullTiles: 'Hele fliser', cutTiles: 'Kappede fliser', used: 'Brukt',
+  changeSurface: 'Endre overflaten', nameIt: 'Gi den et navn', layoutSaved: 'Layout lagret', saveLayout: 'Lagre denne layouten',
+  keptLayout: 'Lagret på denne instansen under kontoen din.', nameLayout: 'Gi layouten et navn', savedAs: 'Lagret som {{name}}',
+  filedUnder: 'Plassert under {{group}}.', notFiled: 'Uten prosjekt.', saveAs: 'Lagre som', createPlan: 'Opprett ny plan',
+  updatePlan: 'Oppdater eksisterende plan', planToUpdate: 'Plan som skal oppdateres', planName: 'Plannavn', planPlaceholder: 'Plannavn',
+  layoutNameHint: 'Navnet vises på den lagrede layouten', openDashboard: 'Åpne dashbordet ditt', loadSaved: 'Last inn lagret plan',
+  savedPlans: 'DINE LAGREDE PLANER', nothingSaved: 'Ingenting er lagret ennå. Løs en layout og gi den navn så havner den her.',
+  name: 'Navn', surface: 'Overflate', actions: 'Handlinger', load: 'Last inn', renameDelete: 'Gi nytt navn eller slett fra dashbordet.',
+});
+Object.assign(locale.workflow, {
+  sheetPartsSummary_one: '{{count}} del · {{width}} × {{height}} mm plate', sheetsSummary_one: '{{count}} plate · {{efficiency}} % utnyttet',
+  sheetPartsSummary: '{{count}} deler · {{width}} × {{height}} mm plate', sheetsSummary: '{{count}} plater · {{efficiency}} % utnyttet',
+  sheetSource: 'Platen du kapper fra', sheetSourceHint: 'Det du kapper ut av, ikke det du trenger', width: 'Bredde', height: 'Høyde', material: 'Materiale',
+  positionMm: 'Posisjon mm', layout: 'Layout', planName: 'Plannavn', planSaved: 'Plan lagret', saveThisPlan: 'Lagre denne planen',
+});
+
+export default locale;
