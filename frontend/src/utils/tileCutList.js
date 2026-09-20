@@ -105,29 +105,29 @@ const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (c) => ({
 // by default in most browsers unless the user opts into "print background
 // graphics", so a colored square could silently vanish on a printed page.
 // The size numbers and kind text carry the same information on paper.
-export const buildCutListHtml = (candidate) => {
+export const buildCutListHtml = (candidate, t) => {
   if (!candidate?.tiles?.length) return '';
   const { fullCount, cutGroups } = buildCutList(candidate.tiles);
   if (fullCount === 0 && cutGroups.length === 0) return '';
 
   const rows = [];
   if (fullCount > 0) {
-    rows.push(`<tr><td>Full tile</td><td>No cut needed</td><td>—</td><td>${fullCount}</td></tr>`);
+    rows.push(`<tr><td>${t('ui.fullTile')}</td><td>${t('ui.noCutNeeded')}</td><td>—</td><td>${fullCount}</td></tr>`);
   }
   cutGroups.forEach((g) => {
     const sliver = g.sliverCount > 0
-      ? ` <b>(${g.sliverCount === g.count ? 'sliver' : `${g.sliverCount} sliver`})</b>`
+      ? ` <b>(${g.sliverCount === g.count ? t('ui.sliver') : t('ui.sliverCount', { count: g.sliverCount })})</b>`
       : '';
     const kind = g.isDiagonal
-      ? (g.kind === 'notched' ? 'Diagonal, cut around an opening' : 'Diagonal')
-      : (g.kind === 'notched' ? 'Cut around an opening' : 'Straight cut');
+      ? (g.kind === 'notched' ? t('ui.diagonalOpening') : t('ui.diagonal'))
+      : (g.kind === 'notched' ? t('ui.openingDiagram') : t('ui.straightCut'));
     const detail = g.isDiagonal && g.edgeLengths
       ? ` (${g.edgeLengths.map((length) => Math.round(length)).join(' · ')} mm)`
       : '';
     const labeledKind = `${kind}${detail}${g.isDiagonal && g.label ? ` [${g.label}]` : ''}`;
-    const offcut = g.reusedCount > 0 ? `${g.reusedCount} of ${g.count}` : '—';
+     const offcut = g.reusedCount > 0 ? `${g.reusedCount} of ${g.count}` : '—';
     const template = candidate.piece_diagrams?.[g.label]
-      ? `<div class="piece-template-meta"><b>Piece ${escapeHtml(g.label)} - ${mm(g.nominalWidth)} \u00d7 ${mm(g.nominalHeight)} mm tile</b><br>Final size: ${mm(g.width)} \u00d7 ${mm(g.height)} mm${g.edgeLengths ? ` | Edges: ${g.edgeLengths.map((length) => mm(length)).join(' \u00b7 ')} mm` : ''}</div><img src="${candidate.piece_diagrams[g.label]}" alt="Cut template for piece ${escapeHtml(g.label)}" class="piece-template" /><p class="piece-template-note"><b>How to cut:</b> The solid (light) area is what you keep. The hatched (gray) area is waste. The orange line shows where to cut with your saw.</p>`
+       ? `<div class="piece-template-meta"><b>${t('ui.pieceMeta', { label: escapeHtml(g.label), width: mm(g.nominalWidth), height: mm(g.nominalHeight) })}</b><br>${t('ui.finalSize', { width: mm(g.width), height: mm(g.height) })}${g.edgeLengths ? ` | ${t('ui.edges')}: ${g.edgeLengths.map((length) => mm(length)).join(' · ')} mm` : ''}</div><img src="${candidate.piece_diagrams[g.label]}" alt="${t('ui.cutTemplateAria', { label: escapeHtml(g.label) })}" class="piece-template" /><p class="piece-template-note"><b>${t('ui.howToCut')}</b> ${t('ui.cutInstructions')}</p>`
       : '';
     rows.push(
       `<tr><td>${mm(g.width)} \u00d7 ${mm(g.height)}${sliver}</td>`
@@ -137,7 +137,7 @@ export const buildCutListHtml = (candidate) => {
 
   return `
     <table class="cut-list">
-      <thead><tr><th>Size mm</th><th>Kind</th><th>From offcut</th><th>Qty</th></tr></thead>
+       <thead><tr><th>${t('workflow.sizeMm')}</th><th>${t('ui.kind')}</th><th>${t('ui.fromOffcut')}</th><th>${t('workflow.qty')}</th></tr></thead>
       <tbody>${rows.join('')}</tbody>
     </table>`;
 };

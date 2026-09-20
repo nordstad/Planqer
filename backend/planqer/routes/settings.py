@@ -1,4 +1,5 @@
 import json
+from typing import Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
@@ -20,6 +21,7 @@ class UserSettingsResponse(BaseModel):
     default_currency: str
     preferred_algorithm: str
     preferred_units: str
+    preferred_language: Literal["en-GB", "sv-SE", "nb-NO"] | None
 
 
 class UserSettingsUpdate(BaseModel):
@@ -28,6 +30,7 @@ class UserSettingsUpdate(BaseModel):
     default_currency: str | None = None
     preferred_algorithm: str | None = None
     preferred_units: str | None = None
+    preferred_language: Literal["en-GB", "sv-SE", "nb-NO"] | None = None
 
 
 LEGACY_DEFAULT_BOARD_LENGTHS = [300, 360, 500]
@@ -58,6 +61,7 @@ def settings_to_response(settings: UserSettings) -> UserSettingsResponse:
         default_currency=settings.default_currency,
         preferred_algorithm=settings.preferred_algorithm,
         preferred_units=settings.preferred_units,
+        preferred_language=settings.preferred_language,
     )
 
 
@@ -103,6 +107,8 @@ async def update_user_settings(
         settings.preferred_algorithm = updates.preferred_algorithm
     if updates.preferred_units is not None:
         settings.preferred_units = updates.preferred_units
+    if updates.preferred_language is not None:
+        settings.preferred_language = updates.preferred_language
 
     await session.commit()
     await session.refresh(settings)

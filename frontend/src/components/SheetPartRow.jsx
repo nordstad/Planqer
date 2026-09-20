@@ -6,15 +6,17 @@
   Item/Length/Qty/Total/Remove) and Name keeps a real column width.
 */
 import { Strike } from './icons';
+import { useTranslation } from 'react-i18next';
 
 const SheetPartRow = ({ part, index, handlePartChange, removePart, error, canRemove }) => {
+  const { t } = useTranslation();
   return (
     <tr>
       <td>{String(index + 1).padStart(2, '0')}</td>
       <td style={{ width: '128px' }}>
         <div className="flex items-center gap-1">
           <input
-            aria-label={`Part width in millimetres, item ${index + 1}`}
+            aria-label={t('ui.partLengthAria', { item: index + 1 })}
             type="number"
             step="0.1"
             placeholder="800"
@@ -27,7 +29,7 @@ const SheetPartRow = ({ part, index, handlePartChange, removePart, error, canRem
           />
           <span style={{ color: 'var(--ink-3)' }}>×</span>
           <input
-            aria-label={`Part height in millimetres, item ${index + 1}`}
+            aria-label={t('ui.sheetHeightAria')}
             type="number"
             step="0.1"
             placeholder="400"
@@ -45,7 +47,7 @@ const SheetPartRow = ({ part, index, handlePartChange, removePart, error, canRem
       </td>
       <td style={{ width: '52px' }}>
         <input
-          aria-label={`Quantity, item ${index + 1}`}
+          aria-label={t('ui.quantityAria', { item: index + 1 })}
           type="number"
           step="1"
           placeholder="2"
@@ -59,9 +61,9 @@ const SheetPartRow = ({ part, index, handlePartChange, removePart, error, canRem
       </td>
       <td>
         <input
-          aria-label={`Part name, item ${index + 1}`}
+           aria-label={`${t('workflow.name')}, ${t('workflow.item').toLowerCase()} ${index + 1}`}
           type="text"
-          placeholder="Optional"
+           placeholder={t('ui.optional')}
           value={part.name || ''}
           onChange={(e) => handlePartChange(index, 'name', e.target.value)}
           className="cell-input"
@@ -74,8 +76,8 @@ const SheetPartRow = ({ part, index, handlePartChange, removePart, error, canRem
             type="button"
             onClick={() => removePart(index)}
             className="cell-strike"
-            aria-label={`Remove part, item ${index + 1}`}
-            title="Strike this line"
+             aria-label={t('ui.removePartAria', { item: index + 1 })}
+             title={t('ui.strikeLine')}
           >
             <Strike />
           </button>

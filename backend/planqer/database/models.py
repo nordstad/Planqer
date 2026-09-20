@@ -36,6 +36,7 @@ class UserSettings(SQLModel, table=True):
     default_currency: str = Field(default="SEK")
     preferred_algorithm: str = Field(default="auto")
     preferred_units: str = Field(default="mm")
+    preferred_language: str | None = Field(default=None)
 
     created_at: datetime | None = Field(
         default_factory=lambda: datetime.now(),

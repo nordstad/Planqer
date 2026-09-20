@@ -349,7 +349,7 @@
   /* ── app nav: one top bar, on every page, the only wayfinding ────────── */
   .app-nav { border-bottom: 1px solid var(--rule-hair); }
   .app-nav-row {
-    display: flex; align-items: center; gap: 24px; flex-wrap: wrap;
+    display: flex; align-items: center; gap: 12px; flex-wrap: nowrap;
     max-width: 1080px; margin: 0 auto; padding: 16px 24px;
   }
   .app-wordmark {
@@ -357,17 +357,18 @@
     color: var(--ink); text-decoration: none; display: flex; align-items: center; gap: 8px;
     flex: none;
   }
-  .app-nav-links { display: flex; gap: 22px; flex-wrap: wrap; font-size: 13.5px; flex: 1; }
+  .app-nav-links { display: flex; gap: 14px; flex-wrap: nowrap; font-size: 12.5px; flex: 1; min-width: 0; }
   .app-nav-link {
     color: var(--ink-2); text-decoration: none; padding: 3px 0;
-    border-bottom: 2px solid transparent; font-weight: 600;
+    border-bottom: 2px solid transparent; font-weight: 600; white-space: nowrap;
   }
   .app-nav-link:hover { color: var(--ink); }
   .app-nav-link.is-current { color: var(--ink); border-bottom-color: var(--accent); }
-  .app-nav-right { display: flex; align-items: center; gap: 16px; flex: none; margin-left: auto; }
+  .app-nav-right { display: flex; align-items: center; gap: 10px; flex: none; margin-left: auto; }
   @media (max-width: 767px) {
-    .app-nav-row { padding: 14px 16px; gap: 12px 16px; }
-    .app-nav-links { order: 3; flex-basis: 100%; gap: 16px 20px; }
+    .app-nav-row { padding: 14px 16px; gap: 12px 16px; flex-wrap: wrap; }
+    .app-nav-links { order: 3; flex-basis: 100%; gap: 16px 20px; flex-wrap: wrap; font-size: 13.5px; }
+    .app-nav-right { gap: 12px; }
   }
 
   /* ── modal header: kept for Save/Load/Delete sheets ──────────────────── */

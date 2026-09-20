@@ -9,9 +9,11 @@
 */
 
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { downloadProjectImage } from '../utils/api';
 
 const PlanThumb = ({ project, alt = '' }) => {
+  const { t } = useTranslation();
   const [url, setUrl] = useState(null);
   const [missing, setMissing] = useState(false);
 
@@ -49,7 +51,7 @@ const PlanThumb = ({ project, alt = '' }) => {
   return (
     <span className="thumb">
       {url && <img className="thumb-img" src={url} alt={alt} />}
-      {missing && <span className="thumb-none">No diagram saved</span>}
+       {missing && <span className="thumb-none">{t('ui.noDiagramSaved')}</span>}
     </span>
   );
 };

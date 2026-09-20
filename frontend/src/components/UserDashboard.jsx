@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import CatalogPage from './CatalogPage';
 import { useAuth } from '../contexts/AuthContext';
@@ -7,11 +8,12 @@ import UserSettings from './UserSettings';
 import TileCutListTable from './TileCutListTable';
 
 const TABS = [
-  { key: 'projects', label: 'My projects' },
-  { key: 'settings', label: 'Defaults' },
+  { key: 'projects', label: 'common.myProjects' },
+  { key: 'settings', label: 'common.defaults' },
 ];
 
 const UserDashboard = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { groupId } = useParams();
   const [activeTab, setActiveTab] = useState('projects');
@@ -45,7 +47,7 @@ const UserDashboard = () => {
         <>
           <dl className="job-block">
             <div className="job-cell" style={{ flex: '1 1 260px' }}>
-              <dt>Account</dt>
+               <dt>{t('ui.account')}</dt>
               <dd>{user?.email}</dd>
             </div>
           </dl>
@@ -58,7 +60,7 @@ const UserDashboard = () => {
                 className={`btn ${activeTab === tab.key ? 'btn-primary' : ''}`}
                 onClick={() => setActiveTab(tab.key)}
               >
-                {tab.label}
+                {t(tab.label)}
               </button>
             ))}
           </div>
@@ -71,22 +73,22 @@ const UserDashboard = () => {
       {!inProject && activeTab === 'settings' && <UserSettings />}
 
       {previewProject && (
-        <div className="cat-overlay" role="dialog" aria-modal="true" aria-label="Project preview" onClick={() => setPreviewProject(null)}>
+         <div className="cat-overlay" role="dialog" aria-modal="true" aria-label={t('ui.projectPreview')} onClick={() => setPreviewProject(null)}>
           <div className="cat-sheet" style={{ maxWidth: '960px' }} onClick={(e) => e.stopPropagation()}>
             <div className="masthead" style={{ marginTop: 0 }}>
               <span className="masthead-brand" style={{ fontSize: '13px' }}>{previewProject.name}</span>
               <span className="masthead-section" />
-              <button type="button" className="masthead-flash" onClick={() => setPreviewProject(null)}>Close</button>
+               <button type="button" className="masthead-flash" onClick={() => setPreviewProject(null)}>{t('common.close')}</button>
             </div>
             <div style={{ padding: '14px 16px 18px' }}>
               {previewProject.imageUrl ? (
                 <img
                   src={previewProject.imageUrl}
-                  alt={`Cutting plan diagram for ${previewProject.name}`}
+                   alt={`${t('ui.boardDiagramAlt')} ${previewProject.name}`}
                   style={{ width: '100%', background: 'var(--ground-2)', borderRadius: '10px', padding: '16px' }}
                 />
               ) : (
-                <p className="synthetic">Loading preview…</p>
+                 <p className="synthetic">{t('ui.loadingPreview')}</p>
               )}
               {previewProject.projectType === 'tile' && previewProject.layout_result && (
                 <div style={{ marginTop: '22px' }}>

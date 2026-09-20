@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import CatalogPage from './CatalogPage';
 import { BoardIcon, SheetIcon, CubeIcon, TileIcon, ArrowRight } from './icons';
 import { getHealth, getLatestRelease } from '../utils/api';
@@ -19,26 +20,26 @@ const isNewer = (latest, current) => {
 const TOOLS = [
   {
     path: '/cutting',
-    title: 'Board cutting',
-    body: 'Type part lengths and board stock. Boards, lumber, pipe.',
+    title: 'home.boardTitle',
+    body: 'home.boardDescription',
     Icon: BoardIcon,
   },
   {
     path: '/sheet-cutting',
-    title: 'Sheet cutting',
-    body: 'Nest rectangular parts on plywood, MDF, metal, glass.',
+    title: 'home.sheetTitle',
+    body: 'home.sheetDescription',
     Icon: SheetIcon,
   },
   {
     path: '/tile-layout',
-    title: 'Tile layout',
-    body: 'Tile, board, or panel a surface — where to start the grid, and how many to buy.',
+    title: 'home.tileTitle',
+    body: 'home.tileDescription',
     Icon: TileIcon,
   },
   {
     path: '/model-cutlist',
-    title: '3D model',
-    body: 'Upload an STL or STEP file — the model you already designed.',
+    title: 'home.modelTitle',
+    body: 'home.modelDescription',
     Icon: CubeIcon,
   },
 ];
@@ -53,9 +54,9 @@ const SAMPLE = {
   kerf: 66,
 };
 
-const CutPlanPreview = () => (
+const CutPlanPreview = ({ t }) => (
   <div className="hp-visual">
-    <div className="hp-visual-label">One real plan — {SAMPLE.parts} parts in</div>
+    <div className="hp-visual-label">{t('home.samplePlan', { count: SAMPLE.parts })}</div>
     <div className="hp-plate">
       <div className="hp-plate-cut" style={{ flex: 270 }}>270</div>
       <div className="hp-plate-kerf" />
@@ -81,14 +82,15 @@ const CutPlanPreview = () => (
       <div className="hp-plate-cut" style={{ flex: 90 }} />
       <div className="hp-plate-cut hp-plate-waste" style={{ flex: 14 }} />
     </div>
-    <div className="hp-visual-more">+ 7 more boards →</div>
+    <div className="hp-visual-more">{t('home.moreBoards', { count: SAMPLE.boards - 3 })}</div>
     <p className="hp-visual-caption">
-      <b>{SAMPLE.boards} boards</b> total · {SAMPLE.waste}mm waste · {SAMPLE.kerf}mm kerf — the exact output for this plan.
+      <b>{t('home.sampleCaptionBoards', { count: SAMPLE.boards })}</b> · {t('home.sampleCaption', { waste: SAMPLE.waste, kerf: SAMPLE.kerf })}
     </p>
   </div>
 );
 
 const HomePage = () => {
+  const { t } = useTranslation();
   const [version, setVersion] = useState(packageJson.version);
   const [latestVersion, setLatestVersion] = useState(null);
 
@@ -108,23 +110,21 @@ const HomePage = () => {
     <div className="hp-top">
       <div className="hp-hero-text">
         <h1 className="hp-h1">
-          Know what to buy.<br />Know where to <em>cut</em>.
+          {t('home.titleLineOne')}<br />{t('home.titleLineTwo')} <em>{t('home.cut')}</em>.
         </h1>
         <p className="hp-lede">
-          Guessing at material means paying for boards you didn't need, or coming up short at
-          the saw. Give Planqer your part list — or the model you already designed — and get
-          the fewest boards to buy, and exactly where to cut them.
+          {t('home.lede')}
         </p>
         <div className="hp-actions">
           <Link to="/cutting" className="btn-primary hp-cta">
-            Plan a cut <ArrowRight size={15} />
+            {t('home.planCut')} <ArrowRight size={15} />
           </Link>
-          <Link to="/model-cutlist" className="hp-alt">or start from your 3D model</Link>
+          <Link to="/model-cutlist" className="hp-alt">{t('home.startFromModel')}</Link>
         </div>
       </div>
 
       <div className="hp-visual-area">
-        <CutPlanPreview />
+         <CutPlanPreview t={t} />
       </div>
 
       {/* a tape-measure rule dividing the pitch from the launcher — the
@@ -137,37 +137,37 @@ const HomePage = () => {
             <Link key={path} to={path} className="hp-card">
               <div className="hp-card-ic"><Icon size={22} /></div>
               <div>
-                <h2>{title}</h2>
-                <p>{body}</p>
+               <h2>{t(title)}</h2>
+               <p>{t(body)}</p>
               </div>
               <span className="hp-card-arrow">→</span>
             </Link>
           ))}
         </div>
         <p className="hp-note">
-          Also draws <b>a diagram for every board or sheet</b> — and runs on <b>your own computer</b>.
-          No account is needed; signing in is optional and stays on this instance.
+           {t('home.noteBefore')} <b>{t('home.noteDiagram')}</b> — {t('home.noteRunsOn')} <b>{t('home.noteComputer')}</b>.
+           {t('home.noteAccount')}
         </p>
       </div>
     </div>
 
     <footer className="hp-footer">
       <div>
-        <Link to="/help">Help &amp; documentation</Link>
+         <Link to="/help">{t('home.helpDocumentation')}</Link>
         <a href="https://github.com/nordstad/Planqer" target="_blank" rel="noopener noreferrer">
-          Source on GitHub
+           {t('home.sourceGithub')}
         </a>
         <a href="https://opensource.org/licenses/MIT" target="_blank" rel="noopener noreferrer">
-          MIT licence
+           {t('home.mitLicence')}
         </a>
       </div>
 <span>
-        No cloud account · no tracking · no analytics{version ? ` · v${version}` : ''}
+         {t('home.footerPrivacy')}{version ? ` · v${version}` : ''}
         {updateAvailable && (
           <>
             {' · '}
             <a href="https://github.com/nordstad/Planqer/releases/latest" target="_blank" rel="noopener noreferrer">
-              v{latestVersion} available
+               {t('home.versionAvailable', { version: latestVersion })}
             </a>
           </>
         )}

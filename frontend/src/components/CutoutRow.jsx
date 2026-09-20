@@ -25,6 +25,7 @@
   hint, especially once the row starts failing validation right beside it.
 */
 import { Strike } from './icons';
+import { useTranslation } from 'react-i18next';
 
 const CutoutField = ({ tag, error, ...inputProps }) => (
   <label className="cutout-field">
@@ -35,6 +36,7 @@ const CutoutField = ({ tag, error, ...inputProps }) => (
 
 const CutoutRow = ({ cutout, index, handleCutoutChange, removeCutout, error, attempted }) => {
   const isPristine = !cutout.x && !cutout.y && !cutout.width && !cutout.height;
+  const { t } = useTranslation();
   const showErrors = attempted || !isPristine;
   const fieldError = (key) => (showErrors ? error?.[key] : undefined);
   const rowError = showErrors && error && (error.x || error.y || error.width || error.height);
@@ -47,7 +49,7 @@ const CutoutRow = ({ cutout, index, handleCutoutChange, removeCutout, error, att
           <div className="flex items-end justify-end gap-1">
             <CutoutField
               tag="x"
-              aria-label={`Cutout x position in millimetres, item ${index + 1}`}
+              aria-label={t('ui.cutoutPositionAria', { axis: 'x', item: index + 1 })}
               type="number"
               step="0.1"
               value={cutout.x}
@@ -58,7 +60,7 @@ const CutoutRow = ({ cutout, index, handleCutoutChange, removeCutout, error, att
             />
             <CutoutField
               tag="y"
-              aria-label={`Cutout y position in millimetres, item ${index + 1}`}
+              aria-label={t('ui.cutoutPositionAria', { axis: 'y', item: index + 1 })}
               type="number"
               step="0.1"
               value={cutout.y}
@@ -73,7 +75,7 @@ const CutoutRow = ({ cutout, index, handleCutoutChange, removeCutout, error, att
           <div className="flex items-end justify-end gap-1">
             <CutoutField
               tag="w"
-              aria-label={`Cutout width in millimetres, item ${index + 1}`}
+              aria-label={t('ui.cutoutSizeAria', { axis: 'width', item: index + 1 })}
               type="number"
               step="0.1"
               value={cutout.width}
@@ -84,7 +86,7 @@ const CutoutRow = ({ cutout, index, handleCutoutChange, removeCutout, error, att
             />
             <CutoutField
               tag="h"
-              aria-label={`Cutout height in millimetres, item ${index + 1}`}
+              aria-label={t('ui.cutoutSizeAria', { axis: 'height', item: index + 1 })}
               type="number"
               step="0.1"
               value={cutout.height}
@@ -97,9 +99,9 @@ const CutoutRow = ({ cutout, index, handleCutoutChange, removeCutout, error, att
         </td>
         <td>
           <input
-            aria-label={`Cutout label, item ${index + 1}`}
+            aria-label={t('ui.cutoutLabelAria', { item: index + 1 })}
             type="text"
-            placeholder="Window"
+            placeholder={t('ui.window')}
             value={cutout.label || ''}
             onChange={(e) => handleCutoutChange(index, 'label', e.target.value)}
             className="cell-input"
@@ -111,8 +113,8 @@ const CutoutRow = ({ cutout, index, handleCutoutChange, removeCutout, error, att
             type="button"
             onClick={() => removeCutout(index)}
             className="cell-strike"
-            aria-label={`Remove cutout, item ${index + 1}`}
-            title="Strike this line"
+            aria-label={t('ui.removeCutoutAria', { item: index + 1 })}
+            title={t('ui.strikeLine')}
           >
             <Strike />
           </button>

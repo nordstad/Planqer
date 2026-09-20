@@ -10,6 +10,7 @@
 */
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import CatalogPage from './CatalogPage';
 import { optimizeSheetCutting, saveSheetProject, getProjectGroups, createProjectGroup, getUserSheetProjects } from '../utils/api';
@@ -29,32 +30,33 @@ const STEP_PARTS = 0;
 const STEP_PLAN = 1;
 const STEP_SAVE = 2;
 
-const validateSheetParts = (parts) => parts.map((part) => {
+const validateSheetParts = (parts, t) => parts.map((part) => {
   const errors = {};
   const width = parseFloat(part.width);
   const height = parseFloat(part.height);
   const quantity = parseInt(part.quantity, 10);
 
-  if (!part.width || isNaN(width) || width <= 0) errors.width = 'Width must be a positive number';
-  else if (width > 5000) errors.width = 'Width cannot exceed 5000mm';
+  if (!part.width || isNaN(width) || width <= 0) errors.width = t('tileUi.positiveWidth');
+  else if (width > 5000) errors.width = t('tileUi.cannotExceed', { label: t('workflow.width'), max: '5000 mm' });
 
-  if (!part.height || isNaN(height) || height <= 0) errors.height = 'Height must be a positive number';
-  else if (height > 5000) errors.height = 'Height cannot exceed 5000mm';
+  if (!part.height || isNaN(height) || height <= 0) errors.height = t('tileUi.positiveHeight');
+  else if (height > 5000) errors.height = t('tileUi.cannotExceed', { label: t('workflow.height'), max: '5000 mm' });
 
-  if (!part.quantity || isNaN(quantity) || quantity <= 0) errors.quantity = 'Quantity must be a positive number';
-  else if (quantity > 1000) errors.quantity = 'Quantity cannot exceed 1000';
+  if (!part.quantity || isNaN(quantity) || quantity <= 0) errors.quantity = t('tileUi.numberRequired', { label: t('workflow.qty') });
+  else if (quantity > 1000) errors.quantity = t('tileUi.cannotExceed', { label: t('workflow.qty'), max: 1000 });
 
   return Object.keys(errors).length > 0 ? errors : null;
 });
 
 const SheetOptimizer = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [step, setStep] = useState(STEP_PARTS);
 
   const [parts, setParts] = useState([
-    { width: "800", height: "400", quantity: "2", name: "Shelf Back", id: "shelf_back" },
-    { width: "300", height: "400", quantity: "4", name: "Shelf Side", id: "shelf_side" },
-    { width: "780", height: "280", quantity: "2", name: "Shelf Bottom", id: "shelf_bottom" },
+    { width: "800", height: "400", quantity: "2", name: t('workflow.parts'), id: "shelf_back" },
+    { width: "300", height: "400", quantity: "4", name: t('workflow.parts'), id: "shelf_side" },
+    { width: "780", height: "280", quantity: "2", name: t('workflow.parts'), id: "shelf_bottom" },
   ]);
 
   const [sheetWidth, setSheetWidth] = useState("1200");
@@ -97,18 +99,18 @@ const SheetOptimizer = () => {
     const kerf = parseFloat(debouncedKerfWidth);
 
     setInputErrors({
-      parts: validateSheetParts(debouncedParts),
+       parts: validateSheetParts(debouncedParts, t),
       sheetWidth: !debouncedSheetWidth || isNaN(width) || width <= 0
-        ? "Sheet width must be a positive number"
-        : width > 10000 ? "Sheet width cannot exceed 10 000 mm" : "",
+         ? t('tileUi.positiveWidth')
+         : width > 10000 ? t('tileUi.cannotExceed', { label: t('workflow.width'), max: '10 000 mm' }) : "",
       sheetHeight: !debouncedSheetHeight || isNaN(height) || height <= 0
-        ? "Sheet height must be a positive number"
-        : height > 10000 ? "Sheet height cannot exceed 10 000 mm" : "",
+         ? t('tileUi.positiveHeight')
+         : height > 10000 ? t('tileUi.cannotExceed', { label: t('workflow.height'), max: '10 000 mm' }) : "",
       kerfWidth: !debouncedKerfWidth || isNaN(kerf) || kerf < 0
-        ? "A kerf of zero would plan cuts that lose no material"
-        : kerf > 50 ? "That kerf is wider than any saw blade — 2 to 4 mm is typical" : "",
+         ? t('modelUi.kerfZero')
+         : kerf > 50 ? t('modelUi.kerfWide') : "",
     });
-  }, [debouncedParts, debouncedSheetWidth, debouncedSheetHeight, debouncedKerfWidth]);
+  }, [debouncedParts, debouncedSheetWidth, debouncedSheetHeight, debouncedKerfWidth, t]);
 
   // This page requires sign-in, so project groups and saved plans are always available
   useEffect(() => {
@@ -219,14 +221,14 @@ const SheetOptimizer = () => {
       setResult(response);
       setStep(STEP_PLAN);
     } catch (error) {
-      setApiError(error.message || 'Unknown error');
+      setApiError(error.message || t('auditUi.unknownError'));
     }
     setLoading(false);
   };
 
   /* ── keeping a layout ──────────────────────────────────────────────────── */
   const nameError = saveAttempted && !projectName.trim()
-    ? 'Give the plan a name so you can find it again — “Shelf panels” beats “Untitled”'
+    ? t('workflow.nameAndKeep')
     : '';
 
   // Returns whether it worked, so the picker knows whether to close its field.
@@ -238,7 +240,7 @@ const SheetOptimizer = () => {
       setApiError("");
       return true;
     } catch (err) {
-      setApiError('Could not create that project: ' + err.message);
+      setApiError(`${t('auditUi.createProjectFailed')}: ${err.message}`);
       return false;
     }
   };
@@ -269,7 +271,7 @@ const SheetOptimizer = () => {
         ? prev.map(p => p.id === project.id ? project : p)
         : [project, ...prev]);
     } catch (error) {
-      setApiError(error.message || 'Could not save this plan');
+      setApiError(error.message || t('auditUi.saveFailed'));
     }
     setSaving(false);
   };
@@ -281,25 +283,25 @@ const SheetOptimizer = () => {
   /* ── the rail ──────────────────────────────────────────────────────────── */
   const steps = [
     {
-      label: 'Parts',
+      label: t('workflow.parts'),
       reachable: true,
       summary: hasErrors
-        ? 'Some lines need fixing'
-        : `${partCount} parts · ${mm(parseFloat(sheetWidth))} × ${mm(parseFloat(sheetHeight))} mm sheet`,
+        ? t('workflow.someLinesNeedFixing')
+        : t('workflow.sheetPartsSummary', { count: partCount, width: mm(parseFloat(sheetWidth)), height: mm(parseFloat(sheetHeight)) }),
     },
     {
-      label: 'The layout',
+      label: t('workflow.theLayout'),
       reachable: !!result,
       summary: result
-        ? `${result.total_sheets} ${result.total_sheets === 1 ? 'sheet' : 'sheets'} · ${result.overall_efficiency.toFixed(1)}% used`
+        ? t('workflow.sheetsSummary', { count: result.total_sheets, efficiency: result.overall_efficiency.toFixed(1) })
         : '',
-      locked: 'Packs from your parts',
+      locked: t('workflow.packsFromParts'),
     },
     {
-      label: 'Save',
+      label: t('workflow.save'),
       reachable: !!result,
-      summary: saved ? `Saved as ${saved.name}` : 'Name it and keep it',
-      locked: 'Waits for a layout',
+      summary: saved ? t('workflow.savedAs', { name: saved.name }) : t('workflow.nameAndKeep'),
+      locked: t('workflow.waitsForLayout'),
     },
   ];
 
@@ -318,20 +320,19 @@ const SheetOptimizer = () => {
         <form className="step-view is-form" onSubmit={handleLayoutSubmit}>
           <div className="step-head">
             <div>
-              <h1 className="step-h1">Parts to cut</h1>
+              <h1 className="step-h1">{t('workflow.partsToCut')}</h1>
               <p className="step-lede">
-                Every rectangle you need out of sheet stock. Planqer packs them onto
-                as few sheets as it can and shows where each one sits.
+                {t('workflow.partsToCutIntro')}
               </p>
             </div>
             <button type="button" className="btn" onClick={() => setLoadModalOpen(true)}>
-              Load a saved plan
+              {t('workflow.loadSavedPlan')}
             </button>
           </div>
 
           <table className="cat-table">
             <thead>
-              <tr><th>Item</th><th>Size mm</th><th>Qty</th><th>Name</th><th aria-label="Remove" /></tr>
+              <tr><th>{t('workflow.item')}</th><th>{t('workflow.sizeMm')}</th><th>{t('workflow.qty')}</th><th>{t('workflow.name')}</th><th aria-label={t('common.remove')} /></tr>
             </thead>
             <tbody>
               {parts.map((part, index) => (
@@ -351,7 +352,7 @@ const SheetOptimizer = () => {
             </tbody>
           </table>
           <button type="button" className="btn" style={{ marginTop: '12px' }} onClick={addPart}>
-            <Plus /> Add part
+            <Plus /> {t('workflow.addPart')}
           </button>
 
           {/* Kerf gets the same standalone bordered field as the board page,
@@ -362,7 +363,7 @@ const SheetOptimizer = () => {
             style={{ marginTop: '26px', paddingTop: '22px', borderTop: '1px solid var(--rule-hair)', flexWrap: 'wrap' }}
           >
             <div style={{ flex: 'none' }}>
-              <label className="form-label" htmlFor="sheet-kerf">Saw blade</label>
+              <label className="form-label" htmlFor="sheet-kerf">{t('workflow.sawBlade')}</label>
               <div className="flex items-center gap-2">
                 <input
                   id="sheet-kerf"
@@ -385,19 +386,19 @@ const SheetOptimizer = () => {
               className={inputErrors.kerfWidth ? 'text-danger text-[12.5px] font-semibold' : 'synthetic'}
               style={{ flex: '1 1 220px', margin: 0, paddingBottom: '11px' }}
             >
-              {inputErrors.kerfWidth || 'Every cut turns this much material into dust — the plan accounts for it'}
+              {inputErrors.kerfWidth || t('auditUi.sheetKerfHint')}
             </p>
           </div>
 
           <section style={{ marginTop: '30px', paddingTop: '22px', borderTop: '1px solid var(--rule-hair)' }}>
             <div className="section-rule">
-              <h2 className="section-title">The sheet you're cutting from</h2>
-              <span className="folio">What you're cutting out of, not what you need</span>
+              <h2 className="section-title">{t('workflow.sheetSource')}</h2>
+              <span className="folio">{t('workflow.sheetSourceHint')}</span>
             </div>
             <table className="cat-table">
               <tbody>
                 <tr>
-                  <td style={{ textAlign: 'left' }}>Width</td>
+                    <td style={{ textAlign: 'left' }}>{t('workflow.width')}</td>
                   <td>
                     <input
                       type="number"
@@ -407,13 +408,13 @@ const SheetOptimizer = () => {
                       onChange={(e) => setSheetField(setSheetWidth)(e.target.value)}
                       className={`cell-input ${inputErrors.sheetWidth ? 'is-error' : ''}`}
                       required
-                      aria-label="Sheet width in millimetres"
+                  aria-label={t('ui.sheetWidthAria')}
                     />
                   </td>
                   <td style={{ width: '40px', color: 'var(--ink-3)' }}>mm</td>
                 </tr>
                 <tr>
-                  <td style={{ textAlign: 'left' }}>Height</td>
+                    <td style={{ textAlign: 'left' }}>{t('workflow.height')}</td>
                   <td>
                     <input
                       type="number"
@@ -423,13 +424,13 @@ const SheetOptimizer = () => {
                       onChange={(e) => setSheetField(setSheetHeight)(e.target.value)}
                       className={`cell-input ${inputErrors.sheetHeight ? 'is-error' : ''}`}
                       required
-                      aria-label="Sheet height in millimetres"
+                  aria-label={t('ui.sheetHeightAria')}
                     />
                   </td>
                   <td style={{ color: 'var(--ink-3)' }}>mm</td>
                 </tr>
                 <tr>
-                  <td style={{ textAlign: 'left' }}>Material</td>
+                    <td style={{ textAlign: 'left' }}>{t('workflow.material')}</td>
                   {/* Kept in the value column rather than spanning into the unit
                       column, so the control lines up with the numbers above it */}
                   <td>
@@ -437,14 +438,14 @@ const SheetOptimizer = () => {
                       value={materialType}
                       onChange={(e) => setSheetField(setMaterialType)(e.target.value)}
                       className="form-select"
-                      aria-label="Material type"
+                  aria-label={t('ui.materialType')}
                     >
-                      <option value="plywood">Plywood</option>
-                      <option value="mdf">MDF</option>
-                      <option value="metal">Metal sheet</option>
-                      <option value="acrylic">Acrylic</option>
-                      <option value="cardboard">Cardboard</option>
-                      <option value="other">Other</option>
+                      <option value="plywood">{t('ui.materialPlywood')}</option>
+                      <option value="mdf">{t('ui.materialMdf')}</option>
+                      <option value="metal">{t('ui.materialMetal')}</option>
+                      <option value="acrylic">{t('ui.materialAcrylic')}</option>
+                      <option value="cardboard">{t('ui.materialCardboard')}</option>
+                      <option value="other">{t('ui.materialOther')}</option>
                     </select>
                   </td>
                   <td />
@@ -458,29 +459,29 @@ const SheetOptimizer = () => {
               style={{ marginTop: '10px' }}
             >
               {sheetError
-                || 'Check these against the sheet before you plan. Standard plywood is 1220 × 2440 mm or 1200 × 2500 mm — measure yours, the packing depends on it.'}
+                || t('auditUi.sheetStockHint')}
             </p>
           </section>
 
           <div style={{ marginTop: '26px' }}>
             <Disclosure
-              title="Packing strategy"
-              hint={`${algorithm ? algorithm.replace(/_/g, ' ') : 'Auto-selected'} · 90° rotation ${allowRotation ? 'allowed' : 'off'}`}
+              title={t('ui.packingStrategy')}
+              hint={`${algorithm ? algorithm.replace(/_/g, ' ') : t('ui.autoSelected')} · 90° rotation ${allowRotation ? t('ui.rotationAllowed') : t('ui.rotationOff')}`}
               open={strategyOpen}
               onToggle={() => setStrategyOpen(v => !v)}
             >
-              <label className="form-label" htmlFor="sheet-algorithm">Algorithm</label>
+              <label className="form-label" htmlFor="sheet-algorithm">{t('ui.algorithm')}</label>
               <select
                 id="sheet-algorithm"
                 value={algorithm}
                 onChange={(e) => setSheetField(setAlgorithm)(e.target.value)}
                 className="form-select"
               >
-                <option value="">Auto-select — picks one from your parts</option>
-                <option value="bottom_left_fill">Bottom-left fill — fastest</option>
-                <option value="best_fit_2d">Best fit — balanced</option>
-                <option value="genetic_2d">Genetic — slowest, usually tightest</option>
-                <option value="guillotine_cut">Guillotine — only full-width cuts, for a panel saw</option>
+                <option value="">{t('ui.autoSelect')}</option>
+                <option value="bottom_left_fill">{t('ui.bottomLeft')}</option>
+                <option value="best_fit_2d">{t('ui.bestFit')}</option>
+                <option value="genetic_2d">{t('ui.genetic')}</option>
+                <option value="guillotine_cut">{t('ui.guillotine')}</option>
               </select>
               <label className="flex items-start gap-3" style={{ marginTop: '14px', cursor: 'pointer' }}>
                 <input
@@ -490,7 +491,7 @@ const SheetOptimizer = () => {
                   style={{ marginTop: '3px' }}
                 />
                 <span>
-                  <b style={{ fontSize: '13.5px' }}>Allow 90° rotation</b>
+                   <b style={{ fontSize: '13.5px' }}>{t('ui.allowRotation')}</b>
                   <span className="block synthetic">
                     Turns parts to fit tighter. Switch it off when the grain or the
                     face pattern has to run one way.
@@ -500,26 +501,26 @@ const SheetOptimizer = () => {
             </Disclosure>
 
             <Disclosure
-              title="What this page returns, and its limits"
-              hint="Sheets, a layout per sheet, which parts turned, and the waste"
+              title={t('ui.whatPageReturns')}
+              hint={t('ui.sheetsHint')}
               open={limitsOpen}
               onToggle={() => setLimitsOpen(v => !v)}
             >
               <div className="grid gap-x-8 gap-y-5 md:grid-cols-2">
                 <table className="cat-table is-reference">
                   <tbody>
-                    <tr><td>Sheets</td><td>The fewest sheets that carry every part</td></tr>
-                    <tr><td>Layout</td><td>Where each part sits on every sheet</td></tr>
-                    <tr><td>Rotation</td><td>Which parts turned 90° to fit, if allowed</td></tr>
-                    <tr><td>Waste</td><td>What is left once parts and blade have taken theirs</td></tr>
+                    <tr><td>{t('ui.sheet')}</td><td>{t('help.fewestSheets')}</td></tr>
+                    <tr><td>{t('workflow.layout')}</td><td>{t('help.sheetPlacement')}</td></tr>
+                    <tr><td>{t('ui.turned')}</td><td>{t('help.turnedParts')}</td></tr>
+                    <tr><td>{t('ui.waste')}</td><td>{t('help.sheetWaste')}</td></tr>
                   </tbody>
                 </table>
                 <table className="cat-table is-reference">
                   <tbody>
-                    <tr><td>Part width or height</td><td>5 000 mm maximum</td></tr>
-                    <tr><td>Sheet width or height</td><td>10 000 mm maximum</td></tr>
-                    <tr><td>Quantity per part</td><td>1 000 maximum</td></tr>
-                    <tr><td>Kerf</td><td>0–50 mm; 2–4 typical</td></tr>
+                    <tr><td>{t('workflow.width')} / {t('workflow.height')}</td><td>≤ 5 000 mm</td></tr>
+                    <tr><td>{t('workflow.sheetSource')}</td><td>≤ 10 000 mm</td></tr>
+                    <tr><td>{t('workflow.qty')} {t('workflow.parts')}</td><td>≤ 1 000</td></tr>
+                    <tr><td>{t('legacy.kerf')}</td><td>0–50 mm (2–4)</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -529,12 +530,12 @@ const SheetOptimizer = () => {
           <div className="step-foot">
             <p className="synthetic step-foot-note">
               {hasErrors
-                ? 'Fix the struck lines above and the layout can run'
+                 ? t('ui.fixLines', { kind: t('workflow.layout') })
                 : `${partCount} parts onto ${mm(parseFloat(sheetWidth))} × ${mm(parseFloat(sheetHeight))} mm stock`}
             </p>
             <div className="step-foot-act">
               <button type="submit" className="btn-order" disabled={loading || hasErrors}>
-                {loading ? <><Loader /> Packing</> : <>Pack the sheets <ArrowRight size={15} /></>}
+                {loading ? <><Loader /> {t('workflow.packing')}</> : <>{t('workflow.packSheets')} <ArrowRight size={15} /></>}
               </button>
             </div>
           </div>
@@ -546,10 +547,9 @@ const SheetOptimizer = () => {
         <div className="step-view">
           <div className="step-head" style={{ marginBottom: '20px' }}>
             <div>
-              <h1 className="step-h1">Your sheet layout</h1>
+              <h1 className="step-h1">{t('workflow.yourSheetLayout')}</h1>
               <p className="step-lede">
-                Every sheet drawn to its real proportions, with each part placed
-                where it should be cut.
+                {t('workflow.sheetLayoutIntro')}
               </p>
             </div>
           </div>
@@ -558,15 +558,15 @@ const SheetOptimizer = () => {
             <div className="plan-answer-fig">
               <b>{result.total_sheets}</b>
               <span className="answer-kicker">
-                {result.total_sheets === 1 ? 'sheet' : 'sheets'} for all {partCount} parts
+                 {t('workflow.sheetsSummary', { count: result.total_sheets, efficiency: result.overall_efficiency.toFixed(1) })}
               </span>
             </div>
             <dl className="plan-facts">
               <div className="plan-fact">
-                <dt>Material used</dt><dd>{result.overall_efficiency.toFixed(1)} %</dd>
+                 <dt>{t('ui.materialUsed')}</dt><dd>{result.overall_efficiency.toFixed(1)} %</dd>
               </div>
               <div className="plan-fact">
-                <dt>Waste</dt>
+                 <dt>{t('ui.waste')}</dt>
                 <dd>
                   {result.total_waste_area >= 1000000
                     ? `${(result.total_waste_area / 1000000).toFixed(2)} m²`
@@ -574,7 +574,7 @@ const SheetOptimizer = () => {
                 </dd>
               </div>
               <div className="plan-fact">
-                <dt>Strategy</dt><dd>{result.algorithm_used.replace(/_/g, ' ')}</dd>
+                 <dt>{t('ui.strategy')}</dt><dd>{result.algorithm_used.replace(/_/g, ' ')}</dd>
               </div>
             </dl>
           </div>
@@ -583,11 +583,11 @@ const SheetOptimizer = () => {
 
           <div className="step-foot">
             <button type="button" className="btn" onClick={() => setStep(STEP_PARTS)}>
-              <ArrowLeft /> Change the parts
+               <ArrowLeft /> {t('ui.changeParts')}
             </button>
             <div className="step-foot-act">
               <button type="button" className="btn-order" onClick={() => setStep(STEP_SAVE)}>
-                {saved ? 'Back to the save' : 'Name and save'} <ArrowRight size={15} />
+                 {saved ? t('ui.backToSave') : t('ui.nameAndSave')} <ArrowRight size={15} />
               </button>
             </div>
           </div>
@@ -599,11 +599,11 @@ const SheetOptimizer = () => {
         <form className="step-view is-form" onSubmit={handleSave}>
           <div className="step-head" style={{ marginBottom: '22px' }}>
             <div>
-              <h1 className="step-h1">{saved ? 'Plan saved' : 'Save this plan'}</h1>
+              <h1 className="step-h1">{saved ? t('workflow.planSaved') : t('workflow.saveThisPlan')}</h1>
               <p className="step-lede">
                 {saved
-                  ? 'Kept on this instance under your account, so it follows you to any browser without leaving the machine.'
-                  : 'Name it, choose where it belongs, and it stays on this instance under your account — ready to open again from any browser.'}
+                   ? t('ui.keptPlan')
+                   : t('ui.namePlan')}
               </p>
             </div>
           </div>
@@ -612,18 +612,16 @@ const SheetOptimizer = () => {
             <div className="saved-mark">
               <Tick size={16} />
               <div>
-                <b>Saved as {saved.name}</b>
+                   <b>{t('ui.savedAs', { name: saved.name })}</b>
                 <p>
-                  {savedGroupName
-                    ? <>Filed under {savedGroupName}. Open it any time from <Link to="/dashboard">your dashboard</Link>.</>
-                    : <>Not in a project. Open it any time from <Link to="/dashboard">your dashboard</Link>.</>}
+                   {savedGroupName ? t('ui.filedUnder', { group: savedGroupName }) : t('ui.unfiled')}
                 </p>
               </div>
             </div>
           ) : (
             <>
               <div style={{ marginBottom: '24px' }}>
-                <label className="form-label" htmlFor="sheet-save-mode">Save as</label>
+                 <label className="form-label" htmlFor="sheet-save-mode">{t('ui.saveAs')}</label>
                 <select
                   id="sheet-save-mode"
                   className="form-select"
@@ -638,14 +636,14 @@ const SheetOptimizer = () => {
                     }
                   }}
                 >
-                  <option value="new">Create a new plan</option>
-                  <option value="update" disabled={!userProjects.length}>Update existing plan</option>
+                   <option value="new">{t('ui.createNewPlan')}</option>
+                   <option value="update" disabled={!userProjects.length}>{t('ui.updateExistingPlan')}</option>
                 </select>
                 {saveMode === 'update' && editingProject && (
                   <select
                     className="form-select"
                     style={{ marginTop: '10px' }}
-                    aria-label="Plan to update"
+                     aria-label={t('ui.planToUpdate')}
                     value={editingProject.id}
                     onChange={(e) => {
                       const target = userProjects.find(p => p.id === e.target.value);
@@ -668,12 +666,12 @@ const SheetOptimizer = () => {
               </div>
 
               <div>
-                <label className="form-label" htmlFor="plan-name">Plan name</label>
+                <label className="form-label" htmlFor="plan-name">{t('workflow.planName')}</label>
                 <input
                   id="plan-name"
                   type="text"
                   className={`form-input ${nameError ? 'form-input-error' : ''}`}
-                  placeholder="Shelf panels"
+                   placeholder={t('ui.planNamePlaceholder')}
                   value={projectName}
                   onChange={(e) => setProjectName(e.target.value)}
                   aria-invalid={!!nameError}
@@ -685,7 +683,7 @@ const SheetOptimizer = () => {
                   style={{ marginTop: '7px' }}
                   role={nameError ? 'alert' : undefined}
                 >
-                  {nameError || 'The name goes on the saved diagram, so label it the way you would label the offcut pile'}
+                   {nameError || t('ui.savedNameHint')}
                 </p>
               </div>
             </>
@@ -693,18 +691,18 @@ const SheetOptimizer = () => {
 
           <div className="step-foot">
             <button type="button" className="btn" onClick={() => setStep(STEP_PLAN)}>
-              <ArrowLeft /> Back to the layout
+               <ArrowLeft /> {t('workflow.backToLayout')}
             </button>
             {saved ? (
               <div className="step-foot-act">
                 <Link to="/dashboard" className="btn-order">
-                  Open your dashboard <ArrowRight size={15} />
+                   {t('ui.openDashboard')} <ArrowRight size={15} />
                 </Link>
               </div>
             ) : (
               <div className="step-foot-act">
                 <button type="submit" className="btn-order" disabled={saving}>
-                   {saving ? <><Loader /> Saving</> : saveMode === 'update' ? 'Update plan' : 'Save plan'}
+                    {saving ? <><Loader /> {t('workflow.saving')}</> : saveMode === 'update' ? t('workflow.updatePlan') : t('workflow.savePlan')}
                 </button>
               </div>
             )}
@@ -714,23 +712,23 @@ const SheetOptimizer = () => {
 
       {/* ── load a saved plan ─────────────────────────────────────────────── */}
       {loadModalOpen && (
-        <div className="cat-overlay" role="dialog" aria-modal="true" aria-label="Load a saved plan">
+         <div className="cat-overlay" role="dialog" aria-modal="true" aria-label={t('workflow.loadSavedPlan')}>
           <div className="cat-sheet">
             <div className="masthead" style={{ marginTop: 0 }}>
-              <span className="masthead-brand" style={{ fontSize: '13px' }}>YOUR SAVED PLANS</span>
+               <span className="masthead-brand" style={{ fontSize: '13px' }}>{t('ui.savedPlans')}</span>
               <span className="masthead-section" />
               <button type="button" className="masthead-flash" onClick={() => setLoadModalOpen(false)}>
-                Close
+                 {t('ui.close')}
               </button>
             </div>
             <div style={{ padding: '14px 16px 18px' }}>
               {userProjects.length === 0 ? (
                 <p style={{ color: 'var(--ink-3)', fontSize: '13px' }}>
-                  Nothing saved yet. Pack a layout, name it, and it lands here.
+                   {t('ui.nothingSavedShort')}
                 </p>
               ) : (
                 <table className="cat-table">
-                  <thead><tr><th>Name</th><th>Parts</th><th aria-label="Actions" /></tr></thead>
+                   <thead><tr><th>{t('ui.name')}</th><th>{t('ui.parts')}</th><th aria-label={t('ui.actions')} /></tr></thead>
                   <tbody>
                     {userProjects.map(project => (
                       <tr key={project.id}>
@@ -738,7 +736,7 @@ const SheetOptimizer = () => {
                         <td>{project.parts_data.reduce((sum, p) => sum + (p.quantity || 0), 0)}</td>
                         <td style={{ width: '90px' }}>
                           <button className="btn" style={{ padding: '5px 10px', minHeight: 0 }} onClick={() => loadProject(project)}>
-                            Load
+                             {t('ui.load')}
                           </button>
                         </td>
                       </tr>
@@ -747,7 +745,7 @@ const SheetOptimizer = () => {
                 </table>
               )}
               <p className="synthetic" style={{ marginTop: '12px' }}>
-                To rename or delete a saved plan, use <Link to="/dashboard">your dashboard</Link>.
+                 {t('ui.renameDeleteHint')}
               </p>
             </div>
           </div>

@@ -10,6 +10,7 @@
 */
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Download } from './icons';
 import TileCutListTable from './TileCutListTable';
 import { smallestCutMm } from '../utils/tileCutList';
@@ -17,6 +18,7 @@ import { smallestCutMm } from '../utils/tileCutList';
 const mm = (n) => (Number.isFinite(n) ? Math.round(n).toLocaleString('sv-SE') : '—');
 
 const TileResultDisplay = ({ candidate, projectName }) => {
+  const { t } = useTranslation();
   const [diagramOpen, setDiagramOpen] = useState(false);
   if (!candidate) return null;
 
@@ -41,18 +43,18 @@ const TileResultDisplay = ({ candidate, projectName }) => {
           className="cut-list-visualization"
           style={{ width: '100%', cursor: 'zoom-in' }}
           onClick={() => setDiagramOpen(true)}
-          aria-label="Enlarge tile layout diagram"
+           aria-label={t('ui.tileDiagramAria')}
         >
-          <img src={candidate.visualization} alt={`${candidate.label} — the full tile layout`} style={{ width: '100%', display: 'block' }} />
+           <img src={candidate.visualization} alt={`${candidate.label} — ${t('ui.tileDiagramAlt')}`} style={{ width: '100%', display: 'block' }} />
         </button>
       </figure>
 
       <div className="flex flex-wrap items-center justify-between gap-3" style={{ marginTop: '14px' }}>
         <p className="synthetic" style={{ margin: 0 }}>
-          Amber marks the joint lines; a red outline is a sliver below the guard.
+           {t('ui.amberJoint')}
         </p>
         <button type="button" className="btn" onClick={downloadDiagram}>
-          <Download /> Download diagram
+           <Download /> {t('workflow.downloadDiagram')}
         </button>
       </div>
 
@@ -71,53 +73,53 @@ const TileResultDisplay = ({ candidate, projectName }) => {
 
       <section style={{ marginTop: '26px' }}>
         <div className="section-rule">
-          <h2 className="section-title">By the numbers</h2>
-          <span className="folio">This candidate, in full</span>
+           <h2 className="section-title">{t('workflow.byTheNumbers')}</h2>
+           <span className="folio">{t('workflow.candidateInFull')}</span>
         </div>
         <table className="cat-table is-reference" style={{ marginTop: '14px' }}>
           <tbody>
-            <tr><td>Full tiles</td><td>{candidate.full_tile_count}</td></tr>
-            <tr><td>Cut tiles</td><td>{candidate.cut_tile_count}</td></tr>
-            {candidate.notched_count > 0 && <tr><td>Tiles cut around an opening</td><td>{candidate.notched_count}</td></tr>}
-            <tr><td>Offcuts reused</td><td>{candidate.reused_offcut_count}</td></tr>
-            <tr><td>Tiles to buy</td><td>{candidate.tiles_to_purchase}</td></tr>
-            <tr><td>With breakage allowance</td><td>{candidate.tiles_to_purchase_with_waste}</td></tr>
+            <tr><td>{t('ui.fullTiles')}</td><td>{candidate.full_tile_count}</td></tr>
+            <tr><td>{t('ui.cutTiles')}</td><td>{candidate.cut_tile_count}</td></tr>
+            {candidate.notched_count > 0 && <tr><td>{t('ui.tilesAroundOpening')}</td><td>{candidate.notched_count}</td></tr>}
+            <tr><td>{t('ui.offcutsReused')}</td><td>{candidate.reused_offcut_count}</td></tr>
+            <tr><td>{t('ui.tilesToBuy')}</td><td>{candidate.tiles_to_purchase}</td></tr>
+             <tr><td>{t('legacy.withBreakage')}</td><td>{candidate.tiles_to_purchase_with_waste}</td></tr>
             {isDiagonal ? (
               <tr>
-                <td>Tightest cut</td>
-                <td>{smallestCutMm(candidate) === null ? 'None cut' : `${mm(smallestCutMm(candidate))} mm`}</td>
+                 <td>{t('ui.tightestCut')}</td>
+                 <td>{smallestCutMm(candidate) === null ? t('ui.noneCut') : `${mm(smallestCutMm(candidate))} mm`}</td>
               </tr>
             ) : (
               <>
                 <tr>
-                  <td>Tightest cut, left/right edge</td>
-                  <td>{candidate.min_edge_cut_width === null ? 'None cut' : `${mm(candidate.min_edge_cut_width)} mm`}</td>
+                    <td>{t('ui.tightestLeftRight')}</td>
+                   <td>{candidate.min_edge_cut_width === null ? t('ui.noneCut') : `${mm(candidate.min_edge_cut_width)} mm`}</td>
                 </tr>
                 <tr>
-                  <td>Tightest cut, top/bottom edge</td>
-                  <td>{candidate.min_edge_cut_height === null ? 'None cut' : `${mm(candidate.min_edge_cut_height)} mm`}</td>
+                   <td>{t('ui.tightestTopBottom')}</td>
+                   <td>{candidate.min_edge_cut_height === null ? t('ui.noneCut') : `${mm(candidate.min_edge_cut_height)} mm`}</td>
                 </tr>
               </>
             )}
-            <tr><td>Slivers below the guard</td><td>{candidate.sliver_count}</td></tr>
-            <tr><td>Distinct cut sizes</td><td>{candidate.distinct_cut_sizes}</td></tr>
-            <tr><td>Material used</td><td>{(candidate.efficiency * 100).toFixed(1)}%</td></tr>
+             <tr><td>{t('ui.sliversBelow')}</td><td>{candidate.sliver_count}</td></tr>
+             <tr><td>{t('ui.distinctCutSizes')}</td><td>{candidate.distinct_cut_sizes}</td></tr>
+             <tr><td>{t('ui.materialUsed')}</td><td>{(candidate.efficiency * 100).toFixed(1)}%</td></tr>
           </tbody>
         </table>
       </section>
 
       {diagramOpen && (
-        <div className="cat-overlay" role="dialog" aria-modal="true" aria-label="Tile layout diagram" onClick={() => setDiagramOpen(false)}>
+         <div className="cat-overlay" role="dialog" aria-modal="true" aria-label={t('ui.tileLayoutDiagram')} onClick={() => setDiagramOpen(false)}>
           <div className="cat-sheet" style={{ maxWidth: '95vw' }} onClick={(e) => e.stopPropagation()}>
             <div className="masthead" style={{ marginTop: 0 }}>
-              <span className="masthead-brand" style={{ fontSize: '13px' }}>TILE LAYOUT</span>
+               <span className="masthead-brand" style={{ fontSize: '13px' }}>{t('ui.tileLayout')}</span>
               <span className="masthead-section" />
               <button type="button" className="masthead-flash" onClick={() => setDiagramOpen(false)}>
-                Close
+                 {t('common.close')}
               </button>
             </div>
             <div style={{ padding: '16px' }}>
-              <img src={candidate.visualization} alt={`${candidate.label} — the full tile layout`} style={{ display: 'block', width: '100%', height: 'auto' }} />
+               <img src={candidate.visualization} alt={`${candidate.label} — ${t('ui.tileDiagramAlt')}`} style={{ display: 'block', width: '100%', height: 'auto' }} />
             </div>
           </div>
         </div>

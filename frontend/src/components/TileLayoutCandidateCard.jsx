@@ -11,11 +11,13 @@
 */
 
 import { smallestCutMm } from '../utils/tileCutList';
+import { useTranslation } from 'react-i18next';
 
 const mm = (n) => (Number.isFinite(n) ? Math.round(n).toLocaleString('sv-SE') : '—');
 
 const TileLayoutCandidateCard = ({ candidate, selected, onSelect }) => {
   const hasSliver = candidate.sliver_count > 0;
+  const { t } = useTranslation();
   const smallestCut = smallestCutMm(candidate);
 
   return (
@@ -33,19 +35,19 @@ const TileLayoutCandidateCard = ({ candidate, selected, onSelect }) => {
         <b className="tile-candidate-label">{candidate.label}</b>
         <dl className="tile-candidate-facts">
           <div>
-            <dt>To buy</dt>
+            <dt>{t('ui.tilesToBuy')}</dt>
             <dd>{candidate.tiles_to_purchase_with_waste}</dd>
           </div>
           <div>
-            <dt>Smallest cut</dt>
-            <dd>{smallestCut === null ? 'None cut' : `${mm(smallestCut)} mm`}</dd>
+            <dt>{t('ui.tightestCut')}</dt>
+            <dd>{smallestCut === null ? t('ui.noneCut') : `${mm(smallestCut)} mm`}</dd>
           </div>
           <div>
-            <dt>Used</dt>
+            <dt>{t('ui.used')}</dt>
             <dd>{(candidate.efficiency * 100).toFixed(1)}%</dd>
           </div>
           <div>
-            <dt>Distinct cuts</dt>
+            <dt>{t('ui.distinctCutSizes')}</dt>
             <dd>{candidate.distinct_cut_sizes}</dd>
           </div>
         </dl>
