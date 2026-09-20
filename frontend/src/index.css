@@ -58,7 +58,7 @@
     --waste-dot:   rgba(236,231,216,.16);
   }
 
-  html { scroll-behavior: auto; }
+  html { scroll-behavior: auto; scrollbar-gutter: stable; }
 
   body {
     font-family: 'Archivo', system-ui, sans-serif;
