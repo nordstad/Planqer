@@ -416,7 +416,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
               <TileCutListTable candidate={project.layout_result} />
             </div>
           )}
-          {project.projectType !== 'tile' && <SavedMaterialList project={project} />}
+          <SavedMaterialList project={project} />
         </div>
       );
    };

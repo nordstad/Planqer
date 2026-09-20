@@ -74,11 +74,39 @@ const SheetMaterialList = ({ project, t }) => {
   );
 };
 
+const TileMaterialList = ({ project, t }) => {
+  const quantity = project.layout_result?.tiles_to_purchase_with_waste
+    ?? project.layout_result?.tiles_to_purchase;
+  const width = project.tile_data?.width;
+  const height = project.tile_data?.height;
+
+  if (!Number.isFinite(quantity) || !Number.isFinite(width) || !Number.isFinite(height)) return null;
+
+  return (
+    <section style={{ marginTop: '22px', marginBottom: '28px' }}>
+      <div className="section-rule">
+        <h2 className="section-title">{t('workflow.whatToBuy')}</h2>
+      </div>
+      <table className="cat-table" style={{ marginTop: '14px' }}>
+        <thead><tr><th>{t('workflow.tile')}</th><th>{t('workflow.sizeMm')}</th><th>{t('ui.qty')}</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>{t('workflow.tile')}</td>
+            <td>{mm(width)} × {mm(height)}</td>
+            <td>{quantity}</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  );
+};
+
 const SavedMaterialList = ({ project }) => {
   const { t } = useTranslation();
 
   if (project.projectType === 'board') return <BoardMaterialList result={project.optimization_result} t={t} />;
   if (project.projectType === 'sheet') return <SheetMaterialList project={project} t={t} />;
+  if (project.projectType === 'tile') return <TileMaterialList project={project} t={t} />;
   return null;
 };
 

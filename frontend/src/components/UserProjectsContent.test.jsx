@@ -80,6 +80,19 @@ const sheetPlan = {
     ] }],
   },
 };
+const tilePlan = {
+  id: 'tile-plan-1',
+  project_group_id: group.id,
+  name: 'Tile layout',
+  surface_data: { width: 2400, height: 1200 },
+  tile_data: { width: 300, height: 600 },
+  layout_result: {
+    tiles_to_purchase_with_waste: 10,
+    tiles: [{ kind: 'full', width: 300, height: 600, fill_color: '#d7e5c1' }],
+  },
+  created_at: '2026-08-26T00:00:00Z',
+  updated_at: '2026-08-26T00:00:00Z',
+};
 
 beforeEach(() => {
   getUserProjects.mockResolvedValue([plan]);
@@ -138,4 +151,15 @@ it('shows a shopping list for saved sheet plans', async () => {
   expect(await screen.findByRole('heading', { name: 'What to buy', level: 2 })).toBeInTheDocument();
   expect(screen.getByText('plywood')).toBeInTheDocument();
   expect(screen.getByText(/1\s*200\s*×\s*2\s*500/, { selector: 'td' })).toBeInTheDocument();
+});
+
+it('shows a tile shopping list and keeps the tile cutlist', async () => {
+  getUserProjects.mockResolvedValue([]);
+  getUserTileProjects.mockResolvedValue([tilePlan]);
+  renderDetail();
+
+  expect(await screen.findByRole('heading', { name: 'What to buy', level: 2 })).toBeInTheDocument();
+  expect(screen.getByText(/300\s*×\s*600/, { selector: 'td' })).toBeInTheDocument();
+  expect(screen.getByText('10', { selector: 'td' })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'Cut list', level: 2 })).toBeInTheDocument();
 });
