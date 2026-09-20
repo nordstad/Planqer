@@ -10,7 +10,6 @@ import sqlalchemy as sa
 
 from alembic import op
 
-
 revision = "009_add_preferred_language"
 down_revision = "008_add_tile_projects"
 branch_labels = None

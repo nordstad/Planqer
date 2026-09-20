@@ -79,6 +79,7 @@ nav:
       - REST API: reference/api.md
   - Troubleshooting: troubleshooting.md
   - Contributing: contributing.md
+  - Releasing: releasing.md
 
 not_in_nav: |
   RELEASE_NOTES.md

@@ -108,7 +108,9 @@ def test_partial_update_user_settings(client, authenticated_user_token):
     assert data["preferred_language"] is None  # Unchanged
 
 
-def test_update_user_settings_rejects_unsupported_language(client, authenticated_user_token):
+def test_update_user_settings_rejects_unsupported_language(
+    client, authenticated_user_token
+):
     response = client.put(
         "/api/settings/",
         headers={"Authorization": f"Bearer {authenticated_user_token}"},
