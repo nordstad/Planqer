@@ -32,7 +32,7 @@ import Loader from './Loader';
 import PlanThumb from './PlanThumb';
 import ConfirmDialog from './ConfirmDialog';
 import TileCutListTable from './TileCutListTable';
-import SavedCutList from './SavedCutList';
+import SavedMaterialList from './SavedMaterialList';
 import { ArrowLeft, ArrowRight, Pencil } from './icons';
 
 // The plans nobody filed. A route segment, not a group id.
@@ -416,7 +416,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
               <TileCutListTable candidate={project.layout_result} />
             </div>
           )}
-          {project.projectType !== 'tile' && <SavedCutList project={project} />}
+          {project.projectType !== 'tile' && <SavedMaterialList project={project} />}
         </div>
       );
    };

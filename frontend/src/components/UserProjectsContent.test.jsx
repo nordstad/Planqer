@@ -121,19 +121,21 @@ it('prints a plan from the project detail route', async () => {
   await waitFor(() => expect(printProjectPlans).toHaveBeenCalled());
 });
 
-it('shows a cutlist for saved board plans', async () => {
+it('shows a shopping list for saved board plans', async () => {
   renderDetail();
 
-  expect(await screen.findByRole('heading', { name: 'Cut list', level: 2 })).toBeInTheDocument();
-  expect(screen.getByText('300 · 100')).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { name: 'What to buy', level: 2 })).toBeInTheDocument();
+  expect(screen.getByText('300')).toBeInTheDocument();
+  expect(screen.getByText('1', { selector: 'td' })).toBeInTheDocument();
+  expect(screen.queryByText('300 · 100')).not.toBeInTheDocument();
 });
 
-it('shows a cutlist for saved sheet plans', async () => {
+it('shows a shopping list for saved sheet plans', async () => {
   getUserProjects.mockResolvedValue([]);
   getUserSheetProjects.mockResolvedValue([sheetPlan]);
   renderDetail();
 
-  expect(await screen.findByRole('heading', { name: 'Cut list', level: 2 })).toBeInTheDocument();
-  expect(screen.getByText('Shelf')).toBeInTheDocument();
-  expect(screen.getByText('400 × 200')).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { name: 'What to buy', level: 2 })).toBeInTheDocument();
+  expect(screen.getByText('plywood')).toBeInTheDocument();
+  expect(screen.getByText(/1\s*200\s*×\s*2\s*500/, { selector: 'td' })).toBeInTheDocument();
 });
