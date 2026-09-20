@@ -56,7 +56,7 @@ const plural = (n, singular, pluralWord = `${singular}s`) => `${n} ${n === 1 ? s
 
 // The three saved project shapes don't share a "parts" concept — a tile
 // layout has no parts list, just a chosen candidate — so this returns the
-// three facts renderPlan/handlePrintAll actually print (type, count, stock)
+// three facts renderPlan/handlePrint actually print (type, count, stock)
 // rather than forcing a tile project through totalParts/stockLine helpers
 // shaped for board/sheet parts_data.
 const planFacts = (project, t) => {
@@ -114,10 +114,15 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
   const [pendingDelete, setPendingDelete] = useState(null);
   const [paperSize, setPaperSize] = useState('a4');
   const [printing, setPrinting] = useState(false);
+  const [selectedPlanIds, setSelectedPlanIds] = useState(() => new Set());
 
   useEffect(() => {
     if (user) loadProjects();
   }, [user]);
+
+  useEffect(() => {
+    setSelectedPlanIds(new Set());
+  }, [groupId]);
 
   const loadProjects = async () => {
     try {
@@ -163,7 +168,12 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
           } else {
             await deleteProject(project.id);
           }
-          setAllProjects((prev) => prev.filter((p) => p.id !== project.id));
+           setAllProjects((prev) => prev.filter((p) => p.id !== project.id));
+           setSelectedPlanIds((prev) => {
+             const next = new Set(prev);
+             next.delete(project.id);
+             return next;
+           });
         } catch (err) {
            setError(t('projectUi.deleteFailed', { message: err.message }));
         } finally {
@@ -194,7 +204,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
   // One document, every plan on its own page, via the browser's print
   // dialog — which is also where "save as PDF" lives. See printProject.js
   // for how each diagram picks the page orientation that renders it largest.
-  const handlePrintAll = async (plans, title) => {
+  const handlePrint = async (plans, title) => {
     const printable = plans.filter((p) => p.has_svg_image || p.cutlist_image);
     if (printable.length === 0) return;
 
@@ -221,6 +231,16 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
     } finally {
       setPrinting(false);
     }
+  };
+
+  const togglePlanSelection = (project) => {
+    if (!(project.has_svg_image || project.cutlist_image)) return;
+    setSelectedPlanIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(project.id)) next.delete(project.id);
+      else next.add(project.id);
+      return next;
+    });
   };
 
   const handlePreview = async (project) => {
@@ -345,13 +365,26 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
   /* ── one saved plan: its own diagram, its facts, its two exports ─────── */
 
    const renderPlan = (project) => {
-     const hasDiagram = Boolean(project.has_svg_image || project.cutlist_image);
-      const facts = planFacts(project, t);
+      const hasDiagram = Boolean(project.has_svg_image || project.cutlist_image);
+       const facts = planFacts(project, t);
+      const printTitle = groupId === LOOSE
+        ? t('projectUi.notInAnyProject')
+        : groups.find((g) => g.id === groupId)?.name || project.name;
 
-     return (
-       <div key={project.id}>
-         <article className="plan-item">
-           <button
+      return (
+        <div key={project.id}>
+          <article className="plan-item">
+            <label style={{ display: 'flex', alignItems: 'center', padding: '0 4px 0 8px' }}>
+              <input
+                type="checkbox"
+                checked={selectedPlanIds.has(project.id)}
+                onChange={() => togglePlanSelection(project)}
+                disabled={!hasDiagram || printing}
+                aria-label={t('projectUi.selectPlan', { name: project.name })}
+                title={hasDiagram ? undefined : t('projectUi.noPlanDiagram')}
+              />
+            </label>
+            <button
              type="button"
              className="plan-item-thumb"
              onClick={() => handlePreview(project)}
@@ -387,8 +420,15 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
               <p className="plan-item-date">{t('projectUi.saved', { date: formatDate(project.created_at) })}</p>
            </div>
 
-           <div className="plan-item-acts">
-             <button
+            <div className="plan-item-acts">
+              <button
+                className="btn btn-sm"
+                onClick={() => handlePrint([project], printTitle)}
+                disabled={printing || !hasDiagram}
+              >
+                {t('projectUi.printOne')}
+              </button>
+              <button
                className="btn btn-sm"
                onClick={() => handleDownload(project, 'svg')}
                disabled={busyId === project.id || !hasDiagram}
@@ -452,7 +492,9 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
 
     const plans = plansIn(groupId);
      const title = group ? group.name : t('projectUi.notInAnyProject');
-    const printableCount = plans.filter((p) => p.has_svg_image || p.cutlist_image).length;
+     const printablePlans = plans.filter((p) => p.has_svg_image || p.cutlist_image);
+     const printableCount = printablePlans.length;
+     const selectedPlans = printablePlans.filter((p) => selectedPlanIds.has(p.id));
 
     return (
       <>
@@ -503,14 +545,27 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
                     <option value="a4">A4</option>
                     <option value="letter">Letter</option>
                   </select>
-                  <button
-                    className="btn"
-                    onClick={() => handlePrintAll(plans, title)}
-                    disabled={printing}
-                     title={t('projectUi.printTitle')}
-                  >
-                     {printing ? t('projectUi.preparing') : t(printableCount === 1 ? 'projectUi.printPlan' : 'projectUi.printPlans', { count: printableCount })}
-                  </button>
+                    <button
+                     className="btn"
+                     onClick={() => handlePrint(selectedPlans, title)}
+                     disabled={printing || selectedPlans.length === 0}
+                   >
+                     {t('projectUi.printSelected', { count: selectedPlans.length })}
+                   </button>
+                   <button
+                     className="btn"
+                     onClick={() => setSelectedPlanIds(new Set(printablePlans.map((p) => p.id)))}
+                     disabled={printing || selectedPlans.length === printableCount}
+                   >
+                     {t('projectUi.selectAllPlans')}
+                   </button>
+                   <button
+                     className="btn"
+                     onClick={() => setSelectedPlanIds(new Set())}
+                     disabled={printing || selectedPlans.length === 0}
+                   >
+                     {t('projectUi.clearSelection')}
+                   </button>
                 </span>
               )}
               {group && (

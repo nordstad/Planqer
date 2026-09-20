@@ -1,4 +1,4 @@
-export default {
+const locale = {
   common: {
     language: 'Language',
     saveSettings: 'Save settings',
@@ -161,3 +161,13 @@ export default {
   },
   auditUi: { kerfWide: 'That kerf is wider than any saw blade — 2 to 4 mm is typical', priceRequired: 'Enter a price per metre before pricing the plan', stockPriceRequired: 'Every stock length needs a price before pricing the plan', unknownError: 'Unknown error', nameRequired: 'Give the plan a name so you can find it again', createProjectFailed: 'Could not create that project', saveFailed: 'Could not save this plan', pricesChanged: 'Prices changed — this plan is still costed at the old ones', priceStock: 'Price your stock to see what this plan costs', ungrouped: 'Not in a project', fixLayout: 'Fix the struck lines above and the layout can run', sheetKerfHint: 'Every cut turns this much material into dust — the plan accounts for it', sheetStockHint: 'Check these against the sheet before you plan. Measure yours, the packing depends on it.' },
 };
+
+Object.assign(locale.projectUi, {
+  selectPlan: 'Select plan "{{name}}"',
+  printOne: 'Print',
+  printSelected: 'Print selected ({{count}})',
+  selectAllPlans: 'Select all',
+  clearSelection: 'Clear selection',
+});
+
+export default locale;

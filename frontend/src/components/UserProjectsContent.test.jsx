@@ -55,6 +55,11 @@ const plan = {
   created_at: '2026-08-26T00:00:00Z',
   updated_at: '2026-08-26T00:00:00Z',
 };
+const secondPlan = {
+  ...plan,
+  id: 'plan-2',
+  name: 'Second cut list',
+};
 
 const renderDetail = () => render(
   <MemoryRouter>
@@ -103,6 +108,7 @@ beforeEach(() => {
   deleteProjectGroup.mockResolvedValue({});
   const { downloadProjectImage } = jest.requireMock('../utils/api');
   downloadProjectImage.mockResolvedValue(new Blob());
+  printProjectPlans.mockClear();
 });
 
 it('confirms deletion of a plan on the project detail route', async () => {
@@ -129,9 +135,22 @@ it('confirms deletion of a project on the project detail route', async () => {
 it('prints a plan from the project detail route', async () => {
   renderDetail();
 
-  fireEvent.click(await screen.findByRole('button', { name: 'Print 1 plan' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Print', exact: true }));
 
   await waitFor(() => expect(printProjectPlans).toHaveBeenCalled());
+  expect(printProjectPlans.mock.calls.at(-1)[0].plans).toHaveLength(1);
+});
+
+it('prints only the selected plans', async () => {
+  getUserProjects.mockResolvedValue([plan, secondPlan]);
+  renderDetail();
+
+  fireEvent.click(await screen.findByRole('checkbox', { name: 'Select plan "Cut list"' }));
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Select plan "Second cut list"' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Print selected (2)' }));
+
+  await waitFor(() => expect(printProjectPlans).toHaveBeenCalled());
+  expect(printProjectPlans.mock.calls.at(-1)[0].plans).toHaveLength(2);
 });
 
 it('shows a shopping list for saved board plans', async () => {
