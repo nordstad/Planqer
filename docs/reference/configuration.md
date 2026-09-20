@@ -20,6 +20,12 @@ Use `docker-compose.release.yml` for normal installs from published GHCR
 images. Use `docker-compose.yml` when you want Docker to build local source
 code.
 
+The backend data volume is Compose-project scoped. Keep the same project
+directory and project name across upgrades, or set an explicit project name
+with `docker compose -p <name> ...`; otherwise Compose can select a new
+`<project>_backend_data` volume and the instance will appear to have lost its
+accounts and saved projects.
+
 ## Compose files
 
 - `docker-compose.release.yml`: recommended self-hosted install. Pulls pinned

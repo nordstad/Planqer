@@ -47,6 +47,8 @@ Run these commands from the directory containing `docker-compose.release.yml`
 and `.env`:
 
 ```bash
+# Back up accounts and saved projects before upgrading.
+docker compose -f docker-compose.release.yml exec backend planqer backup
 docker compose -f docker-compose.release.yml pull
 docker compose -f docker-compose.release.yml up -d
 ```
@@ -66,7 +68,23 @@ docker inspect planqer-web-backend --format '{{.Config.Image}}'
 
 The output should include `ghcr.io/nordstad/planqer-backend:0.4.1` (and the
 corresponding frontend tag). The named `backend_data` volume is preserved by
-this procedure, so local accounts and saved projects remain available.
+this procedure, so local accounts and saved projects remain available. Keep
+using the same directory and Compose project name for future upgrades: Docker
+names the volume `<project>_backend_data`. Changing either can make Compose
+start against a different, empty database. Confirm the volume before an
+upgrade with:
+
+```bash
+docker compose -f docker-compose.release.yml config --volumes
+docker volume inspect planqer_backend_data
+```
+
+After an upgrade, verify that expected accounts are still present:
+
+```bash
+docker compose -f docker-compose.release.yml exec backend \
+  python create_admin.py list
+```
 
 ## Private package access
 
