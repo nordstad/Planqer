@@ -68,3 +68,19 @@ git push origin vX.Y.Z
 ```
 
 Pushing the tag triggers `.github/workflows/publish-images.yml`.
+
+## GitHub Release
+
+The tag and the GitHub Release are separate objects. Create the GitHub Release
+after pushing the tag so it appears in the repository's Releases list:
+
+```bash
+gh release create vX.Y.Z --title "vX.Y.Z" --generate-notes
+```
+
+Verify the release and published image workflow before announcing the release:
+
+```bash
+gh release view vX.Y.Z
+gh run list --workflow=publish-images.yml --limit=1
+```
