@@ -685,7 +685,7 @@ const CuttingOptimizer = () => {
               hint={pricesDirty
                 ? t('auditUi.pricesChanged')
                 : appliedCost
-                  ? `Priced · ${Number(appliedCost.totalCost).toFixed(2)} ${appliedCost.currency} for the whole plan`
+                   ? t('ui.pricedForPlan', { total: Number(appliedCost.totalCost).toFixed(2), currency: appliedCost.currency })
                   : t('auditUi.priceStock')}
               open={costOpen}
               onToggle={() => setCostOpen(v => !v)}
@@ -733,7 +733,7 @@ const CuttingOptimizer = () => {
         <form className="step-view is-form" onSubmit={handleSave}>
           <div className="step-head" style={{ marginBottom: '22px' }}>
             <div>
-              <h1 className="step-h1">{saved ? t('workflow.planSaved') : t('workflow.saveThisPlan')}</h1>
+               <h1 className="step-h1">{saved ? t('workflow.planSaved') : t('workflow.saveThisPlan')}</h1>
               <p className="step-lede">
                 {saved
                    ? t('ui.keptPlan')
@@ -800,7 +800,7 @@ const CuttingOptimizer = () => {
               </div>
 
               <div>
-                <label className="form-label" htmlFor="plan-name">{t('workflow.planName')}</label>
+                <label className="form-label" htmlFor="plan-name">{t('ui.name')}</label>
                 <input
                   id="plan-name"
                   type="text"
@@ -836,7 +836,7 @@ const CuttingOptimizer = () => {
             ) : (
               <div className="step-foot-act">
                 <button type="submit" className="btn-order" disabled={saving}>
-                  {saving ? <><Loader /> {t('workflow.saving')}</> : saveMode === 'update' ? t('workflow.updatePlan') : t('workflow.savePlan')}
+                   {saving ? <><Loader /> {t('common.saving')}</> : saveMode === 'update' ? t('workflow.updatePlan') : t('workflow.savePlan')}
                 </button>
               </div>
             )}

@@ -1,6 +1,8 @@
-import en from './en-GB';
+import base from './en-GB';
 
-export default {
+const en = { ui: {}, legacy: {}, tileUi: {}, projectUi: base.projectUi, modelUi: base.modelUi, auditUi: base.auditUi };
+
+const locale = {
   common: {
     language: 'Språk',
     saveSettings: 'Spara inställningar',
@@ -131,3 +133,59 @@ export default {
   modelUi: { ...en.modelUi, kerfZero: 'En sågspalt på noll skulle planera kapningar utan materialförlust', kerfWide: 'Den sågspalten är bredare än alla sågblad – 2 till 4 mm är vanligt', sheetWidthPositive: 'Skivans bredd måste vara ett positivt tal', sheetHeightPositive: 'Skivans höjd måste vara ett positivt tal', sheetKerfAria: 'Skivans sågspår i millimeter', acceptedModelFiles: 'STL, STEP eller STP · upp till 50 MB', planCutlist: 'Planera {{count}} kaplista', planCutlists: 'Planera {{count}} kaplistor', savedCount: 'Sparade {{saved}} av {{total}}', signInCutlist: 'Logga in eller skapa ett lokalt konto för att planera och spara kaplistor.', cutlistsSaved: 'Kaplistor sparade', planAndSave: 'Planera och spara', cutlistsSavedCount: '{{saved}} av {{total}} planerade och sparade på denna instans.', batchPlanIntro: 'Ange lager och sågspår en gång – varje vald kaplista planeras mot dem och hamnar i ett projekt.', saved: 'Sparad', willBeSaved: 'Kommer att planeras och sparas', backToCutlists: 'Tillbaka till kaplistorna' },
   auditUi: { ...en.auditUi, kerfWide: 'Den sågspalten är bredare än alla sågblad – 2 till 4 mm är vanligt', priceRequired: 'Ange ett pris per meter innan planen prissätts', stockPriceRequired: 'Varje lagerlängd behöver ett pris innan planen prissätts', unknownError: 'Okänt fel', nameRequired: 'Ge planen ett namn så att du hittar den igen', createProjectFailed: 'Det gick inte att skapa projektet', saveFailed: 'Det gick inte att spara planen', pricesChanged: 'Priserna ändrades – planen är fortfarande beräknad med de gamla priserna', priceStock: 'Prissätt lagret för att se vad planen kostar', ungrouped: 'Inget projekt', fixLayout: 'Rätta de markerade raderna så kan layouten köras', sheetKerfHint: 'Varje kapning gör så mycket material till spån – planen tar hänsyn till det', sheetStockHint: 'Kontrollera detta mot skivan innan du planerar. Mät din skiva, packningen beror på det.' },
 };
+
+Object.assign(locale.ui, {
+  boardLengthAria: 'Brädlängd i millimeter, rad {{row}}', removeBoardAria: 'Ta bort brädlängd, rad {{row}}', strikeLine: 'Rätta den här raden',
+  partLengthAria: 'Dellängd i millimeter, del {{item}}', quantityAria: 'Antal, del {{item}}', removePartAria: 'Ta bort del, del {{item}}',
+  cutoutPositionAria: 'Urtagets {{axis}}-position i millimeter, del {{item}}', cutoutSizeAria: 'Urtagets {{axis}} i millimeter, del {{item}}', cutoutLabelAria: 'Urtagets etikett, del {{item}}', removeCutoutAria: 'Ta bort urtag, del {{item}}', window: 'Fönster', optional: 'Valfritt',
+  confirmTitle: 'Är du säker?', projectInfoLabel: 'Vad ett projekt är', projectInfo: 'Ett projekt samlar flera planer för samma bygge.', newProjectName: 'Nytt projektnamn', projectPlaceholder: 'Matstol',
+  loadSavedPlan: 'Ladda sparad plan', savedPlans: 'DINA SPARADE PLANER', nothingSavedShort: 'Inget sparat ännu. Kör en plan och namnge den så hamnar den här.', renameDeleteHint: 'Byt namn på eller ta bort en sparad plan från instrumentpanelen.',
+  whatPageReturns: 'Vad sidan ger dig och dess begränsningar',
+  boardsHint: 'Brädor, inköpslista, kapordning och restbit',
+  sheetsHint: 'Skivor, en layout per skiva, vända delar och spill',
+  modelHint: 'Brädor och skivor, grupperade efter storlek – redo för respektive optimerare',
+  partsAgainstStock: '{{parts}} delar mot {{stock}} lager{{unit}}',
+  stockUnit: 'längd', stockUnits: 'längder',
+  checkStock: 'Kontrollera dessa mot leverantören innan du planerar. Längderna och eventuella priser sparas med planen.',
+  bladeTakes: 'Sågklingan tar',
+  pricedForPlan: 'Prissatt · {{total}} {{currency}} för hela planen',
+  tileSummary: '{{count}} kakel att köpa · minsta kapning {{cut}} · {{offcuts}} restbitar återanvända',
+  forAllParts: 'för alla {{count}} delar', changeParts: 'Ändra delarna', backToSave: 'Tillbaka till sparandet', nameAndSave: 'Namnge och spara', keptPlan: 'Sparad på denna instans under ditt konto.', namePlan: 'Ge planen ett namn, välj var den hör hemma och spara den på denna instans.', filedUnder: 'Placerad under {{group}}.', unfiled: 'Inget projekt. Öppna den från instrumentpanelen.',
+  planNamePlaceholder: 'Plannamn', savedNameHint: 'Namnet visas på det sparade diagrammet.', planToUpdate: 'Plan att uppdatera', close: 'Stäng', load: 'Ladda', actions: 'Åtgärder', planProgress: 'Planens framsteg', working: 'Arbetar',
+  readyToRead: 'Klar att läsa', chooseFileContinue: 'Välj en fil för att fortsätta', include: 'Inkludera', cutlist: 'Kaplista', planAlone: 'Planera separat', cutlistsFound: 'Kaplistor hittades', cutlistsIntro: 'Varje unik storlek i {{model}}, grupperad så att du kan planera dem tillsammans eller separat.',
+  readsFromModel: 'Läser från din modell', planAndKeep: 'Planera och spara dem', waitsForCutlists: 'Väntar på valda kaplistor', modelFileRequired: 'Välj en modellfil', noModelComponents: 'Inga bräd- eller skivkomponenter hittades i filen.', modelReadFailed: 'Det gick inte att läsa modellen', noFileYet: 'Ingen fil ännu',
+  enlargeBoardDiagram: 'Förstora kapplansdiagrammet', boardDiagramAlt: 'Kapplansdiagram: varje bräda med kapningarna i ordning', diagramCaption: '{{count}} brädor · samma skala · sågspår i rött · klicka för att förstora', cuttingPlanDiagram: 'Kapplansdiagram', cuttingPlan: 'KAPPLAN', lengthMm: 'Längd mm', qty: 'Antal',
+  turned90: 'vriden 90°', hatchingWaste: 'Skraffering visar spill. Streckad kontur är en del som vridits 90°.', part: 'Del', sheet: 'Skiva', atXY: 'Vid x, y', turned: 'Vänd', area: 'Area', sheetLayoutDiagram: 'Skivlayoutdiagram', sheetLayout: 'SKIVLAYOUT', sheetDiagramAlt: 'Skivlayoutdiagram: alla skivor med delarna placerade',
+  pricePerMetre: 'Pris per meter · {{currency}}', onePriceAll: 'Samma pris för alla längder', allStock: 'Allt lager', appliesTo: 'Gäller', uniform: 'Enhetligt', priceAria: 'Enhetligt pris per meter i {{currency}}', priceLengthAria: 'Pris per meter för längden {{length}} mm', addStockToPrice: 'Lägg till lagerlängder på delsteget för att prissätta dem', perBoard: 'Per bräda',
+  whatChase: 'Vad ska planen optimera?', leastWaste: 'Minst spill', leastWasteHint: 'Minst antal millimeter som slängs', leastMoney: 'Minst kostnad', leastMoneyHint: 'Billigare lager även om mer restbit blir kvar', pricing: 'Prissätter planen', changedPrices: 'Du har ändrat priserna sedan planen prissattes. Allt nedan gäller den tidigare uppsättningen – tillämpa ändringarna för att prissätta igen.', whatCosts: 'Vad planen kostar', allFigures: 'Alla belopp i {{currency}}', ownPrices: 'Dina priser används för det lager planen faktiskt köper – Planqer hämtar inga leverantörspriser.', inOffcut: 'I restbiten', perMetreParts: 'Per meter delar', chasing: 'Optimerar för', changedSince: 'Vad som ändrades sedan förra körningen', figure: 'Värde', diagramRedrawn: 'En ändring av brädor eller restbit gjorde att kapdiagrammet ovan ritades om.', buy: 'Det du köper', noPrices: 'Planen på skärmen har inga priser ännu. Prissätt den så visas kostnaden här.', unchanged: 'oförändrat',
+  fullTile: 'Hel platta', noCutNeeded: 'Ingen kapning behövs', sliver: 'smal bit', sliverCount: '{{count}} smala bitar', diagonalOpening: 'Diagonal, kapad runt en öppning', diagonal: 'Diagonal', viewCut: 'Visa kapning {{label}}', openingDiagram: 'Kapa runt en öppning – se diagrammet', straightCut: 'Rak kapning', cutTemplate: 'KAPMALL {{label}}', cutTemplateAria: 'Kapmall {{label}}', howToCut: 'Så här kapar du:', cutInstructions: 'Det solida ljusa området är det du behåller. Skrafferat grått är spill. Den orange linjen visar var du ska kapa.', kind: 'Typ', fromOffcut: 'Från restbit', pieceMeta: 'Del {{label}} – {{width}}×{{height}} mm kakel', finalSize: 'Slutlig storlek: {{width}}×{{height}} mm', edges: 'Kanter',
+  tilesToBuy: 'kakel att köpa', tightestCut: 'Smalaste kapning', noneCut: 'Ingen kapning', distinctCutSizes: 'Olika kapmått',
+  changeSurface: 'Ändra ytan', saveLayout: 'Spara layout', saveLayoutButton: 'Spara layout', updateLayout: 'Uppdatera layout',
+  tilesAroundOpening: 'Kakel kapat runt en öppning', offcutsReused: 'Återanvända restbitar', sliversBelow: 'Smala bitar under gränsen', materialUsed: 'Använt material', offcutExplanation: 'Restbiten är kostnaden för material som blir kvar efter kapningen.',
+});
+Object.assign(locale.legacy, {
+  fileSize: '{{format}} filstorlek', material: 'Material', status: 'Status',
+});
+Object.assign(locale.tileUi, {
+  sliverSummary: 'Smalaste kapning', off: 'av', thresholdUnit: 'mm – en kapad bit som är smalare än detta markeras',
+  ruleOfThumb: 'En vanlig tumregel är en tredjedel av kaklets egen bredd.',
+  extraTiles: '% extra kakel för spill och misstag', reuseHint: 'Restbitar kan fylla andra kapningar och minska antalet hela kakel.',
+  fixFields: 'Rätta fälten ovan så kan layouten köras', pickLayout: 'Välj en layout',
+  pickLayoutIntro: 'Rangordnade förslag, inte ett automatiskt svar – kantmarginal, kakelåtgång och symmetri kan stå mot varandra.',
+  tilesToBuy: 'kakel att köpa', fullTiles: 'Hela kakel', cutTiles: 'Kapade kakel', used: 'Använt',
+  changeSurface: 'Ändra ytan', nameIt: 'Ge den ett namn', layoutSaved: 'Layout sparad', saveLayout: 'Spara denna layout',
+  keptLayout: 'Sparad på denna instans under ditt konto.', nameLayout: 'Ge layouten ett namn', savedAs: 'Sparad som {{name}}',
+  filedUnder: 'Placerad under {{group}}.', notFiled: 'Inget projekt.', saveAs: 'Spara som', createPlan: 'Skapa ny plan',
+  updatePlan: 'Uppdatera befintlig plan', planToUpdate: 'Plan att uppdatera', planName: 'Plannamn', planPlaceholder: 'Plannamn',
+  layoutNameHint: 'Namnet visas på den sparade layouten', openDashboard: 'Öppna din instrumentpanel', loadSaved: 'Ladda sparad plan',
+  savedPlans: 'DINA SPARADE PLANER', nothingSaved: 'Inget sparat ännu. Lös en layout och namnge den så hamnar den här.',
+  name: 'Namn', surface: 'Yta', actions: 'Åtgärder', load: 'Ladda', renameDelete: 'Byt namn eller ta bort från instrumentpanelen.',
+});
+Object.assign(locale.workflow, {
+  sheetPartsSummary_one: '{{count}} del · {{width}} × {{height}} mm skiva', sheetsSummary_one: '{{count}} skiva · {{efficiency}} % utnyttjad',
+  sheetPartsSummary: '{{count}} delar · {{width}} × {{height}} mm skiva', sheetsSummary: '{{count}} skivor · {{efficiency}} % utnyttjade',
+  sheetSource: 'Skivan du kapar från', sheetSourceHint: 'Det du kapar ur, inte det du behöver', width: 'Bredd', height: 'Höjd', material: 'Material',
+  positionMm: 'Position mm', layout: 'Layout', planName: 'Plannamn', planSaved: 'Plan sparad', saveThisPlan: 'Spara den här planen',
+});
+
+export default locale;
