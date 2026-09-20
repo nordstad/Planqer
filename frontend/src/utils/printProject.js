@@ -51,7 +51,7 @@ const fittedArea = (imgW, imgH, boxW, boxH) => {
   return imgW * scale * imgH * scale;
 };
 
-const buildHtml = ({ title, meta, paper, plans }) => {
+const buildHtml = ({ title, meta, paper, plans, shoppingListHtml }) => {
   const spec = PAPERS[paper] ?? PAPERS.a4;
   const innerW = spec.width - 2 * MARGIN_MM;
   const innerH = spec.height - 2 * MARGIN_MM;
@@ -106,6 +106,14 @@ const buildHtml = ({ title, meta, paper, plans }) => {
   .piece-template-meta { margin-top: 2mm; line-height: 1.45; }
   .piece-template { display: block; width: 110mm; max-height: 70mm; object-fit: contain; margin-top: 2mm; }
   .piece-template-note { margin-top: 2mm; line-height: 1.45; }
+  .shopping-list { break-after: page; page-break-after: always; }
+  .shopping-list:last-child { break-after: auto; page-break-after: auto; }
+  .shopping-list h2 { font-size: 16pt; margin-bottom: 5mm; }
+  .shopping-table { width: 100%; border-collapse: collapse; font-size: 10pt; }
+  .shopping-table th, .shopping-table td { text-align: left; padding: 2.5mm 3mm 2.5mm 0; }
+  .shopping-table th { font-size: 8pt; text-transform: uppercase; letter-spacing: 0.04em; color: #6b6a60; border-bottom: 0.3mm solid #c9c7ba; }
+  .shopping-table td { border-bottom: 0.2mm solid #e3e1d6; }
+  .shopping-table td:last-child, .shopping-table th:last-child { text-align: right; padding-right: 0; }
 </style>
 </head>
 <body>
@@ -113,6 +121,7 @@ const buildHtml = ({ title, meta, paper, plans }) => {
   <h1>${escapeHtml(title)}</h1>
   <p>${escapeHtml(meta)}</p>
 </header>
+${shoppingListHtml || ''}
 ${sections}
 </body>
 </html>`;
@@ -134,8 +143,9 @@ const whenImagesLoaded = (doc) => Promise.all(
  * @param {string} args.meta   one line under the title (plan count, date)
  * @param {string} args.paper  'a4' | 'letter'
  * @param {Array<{name: string, facts: string[], svgBlob: Blob}>} args.plans
+ * @param {string} args.shoppingListHtml optional shopping-list markup
  */
-export const printProjectPlans = async ({ title, meta, paper, plans }) => {
+export const printProjectPlans = async ({ title, meta, paper, plans, shoppingListHtml }) => {
   const measured = await Promise.all(
     plans.map(async (plan) => ({ ...plan, ...(await measureSvg(plan.svgBlob)) })),
   );
@@ -153,7 +163,7 @@ export const printProjectPlans = async ({ title, meta, paper, plans }) => {
   try {
     const doc = iframe.contentDocument;
     doc.open();
-    doc.write(buildHtml({ title, meta, paper, plans: measured }));
+     doc.write(buildHtml({ title, meta, paper, plans: measured, shoppingListHtml }));
     doc.close();
     await whenImagesLoaded(doc);
 

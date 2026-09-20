@@ -73,4 +73,50 @@ test.describe('Planqer Frontend E2E Tests', () => {
     await expect(signInDialog.getByRole('alert')).toContainText(/incorrect email or password/i);
     await expect(signInDialog.getByRole('button', { name: /^sign in$/i })).toBeVisible();
   });
+
+  test('modifies an existing board plan from the dashboard', async ({ page }) => {
+    const email = `modify-${Date.now()}@example.com`;
+    const credential = ['planqer', Date.now(), 'e2e'].join('-');
+
+    await page.request.post('http://localhost:8002/api/auth/register', {
+      data: { email, password: credential },
+    });
+    const loginResponse = await page.request.post('http://localhost:8002/api/auth/login', {
+      data: { email, password: credential },
+    });
+    const { access_token: accessToken } = await loginResponse.json();
+    await page.addInitScript((token) => localStorage.setItem('auth_token', token), accessToken);
+
+    await page.goto('/cutting');
+    await page.getByRole('button', { name: /plan the cuts/i }).click();
+    await expect(page.getByRole('heading', { name: /your cutting plan/i })).toBeVisible();
+    await page.getByRole('button', { name: /name and save/i }).click();
+    await expect(page.getByRole('heading', { name: /save this plan/i })).toBeVisible();
+    await page.locator('#plan-name').fill('E2E modify plan');
+    await page.getByRole('button', { name: /^save plan$/i }).click();
+    await expect(page.getByRole('heading', { name: /plan saved/i })).toBeVisible();
+
+    await page.goto('/dashboard/project/none');
+    await expect(page.getByText('E2E modify plan')).toBeVisible();
+    const planCheckbox = page.getByRole('checkbox', { name: 'Select plan "E2E modify plan"' });
+    await planCheckbox.check();
+    await expect(page.getByRole('button', { name: 'What to buy', exact: true })).toBeEnabled();
+    await expect(page.getByRole('button', { name: 'Print project', exact: true })).toBeEnabled();
+    await page.getByRole('button', { name: 'What to buy', exact: true }).click();
+    await expect(page.locator('iframe[aria-hidden="true"]')).toHaveCount(1);
+
+    await page.getByRole('button', { name: 'Modify', exact: true }).click();
+    await expect(page).toHaveURL(/\/cutting\?edit=\d+/);
+    await expect(page.locator('#plan-name')).not.toBeVisible();
+    await expect(page.locator('input').filter({ hasValue: '80' })).toBeVisible();
+
+    await page.getByRole('button', { name: /plan the cuts/i }).click();
+    await expect(page.getByRole('heading', { name: /your cutting plan/i })).toBeVisible();
+    await page.getByRole('button', { name: /name and save/i }).click();
+    await page.getByRole('button', { name: /update plan/i }).click();
+    const updateDialog = page.getByRole('alertdialog');
+    await expect(updateDialog).toContainText(/replace the saved result/i);
+    await updateDialog.getByRole('button', { name: /update existing plan/i }).click();
+    await expect(page.getByRole('heading', { name: /plan saved/i })).toBeVisible();
+  });
 });

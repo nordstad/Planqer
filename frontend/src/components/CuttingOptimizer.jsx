@@ -26,6 +26,7 @@ import { useDebounce } from '../hooks/useDebounce';
 import { useAuth } from '../contexts/AuthContext';
 import BoardLengthRow from './BoardLengthRow';
 import CatalogPage from './CatalogPage';
+import ConfirmDialog from './ConfirmDialog';
 import CostAnalysisPanel from './CostAnalysisPanel';
 import Disclosure from './Disclosure';
 import ProjectPicker from './ProjectPicker';
@@ -75,6 +76,7 @@ const CuttingOptimizer = () => {
   const [saved, setSaved] = useState(null);
   const [editingProject, setEditingProject] = useState(null);
   const [saveMode, setSaveMode] = useState('new');
+  const [updateConfirmOpen, setUpdateConfirmOpen] = useState(false);
 
   /* loading one back */
   const [userProjects, setUserProjects] = useState([]);
@@ -263,6 +265,15 @@ const CuttingOptimizer = () => {
     setStep(STEP_PARTS);
   };
 
+  useEffect(() => {
+    const editId = new URLSearchParams(window.location.search).get('edit');
+    if (!editId || !userProjects.length) return;
+    const project = userProjects.find((item) => String(item.id) === editId);
+    if (!project) return;
+    loadProject(project);
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }, [userProjects]);
+
   /* ── derived facts ─────────────────────────────────────────────────────── */
   const partCount = parts.reduce((n, p) => n + (parseInt(p.quantity, 10) || 0), 0);
   const demand = parts.reduce(
@@ -391,12 +402,7 @@ const CuttingOptimizer = () => {
     }
   };
 
-  const handleSave = async (e) => {
-    e.preventDefault();
-    setSaveAttempted(true);
-    setApiError("");
-    if (!projectName.trim()) return;
-
+  const savePlan = async () => {
     setSaving(true);
     try {
       const project = await saveProject({
@@ -424,6 +430,18 @@ const CuttingOptimizer = () => {
       setApiError(error.message || t('auditUi.saveFailed'));
     }
     setSaving(false);
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setSaveAttempted(true);
+    setApiError("");
+    if (!projectName.trim()) return;
+    if (saveMode === 'update') {
+      setUpdateConfirmOpen(true);
+      return;
+    }
+    await savePlan();
   };
 
   const savedGroupName = saved
@@ -845,6 +863,16 @@ const CuttingOptimizer = () => {
       )}
 
       {/* ── load a saved plan ─────────────────────────────────────────────── */}
+      <ConfirmDialog
+        open={updateConfirmOpen}
+        title={t('ui.updatePlanTitle')}
+        message={t('ui.updatePlanConfirm', { name: editingProject?.name || projectName })}
+        confirmLabel={t('ui.updateExistingPlan')}
+        danger={false}
+        onConfirm={() => { setUpdateConfirmOpen(false); savePlan(); }}
+        onCancel={() => setUpdateConfirmOpen(false)}
+      />
+
       {loadModalOpen && (
          <div className="cat-overlay" role="dialog" aria-modal="true" aria-label={t('workflow.loadSavedPlan')}>
           <div className="cat-sheet">

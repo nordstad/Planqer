@@ -163,11 +163,20 @@ const locale = {
 };
 
 Object.assign(locale.projectUi, {
+  modify: 'Modify',
   selectPlan: 'Select plan "{{name}}"',
   printOne: 'Print',
+  printDiagrams: 'Print diagrams ({{count}})',
+  printShoppingList: 'What to buy',
+  printProject: 'Print project',
   printSelected: 'Print selected ({{count}})',
   selectAllPlans: 'Select all',
   clearSelection: 'Clear selection',
+});
+
+Object.assign(locale.ui, {
+  updatePlanTitle: 'Update saved plan',
+  updatePlanConfirm: 'This will replace the saved result for "{{name}}". Continue?',
 });
 
 export default locale;

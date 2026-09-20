@@ -62,3 +62,27 @@ it('renders translated labels on the tile layout save step', async () => {
   expect(screen.getByLabelText('Plan name')).toBeInTheDocument();
   expect(screen.getByText(/The name goes on the saved diagram/)).toBeInTheDocument();
 });
+
+it('restores a saved tile plan addressed by the edit query', async () => {
+  getUserTileProjects.mockResolvedValue([{
+    id: 'tile-1',
+    name: 'Saved tile layout',
+    project_group_id: null,
+    surface_data: { width: 2400, height: 1200, cutouts: [] },
+    tile_data: { width: 300, height: 600, allow_rotation: true },
+    bond_data: { pattern: 'stack', offset_fraction: 0.5, joint_width: 3, perimeter_gap: 0 },
+    options_data: { min_edge_cut: null, reuse_offcuts: true, waste_percent: 10, candidate_count: 5 },
+  }]);
+  window.history.replaceState({}, '', '/tile-layout?edit=tile-1');
+
+  render(
+    <MemoryRouter initialEntries={['/tile-layout?edit=tile-1']}>
+      <LanguageProvider><TileOptimizer /></LanguageProvider>
+    </MemoryRouter>,
+  );
+
+  expect(await screen.findByDisplayValue('2400')).toBeInTheDocument();
+  expect(screen.getByDisplayValue('1200')).toBeInTheDocument();
+  expect(screen.getByDisplayValue('300')).toBeInTheDocument();
+  expect(screen.getByDisplayValue('600')).toBeInTheDocument();
+});

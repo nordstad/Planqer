@@ -16,7 +16,7 @@
 */
 
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   getUserProjects, updateProject, deleteProject,
@@ -26,6 +26,7 @@ import {
 } from '../utils/api';
 import { svgBlobToPngBlob } from '../utils/svgToPng';
 import { printProjectPlans } from '../utils/printProject';
+import { buildMaterialListHtml } from '../utils/materialList';
 import { buildCutListHtml } from '../utils/tileCutList';
 import { useAuth } from '../contexts/AuthContext';
 import Loader from './Loader';
@@ -102,6 +103,7 @@ const triggerDownload = (blob, filename) => {
 const UserProjectsContent = ({ onPreview, groupId }) => {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [allProjects, setAllProjects] = useState([]);
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -204,14 +206,14 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
   // One document, every plan on its own page, via the browser's print
   // dialog — which is also where "save as PDF" lives. See printProject.js
   // for how each diagram picks the page orientation that renders it largest.
-  const handlePrint = async (plans, title) => {
+  const handlePrint = async (plans, title, mode = 'diagrams') => {
     const printable = plans.filter((p) => p.has_svg_image || p.cutlist_image);
     if (printable.length === 0) return;
 
     try {
       setPrinting(true);
       setError('');
-      const withDiagrams = await Promise.all(printable.map(async (p) => {
+       const withDiagrams = mode === 'shopping' ? [] : await Promise.all(printable.map(async (p) => {
         const pf = planFacts(p, t);
         return {
           name: p.name,
@@ -220,12 +222,13 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
           extraHtml: p.projectType === 'tile' ? buildCutListHtml(p.layout_result, t) : undefined,
         };
       }));
-      await printProjectPlans({
-        title,
-           meta: `${t(printable.length === 1 ? 'projectUi.printPlan' : 'projectUi.printPlans', { count: printable.length })} · ${t('projectUi.printed', { date: formatDate(new Date()) })}`,
-        paper: paperSize,
-        plans: withDiagrams,
-      });
+       await printProjectPlans({
+         title,
+            meta: `${t(printable.length === 1 ? 'projectUi.printPlan' : 'projectUi.printPlans', { count: printable.length })} · ${t('projectUi.printed', { date: formatDate(new Date()) })}`,
+         paper: paperSize,
+         plans: withDiagrams,
+         shoppingListHtml: mode === 'diagrams' ? undefined : buildMaterialListHtml(printable, t),
+       });
     } catch (err) {
        setError(t('projectUi.printableFailed', { message: err.message }));
     } finally {
@@ -251,6 +254,12 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
     } catch (err) {
        setError(t('projectUi.previewFailed', { message: err.message }));
     }
+  };
+
+  const handleModify = (project) => {
+    const routes = { board: '/cutting', sheet: '/sheet-cutting', tile: '/tile-layout' };
+    const route = routes[project.projectType];
+    if (route) navigate(`${route}?edit=${encodeURIComponent(project.id)}`);
   };
 
   const startEdit = (project) => {
@@ -423,6 +432,12 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
             <div className="plan-item-acts">
               <button
                 className="btn btn-sm"
+                onClick={() => handleModify(project)}
+              >
+                {t('projectUi.modify')}
+              </button>
+              <button
+                className="btn btn-sm"
                 onClick={() => handlePrint([project], printTitle)}
                 disabled={printing || !hasDiagram}
               >
@@ -545,12 +560,26 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
                     <option value="a4">A4</option>
                     <option value="letter">Letter</option>
                   </select>
-                    <button
+                   <button
                      className="btn"
-                     onClick={() => handlePrint(selectedPlans, title)}
+                     onClick={() => handlePrint(selectedPlans, title, 'diagrams')}
                      disabled={printing || selectedPlans.length === 0}
                    >
-                     {t('projectUi.printSelected', { count: selectedPlans.length })}
+                     {t('projectUi.printDiagrams', { count: selectedPlans.length })}
+                   </button>
+                   <button
+                     className="btn"
+                     onClick={() => handlePrint(selectedPlans, title, 'shopping')}
+                     disabled={printing || selectedPlans.length === 0}
+                   >
+                     {t('projectUi.printShoppingList')}
+                   </button>
+                   <button
+                     className="btn"
+                     onClick={() => handlePrint(selectedPlans, title, 'project')}
+                     disabled={printing || selectedPlans.length === 0}
+                   >
+                     {t('projectUi.printProject')}
                    </button>
                    <button
                      className="btn"

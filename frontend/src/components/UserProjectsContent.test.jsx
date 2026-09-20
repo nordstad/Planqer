@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import UserProjectsContent from './UserProjectsContent';
 import { LanguageProvider } from '../contexts/LanguageContext';
 import {
@@ -64,10 +64,16 @@ const secondPlan = {
 const renderDetail = () => render(
   <MemoryRouter>
     <LanguageProvider>
+      <LocationProbe />
       <UserProjectsContent onPreview={jest.fn()} groupId={group.id} />
     </LanguageProvider>
   </MemoryRouter>,
 );
+
+const LocationProbe = () => {
+  const location = useLocation();
+  return <output data-testid="location">{location.pathname}{location.search}</output>;
+};
 
 const sheetPlan = {
   id: 'sheet-plan-1',
@@ -141,16 +147,62 @@ it('prints a plan from the project detail route', async () => {
   expect(printProjectPlans.mock.calls.at(-1)[0].plans).toHaveLength(1);
 });
 
+it('routes a saved plan to its optimizer for modification', async () => {
+  renderDetail();
+
+  fireEvent.click(await screen.findByRole('button', { name: 'Modify', exact: true }));
+
+  expect(screen.getByTestId('location')).toHaveTextContent('/cutting?edit=plan-1');
+});
+
+it('routes saved sheet and tile plans to their optimizers', async () => {
+  getUserProjects.mockResolvedValue([]);
+  getUserSheetProjects.mockResolvedValue([sheetPlan]);
+  getUserTileProjects.mockResolvedValue([tilePlan]);
+  renderDetail();
+
+  const modifyButtons = await screen.findAllByRole('button', { name: 'Modify', exact: true });
+  fireEvent.click(modifyButtons[0]);
+  expect(screen.getByTestId('location')).toHaveTextContent('/sheet-cutting?edit=sheet-plan-1');
+
+  fireEvent.click(modifyButtons[1]);
+  expect(screen.getByTestId('location')).toHaveTextContent('/tile-layout?edit=tile-plan-1');
+});
+
 it('prints only the selected plans', async () => {
   getUserProjects.mockResolvedValue([plan, secondPlan]);
   renderDetail();
 
   fireEvent.click(await screen.findByRole('checkbox', { name: 'Select plan "Cut list"' }));
   fireEvent.click(screen.getByRole('checkbox', { name: 'Select plan "Second cut list"' }));
-  fireEvent.click(screen.getByRole('button', { name: 'Print selected (2)' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Print diagrams (2)' }));
 
   await waitFor(() => expect(printProjectPlans).toHaveBeenCalled());
   expect(printProjectPlans.mock.calls.at(-1)[0].plans).toHaveLength(2);
+});
+
+it('prints the selected shopping list', async () => {
+  renderDetail();
+
+  fireEvent.click(await screen.findByRole('checkbox', { name: 'Select plan "Cut list"' }));
+  fireEvent.click(screen.getByRole('button', { name: 'What to buy' }));
+
+  await waitFor(() => expect(printProjectPlans).toHaveBeenCalled());
+  const printArgs = printProjectPlans.mock.calls.at(-1)[0];
+  expect(printArgs.plans).toHaveLength(0);
+  expect(printArgs.shoppingListHtml).toContain('300 mm');
+});
+
+it('prints the shopping list before the selected diagrams for a project print', async () => {
+  renderDetail();
+
+  fireEvent.click(await screen.findByRole('checkbox', { name: 'Select plan "Cut list"' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Print project' }));
+
+  await waitFor(() => expect(printProjectPlans).toHaveBeenCalled());
+  const printArgs = printProjectPlans.mock.calls.at(-1)[0];
+  expect(printArgs.plans).toHaveLength(1);
+  expect(printArgs.shoppingListHtml).toContain('What to buy');
 });
 
 it('shows a shopping list for saved board plans', async () => {

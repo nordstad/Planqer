@@ -20,6 +20,7 @@ import {
 import { useDebounce } from '../hooks/useDebounce';
 import { useAuth } from '../contexts/AuthContext';
 import CatalogPage from './CatalogPage';
+import ConfirmDialog from './ConfirmDialog';
 import Disclosure from './Disclosure';
 import ProjectPicker from './ProjectPicker';
 import Loader from './Loader';
@@ -109,6 +110,7 @@ const TileOptimizer = () => {
   const [saved, setSaved] = useState(null);
   const [editingProject, setEditingProject] = useState(null);
   const [saveMode, setSaveMode] = useState('new');
+  const [updateConfirmOpen, setUpdateConfirmOpen] = useState(false);
 
   /* loading one back */
   const [userProjects, setUserProjects] = useState([]);
@@ -212,6 +214,15 @@ const TileOptimizer = () => {
     setStep(STEP_SURFACE);
   };
 
+  useEffect(() => {
+    const editId = new URLSearchParams(window.location.search).get('edit');
+    if (!editId || !userProjects.length) return;
+    const project = userProjects.find((item) => String(item.id) === editId);
+    if (!project) return;
+    loadProject(project);
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }, [userProjects]);
+
   /* ── derived facts ─────────────────────────────────────────────────────── */
   const hasErrors = inputErrors.cutouts.some(Boolean)
     || !!inputErrors.surfaceWidth || !!inputErrors.surfaceHeight
@@ -280,12 +291,7 @@ const TileOptimizer = () => {
     }
   };
 
-  const handleSave = async (e) => {
-    e.preventDefault();
-    setSaveAttempted(true);
-    setApiError('');
-    if (!projectName.trim()) return;
-
+  const savePlan = async () => {
     setSaving(true);
     try {
       const project = await saveTileProject({
@@ -307,6 +313,18 @@ const TileOptimizer = () => {
       setApiError(error.message || t('auditUi.saveFailed'));
     }
     setSaving(false);
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setSaveAttempted(true);
+    setApiError('');
+    if (!projectName.trim()) return;
+    if (saveMode === 'update') {
+      setUpdateConfirmOpen(true);
+      return;
+    }
+    await savePlan();
   };
 
   const savedGroupName = saved
@@ -834,6 +852,16 @@ const TileOptimizer = () => {
       )}
 
       {/* ── load a saved plan ─────────────────────────────────────────────── */}
+      <ConfirmDialog
+        open={updateConfirmOpen}
+        title={t('ui.updatePlanTitle')}
+        message={t('ui.updatePlanConfirm', { name: editingProject?.name || projectName })}
+        confirmLabel={t('ui.updateExistingPlan')}
+        danger={false}
+        onConfirm={() => { setUpdateConfirmOpen(false); savePlan(); }}
+        onCancel={() => setUpdateConfirmOpen(false)}
+      />
+
       {loadModalOpen && (
          <div className="cat-overlay" role="dialog" aria-modal="true" aria-label={t('workflow.loadSavedPlan')}>
           <div className="cat-sheet">
