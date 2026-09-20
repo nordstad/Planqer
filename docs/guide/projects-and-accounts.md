@@ -49,7 +49,7 @@ form. If you forget your password:
   script on the host, from outside the app:
 
   ```bash
-  docker exec -it planqer-web-backend uv run python create_admin.py set-password <email>
+  docker exec -it planqer-web-backend python create_admin.py set-password <email>
   ```
 
   This is the supported recovery path — it prompts for a new password
@@ -61,7 +61,7 @@ form. If you forget your password:
 All commands below run the same way — from the host, outside the app:
 
 ```bash
-docker exec -it planqer-web-backend uv run python create_admin.py <command>
+docker exec -it planqer-web-backend python create_admin.py <command>
 ```
 
 (Or `python create_admin.py <command>` if running from source.)
@@ -84,7 +84,7 @@ arguments:
 docker exec -it \
   -e PLANQER_ADMIN_EMAIL=admin@example.com \
   -e PLANQER_ADMIN_PASSWORD='a-strong-password' \
-  planqer-web-backend uv run python create_admin.py
+  planqer-web-backend python create_admin.py
 ```
 
 Passwords must be at least 8 characters and include an uppercase letter, a
