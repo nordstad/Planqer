@@ -331,6 +331,16 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
     />
   );
 
+  const deleteDialog = (
+    <ConfirmDialog
+      open={!!pendingDelete}
+      title={t('ui.delete')}
+      message={pendingDelete?.message}
+      onConfirm={() => { pendingDelete.run(); setPendingDelete(null); }}
+      onCancel={() => setPendingDelete(null)}
+    />
+  );
+
   /* ── one saved plan: its own diagram, its facts, its two exports ─────── */
 
    const renderPlan = (project) => {
@@ -524,6 +534,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
              <Link to="/cutting" className="btn btn-primary">{t('projectUi.planACut')}</Link>
           </div>
         )}
+        {deleteDialog}
       </>
     );
   }
@@ -609,13 +620,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
         </section>
       )}
 
-      <ConfirmDialog
-        open={!!pendingDelete}
-         title={t('ui.delete')}
-        message={pendingDelete?.message}
-        onConfirm={() => { pendingDelete.run(); setPendingDelete(null); }}
-        onCancel={() => setPendingDelete(null)}
-      />
+      {deleteDialog}
     </>
   );
 };
