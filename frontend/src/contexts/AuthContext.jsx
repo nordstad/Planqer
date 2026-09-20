@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { getCurrentUser, logoutUser, getAuthToken, getSetupStatus } from '../utils/api';
+import { getCurrentUser, logoutUser, getAuthToken, getSetupStatus, getUserSettings, updateUserSettings } from '../utils/api';
+import { useLanguage } from './LanguageContext';
 
 const AuthContext = createContext();
 
@@ -12,11 +13,31 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
+  const { language, changeLanguage } = useLanguage();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [needsSetup, setNeedsSetup] = useState(false);
   const [setupCheckError, setSetupCheckError] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const syncLanguage = async () => {
+      try {
+        const settings = await getUserSettings();
+        if (settings.preferred_language) {
+          await changeLanguage(settings.preferred_language, { persistAccount: false });
+        } else {
+          await updateUserSettings({ preferred_language: language });
+        }
+      } catch {
+        // Language selection remains available locally if settings are unavailable.
+      }
+    };
+
+    syncLanguage();
+  }, [user]);
 
   useEffect(() => {
     const checkAuth = async () => {

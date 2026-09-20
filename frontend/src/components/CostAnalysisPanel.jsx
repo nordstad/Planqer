@@ -14,6 +14,7 @@
 */
 
 import { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import Loader from './Loader';
 
 const mm = (n) => (Number.isFinite(n) ? Math.round(n).toLocaleString('sv-SE') : '—');
@@ -23,9 +24,9 @@ const mm = (n) => (Number.isFinite(n) ? Math.round(n).toLocaleString('sv-SE') : 
    are written the same way. */
 const money = (n) => (Number.isFinite(Number(n)) ? Number(n).toFixed(2) : '—');
 
-const delta = (before, after, format) => {
+const delta = (before, after, format, unchanged = 'unchanged') => {
   const d = Number(after) - Number(before);
-  if (!Number.isFinite(d) || Math.abs(d) < 0.005) return 'unchanged';
+  if (!Number.isFinite(d) || Math.abs(d) < 0.005) return unchanged;
   return `${d < 0 ? '−' : '+'}${format(Math.abs(d))}`;
 };
 
@@ -35,6 +36,7 @@ const CostAnalysisPanel = ({
   optimizeFor, setOptimizeFor, costTouched, setCostTouched, costSubmitAttempted,
   onApply, applying, appliedCost, pricesDirty, previous, boardsUsed, offcut,
 }) => {
+  const { t } = useTranslation();
   /* cost_per_board_type is the LINE total for a stock length, not a unit price,
      and the API keys it by str(float) — "5100.0" — while the plan's own counts
      come from JSON numbers and key as "5100". Matching those keys literally is
@@ -87,7 +89,7 @@ const CostAnalysisPanel = ({
   return (
     <>
       <div className="flex items-center justify-between" style={{ marginBottom: '8px', gap: '12px', flexWrap: 'wrap' }}>
-        <span className="kicker">Price per metre · {currency}</span>
+         <span className="kicker">{t('ui.pricePerMetre', { currency })}</span>
         <label className="flex items-center gap-2" style={{ cursor: 'pointer' }}>
           <input
             type="checkbox"
@@ -97,16 +99,16 @@ const CostAnalysisPanel = ({
               if (e.target.checked && uniformPrice) priceEveryBoard(parseFloat(uniformPrice) || 0);
             }}
           />
-          <span className="kicker" style={{ color: 'var(--ink)' }}>One price for all lengths</span>
+           <span className="kicker" style={{ color: 'var(--ink)' }}>{t('ui.onePriceAll')}</span>
         </label>
       </div>
 
       {samePriceForAll ? (
         <table className="cat-table">
-          <thead><tr><th>All stock</th><th>{currency} / m</th><th>Applies to</th></tr></thead>
+           <thead><tr><th>{t('ui.allStock')}</th><th>{currency} / m</th><th>{t('ui.appliesTo')}</th></tr></thead>
           <tbody>
             <tr>
-              <td>Uniform</td>
+               <td>{t('ui.uniform')}</td>
               <td>
                 <input
                   type="number"
@@ -120,18 +122,18 @@ const CostAnalysisPanel = ({
                   }}
                   onBlur={() => setCostTouched((prev) => ({ ...prev, uniform: true }))}
                   className={`cell-input ${(costTouched.uniform || costSubmitAttempted) && (!uniformPrice || parseFloat(uniformPrice) <= 0) ? 'is-error' : ''}`}
-                  aria-label={`Uniform price per metre in ${currency}`}
+                   aria-label={t('ui.priceAria', { currency })}
                 />
               </td>
               <td style={{ color: 'var(--ink-3)' }}>
-                {validBoards.length} {validBoards.length === 1 ? 'length' : 'lengths'}
+                 {validBoards.length} {validBoards.length === 1 ? t('ui.length') : t('ui.lengths')}
               </td>
             </tr>
           </tbody>
         </table>
       ) : (
         <table className="cat-table">
-          <thead><tr><th>Stock</th><th>Length mm</th><th>{currency} / m</th><th>Per board</th></tr></thead>
+           <thead><tr><th>{t('ui.stock')}</th><th>{t('workflow.lengthMm')}</th><th>{currency} / m</th><th>{t('ui.perBoard')}</th></tr></thead>
           <tbody>
             {validBoards.map((board) => {
               const boardLength = parseFloat(board);
@@ -162,7 +164,7 @@ const CostAnalysisPanel = ({
                       }}
                       onBlur={() => setCostTouched((prev) => ({ ...prev, [boardLength]: true }))}
                       className={`cell-input ${priceMissing ? 'is-error' : ''}`}
-                      aria-label={`Price per metre for the ${boardLength} mm length`}
+                       aria-label={t('ui.priceLengthAria', { length: boardLength })}
                     />
                   </td>
                   <td style={{ color: 'var(--ink-3)' }}>
@@ -172,8 +174,8 @@ const CostAnalysisPanel = ({
               );
             })}
             {validBoards.length === 0 && (
-              <tr><td colSpan={4} style={{ textAlign: 'left', color: 'var(--ink-3)' }}>
-                Add stock lengths on the parts step to price them
+                 <tr><td colSpan={4} style={{ textAlign: 'left', color: 'var(--ink-3)' }}>
+                 {t('ui.addStockToPrice')}
               </td></tr>
             )}
           </tbody>
@@ -181,7 +183,7 @@ const CostAnalysisPanel = ({
       )}
 
       <fieldset style={{ marginTop: '20px', border: 0, padding: 0, minWidth: 0 }}>
-        <legend className="kicker" style={{ padding: 0 }}>What should the plan chase?</legend>
+         <legend className="kicker" style={{ padding: 0 }}>{t('ui.whatChase')}</legend>
         <div style={{ marginTop: '8px' }}>
           <label className="flex items-start gap-3" style={{ cursor: 'pointer', padding: '5px 0' }}>
             <input
@@ -193,8 +195,8 @@ const CostAnalysisPanel = ({
               style={{ marginTop: '3px' }}
             />
             <span>
-              <b style={{ fontSize: '13.5px' }}>Least waste</b>
-              <span className="block synthetic">Fewest millimetres thrown away</span>
+               <b style={{ fontSize: '13.5px' }}>{t('ui.leastWaste')}</b>
+               <span className="block synthetic">{t('ui.leastWasteHint')}</span>
             </span>
           </label>
           <label className="flex items-start gap-3" style={{ cursor: 'pointer', padding: '5px 0' }}>
@@ -207,8 +209,8 @@ const CostAnalysisPanel = ({
               style={{ marginTop: '3px' }}
             />
             <span>
-              <b style={{ fontSize: '13.5px' }}>Least money</b>
-              <span className="block synthetic">Cheaper stock even if it leaves more offcut</span>
+               <b style={{ fontSize: '13.5px' }}>{t('ui.leastMoney')}</b>
+               <span className="block synthetic">{t('ui.leastMoneyHint')}</span>
             </span>
           </label>
         </div>
@@ -222,12 +224,8 @@ const CostAnalysisPanel = ({
         disabled={applying}
       >
         {applying
-          ? <><Loader /> Pricing the plan</>
-          : !appliedCost
-            ? 'Price this plan'
-            : pricesDirty
-              ? 'Apply the changed prices'
-              : 'Price this plan again'}
+           ? <><Loader /> {t('ui.pricing')}</>
+           : !appliedCost ? t('ui.pricePlan') : pricesDirty ? t('ui.applyChangedPrices') : t('ui.priceAgain')}
       </button>
 
       {/* The prices on screen are not the prices in the plan on screen. Said
@@ -235,48 +233,44 @@ const CostAnalysisPanel = ({
           folded line above so it is legible with this panel shut. */}
       {pricesDirty && !applying && (
         <p className="alert-note" style={{ marginTop: '14px' }} role="status">
-          You have changed prices since this plan was costed. Everything below is
-          the <b>previous</b> set — apply the changes to re-cost it.
+           {t('ui.changedPrices')}
         </p>
       )}
 
       {appliedCost ? (
         <div ref={resultRef} style={{ marginTop: '26px', scrollMarginBottom: '16px' }}>
           <div className="section-rule">
-            <h3 className="section-title">What this plan costs</h3>
-            <span className="folio">All figures in {appliedCost.currency}</span>
+             <h3 className="section-title">{t('ui.whatCosts')}</h3>
+             <span className="folio">{t('ui.allFigures', { currency: appliedCost.currency })}</span>
           </div>
 
           <p className="synthetic" style={{ marginTop: '10px', marginBottom: '14px' }}>
-            Your own prices applied to the stock this plan actually buys — Planqer
-            quotes no supplier. The total also sits with the plan's other figures
-            at the top of this step.
+             {t('ui.ownPrices')}
           </p>
 
           <dl className="plan-facts">
             <div className="plan-fact">
-              <dt>Total</dt>
+             <dt>{t('ui.total')}</dt>
               <dd>{money(appliedCost.totalCost)} {appliedCost.currency}</dd>
             </div>
             <div className="plan-fact">
-              <dt>In the offcut</dt>
+               <dt>{t('ui.inOffcut')}</dt>
               <dd>{money(appliedCost.wasteCost)} {appliedCost.currency}</dd>
             </div>
             {perMetreOfParts !== null && (
               <div className="plan-fact">
-                <dt>Per metre of parts</dt>
+               <dt>{t('ui.perMetreParts')}</dt>
                 <dd>{money(perMetreOfParts)} {appliedCost.currency}</dd>
               </div>
             )}
             <div className="plan-fact">
-              <dt>Chasing</dt>
-              <dd>{optimizeFor === 'cost' ? 'Least money' : 'Least waste'}</dd>
+               <dt>{t('ui.chasing')}</dt>
+               <dd>{optimizeFor === 'cost' ? t('ui.leastMoney') : t('ui.leastWaste')}</dd>
             </div>
           </dl>
 
           <p className="synthetic" style={{ marginTop: '10px' }}>
-            In the offcut is the share of the total you pay for and never cut.
-            Per metre of parts spreads the total over the length you keep.
+             {t('ui.offcutExplanation')}
           </p>
 
           {/* A second run is a comparison. Which is the point: chasing money
@@ -284,41 +278,40 @@ const CostAnalysisPanel = ({
               invisible if the old numbers are simply overwritten. */}
           {previous && (
             <div style={{ marginTop: '22px' }}>
-              <span className="kicker">What changed since the last run</span>
+               <span className="kicker">{t('ui.changedSince')}</span>
               <table className="cat-table" style={{ marginTop: '6px' }}>
-                <thead><tr><th>Figure</th><th>Before</th><th>Now</th><th>Change</th></tr></thead>
+               <thead><tr><th>{t('ui.figure')}</th><th>{t('ui.before')}</th><th>{t('ui.now')}</th><th>{t('ui.change')}</th></tr></thead>
                 <tbody>
                   <tr>
-                    <td>Total {appliedCost.currency}</td>
+                     <td>{t('ui.total')} {appliedCost.currency}</td>
                     <td>{money(previous.totalCost)}</td>
                     <td>{money(appliedCost.totalCost)}</td>
-                    <td>{delta(previous.totalCost, appliedCost.totalCost, money)}</td>
+                     <td>{delta(previous.totalCost, appliedCost.totalCost, money, t('ui.unchanged'))}</td>
                   </tr>
                   <tr>
-                    <td>Boards</td>
+                     <td>{t('ui.boards')}</td>
                     <td>{previous.boardsUsed}</td>
                     <td>{boardsUsed}</td>
-                    <td>{delta(previous.boardsUsed, boardsUsed, (n) => mm(n))}</td>
+                     <td>{delta(previous.boardsUsed, boardsUsed, (n) => mm(n), t('ui.unchanged'))}</td>
                   </tr>
                   <tr>
-                    <td>Offcut mm</td>
+                     <td>{t('ui.offcut')} mm</td>
                     <td>{mm(previous.offcut)}</td>
                     <td>{mm(offcut)}</td>
-                    <td>{delta(previous.offcut, offcut, (n) => mm(n))}</td>
+                     <td>{delta(previous.offcut, offcut, (n) => mm(n), t('ui.unchanged'))}</td>
                   </tr>
                 </tbody>
               </table>
               <p className="synthetic" style={{ marginTop: '8px' }}>
-                A change in boards or offcut means the cut diagram above was
-                redrawn too.
+                 {t('ui.diagramRedrawn')}
               </p>
             </div>
           )}
 
           <div style={{ marginTop: '22px' }}>
-            <span className="kicker">What you buy</span>
+             <span className="kicker">{t('ui.buy')}</span>
             <table className="cat-table" style={{ marginTop: '6px' }}>
-              <thead><tr><th>Stock</th><th>Boards</th><th>Per board</th><th>Cost</th></tr></thead>
+             <thead><tr><th>{t('ui.stock')}</th><th>{t('ui.boards')}</th><th>{t('ui.perBoard')}</th><th>{t('ui.cost')}</th></tr></thead>
               <tbody>
                 {Object.entries(appliedCost.byType).map(([boardLength, quantity]) => {
                   const lineTotal = lineTotalFor(boardLength);
@@ -343,9 +336,7 @@ const CostAnalysisPanel = ({
         </div>
       ) : (
         <p className="synthetic" style={{ marginTop: '12px' }}>
-          The plan on screen has no prices in it yet. Price it and the cost
-          appears here, and beside the plan's other figures at the top of this
-          step.
+           {t('ui.noPrices')}
         </p>
       )}
     </>

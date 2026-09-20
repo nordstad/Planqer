@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '../hooks/useDarkMode';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
+import { LANGUAGES } from '../i18n/languages';
 import AuthModal from './auth/AuthModal';
 
 /*
@@ -13,35 +16,37 @@ import AuthModal from './auth/AuthModal';
 const NAV_BUTTON_RESET = { background: 'none', border: 0, borderBottom: '2px solid transparent', font: 'inherit', cursor: 'pointer' };
 
 const BASE_NAV_LINKS = [
-  { path: '/cutting', label: 'Board cutting' },
-  { path: '/sheet-cutting', label: 'Sheet cutting' },
-  { path: '/tile-layout', label: 'Tile layout' },
-  { path: '/model-cutlist', label: '3D model' },
-  { path: '/help', label: 'Help' },
+  { path: '/cutting', label: 'common.boardCutting' },
+  { path: '/sheet-cutting', label: 'common.sheetCutting' },
+  { path: '/tile-layout', label: 'common.tileLayout' },
+  { path: '/model-cutlist', label: 'common.modelCutlist' },
+  { path: '/help', label: 'common.help' },
 ];
 
-const DayNight = ({ isDark, setIsDark }) => (
+const DayNight = ({ isDark, setIsDark, t }) => (
   <button
     type="button"
     onClick={() => setIsDark(!isDark)}
     className={`toggle-switch ${isDark ? 'toggle-switch-on' : 'toggle-switch-off'}`}
-    aria-label="Night edition"
+    aria-label={isDark ? t('common.dayEdition') : t('common.nightEdition')}
     aria-pressed={isDark}
-    title={isDark ? 'Night edition' : 'Day edition'}
+    title={isDark ? t('common.dayEdition') : t('common.nightEdition')}
   >
     <span className={`toggle-thumb ${isDark ? 'toggle-thumb-on' : 'toggle-thumb-off'}`} />
   </button>
 );
 
 const CatalogPage = ({ children }) => {
+  const { t } = useTranslation();
   const [isDark, setIsDark] = useDarkMode();
+  const { changeLanguage, language } = useLanguage();
   const { pathname } = useLocation();
   const isCurrent = (path) => pathname === path;
   const { user, isAuthenticated, logout, needsSetup, setupCheckError } = useAuth();
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
   const navLinks = user?.is_admin
-    ? [...BASE_NAV_LINKS, { path: '/admin', label: 'Admin' }]
+    ? [...BASE_NAV_LINKS, { path: '/admin', label: 'common.admin' }]
     : BASE_NAV_LINKS;
 
   return (
@@ -60,7 +65,7 @@ const CatalogPage = ({ children }) => {
                 className={`app-nav-link ${isCurrent(l.path) ? 'is-current' : ''}`}
                 aria-current={isCurrent(l.path) ? 'page' : undefined}
               >
-                {l.label}
+                {t(l.label)}
               </Link>
             ))}
           </div>
@@ -70,16 +75,27 @@ const CatalogPage = ({ children }) => {
                 <Link to="/dashboard" className={`app-nav-link ${isCurrent('/dashboard') ? 'is-current' : ''}`}>
                   {user.email}
                 </Link>
-                <button type="button" className="app-nav-link" style={NAV_BUTTON_RESET} onClick={logout}>Sign out</button>
+                <button type="button" className="app-nav-link" style={NAV_BUTTON_RESET} onClick={logout}>{t('common.signOut')}</button>
               </>
             ) : setupCheckError ? (
-              <span className="app-nav-link" title="Couldn't reach the API to check for accounts. See PLANQER_CORS_ORIGINS.">
-                Can't reach API
+              <span className="app-nav-link" title={t('common.apiUnavailableTitle')}>
+                {t('common.apiUnavailable')}
               </span>
             ) : (
-              <button type="button" className="app-nav-link" style={NAV_BUTTON_RESET} onClick={() => setAuthModalOpen(true)}>Sign in</button>
+              <button type="button" className="app-nav-link" style={NAV_BUTTON_RESET} onClick={() => setAuthModalOpen(true)}>{t('common.signIn')}</button>
             )}
-            <DayNight isDark={isDark} setIsDark={setIsDark} />
+            <label className="sr-only" htmlFor="language-select">{t('common.language')}</label>
+            <select
+              id="language-select"
+              className="form-select app-nav-language"
+              style={{ width: 'auto', minWidth: '120px', padding: '5px 28px 5px 9px' }}
+              value={language}
+              onChange={(event) => changeLanguage(event.target.value)}
+              aria-label={t('common.language')}
+            >
+              {LANGUAGES.map(({ code, label }) => <option key={code} value={code}>{label}</option>)}
+            </select>
+            <DayNight isDark={isDark} setIsDark={setIsDark} t={t} />
           </div>
         </div>
       </nav>

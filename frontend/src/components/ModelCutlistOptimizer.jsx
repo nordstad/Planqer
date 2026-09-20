@@ -23,6 +23,7 @@
 */
 
 import { useState, useCallback, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import CatalogPage from './CatalogPage';
 import Loader from './Loader';
@@ -110,6 +111,7 @@ const planNameFor = (modelName, group) => {
 };
 
 const ModelCutlistOptimizer = () => {
+  const { t } = useTranslation();
   const { user, isAuthenticated } = useAuth();
 
   const [step, setStep] = useState(STEP_MODEL);
@@ -124,7 +126,7 @@ const ModelCutlistOptimizer = () => {
   const [groups, setGroups] = useState([]);
   const [selectedIds, setSelectedIds] = useState(new Set());
 
-  const modelName = file ? file.name.replace(/\.[a-z0-9]+$/i, '') : 'Model';
+  const modelName = file ? file.name.replace(/\.[a-z0-9]+$/i, '') : t('workflow.model');
   const selectedGroups = groups.filter((g) => selectedIds.has(g.id));
   const hasBoards = selectedGroups.some((g) => g.kind === 'board');
   const hasSheets = selectedGroups.some((g) => g.kind === 'sheet');
@@ -152,26 +154,26 @@ const ModelCutlistOptimizer = () => {
   const debouncedSheetHeight = useDebounce(sheetHeight, 300);
   const debouncedSheetKerf = useDebounce(sheetKerf, 300);
 
-  const boardErrors = hasBoards ? validateBoards(debouncedBoards) : [];
+  const boardErrors = hasBoards ? validateBoards(debouncedBoards, t) : [];
   const validBoards = boards.filter((b) => b && !isNaN(parseFloat(b)));
   const boardKerfError = hasBoards
     ? (!debouncedBoardKerf || parseFloat(debouncedBoardKerf) <= 0
-      ? "A kerf of zero would plan cuts that lose no material"
+       ? t('modelUi.kerfZero')
       : parseFloat(debouncedBoardKerf) > 20
-        ? "That kerf is wider than any saw blade — 2 to 4 mm is typical"
+        ? t('modelUi.kerfWide')
         : "")
     : "";
   const sheetWidthError = hasSheets
     ? (!debouncedSheetWidth || isNaN(parseFloat(debouncedSheetWidth)) || parseFloat(debouncedSheetWidth) <= 0
-      ? "Sheet width must be a positive number" : "")
+       ? t('modelUi.sheetWidthPositive') : "")
     : "";
   const sheetHeightError = hasSheets
     ? (!debouncedSheetHeight || isNaN(parseFloat(debouncedSheetHeight)) || parseFloat(debouncedSheetHeight) <= 0
-      ? "Sheet height must be a positive number" : "")
+       ? t('modelUi.sheetHeightPositive') : "")
     : "";
   const sheetKerfError = hasSheets
     ? (!debouncedSheetKerf || isNaN(parseFloat(debouncedSheetKerf)) || parseFloat(debouncedSheetKerf) < 0
-      ? "A kerf of zero would plan cuts that lose no material" : "")
+       ? t('modelUi.kerfZero') : "")
     : "";
   const stockHasErrors = boardErrors.some(Boolean) || !!boardKerfError
     || !!sheetWidthError || !!sheetHeightError || !!sheetKerfError;
@@ -210,7 +212,7 @@ const ModelCutlistOptimizer = () => {
   const acceptFile = (candidate) => {
     if (!candidate) return;
     if (!ACCEPTED.includes(extensionOf(candidate.name))) {
-      setError('Please select an STL, STEP or STP file');
+       setError(t('ui.modelFileRequired'));
       return;
     }
     setFile(candidate);
@@ -240,7 +242,7 @@ const ModelCutlistOptimizer = () => {
 
   const readModel = async () => {
     if (!file) {
-      setError('Please select a model file');
+       setError(t('ui.modelFileRequired'));
       return;
     }
     setReading(true);
@@ -250,7 +252,7 @@ const ModelCutlistOptimizer = () => {
       const data = isStep ? await processStepCutlist(file) : await process3DCutlist(file);
       const found = [...groupBoards(data.boards || []), ...groupSheets(data.sheets || [])];
       if (found.length === 0) {
-        setError("No board or sheet components found in this file — Planqer measures solids, and this model doesn't hold any it recognises.");
+         setError(t('ui.noModelComponents'));
         setReading(false);
         return;
       }
@@ -258,7 +260,7 @@ const ModelCutlistOptimizer = () => {
       setSelectedIds(new Set(found.map((g) => g.id)));
       setStep(STEP_CUTLISTS);
     } catch (err) {
-      setError(err.message || 'Failed to read this model');
+       setError(err.message || t('ui.modelReadFailed'));
     }
     setReading(false);
   };
@@ -283,7 +285,7 @@ const ModelCutlistOptimizer = () => {
     } else {
       const parts = group.sizes.map((s, i) => ({
         width: s.width, height: s.length, quantity: s.qty,
-        name: `${group.names[0] || 'Sheet'}_${i + 1}`, id: `sheet_${i + 1}`,
+         name: `${group.names[0] || t('ui.sheet')}_${i + 1}`, id: `sheet_${i + 1}`,
       }));
       localStorage.setItem('planqer-3d-sheet-import', JSON.stringify({
         parts, projectName: planNameFor(modelName, group), source: 'model-cutlist-sheet',
@@ -317,7 +319,7 @@ const ModelCutlistOptimizer = () => {
       setApiError('');
       return true;
     } catch (err) {
-      setApiError('Could not create that project: ' + err.message);
+       setApiError(`${t('legacy.failed')}: ${err.message}`);
       return false;
     }
   };
@@ -336,7 +338,7 @@ const ModelCutlistOptimizer = () => {
       } else {
         const parts = group.sizes.map((s, i) => ({
           width: String(s.width), height: String(s.length), quantity: String(s.qty),
-          name: `${group.names[0] || 'Sheet'}_${i + 1}`, id: `sheet_${i + 1}`,
+           name: `${group.names[0] || t('ui.sheet')}_${i + 1}`, id: `sheet_${i + 1}`,
         }));
         const result = await optimizeSheetCutting(parts, sheetWidth, sheetHeight, sheetKerf, materialType, undefined, allowRotation);
         await saveSheetProject({
@@ -348,7 +350,7 @@ const ModelCutlistOptimizer = () => {
       setStatuses((prev) => ({ ...prev, [group.id]: 'done' }));
     } catch (err) {
       setStatuses((prev) => ({ ...prev, [group.id]: 'error' }));
-      setStatusMessages((prev) => ({ ...prev, [group.id]: err.message || 'Could not plan this one' }));
+       setStatusMessages((prev) => ({ ...prev, [group.id]: err.message || t('legacy.failed') }));
     }
   };
 
@@ -371,21 +373,21 @@ const ModelCutlistOptimizer = () => {
   /* ── the rail ──────────────────────────────────────────────────────── */
   const steps = [
     {
-      label: 'Model',
+      label: t('workflow.model'),
       reachable: true,
-      summary: file ? `${file.name} · ${formatFileSize(file.size)}` : 'No file yet',
+        summary: file ? `${file.name} · ${formatFileSize(file.size)}` : t('ui.noFileYet'),
     },
     {
-      label: 'Cutlists',
+      label: t('workflow.cutlists'),
       reachable: groups.length > 0,
-      summary: groups.length > 0 ? `${totalComponents} parts · ${groups.length} ${groups.length === 1 ? 'cutlist' : 'cutlists'}` : '',
-      locked: 'Reads from your model',
+        summary: groups.length > 0 ? `${totalComponents} ${t('workflow.parts')} · ${t(groups.length === 1 ? 'modelUi.planCutlist' : 'modelUi.planCutlists', { count: groups.length })}` : '',
+        locked: t('ui.readsFromModel'),
     },
     {
-      label: 'Save',
+      label: t('workflow.save'),
       reachable: selectedGroups.length > 0,
-      summary: allDone ? `Saved ${savedCount} of ${selectedGroups.length}` : selectedGroups.length ? 'Plan and keep them' : '',
-      locked: 'Waits for selected cutlists',
+        summary: allDone ? t('modelUi.savedCount', { saved: savedCount, total: selectedGroups.length }) : selectedGroups.length ? t('ui.planAndKeep') : '',
+        locked: t('ui.waitsForCutlists'),
     },
   ];
 
@@ -402,10 +404,9 @@ const ModelCutlistOptimizer = () => {
         <div className="step-view is-form">
           <div className="step-head">
             <div>
-              <h1 className="step-h1">Upload a model</h1>
+              <h1 className="step-h1">{t('workflow.uploadModel')}</h1>
               <p className="step-lede">
-                An STL or a STEP file — the model you already designed. Planqer measures
-                every solid in it and sorts them into cutlists you can plan and save.
+                 {t('workflow.uploadModelIntroCorrect')}
               </p>
             </div>
           </div>
@@ -429,7 +430,7 @@ const ModelCutlistOptimizer = () => {
                 <p style={{ fontSize: '15px', fontWeight: 700, marginBottom: '4px' }}>{file.name}</p>
                 <p className="synthetic" style={{ marginBottom: '16px' }}>{formatFileSize(file.size)}</p>
                 <button type="button" onClick={removeFile} className="btn" style={{ color: 'var(--revision)', borderColor: 'var(--revision)' }}>
-                  Remove file
+                  {t('workflow.removeFile')}
                 </button>
               </div>
             ) : (
@@ -445,9 +446,9 @@ const ModelCutlistOptimizer = () => {
                 >
                   <CubeIcon size={22} />
                 </div>
-                <p style={{ fontSize: '15px', fontWeight: 700, marginBottom: '4px' }}>Drop your model here</p>
+                <p style={{ fontSize: '15px', fontWeight: 700, marginBottom: '4px' }}>{t('workflow.dropModel')}</p>
                 <p className="synthetic" style={{ marginBottom: '16px' }}>
-                  STL, STEP or STP · up to 50MB
+                   {t('modelUi.acceptedModelFiles')}
                 </p>
                 <label className="btn-primary" style={{ cursor: 'pointer' }}>
                   <input
@@ -457,7 +458,7 @@ const ModelCutlistOptimizer = () => {
                     className="hidden"
                     style={{ display: 'none' }}
                   />
-                  Browse files
+                  {t('workflow.browseFiles')}
                 </label>
               </div>
             )}
@@ -465,25 +466,25 @@ const ModelCutlistOptimizer = () => {
 
           <div style={{ marginTop: '26px' }}>
             <Disclosure
-              title="What this page returns, and its limits"
-              hint="Boards and sheets, grouped by size — ready for either optimizer"
+               title={t('ui.whatPageReturns')}
+               hint={t('ui.modelHint')}
               open={limitsOpen}
               onToggle={() => setLimitsOpen((v) => !v)}
             >
               <div className="grid gap-x-8 gap-y-5 md:grid-cols-2">
                 <table className="cat-table is-reference">
                   <tbody>
-                    <tr><td>Boards</td><td>Long, narrow solids — cross-section and length</td></tr>
-                    <tr><td>Sheets</td><td>Thin, wide solids — thickness, length and width</td></tr>
-                    <tr><td>Names, material</td><td>Read from STEP; STL carries geometry only</td></tr>
-                    <tr><td>Quantity</td><td>Counted from repeated parts and assemblies</td></tr>
+                    <tr><td>{t('legacy.boards')}</td><td>{t('legacy.longSolids')}</td></tr>
+                    <tr><td>{t('legacy.sheets')}</td><td>{t('legacy.thinSolids')}</td></tr>
+                    <tr><td>{t('legacy.namesMaterial')}</td><td>{t('legacy.readStepStl')}</td></tr>
+                    <tr><td>{t('legacy.quantity')}</td><td>{t('legacy.countedParts')}</td></tr>
                   </tbody>
                 </table>
                 <table className="cat-table is-reference">
                   <tbody>
-                    <tr><td>STL file size</td><td>50 MB maximum</td></tr>
-                    <tr><td>STEP file size</td><td>50 MB maximum</td></tr>
-                    <tr><td>Units</td><td>Millimetres — the file's own declared unit is used if it has one</td></tr>
+                    <tr><td>{t('legacy.fileSize', { format: 'STL' })}</td><td>50 MB</td></tr>
+                    <tr><td>{t('legacy.fileSize', { format: 'STEP' })}</td><td>50 MB</td></tr>
+                    <tr><td>{t('common.units')}</td><td>{t('legacy.unitsDeclared')}</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -492,11 +493,11 @@ const ModelCutlistOptimizer = () => {
 
           <div className="step-foot">
             <p className="synthetic step-foot-note">
-              {file ? 'Ready to read' : 'Choose a file to continue'}
+               {file ? t('ui.readyToRead') : t('ui.chooseFileContinue')}
             </p>
             <div className="step-foot-act">
               <button type="button" className="btn-order" disabled={!file || reading} onClick={readModel}>
-                {reading ? <><Loader /> Reading model</> : <>Read the model <ArrowRight size={15} /></>}
+                {reading ? <><Loader /> {t('workflow.readingModel')}</> : <>{t('workflow.readModel')} <ArrowRight size={15} /></>}
               </button>
             </div>
           </div>
@@ -508,10 +509,9 @@ const ModelCutlistOptimizer = () => {
         <div className="step-view">
           <div className="step-head" style={{ marginBottom: '20px' }}>
             <div>
-              <h1 className="step-h1">Cutlists found</h1>
+          <h1 className="step-h1">{t('ui.cutlistsFound')}</h1>
               <p className="step-lede">
-                Every distinct size in {modelName}, grouped so you can plan them together
-                or send just one to its own optimizer.
+                 {t('ui.cutlistsIntro', { model: modelName })}
               </p>
             </div>
           </div>
@@ -519,10 +519,10 @@ const ModelCutlistOptimizer = () => {
           <table className="cat-table">
             <thead>
               <tr>
-                <th aria-label="Include" style={{ width: '30px' }} />
-                <th style={{ textAlign: 'left' }}>Cutlist</th>
-                <th>Qty</th>
-                <th aria-label="Plan alone" />
+                 <th aria-label={t('ui.include')} style={{ width: '30px' }} />
+                 <th style={{ textAlign: 'left' }}>{t('ui.cutlist')}</th>
+                 <th>{t('workflow.qty')}</th>
+                 <th aria-label={t('ui.planAlone')} />
               </tr>
             </thead>
             <tbody>
@@ -533,7 +533,7 @@ const ModelCutlistOptimizer = () => {
                       type="checkbox"
                       checked={selectedIds.has(group.id)}
                       onChange={() => toggleGroup(group.id)}
-                      aria-label={`Include ${dimLabel(group)}`}
+                       aria-label={`${t('ui.include')} ${dimLabel(group)}`}
                     />
                   </td>
                   <td style={{ textAlign: 'left' }}>
@@ -547,7 +547,7 @@ const ModelCutlistOptimizer = () => {
                   <td>{group.quantity}×</td>
                   <td style={{ width: '110px' }}>
                     <button type="button" className="btn btn-sm" onClick={() => planGroupAlone(group)}>
-                      Plan alone
+                       {t('ui.planAlone')}
                     </button>
                   </td>
                 </tr>
@@ -557,7 +557,7 @@ const ModelCutlistOptimizer = () => {
 
           <div className="step-foot">
             <button type="button" className="btn" onClick={() => setStep(STEP_MODEL)}>
-              <ArrowLeft /> Choose a different file
+               <ArrowLeft /> {t('ui.chooseFile')}
             </button>
             <div className="step-foot-act">
               <button
@@ -566,7 +566,7 @@ const ModelCutlistOptimizer = () => {
                 disabled={selectedIds.size === 0}
                 onClick={() => setStep(STEP_SAVE)}
               >
-                Plan {selectedIds.size} {selectedIds.size === 1 ? 'cutlist' : 'cutlists'} <ArrowRight size={15} />
+                 {t(selectedIds.size === 1 ? 'modelUi.planCutlist' : 'modelUi.planCutlists', { count: selectedIds.size })} <ArrowRight size={15} />
               </button>
             </div>
           </div>
@@ -577,16 +577,16 @@ const ModelCutlistOptimizer = () => {
       {step === STEP_SAVE && selectedGroups.length > 0 && (
         <div className="step-view is-form">
           {!isAuthenticated ? (
-            <SignInRequired message="Sign in or create a local account on this instance to plan and save cutlists." />
+             <SignInRequired message={t('modelUi.signInCutlist')} />
           ) : (
             <>
               <div className="step-head" style={{ marginBottom: '22px' }}>
                 <div>
-                  <h1 className="step-h1">{allDone ? 'Cutlists saved' : 'Plan and save'}</h1>
+                   <h1 className="step-h1">{allDone ? t('modelUi.cutlistsSaved') : t('modelUi.planAndSave')}</h1>
                   <p className="step-lede">
                     {allDone
-                      ? `${savedCount} of ${selectedGroups.length} planned and kept on this instance.`
-                      : 'Set the stock and kerf once — every selected cutlist plans against it and lands in one project.'}
+                       ? t('modelUi.cutlistsSavedCount', { saved: savedCount, total: selectedGroups.length })
+                       : t('modelUi.batchPlanIntro')}
                   </p>
                 </div>
               </div>
@@ -600,12 +600,12 @@ const ModelCutlistOptimizer = () => {
                   {hasBoards && (
                     <section style={{ marginBottom: '30px' }}>
                       <div className="section-rule">
-                        <h2 className="section-title">Stock available</h2>
-                        <span className="folio">For the board cutlists below</span>
+                        <h2 className="section-title">{t('legacy.stockAvailable')}</h2>
+                        <span className="folio">{t('legacy.boardCutlists')}</span>
                       </div>
                       <table className="cat-table">
                         <thead>
-                          <tr><th>Stock</th><th>Length mm</th><th>Metres</th><th aria-label="Remove" /></tr>
+                          <tr><th>{t('legacy.stock')}</th><th>{t('workflow.lengthMm')}</th><th>{t('legacy.metres')}</th><th aria-label={t('common.remove')} /></tr>
                         </thead>
                         <tbody>
                           {boards.map((board, index) => (
@@ -624,11 +624,11 @@ const ModelCutlistOptimizer = () => {
                         </tbody>
                       </table>
                       <button type="button" className="btn" style={{ marginTop: '12px' }} onClick={addBoard}>
-                        <Plus /> Add stock length
+                         <Plus /> {t('workflow.addStockLength')}
                       </button>
 
                       <div className="flex items-center gap-2" style={{ marginTop: '18px' }}>
-                        <label className="form-label" htmlFor="model-board-kerf" style={{ marginBottom: 0 }}>Saw blade</label>
+                        <label className="form-label" htmlFor="model-board-kerf" style={{ marginBottom: 0 }}>{t('legacy.sawBlade')}</label>
                         <input
                           id="model-board-kerf"
                           type="number"
@@ -649,65 +649,65 @@ const ModelCutlistOptimizer = () => {
                   {hasSheets && (
                     <section style={{ marginBottom: '30px' }}>
                       <div className="section-rule">
-                        <h2 className="section-title">The sheet you're cutting from</h2>
-                        <span className="folio">For the sheet cutlists below</span>
+                        <h2 className="section-title">{t('legacy.sheetFrom')}</h2>
+                        <span className="folio">{t('legacy.sheetCutlists')}</span>
                       </div>
                       <table className="cat-table">
                         <tbody>
                           <tr>
-                            <td style={{ textAlign: 'left' }}>Width</td>
+                            <td style={{ textAlign: 'left' }}>{t('legacy.width')}</td>
                             <td>
                               <input
                                 type="number" step="0.1" min="10"
                                 value={sheetWidth}
                                 onChange={(e) => setSheetWidth(e.target.value)}
                                 className={`cell-input ${sheetWidthError ? 'is-error' : ''}`}
-                                aria-label="Sheet width in millimetres"
+                                 aria-label={t('ui.sheetWidthAria')}
                               />
                             </td>
                             <td style={{ width: '40px', color: 'var(--ink-3)' }}>mm</td>
                           </tr>
                           <tr>
-                            <td style={{ textAlign: 'left' }}>Height</td>
+                            <td style={{ textAlign: 'left' }}>{t('legacy.height')}</td>
                             <td>
                               <input
                                 type="number" step="0.1" min="10"
                                 value={sheetHeight}
                                 onChange={(e) => setSheetHeight(e.target.value)}
                                 className={`cell-input ${sheetHeightError ? 'is-error' : ''}`}
-                                aria-label="Sheet height in millimetres"
+                                 aria-label={t('ui.sheetHeightAria')}
                               />
                             </td>
                             <td style={{ color: 'var(--ink-3)' }}>mm</td>
                           </tr>
                           <tr>
-                            <td style={{ textAlign: 'left' }}>Kerf</td>
+                            <td style={{ textAlign: 'left' }}>{t('legacy.kerf')}</td>
                             <td>
                               <input
                                 type="number" step="0.1" min="0"
                                 value={sheetKerf}
                                 onChange={(e) => setSheetKerf(e.target.value)}
                                 className={`cell-input ${sheetKerfError ? 'is-error' : ''}`}
-                                aria-label="Sheet kerf in millimetres"
+                                 aria-label={t('modelUi.sheetKerfAria')}
                               />
                             </td>
                             <td style={{ color: 'var(--ink-3)' }}>mm</td>
                           </tr>
                           <tr>
-                            <td style={{ textAlign: 'left' }}>Material</td>
+                            <td style={{ textAlign: 'left' }}>{t('legacy.material')}</td>
                             <td>
                               <select
                                 value={materialType}
                                 onChange={(e) => setMaterialType(e.target.value)}
                                 className="form-select"
-                                aria-label="Material type"
+                                 aria-label={t('ui.materialType')}
                               >
-                                <option value="plywood">Plywood</option>
-                                <option value="mdf">MDF</option>
-                                <option value="metal">Metal sheet</option>
-                                <option value="acrylic">Acrylic</option>
-                                <option value="cardboard">Cardboard</option>
-                                <option value="other">Other</option>
+                                <option value="plywood">{t('ui.materialPlywood')}</option>
+                                <option value="mdf">{t('ui.materialMdf')}</option>
+                                <option value="metal">{t('ui.materialMetal')}</option>
+                                <option value="acrylic">{t('ui.materialAcrylic')}</option>
+                                <option value="cardboard">{t('ui.materialCardboard')}</option>
+                                <option value="other">{t('ui.materialOther')}</option>
                               </select>
                             </td>
                             <td />
@@ -735,7 +735,7 @@ const ModelCutlistOptimizer = () => {
 
               <section>
                 <div className="section-rule">
-                  <h2 className="section-title">{allDone ? 'Saved' : 'Will be planned and saved'}</h2>
+                   <h2 className="section-title">{allDone ? t('modelUi.saved') : t('modelUi.willBeSaved')}</h2>
                 </div>
                 <table className="cat-table">
                   <tbody>
@@ -745,10 +745,10 @@ const ModelCutlistOptimizer = () => {
                         <tr key={group.id}>
                           <td style={{ textAlign: 'left' }}>{planNameFor(modelName, group)}</td>
                           <td style={{ width: '140px' }}>
-                            {status === 'done' && <span style={{ color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', gap: '5px' }}><Tick size={14} /> Saved</span>}
-                            {status === 'running' && <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Loader /> Planning</span>}
-                            {status === 'error' && <span style={{ color: 'var(--revision)', display: 'inline-flex', alignItems: 'center', gap: '5px' }}><Strike size={12} /> Failed</span>}
-                            {!status && <span className="text-muted">Waiting</span>}
+                            {status === 'done' && <span style={{ color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', gap: '5px' }}><Tick size={14} /> {t('legacy.saved')}</span>}
+                            {status === 'running' && <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Loader /> {t('legacy.planning')}</span>}
+                            {status === 'error' && <span style={{ color: 'var(--revision)', display: 'inline-flex', alignItems: 'center', gap: '5px' }}><Strike size={12} /> {t('legacy.failed')}</span>}
+                            {!status && <span className="text-muted">{t('legacy.waiting')}</span>}
                           </td>
                         </tr>
                       );
@@ -766,18 +766,18 @@ const ModelCutlistOptimizer = () => {
 
               <div className="step-foot">
                 <button type="button" className="btn" onClick={() => setStep(STEP_CUTLISTS)}>
-                  <ArrowLeft /> Back to cutlists
+                   <ArrowLeft /> {t('modelUi.backToCutlists')}
                 </button>
                 <div className="step-foot-act">
                   {allDone ? (
                     <Link to="/dashboard" className="btn-order">
-                      Open your dashboard <ArrowRight size={15} />
+                       {t('ui.openDashboard')} <ArrowRight size={15} />
                     </Link>
                   ) : (
                     <button type="button" className="btn-order" disabled={saving || stockHasErrors} onClick={planAndSaveAll}>
                       {saving
-                        ? <><Loader /> Planning</>
-                        : <>Plan and save {selectedGroups.length} {selectedGroups.length === 1 ? 'cutlist' : 'cutlists'} <ArrowRight size={15} /></>}
+                         ? <><Loader /> {t('legacy.planning')}</>
+                         : <>{t('modelUi.planCutlists', { count: selectedGroups.length })} <ArrowRight size={15} /></>}
                     </button>
                   )}
                 </div>
@@ -785,9 +785,9 @@ const ModelCutlistOptimizer = () => {
 
               {allDone && (
                 <p className="synthetic" style={{ marginTop: '16px' }}>
-                  {savedGroupName
-                    ? <>Filed under {savedGroupName}. Open any of them from <Link to="/dashboard">your dashboard</Link>.</>
-                    : <>Not in a project. Open any of them from <Link to="/dashboard">your dashboard</Link>.</>}
+                   {savedGroupName
+                     ? t('ui.filedUnder', { group: savedGroupName })
+                     : t('ui.unfiled')}
                 </p>
               )}
             </>
@@ -802,17 +802,16 @@ const ModelCutlistOptimizer = () => {
    — reading a model — stay open to everyone, so only this step's own content
    is gated rather than the whole route. */
 const SignInRequired = ({ message }) => {
+  const { t } = useTranslation();
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const { needsSetup, setupCheckError } = useAuth();
 
   if (setupCheckError) {
     return (
       <div className="card" style={{ maxWidth: '420px', margin: '40px auto', textAlign: 'center' }}>
-        <h2 className="section-title" style={{ marginBottom: '10px' }}>Can't reach the API</h2>
+        <h2 className="section-title" style={{ marginBottom: '10px' }}>{t('common.apiUnavailableHeading')}</h2>
         <p style={{ color: 'var(--ink-2)' }}>
-          Couldn't confirm whether this instance has any accounts yet. If you're
-          accessing Planqer from a LAN address or hostname (not localhost), add
-          it to <code>PLANQER_CORS_ORIGINS</code> on the backend and restart it.
+          {t('common.apiUnavailableDescription')}
         </p>
       </div>
     );
@@ -820,9 +819,9 @@ const SignInRequired = ({ message }) => {
 
   return (
     <div className="card" style={{ maxWidth: '420px', margin: '40px auto', textAlign: 'center' }}>
-      <h2 className="section-title" style={{ marginBottom: '10px' }}>Sign in required</h2>
+      <h2 className="section-title" style={{ marginBottom: '10px' }}>{t('common.signInRequired')}</h2>
       <p style={{ color: 'var(--ink-2)', marginBottom: '18px' }}>{message}</p>
-      <button type="button" className="btn-order" onClick={() => setAuthModalOpen(true)}>Sign in</button>
+      <button type="button" className="btn-order" onClick={() => setAuthModalOpen(true)}>{t('common.signIn')}</button>
       <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} initialMode={needsSetup ? 'register' : 'login'} isFirstRun={needsSetup} />
     </div>
   );

@@ -8,17 +8,19 @@
 
 import { buildCutList } from '../utils/tileCutList';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { translateWithFallback } from '../i18n/translate';
 
 const mm = (n) => (Number.isFinite(n) ? Math.round(n).toLocaleString('sv-SE') : '—');
 
-const pieceMeta = (piece) => (
+const pieceMeta = (piece, text) => (
   <>
     <strong style={{ display: 'block', color: 'var(--ink)', fontSize: '16px' }}>
-      Piece {piece.label} - {mm(piece.nominalWidth)}×{mm(piece.nominalHeight)} mm tile
+       {text('ui.pieceMeta', { label: piece.label, width: mm(piece.nominalWidth), height: mm(piece.nominalHeight) })}
     </strong>
     <span>
-      Final size: {mm(piece.width)}×{mm(piece.height)} mm
-      {piece.edgeLengths && ` | Edges: ${piece.edgeLengths.map((length) => mm(length)).join(' · ')} mm`}
+       {text('ui.finalSize', { width: mm(piece.width), height: mm(piece.height) })}
+       {piece.edgeLengths && ` | ${text('ui.edges')}: ${piece.edgeLengths.map((length) => mm(length)).join(' · ')} mm`}
     </span>
   </>
 );
@@ -61,6 +63,8 @@ const Swatch = ({ color, shape }) => {
 };
 
 const TileCutListTable = ({ candidate }) => {
+  const { t } = useTranslation();
+  const text = (key, vars) => translateWithFallback(t, key, vars);
   const [template, setTemplate] = useState(null);
   if (!candidate || !candidate.tiles || candidate.tiles.length === 0) return null;
 
@@ -71,20 +75,20 @@ const TileCutListTable = ({ candidate }) => {
   return (
     <section>
       <div className="section-rule">
-        <h2 className="section-title">Cut list</h2>
-        <span className="folio">Every size, colored to match the diagram</span>
+         <h2 className="section-title">{text('ui.cutList')}</h2>
+         <span className="folio">{text('ui.cutListIntro')}</span>
       </div>
       <table className="cat-table" style={{ marginTop: '14px' }}>
         <thead>
-          <tr><th>Size mm</th><th>Kind</th><th>From offcut</th><th>Qty</th></tr>
+           <tr><th>{text('workflow.sizeMm')}</th><th>{text('ui.kind')}</th><th>{text('ui.fromOffcut')}</th><th>{text('workflow.qty')}</th></tr>
         </thead>
         <tbody>
           {fullCount > 0 && (
             <tr>
               <td style={{ textAlign: 'left', color: 'var(--ink)' }}>
-                <Swatch color={fullColor} shape={fullShape} />Full tile
+                 <Swatch color={fullColor} shape={fullShape} />{text('ui.fullTile')}
               </td>
-              <td style={{ textAlign: 'left', color: 'var(--ink-2)' }}>No cut needed</td>
+               <td style={{ textAlign: 'left', color: 'var(--ink-2)' }}>{text('ui.noCutNeeded')}</td>
               <td>—</td>
               <td>{fullCount}</td>
             </tr>
@@ -95,7 +99,7 @@ const TileCutListTable = ({ candidate }) => {
                 <Swatch color={group.color} shape={group.shape} />{mm(group.width)} × {mm(group.height)}
                 {group.sliverCount > 0 && (
                   <span style={{ color: 'var(--revision)', fontWeight: 700, marginLeft: '8px' }}>
-                    {group.sliverCount === group.count ? 'sliver' : `${group.sliverCount} sliver`}
+                     {group.sliverCount === group.count ? text('ui.sliver') : text('ui.sliverCount', { count: group.sliverCount })}
                   </span>
                 )}
               </td>
@@ -103,16 +107,16 @@ const TileCutListTable = ({ candidate }) => {
                 {group.isDiagonal
                   ? (
                     <>
-                      {group.kind === 'notched' ? 'Diagonal, cut around an opening' : 'Diagonal'}
+                       {group.kind === 'notched' ? text('ui.diagonalOpening') : text('ui.diagonal')}
                       {group.edgeLengths && ` · ${group.edgeLengths.map((length) => mm(length)).join(' · ')} mm`}
                        {candidate.piece_diagrams?.[group.label] && (
                           <button type="button" className="btn btn-small" style={{ marginLeft: '8px' }} onClick={() => setTemplate({ ...group, image: candidate.piece_diagrams[group.label] })}>
-                           View cut {group.label}
+                             {text('ui.viewCut', { label: group.label })}
                          </button>
                        )}
                     </>
                   )
-                  : (group.kind === 'notched' ? 'Cut around an opening — see diagram' : 'Straight cut')}
+                   : (group.kind === 'notched' ? text('ui.openingDiagram') : text('ui.straightCut'))}
               </td>
               <td>{group.reusedCount > 0 ? `${group.reusedCount} of ${group.count}` : '—'}</td>
               <td>{group.count}</td>
@@ -121,26 +125,24 @@ const TileCutListTable = ({ candidate }) => {
         </tbody>
       </table>
       <p className="synthetic" style={{ marginTop: '10px' }}>
-        Sizes are the piece as it leaves the saw, in millimetres — no joint or perimeter gap added.
-        The color of each row matches that size's tiles in the diagram above, so a busy layout stays
-        readable without every tile needing its own printed dimensions.
-        {candidate.notched_count > 0 && ' "Cut around an opening" gives the piece\u2019s outer size only; the notch itself is the shape drawn in the diagram.'}
-        {candidate.reused_offcut_count > 0 && ' "From offcut" is how many of that size come free from another tile\u2019s leftover, not a fresh tile.'}
-        {hasDiagonalCuts && ' Diagonal rows show the polygon edge measurements; View cut shows the full tile, waste, and saw line.'}
+         {text('ui.cutListDescription')}
+         {candidate.notched_count > 0 && ` ${text('ui.notchedDescription')}`}
+         {candidate.reused_offcut_count > 0 && ` ${text('ui.reusedDescription')}`}
+         {hasDiagonalCuts && ` ${text('ui.diagonalDescription')}`}
       </p>
       {template && (
-        <div className="cat-overlay" role="dialog" aria-modal="true" aria-label={`Cut template ${template.label}`} onClick={() => setTemplate(null)}>
+         <div className="cat-overlay" role="dialog" aria-modal="true" aria-label={text('ui.cutTemplateAria', { label: template.label })} onClick={() => setTemplate(null)}>
           <div className="cat-sheet" style={{ maxWidth: '720px', maxHeight: '90vh', overflow: 'auto' }} onClick={(event) => event.stopPropagation()}>
             <div className="masthead" style={{ marginTop: 0 }}>
-              <span className="masthead-brand" style={{ fontSize: '13px' }}>CUT TEMPLATE {template.label}</span>
-              <button type="button" className="masthead-flash" onClick={() => setTemplate(null)}>Close</button>
+               <span className="masthead-brand" style={{ fontSize: '13px' }}>{text('ui.cutTemplate', { label: template.label })}</span>
+               <button type="button" className="masthead-flash" onClick={() => setTemplate(null)}>{text('common.close')}</button>
             </div>
             <div style={{ padding: '16px 16px 0', color: 'var(--ink-2)', fontSize: '13px', lineHeight: '1.5' }}>
-              {pieceMeta(template)}
+               {pieceMeta(template, text)}
             </div>
             <img src={template.image} alt={`Cut template for piece ${template.label}`} style={{ display: 'block', width: '100%', padding: '16px' }} />
-            <div style={{ padding: '0 16px 16px', color: 'var(--ink-2)', fontSize: '13px', lineHeight: '1.5' }}>
-              <strong style={{ color: 'var(--ink)' }}>How to cut:</strong> The solid (light) area is what you keep. The hatched (gray) area is waste. The orange line shows where to cut with your saw.
+             <div style={{ padding: '0 16px 16px', color: 'var(--ink-2)', fontSize: '13px', lineHeight: '1.5' }}>
+               <strong style={{ color: 'var(--ink)' }}>{text('ui.howToCut')}</strong> {text('ui.cutInstructions')}
             </div>
           </div>
         </div>

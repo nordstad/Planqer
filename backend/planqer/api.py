@@ -162,6 +162,10 @@ allowed_origins = default_origins + [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
+    # Vite may move to the next available port when the default is occupied.
+    # Keep local development usable without requiring a backend restart for
+    # every port change, while production origins remain explicit above.
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1):\d+$",
     allow_credentials=False,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["Content-Type", "Authorization"],

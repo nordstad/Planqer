@@ -1,24 +1,26 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import CatalogPage from './CatalogPage';
 
 const DOCS_URL = 'https://nordstad.github.io/Planqer/';
 
 const sections = [
-  { id: 'getting-started', title: 'Getting started', no: '01' },
-  { id: 'choose-tool', title: 'Choose a tool', no: '02' },
-  { id: 'tile-layout', title: 'Tile layout', no: '03' },
-  { id: 'results', title: 'Read your result', no: '04' },
-  { id: 'troubleshooting', title: 'Troubleshooting', no: '05' },
+  { id: 'getting-started', title: 'help.sectionGettingStarted', no: '01' },
+  { id: 'choose-tool', title: 'help.sectionChooseTool', no: '02' },
+  { id: 'tile-layout', title: 'help.sectionTileLayout', no: '03' },
+  { id: 'results', title: 'help.sectionResults', no: '04' },
+  { id: 'troubleshooting', title: 'help.sectionTroubleshooting', no: '05' },
 ];
 
-const FullDocsLink = () => (
+const FullDocsLink = ({ t }) => (
   <a href={DOCS_URL} target="_blank" rel="noopener noreferrer" className="btn">
-    Read the full documentation
+    {t('help.fullDocumentation')}
   </a>
 );
 
 const HelpPage = () => {
+  const { t } = useTranslation();
   const [activeSection, setActiveSection] = useState('getting-started');
 
   return (
@@ -27,9 +29,9 @@ const HelpPage = () => {
       <div>
         <div className="lg:sticky lg:top-5">
           <div className="section-rule">
-            <h2 className="section-title">Contents</h2>
+            <h2 className="section-title">{t('help.contents')}</h2>
           </div>
-          <nav aria-label="Help contents">
+          <nav aria-label={t('help.contents')}>
             {sections.map((section) => (
               <a
                 key={section.id}
@@ -39,153 +41,146 @@ const HelpPage = () => {
                 onClick={() => setActiveSection(section.id)}
               >
                 <span className="help-entry-no">{section.no}</span>
-                <span className="help-entry-title">{section.title}</span>
+                <span className="help-entry-title">{t(section.title)}</span>
               </a>
             ))}
           </nav>
           <p className="synthetic" style={{ marginTop: '14px' }}>
-            Quick reference for the four tools
+            {t('help.quickReference')}
           </p>
           <div style={{ marginTop: '18px' }}>
-            <FullDocsLink />
+            <FullDocsLink t={t} />
           </div>
         </div>
       </div>
 
       <div className="help-prose" style={{ minWidth: 0 }}>
         <section id="getting-started" className="help-section">
-          <p className="eyebrow">Planqer / Quick reference</p>
-          <h1>Start with the material you have</h1>
+          <p className="eyebrow">{t('help.eyebrow')}</p>
+          <h1>{t('help.startTitle')}</h1>
           <p>
-            Planqer works out how many boards, sheets, or tiles to buy and where to cut them.
-            Enter dimensions in millimetres, check the result, and take the diagram to your saw.
+            {t('help.startIntro')}
           </p>
           <div className="help-callout">
-            <strong>Three steps</strong>
+            <strong>{t('help.threeSteps')}</strong>
             <ol>
-              <li>Choose the tool that matches your material.</li>
-              <li>Enter the required pieces and the stock you can buy.</li>
-              <li>Run the plan, then verify the diagram and measurements before cutting.</li>
+              <li>{t('help.startStepOne')}</li>
+              <li>{t('help.startStepTwo')}</li>
+              <li>{t('help.startStepThree')}</li>
             </ol>
           </div>
           <p>
-            The <strong>Full documentation</strong> link contains installation, configuration,
-            API, MCP, backup, and detailed troubleshooting guides.
+            {t('help.fullDocsIntro')}
           </p>
         </section>
 
         <section id="choose-tool" className="help-section">
           <div className="section-rule">
-            <h2 className="section-title">Choose a tool</h2>
+            <h2 className="section-title">{t('help.chooseTitle')}</h2>
           </div>
           <table className="cat-table">
             <thead>
-              <tr><th>Tool</th><th>Use it for</th><th>Input</th></tr>
+              <tr><th>{t('help.tableTool')}</th><th>{t('help.tableUse')}</th><th>{t('help.tableInput')}</th></tr>
             </thead>
             <tbody>
               <tr>
-                <td style={{ textAlign: 'left' }}><Link to="/cutting">Board cutting</Link></td>
-                <td style={{ textAlign: 'left' }}>Boards, lumber, trim, pipe, and other linear stock</td>
-                <td>Lengths and quantities</td>
+                <td style={{ textAlign: 'left' }}><Link to="/cutting">{t('common.boardCutting')}</Link></td>
+                <td style={{ textAlign: 'left' }}>{t('help.boardUse')}</td>
+                <td>{t('help.boardInput')}</td>
               </tr>
               <tr>
-                <td style={{ textAlign: 'left' }}><Link to="/sheet-cutting">Sheet cutting</Link></td>
-                <td style={{ textAlign: 'left' }}>Plywood, MDF, metal, glass, and acrylic sheets</td>
-                <td>Rectangles and quantities</td>
+                <td style={{ textAlign: 'left' }}><Link to="/sheet-cutting">{t('common.sheetCutting')}</Link></td>
+                <td style={{ textAlign: 'left' }}>{t('help.sheetUse')}</td>
+                <td>{t('help.sheetInput')}</td>
               </tr>
               <tr>
-                <td style={{ textAlign: 'left' }}><Link to="/tile-layout">Tile layout</Link></td>
-                <td style={{ textAlign: 'left' }}>A repeated tile grid on a surface with edges or openings</td>
-                <td>Surface, tile, and openings</td>
+                <td style={{ textAlign: 'left' }}><Link to="/tile-layout">{t('common.tileLayout')}</Link></td>
+                <td style={{ textAlign: 'left' }}>{t('help.tileUse')}</td>
+                <td>{t('help.tileInput')}</td>
               </tr>
               <tr>
-                <td style={{ textAlign: 'left' }}><Link to="/model-cutlist">3D model cutlist</Link></td>
-                <td style={{ textAlign: 'left' }}>Parts extracted from an STL, STEP, or STP model</td>
-                <td>3D model file</td>
+                <td style={{ textAlign: 'left' }}><Link to="/model-cutlist">{t('common.modelCutlist')} cutlist</Link></td>
+                <td style={{ textAlign: 'left' }}>{t('help.modelUse')}</td>
+                <td>{t('help.modelInput')}</td>
               </tr>
             </tbody>
           </table>
           <p>
-            All optimizers account for the saw kerf where applicable. Use the board or sheet
-            optimizer when you already know the part dimensions; use the model tool when the CAD
-            file is the source of truth.
+            {t('help.chooseIntro')}
           </p>
         </section>
 
         <section id="tile-layout" className="help-section">
           <div className="section-rule">
-            <h2 className="section-title">Tile layout essentials</h2>
+            <h2 className="section-title">{t('help.tileTitle')}</h2>
           </div>
           <p>
-            Tile layout chooses a grid position and bond pattern for a rectangular surface. It
-            favors usable edge pieces and warns about cuts below the sliver threshold.
+            {t('help.tileIntro')}
           </p>
           <div className="help-grid">
             <div>
-              <h3>Surface and tile</h3>
-              <p>Enter the surface width and height, then the tile width and height. Values are in millimetres.</p>
+                <h3>{t('help.surfaceTitle')}</h3>
+                <p>{t('help.surfaceText')}</p>
             </div>
             <div>
-              <h3>Joint and perimeter gap</h3>
-              <p>Joint is the gap between tiles. Perimeter gap is clearance between the tile field and the surface edge.</p>
+                <h3>{t('help.jointTitle')}</h3>
+                <p>{t('help.jointText')}</p>
             </div>
             <div>
-              <h3>Bond pattern</h3>
-              <p>Stack and running use rectangular tiles. Diagonal and herringbone patterns rotate tiles and may create polygonal cut templates.</p>
+                <h3>{t('help.bondTitle')}</h3>
+                <p>{t('help.bondText')}</p>
             </div>
             <div>
-              <h3>Openings</h3>
-              <p>Add windows, doors, sockets, or other rectangular areas that must remain uncovered.</p>
+                <h3>{t('help.openingsTitle')}</h3>
+                <p>{t('help.openingsText')}</p>
             </div>
             <div>
-              <h3>Candidate layouts</h3>
-              <p>Compare the suggested candidates. A slightly less efficient plan may have safer edge cuts or fewer distinct sizes.</p>
+                <h3>{t('help.candidatesTitle')}</h3>
+                <p>{t('help.candidatesText')}</p>
             </div>
             <div>
-              <h3>Cut templates</h3>
-              <p>For diagonal pieces, open the cut template from the cut list. Measurements and instructions are selectable text around the diagram.</p>
+                <h3>{t('help.templatesTitle')}</h3>
+                <p>{t('help.templatesText')}</p>
             </div>
           </div>
         </section>
 
         <section id="results" className="help-section">
           <div className="section-rule">
-            <h2 className="section-title">Read your result</h2>
+            <h2 className="section-title">{t('help.resultsTitle')}</h2>
           </div>
           <table className="cat-table">
             <tbody>
-              <tr><td>Cut plan</td><td style={{ textAlign: 'left' }}>The diagram shows the stock, parts, waste, and cut order.</td></tr>
-              <tr><td>Kerf</td><td style={{ textAlign: 'left' }}>Material removed by the blade at each cut.</td></tr>
-              <tr><td>Offcut</td><td style={{ textAlign: 'left' }}>Material left after the required pieces and kerf are removed.</td></tr>
-              <tr><td>Efficiency</td><td style={{ textAlign: 'left' }}>The share of the available material used by required pieces.</td></tr>
-              <tr><td>Cost</td><td style={{ textAlign: 'left' }}>Optional material pricing, available where the optimizer supports it.</td></tr>
+              <tr><td>{t('help.cutPlan')}</td><td style={{ textAlign: 'left' }}>{t('help.cutPlanText')}</td></tr>
+              <tr><td>{t('help.kerf')}</td><td style={{ textAlign: 'left' }}>{t('help.kerfText')}</td></tr>
+              <tr><td>{t('help.offcut')}</td><td style={{ textAlign: 'left' }}>{t('help.offcutText')}</td></tr>
+              <tr><td>{t('help.efficiency')}</td><td style={{ textAlign: 'left' }}>{t('help.efficiencyText')}</td></tr>
+              <tr><td>{t('help.cost')}</td><td style={{ textAlign: 'left' }}>{t('help.costText')}</td></tr>
             </tbody>
           </table>
           <div className="help-callout help-callout-warning">
-            <strong>Before you cut</strong>
-            <p>Check units, stock dimensions, kerf, grain or orientation constraints, and every critical measurement. Follow safe operating procedures for your equipment.</p>
+            <strong>{t('help.beforeCutting')}</strong>
+            <p>{t('help.beforeCuttingText')}</p>
           </div>
           <p>
-            You can save plans to this Planqer instance when signed in. On a fresh instance, the
-            first account created becomes the administrator.
+            {t('help.saveIntro')}
           </p>
         </section>
 
         <section id="troubleshooting" className="help-section">
           <div className="section-rule">
-            <h2 className="section-title">Troubleshooting</h2>
+            <h2 className="section-title">{t('help.troubleshootingTitle')}</h2>
           </div>
           <div className="help-faq">
-            <div><h3>Parts do not fit</h3><p>Check that all dimensions use millimetres and add stock sizes large enough for the required parts.</p></div>
-            <div><h3>Waste is higher than expected</h3><p>Add realistic stock options, verify kerf, and compare the alternative candidates. For sheet layouts, allow rotation when the material permits it.</p></div>
-            <div><h3>A model upload fails</h3><p>Check the file extension and size, then re-export the STL or STEP file from your CAD software if needed.</p></div>
-            <div><h3>A project does not save</h3><p>Sign in to the correct local instance. Saved projects require an account; browser-only work may be lost if local storage is cleared.</p></div>
+            <div><h3>{t('help.partsFailTitle')}</h3><p>{t('help.partsFailText')}</p></div>
+            <div><h3>{t('help.wasteTitle')}</h3><p>{t('help.wasteText')}</p></div>
+            <div><h3>{t('help.uploadTitle')}</h3><p>{t('help.uploadText')}</p></div>
+            <div><h3>{t('help.saveFailTitle')}</h3><p>{t('help.saveFailText')}</p></div>
           </div>
           <p>
-            For installation issues, server configuration, API errors, or detailed file-processing
-            help, use the full documentation or the project issue tracker.
+            {t('help.troubleshootingIntro')}
           </p>
-          <FullDocsLink />
+          <FullDocsLink t={t} />
         </section>
       </div>
     </div>

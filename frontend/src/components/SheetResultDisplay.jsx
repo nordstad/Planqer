@@ -14,6 +14,7 @@
 */
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Disclosure from './Disclosure';
 import { Download } from './icons';
 
@@ -22,6 +23,7 @@ const mm = (n) => (Number.isFinite(n) ? Math.round(n).toLocaleString('sv-SE') : 
 const area = (a) => (a >= 1000000 ? `${(a / 1000000).toFixed(2)} m²` : `${mm(a)} mm²`);
 
 const SheetResultDisplay = ({ result, projectName }) => {
+  const { t } = useTranslation();
   const [diagramOpen, setDiagramOpen] = useState(false);
   const [placementsOpen, setPlacementsOpen] = useState(false);
   if (!result) return null;
@@ -43,15 +45,15 @@ const SheetResultDisplay = ({ result, projectName }) => {
     <>
       <section>
         <div className="section-rule">
-          <h2 className="section-title">Sheet by sheet</h2>
-          <span className="folio">Each plate at its real proportions</span>
+           <h2 className="section-title">{t('workflow.sheetBySheet')}</h2>
+           <span className="folio">{t('workflow.realProportions')}</span>
         </div>
         <div className="sheet-grid" style={{ marginTop: '18px' }}>
           {result.sheets.map((sheet, sheetIndex) => (
             <figure key={sheetIndex} style={{ margin: 0, minWidth: 0 }}>
               <figcaption className="sheet-cap">
-                <b>Sheet {sheetIndex + 1}</b>
-                <span>{sheet.efficiency.toFixed(1)}% used</span>
+                <b>{t('workflow.sheetNumber', { number: sheetIndex + 1 })}</b>
+                <span>{t('workflow.percentUsed', { percent: sheet.efficiency.toFixed(1) })}</span>
               </figcaption>
               <div
                 className="sheet-plate"
@@ -76,7 +78,7 @@ const SheetResultDisplay = ({ result, projectName }) => {
                         width: `${wPct}%`,
                         height: `${hPct}%`,
                       }}
-                      title={`${part.part_id}: ${mm(part.width)} × ${mm(part.height)} mm${part.rotated ? ' · turned 90°' : ''}`}
+                      title={`${part.part_id}: ${mm(part.width)} × ${mm(part.height)} mm${part.rotated ? ` · ${t('ui.turned90')}` : ''}`}
                     >
                       {roomForLabel && part.part_id}
                     </div>
@@ -84,22 +86,22 @@ const SheetResultDisplay = ({ result, projectName }) => {
                 })}
               </div>
               <p className="synthetic" style={{ marginTop: '8px' }}>
-                {mm(sheet.sheet_width)} × {mm(sheet.sheet_height)} mm · {sheet.parts_count} {sheet.parts_count === 1 ? 'part' : 'parts'}
+                {t('workflow.sheetPartsCount', { width: mm(sheet.sheet_width), height: mm(sheet.sheet_height), count: sheet.parts_count })}
               </p>
             </figure>
           ))}
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3" style={{ marginTop: '18px' }}>
           <p className="synthetic" style={{ margin: 0 }}>
-            Hatching is waste. A dashed outline is a part turned 90° to fit.
+             {t('ui.hatchingWaste')}
           </p>
           {hasDiagram && (
             <div className="flex flex-wrap gap-2">
               <button type="button" className="btn" onClick={() => setDiagramOpen(true)}>
-                View the full diagram
+                 {t('workflow.viewFullDiagram')}
               </button>
               <button type="button" className="btn" onClick={downloadDiagram}>
-                <Download /> Download diagram
+                 <Download /> {t('workflow.downloadDiagram')}
               </button>
             </div>
           )}
@@ -108,14 +110,14 @@ const SheetResultDisplay = ({ result, projectName }) => {
 
       <div style={{ marginTop: '30px' }}>
         <Disclosure
-          title="Exact placements"
-          hint="Where every part sits, in millimetres from the sheet's top-left corner"
+           title={t('workflow.exactPlacements')}
+           hint={t('workflow.placementsHint')}
           open={placementsOpen}
           onToggle={() => setPlacementsOpen(v => !v)}
         >
           <table className="cat-table">
             <thead>
-              <tr><th>Part</th><th>Sheet</th><th>Size mm</th><th>At x, y</th><th>Turned</th><th>Area</th></tr>
+              <tr><th>{t('ui.part')}</th><th>{t('ui.sheet')}</th><th>{t('workflow.sizeMm')}</th><th>{t('ui.atXY')}</th><th>{t('ui.turned')}</th><th>{t('ui.area')}</th></tr>
             </thead>
             <tbody>
               {result.sheets.flatMap((sheet, sheetIndex) =>
@@ -136,17 +138,17 @@ const SheetResultDisplay = ({ result, projectName }) => {
       </div>
 
       {diagramOpen && (
-        <div className="cat-overlay" role="dialog" aria-modal="true" aria-label="Sheet layout diagram" onClick={() => setDiagramOpen(false)}>
+         <div className="cat-overlay" role="dialog" aria-modal="true" aria-label={t('ui.sheetLayoutDiagram')} onClick={() => setDiagramOpen(false)}>
           <div className="cat-sheet" style={{ maxWidth: '95vw' }} onClick={(e) => e.stopPropagation()}>
             <div className="masthead" style={{ marginTop: 0 }}>
-              <span className="masthead-brand" style={{ fontSize: '13px' }}>SHEET LAYOUT</span>
+               <span className="masthead-brand" style={{ fontSize: '13px' }}>{t('ui.sheetLayout')}</span>
               <span className="masthead-section" />
               <button type="button" className="masthead-flash" onClick={() => setDiagramOpen(false)}>
-                Close
+                 {t('common.close')}
               </button>
             </div>
             <div style={{ padding: '16px' }}>
-              <img src={result.visualization} alt="Sheet layout diagram: every sheet with its parts placed" style={{ display: 'block', width: '100%', height: 'auto' }} />
+               <img src={result.visualization} alt={t('ui.sheetDiagramAlt')} style={{ display: 'block', width: '100%', height: 'auto' }} />
             </div>
           </div>
         </div>

@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import AuthModal from './auth/AuthModal';
 import CatalogPage from './CatalogPage';
 import Loader from './Loader';
 
-const ProtectedRoute = ({ children, fallbackMessage = 'Sign in to access this feature.' }) => {
+const ProtectedRoute = ({ children, fallbackMessage = 'access.default' }) => {
+  const { t } = useTranslation();
   const { isAuthenticated, loading, needsSetup, setupCheckError } = useAuth();
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
@@ -22,11 +24,9 @@ const ProtectedRoute = ({ children, fallbackMessage = 'Sign in to access this fe
     return (
       <CatalogPage>
         <div className="card" style={{ maxWidth: '420px', margin: '80px auto', textAlign: 'center' }}>
-          <h2 className="section-title" style={{ marginBottom: '10px' }}>Can't reach the API</h2>
+          <h2 className="section-title" style={{ marginBottom: '10px' }}>{t('common.apiUnavailableHeading')}</h2>
           <p style={{ color: 'var(--ink-2)' }}>
-            The frontend couldn't confirm whether this instance has any accounts yet.
-            If you're accessing Planqer from a LAN address or hostname (not localhost),
-            add it to <code>PLANQER_CORS_ORIGINS</code> on the backend and restart it.
+            {t('common.apiUnavailableDescription')}
           </p>
         </div>
       </CatalogPage>
@@ -37,12 +37,12 @@ const ProtectedRoute = ({ children, fallbackMessage = 'Sign in to access this fe
     return (
       <CatalogPage>
         <div className="card" style={{ maxWidth: '420px', margin: '80px auto', textAlign: 'center' }}>
-          <h2 className="section-title" style={{ marginBottom: '10px' }}>Set up Planqer</h2>
+          <h2 className="section-title" style={{ marginBottom: '10px' }}>{t('common.setupPlanqer')}</h2>
           <p style={{ color: 'var(--ink-2)', marginBottom: '18px' }}>
-            This instance has no accounts yet. Create the first one to get started.
+            {t('common.setupDescription')}
           </p>
           <button type="button" className="btn-order" onClick={() => setAuthModalOpen(true)}>
-            Get started
+            {t('common.getStarted')}
           </button>
         </div>
         <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} initialMode="register" isFirstRun />
@@ -54,10 +54,10 @@ const ProtectedRoute = ({ children, fallbackMessage = 'Sign in to access this fe
     return (
       <CatalogPage>
         <div className="card" style={{ maxWidth: '420px', margin: '80px auto', textAlign: 'center' }}>
-          <h2 className="section-title" style={{ marginBottom: '10px' }}>Sign in required</h2>
-          <p style={{ color: 'var(--ink-2)', marginBottom: '18px' }}>{fallbackMessage}</p>
+          <h2 className="section-title" style={{ marginBottom: '10px' }}>{t('common.signInRequired')}</h2>
+          <p style={{ color: 'var(--ink-2)', marginBottom: '18px' }}>{t(fallbackMessage, fallbackMessage)}</p>
           <button type="button" className="btn-order" onClick={() => setAuthModalOpen(true)}>
-            Sign in
+            {t('common.signIn')}
           </button>
         </div>
         <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} initialMode="login" />

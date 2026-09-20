@@ -17,6 +17,7 @@
 
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   getUserProjects, updateProject, deleteProject,
   getUserSheetProjects, updateSheetProject, deleteSheetProject,
@@ -50,29 +51,29 @@ const formatDate = (dateString) => {
   return `${yy}-${mm}-${dd}`;
 };
 
-const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+const plural = (n, singular, pluralWord = `${singular}s`) => `${n} ${n === 1 ? singular : pluralWord}`;
 
 // The three saved project shapes don't share a "parts" concept — a tile
 // layout has no parts list, just a chosen candidate — so this returns the
 // three facts renderPlan/handlePrintAll actually print (type, count, stock)
 // rather than forcing a tile project through totalParts/stockLine helpers
 // shaped for board/sheet parts_data.
-const planFacts = (project) => {
+const planFacts = (project, t) => {
   if (project.projectType === 'sheet') {
     const count = Array.isArray(project.parts_data)
       ? project.parts_data.reduce((sum, p) => sum + (parseInt(p.quantity, 10) || 0), 0)
       : 0;
     return {
-      type: 'Sheet',
-      count: plural(count, 'part'),
+      type: t('common.sheetCutting'),
+      count: t(count === 1 ? 'workflow.sheetPartsSummary_one' : 'workflow.sheetPartsSummary', { count }),
       stock: `${project.sheet_width}×${project.sheet_height}mm · ${project.material_type}`,
     };
   }
   if (project.projectType === 'tile') {
     const toBuy = project.layout_result?.tiles_to_purchase_with_waste ?? project.layout_result?.tiles_to_purchase;
     return {
-      type: 'Tile',
-      count: Number.isFinite(toBuy) ? `${toBuy} to buy` : '—',
+      type: t('common.tileLayout'),
+      count: Number.isFinite(toBuy) ? `${toBuy} ${t('ui.tilesToBuy')}` : '—',
       stock: `${project.surface_data.width}×${project.surface_data.height}mm · ${project.tile_data.width}×${project.tile_data.height} tile`,
     };
   }
@@ -80,8 +81,8 @@ const planFacts = (project) => {
     ? Object.values(project.parts_data).reduce((sum, qty) => sum + qty, 0)
     : 0;
   return {
-    type: 'Board',
-    count: plural(count, 'part'),
+    type: t('common.boardCutting'),
+    count: t(count === 1 ? 'workflow.partsSummary_one' : 'workflow.partsSummary', { count, demand: '—', kerf: project.saw_blade_width }),
     stock: `${project.board_lengths.join(', ')}mm · ${project.saw_blade_width}mm kerf`,
   };
 };
@@ -98,6 +99,7 @@ const triggerDownload = (blob, filename) => {
 };
 
 const UserProjectsContent = ({ onPreview, groupId }) => {
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
   const [allProjects, setAllProjects] = useState([]);
   const [groups, setGroups] = useState([]);
@@ -141,7 +143,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
         logout();
         return;
       }
-      setError('Failed to load projects: ' + err.message);
+       setError(t('projectUi.loadFailed', { message: err.message }));
     } finally {
       setLoading(false);
     }
@@ -149,7 +151,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
 
   const handleDelete = (project) => {
     setPendingDelete({
-      message: `Delete the plan "${project.name}"? This cannot be undone.`,
+       message: t('projectUi.deletePlanConfirm', { name: project.name }),
       run: async () => {
         try {
           setBusyId(project.id);
@@ -162,7 +164,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
           }
           setAllProjects((prev) => prev.filter((p) => p.id !== project.id));
         } catch (err) {
-          setError('Failed to delete the plan: ' + err.message);
+           setError(t('projectUi.deleteFailed', { message: err.message }));
         } finally {
           setBusyId(null);
         }
@@ -177,12 +179,12 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
       setBusyId(project.id);
       const svg = await downloadProjectImage(project.id, project.projectType);
       const blob = format === 'png' ? await svgBlobToPngBlob(svg) : svg;
-      const kind = project.projectType === 'sheet' ? 'Sheet Layout' : project.projectType === 'tile' ? 'Tile Layout' : 'Cutlist';
+       const kind = project.projectType === 'sheet' ? t('common.sheetCutting') : project.projectType === 'tile' ? t('common.tileLayout') : t('common.boardCutting');
       triggerDownload(blob, `${project.name} - ${kind}.${format}`);
     } catch (err) {
       setError(err.message.includes('404')
-        ? `No diagram was saved with "${project.name}", so there is nothing to download. Re-run the plan and save it again.`
-        : `Could not build the ${format.toUpperCase()} — ${err.message}.`);
+         ? t('projectUi.noDiagramDownload', { name: project.name })
+         : t('projectUi.exportFailed', { format: format.toUpperCase(), message: err.message }));
     } finally {
       setBusyId(null);
     }
@@ -202,19 +204,19 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
         const pf = planFacts(p);
         return {
           name: p.name,
-          facts: [pf.type, pf.count, pf.stock, `saved ${formatDate(p.created_at)}`],
+           facts: [pf.type, pf.count, pf.stock, t('projectUi.saved', { date: formatDate(p.created_at) })],
           svgBlob: await downloadProjectImage(p.id, p.projectType),
-          extraHtml: p.projectType === 'tile' ? buildCutListHtml(p.layout_result) : undefined,
+          extraHtml: p.projectType === 'tile' ? buildCutListHtml(p.layout_result, t) : undefined,
         };
       }));
       await printProjectPlans({
         title,
-        meta: `${plural(printable.length, 'plan')} · printed ${formatDate(new Date())}`,
+           meta: `${t(printable.length === 1 ? 'projectUi.printPlan' : 'projectUi.printPlans', { count: printable.length })} · ${t('projectUi.printed', { date: formatDate(new Date()) })}`,
         paper: paperSize,
         plans: withDiagrams,
       });
     } catch (err) {
-      setError('Could not build the printable project — ' + err.message);
+       setError(t('projectUi.printableFailed', { message: err.message }));
     } finally {
       setPrinting(false);
     }
@@ -226,7 +228,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
       const blob = await downloadProjectImage(project.id, project.projectType);
       onPreview({ ...project, imageUrl: window.URL.createObjectURL(blob) });
     } catch (err) {
-      setError('Failed to load preview: ' + err.message);
+       setError(t('projectUi.previewFailed', { message: err.message }));
     }
   };
 
@@ -257,7 +259,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
       }
       setAllProjects((prev) => prev.map((p) => (p.id === project.id ? { ...p, name } : p)));
     } catch (err) {
-      setError('Failed to rename the plan: ' + err.message);
+       setError(t('projectUi.renamePlanFailed', { message: err.message }));
     } finally {
       cancelEdit();
     }
@@ -284,16 +286,16 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
       await renameProjectGroup(group.id, name);
       setGroups((prev) => prev.map((g) => (g.id === group.id ? { ...g, name } : g)));
     } catch (err) {
-      setError('Failed to rename the project: ' + err.message);
+       setError(t('projectUi.renameProjectFailed', { message: err.message }));
     } finally {
       cancelEditGroup();
     }
   };
 
   const handleDeleteGroup = (group, planCount) => {
-    const planNote = planCount > 0 ? ` and the ${plural(planCount, 'plan')} in it` : '';
+     const planNote = planCount > 0 ? ` ${t('projectUi.andPlansInIt', { count: planCount })}` : '';
     setPendingDelete({
-      message: `Delete the project "${group.name}"${planNote}? This cannot be undone.`,
+       message: t('projectUi.deleteProjectConfirm', { name: group.name, planNote }),
       run: async () => {
         try {
           setBusyId(group.id);
@@ -301,7 +303,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
           setGroups((prev) => prev.filter((g) => g.id !== group.id));
           setAllProjects((prev) => prev.filter((p) => p.project_group_id !== group.id));
         } catch (err) {
-          setError('Failed to delete the project: ' + err.message);
+           setError(t('projectUi.deleteProjectFailed', { message: err.message }));
         } finally {
           setBusyId(null);
         }
@@ -333,7 +335,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
 
    const renderPlan = (project) => {
      const hasDiagram = Boolean(project.has_svg_image || project.cutlist_image);
-     const facts = planFacts(project);
+      const facts = planFacts(project, t);
 
      return (
        <div key={project.id}>
@@ -343,15 +345,15 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
              className="plan-item-thumb"
              onClick={() => handlePreview(project)}
              disabled={!hasDiagram}
-             title={hasDiagram ? 'Open the full diagram' : 'No diagram was saved with this plan'}
-             aria-label={`Open the full diagram for ${project.name}`}
+              title={hasDiagram ? t('projectUi.openDiagram') : t('projectUi.noPlanDiagram')}
+              aria-label={t('projectUi.openDiagramFor', { name: project.name })}
            >
              <PlanThumb project={project} />
            </button>
 
            <div className="plan-item-body">
              {editingId === project.id ? (
-               nameField(editingName, setEditingName, () => saveEdit(project), cancelEdit, 'Plan name')
+                nameField(editingName, setEditingName, () => saveEdit(project), cancelEdit, t('projectUi.planName'))
              ) : (
                <h3 className="plan-item-name">
                  {project.name}
@@ -359,8 +361,8 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
                    type="button"
                    className="name-edit-btn"
                    onClick={() => startEdit(project)}
-                   aria-label={`Rename ${project.name}`}
-                   title="Rename this plan"
+                    aria-label={t('projectUi.rename', { name: project.name })}
+                    title={t('projectUi.renamePlanTitle')}
                  >
                    <Pencil />
                  </button>
@@ -371,7 +373,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
                <span>{facts.count}</span>
                <span>{facts.stock}</span>
              </p>
-             <p className="plan-item-date">Saved {formatDate(project.created_at)}</p>
+              <p className="plan-item-date">{t('projectUi.saved', { date: formatDate(project.created_at) })}</p>
            </div>
 
            <div className="plan-item-acts">
@@ -394,7 +396,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
                onClick={() => handleDelete(project)}
                disabled={busyId === project.id}
              >
-               Delete
+                {t('ui.delete')}
              </button>
            </div>
          </article>
@@ -429,20 +431,20 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
         <>
           {errorNotice}
           <p style={{ color: 'var(--ink-2)', marginBottom: '16px' }}>
-            That project no longer exists.
+             {t('projectUi.missingProject')}
           </p>
-          <Link to="/dashboard" className="btn"><ArrowLeft /> All projects</Link>
+           <Link to="/dashboard" className="btn"><ArrowLeft /> {t('projectUi.allProjects')}</Link>
         </>
       );
     }
 
     const plans = plansIn(groupId);
-    const title = group ? group.name : 'Not in any project';
+     const title = group ? group.name : t('projectUi.notInAnyProject');
     const printableCount = plans.filter((p) => p.has_svg_image || p.cutlist_image).length;
 
     return (
       <>
-        <Link to="/dashboard" className="crumb-back"><ArrowLeft />All projects</Link>
+         <Link to="/dashboard" className="crumb-back"><ArrowLeft />{t('projectUi.allProjects')}</Link>
 
         {errorNotice}
 
@@ -450,7 +452,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
           {group && editingGroup ? (
             nameField(
               editingGroupName, setEditingGroupName,
-              () => saveEditGroup(group), cancelEditGroup, 'Project name',
+               () => saveEditGroup(group), cancelEditGroup, t('projectUi.projectName'),
             )
           ) : (
             <h2 className="proj-head-name">
@@ -460,8 +462,8 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
                   type="button"
                   className="name-edit-btn"
                   onClick={() => startEditGroup(group)}
-                  aria-label={`Rename ${group.name}`}
-                  title="Rename this project"
+                   aria-label={t('projectUi.rename', { name: group.name })}
+                   title={t('projectUi.renameProjectTitle')}
                 >
                   <Pencil size={15} />
                 </button>
@@ -471,8 +473,8 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
 
           <p className="proj-head-meta">
             {group
-              ? `${plans.length ? plural(plans.length, 'plan') : 'Empty'} · project created ${formatDate(group.created_at)}`
-              : `${plural(plans.length, 'plan')} saved without a project`}
+               ? `${plans.length ? t(plans.length === 1 ? 'projectUi.printPlan' : 'projectUi.printPlans', { count: plans.length }) : t('projectUi.empty')} · ${t('projectUi.projectCreated', { date: formatDate(group.created_at) })}`
+               : `${t(plans.length === 1 ? 'projectUi.printPlan' : 'projectUi.printPlans', { count: plans.length })} ${t('projectUi.savedWithoutProject')}`}
           </p>
 
           {(printableCount > 0 || group) && (
@@ -483,8 +485,8 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
                     className="form-select print-paper"
                     value={paperSize}
                     onChange={(e) => setPaperSize(e.target.value)}
-                    aria-label="Paper size for printing"
-                    title="Paper size"
+                     aria-label={t('projectUi.paperSize')}
+                     title={t('projectUi.paperSizeTitle')}
                   >
                     <option value="a4">A4</option>
                     <option value="letter">Letter</option>
@@ -493,9 +495,9 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
                     className="btn"
                     onClick={() => handlePrintAll(plans, title)}
                     disabled={printing}
-                    title="One document with every plan on its own page — print it or save it as a PDF"
+                     title={t('projectUi.printTitle')}
                   >
-                    {printing ? 'Preparing…' : `Print ${plural(printableCount, 'plan')}`}
+                     {printing ? t('projectUi.preparing') : t(printableCount === 1 ? 'projectUi.printPlan' : 'projectUi.printPlans', { count: printableCount })}
                   </button>
                 </span>
               )}
@@ -505,7 +507,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
                   onClick={() => handleDeleteGroup(group, plans.length)}
                   disabled={busyId === group.id}
                 >
-                  Delete project
+                   {t('projectUi.deleteProject')}
                 </button>
               )}
             </span>
@@ -517,10 +519,9 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
         ) : (
           <div className="proj-blank">
             <p>
-              Nothing filed here yet. Run a plan, then pick <b>{title}</b> as its project
-              on the save step and it lands here.
+               {t('projectUi.nothingFiled', { name: title })}
             </p>
-            <Link to="/cutting" className="btn btn-primary">Plan a cut</Link>
+             <Link to="/cutting" className="btn btn-primary">{t('projectUi.planACut')}</Link>
           </div>
         )}
       </>
@@ -535,12 +536,12 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
   return (
     <>
       <div className="section-rule" style={{ marginBottom: '18px' }}>
-        <h2 className="section-title">My projects</h2>
+        <h2 className="section-title">{t('projects.myProjects')}</h2>
         <span className="section-rule-end">
           {allProjects.length > 0 && (
-            <span className="folio">{plural(groups.length, 'project')} · {plural(allProjects.length, 'plan')}</span>
+             <span className="folio">{groups.length} {t('ui.project')} · {allProjects.length} {t('workflow.planName').toLowerCase()}</span>
           )}
-          <button type="button" className="btn btn-sm" onClick={loadProjects}>Refresh</button>
+          <button type="button" className="btn btn-sm" onClick={loadProjects}>{t('projects.refresh')}</button>
         </span>
       </div>
 
@@ -549,10 +550,9 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
       {shelves.length === 0 && loose.length === 0 && (
         <div className="proj-blank is-first">
           <p>
-            Nothing saved yet. Run a plan, name it on the save step, and it keeps
-            itself here — on this instance, under your account.
+            {t('projects.nothingSaved')}
           </p>
-          <Link to="/cutting" className="btn btn-primary">Plan a cut</Link>
+          <Link to="/cutting" className="btn btn-primary">{t('workflow.planCuts')}</Link>
         </div>
       )}
 
@@ -563,15 +563,15 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
               <span className="proj-card-cover">
                 {shelf.plans.length > 0
                   ? <PlanThumb project={shelf.plans[0]} />
-                  : <span className="thumb"><span className="thumb-none">No plans yet</span></span>}
+                   : <span className="thumb"><span className="thumb-none">{t('projects.noPlans')}</span></span>}
               </span>
               <span className="proj-card-foot">
                 <span className="proj-card-text">
                   <b>{shelf.name}</b>
                   <em>
                     {shelf.plans.length > 0
-                      ? `${plural(shelf.plans.length, 'plan')} · last saved ${formatDate(shelf.plans[0].updated_at)}`
-                      : 'Empty — nothing filed here yet'}
+                       ? t(shelf.plans.length === 1 ? 'projectUi.lastSavedOne' : 'projectUi.lastSaved', { count: shelf.plans.length, date: formatDate(shelf.plans[0].updated_at) })
+                       : t('projectUi.noProjectEmpty')}
                   </em>
                 </span>
                 <ArrowRight />
@@ -583,8 +583,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
 
       {shelves.length === 0 && loose.length > 0 && (
         <p className="unfiled-noprojects">
-          No projects yet. A project holds the plans for one build — a chair's
-          rails and its seat, together. Pick or create one on a plan's save step.
+           {t('projectUi.noProjectsYet')}
         </p>
       )}
 
@@ -595,16 +594,16 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
       {loose.length > 0 && (
         <section className="unfiled">
           <div className="section-rule" style={{ marginBottom: '10px' }}>
-            <h3 className="section-title">Not in any project</h3>
+             <h3 className="section-title">{t('projectUi.looseTitle')}</h3>
             <span className="folio">{plural(loose.length, 'plan')}</span>
           </div>
           <p className="synthetic" style={{ marginBottom: '16px', maxWidth: 'none' }}>
-            Saved without picking a project — filing one just makes it easier to find later.
+             {t('projectUi.savedWithoutPicking')}
           </p>
           <div className="plan-list">{loose.slice(0, UNFILED_SHOWN).map(renderPlan)}</div>
           {loose.length > UNFILED_SHOWN && (
             <Link to={`/dashboard/project/${LOOSE}`} className="unfiled-all">
-              Show all {loose.length} <ArrowRight />
+               {t('projectUi.showAll', { count: loose.length })} <ArrowRight />
             </Link>
           )}
         </section>
@@ -612,7 +611,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
 
       <ConfirmDialog
         open={!!pendingDelete}
-        title="Delete"
+         title={t('ui.delete')}
         message={pendingDelete?.message}
         onConfirm={() => { pendingDelete.run(); setPendingDelete(null); }}
         onCancel={() => setPendingDelete(null)}

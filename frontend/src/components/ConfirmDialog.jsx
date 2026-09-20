@@ -1,11 +1,16 @@
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 // A styled stand-in for window.confirm — native browser dialogs carry the
 // origin's URL in the title bar and can't be themed, which reads as broken
 // next to the rest of the app.
 const ConfirmDialog = ({
-  open, title = 'Are you sure?', message, confirmLabel = 'Delete', cancelLabel = 'Cancel', danger = true, onConfirm, onCancel,
+  open, title, message, confirmLabel, cancelLabel, danger = true, onConfirm, onCancel,
 }) => {
+  const { t } = useTranslation();
+  title = title || t('ui.confirmTitle');
+  confirmLabel = confirmLabel || t('ui.delete');
+  cancelLabel = cancelLabel || t('ui.cancel');
   useEffect(() => {
     if (!open) return undefined;
     const onKey = (e) => e.key === 'Escape' && onCancel();

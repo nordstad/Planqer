@@ -13,11 +13,13 @@
 */
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import InfoTip from './InfoTip';
 
 const NEW = '__new__';
 
 const ProjectPicker = ({ groups, value, onChange, onCreate }) => {
+  const { t } = useTranslation();
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState('');
 
@@ -34,11 +36,9 @@ const ProjectPicker = ({ groups, value, onChange, onCreate }) => {
   return (
     <div>
       <div className="flex items-center gap-2" style={{ marginBottom: '6px' }}>
-        <label className="form-label" htmlFor="plan-project" style={{ marginBottom: 0 }}>Project</label>
-        <InfoTip label="What a project is">
-          A project holds several plans for the same build. A chair's rails cut
-          from boards and its seat cut from a sheet can sit together, so you find
-          both when you come back to it.
+        <label className="form-label" htmlFor="plan-project" style={{ marginBottom: 0 }}>{t('ui.project')}</label>
+        <InfoTip label={t('ui.projectInfoLabel')}>
+          {t('ui.projectInfo')}
         </InfoTip>
       </div>
 
@@ -57,11 +57,11 @@ const ProjectPicker = ({ groups, value, onChange, onCreate }) => {
           onChange(e.target.value);
         }}
       >
-        <option value="">Not in a project</option>
+        <option value="">{t('ui.notInProject')}</option>
         {groups.map((group) => (
           <option key={group.id} value={group.id}>{group.name}</option>
         ))}
-        <option value={NEW}>New project…</option>
+        <option value={NEW}>{t('ui.newProject')}</option>
       </select>
 
       {creating && (
@@ -70,7 +70,7 @@ const ProjectPicker = ({ groups, value, onChange, onCreate }) => {
             type="text"
             className="form-input"
             style={{ flex: '1 1 200px', width: 'auto' }}
-            placeholder="Dining chair"
+            placeholder={t('ui.projectPlaceholder')}
             value={name}
             onChange={(e) => setName(e.target.value)}
             // This input sits inside the save form, where Enter would otherwise
@@ -83,14 +83,14 @@ const ProjectPicker = ({ groups, value, onChange, onCreate }) => {
                 cancel();
               }
             }}
-            aria-label="New project name"
+            aria-label={t('ui.newProjectName')}
             autoFocus
           />
           <button type="button" className="btn" onClick={create} disabled={!name.trim()}>
-            Create project
+            {t('ui.createProject')}
           </button>
           <button type="button" className="btn" onClick={cancel}>
-            Cancel
+            {t('ui.cancel')}
           </button>
         </div>
       )}

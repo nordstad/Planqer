@@ -40,7 +40,7 @@ const measureSvg = (blob) => new Promise((resolve, reject) => {
   image.onload = () => resolve({ url, width: image.naturalWidth || 1, height: image.naturalHeight || 1 });
   image.onerror = () => {
     URL.revokeObjectURL(url);
-    reject(new Error('a saved diagram could not be read'));
+    reject(new Error());
   };
   image.src = url;
 });

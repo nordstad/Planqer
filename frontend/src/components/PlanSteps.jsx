@@ -8,8 +8,12 @@
   to be re-opened to be checked.
 */
 
-const PlanSteps = ({ steps, current, onSelect }) => (
-  <ol className="plan-steps" aria-label="Plan progress">
+import { useTranslation } from 'react-i18next';
+
+const PlanSteps = ({ steps, current, onSelect }) => {
+  const { t } = useTranslation();
+  return (
+  <ol className="plan-steps" aria-label={t('ui.planProgress')}>
     {steps.map((step, index) => {
       const number = String(index + 1).padStart(2, '0');
       const isCurrent = index === current;
@@ -35,6 +39,7 @@ const PlanSteps = ({ steps, current, onSelect }) => (
       );
     })}
   </ol>
-);
+  );
+};
 
 export default PlanSteps;

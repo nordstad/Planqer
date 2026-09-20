@@ -18,6 +18,7 @@
 */
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { optimizeCutting, saveProject, getProjectGroups, createProjectGroup, getUserProjects, getUserSettings } from '../utils/api';
 import { validateBoards, validateParts } from '../utils/validators';
@@ -43,6 +44,7 @@ const STEP_SAVE = 2;
 const DEFAULT_CURRENCY = 'SEK';
 
 const CuttingOptimizer = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [step, setStep] = useState(STEP_PARTS);
 
@@ -103,12 +105,12 @@ const CuttingOptimizer = () => {
   useEffect(() => {
     const kerfValue = parseFloat(debouncedSawKerf);
     setInputErrors({
-      parts: validateParts(debouncedParts),
-      boards: validateBoards(debouncedBoards),
+      parts: validateParts(debouncedParts, t),
+      boards: validateBoards(debouncedBoards, t),
       sawKerf: !debouncedSawKerf || kerfValue <= 0
         ? "A kerf of zero would plan cuts that lose no material"
         : kerfValue > 20
-          ? "That kerf is wider than any saw blade — 2 to 4 mm is typical"
+          ? t('auditUi.kerfWide')
           : "",
     });
   }, [debouncedParts, debouncedBoards, debouncedSawKerf]);
@@ -327,8 +329,8 @@ const CuttingOptimizer = () => {
     if (withPrices && missingPrices()) {
       setCostSubmitAttempted(true);
       setApiError(samePriceForAll
-        ? "Enter a price per metre before pricing the plan"
-        : "Every stock length needs a price before pricing the plan");
+        ? t('auditUi.priceRequired')
+        : t('auditUi.stockPriceRequired'));
       return;
     }
 
@@ -358,7 +360,7 @@ const CuttingOptimizer = () => {
       setAppliedPriceKey(withPrices ? key : null);
       setStep(STEP_PLAN);
     } catch (error) {
-      setApiError(error.message || 'Unknown error');
+      setApiError(error.message || t('auditUi.unknownError'));
     }
     setLoading(false);
   };
@@ -372,7 +374,7 @@ const CuttingOptimizer = () => {
 
   /* ── keeping a plan ────────────────────────────────────────────────────── */
   const nameError = saveAttempted && !projectName.trim()
-    ? 'Give the plan a name so you can find it again — “Chair rails” beats “Untitled”'
+    ? t('auditUi.nameRequired')
     : '';
 
   // Returns whether it worked, so the picker knows whether to close its field.
@@ -384,7 +386,7 @@ const CuttingOptimizer = () => {
       setApiError("");
       return true;
     } catch (err) {
-      setApiError('Could not create that project: ' + err.message);
+      setApiError(`${t('auditUi.createProjectFailed')}: ${err.message}`);
       return false;
     }
   };
@@ -419,7 +421,7 @@ const CuttingOptimizer = () => {
         ? prev.map(p => p.id === project.id ? project : p)
         : [project, ...prev]);
     } catch (error) {
-      setApiError(error.message || 'Could not save this plan');
+      setApiError(error.message || t('auditUi.saveFailed'));
     }
     setSaving(false);
   };
@@ -431,23 +433,23 @@ const CuttingOptimizer = () => {
   /* ── the rail ──────────────────────────────────────────────────────────── */
   const steps = [
     {
-      label: 'Parts',
+      label: t('workflow.parts'),
       reachable: true,
       summary: hasErrors
-        ? 'Some lines need fixing'
-        : `${partCount} parts · ${mm(demand)} mm · ${sawKerf || 0} mm kerf`,
+        ? t('workflow.someLinesNeedFixing')
+        : t('workflow.partsSummary', { count: partCount, demand: mm(demand), kerf: sawKerf || 0 }),
     },
     {
-      label: 'The plan',
+      label: t('workflow.thePlan'),
       reachable: !!plan,
-      summary: plan ? `${plan.boardsUsed} boards · ${mm(plan.offcut)} mm offcut` : '',
-      locked: 'Runs from your parts',
+      summary: plan ? t('workflow.boardsSummary', { count: plan.boardsUsed, offcut: mm(plan.offcut) }) : '',
+      locked: t('workflow.runsFromParts'),
     },
     {
-      label: 'Save',
+      label: t('workflow.save'),
       reachable: !!plan,
-      summary: saved ? `Saved as ${saved.name}` : 'Name it and keep it',
-      locked: 'Waits for a plan',
+      summary: saved ? t('workflow.savedAs', { name: saved.name }) : t('workflow.nameAndKeep'),
+      locked: t('workflow.waitsForPlan'),
     },
   ];
 
@@ -466,20 +468,19 @@ const CuttingOptimizer = () => {
         <form className="step-view is-form" onSubmit={handlePlanSubmit}>
           <div className="step-head">
             <div>
-              <h1 className="step-h1">Required parts</h1>
+              <h1 className="step-h1">{t('workflow.requiredParts')}</h1>
               <p className="step-lede">
-                Every length you need, and how many of each. Planqer works out how
-                much stock to buy and where each cut goes.
+                {t('workflow.requiredPartsIntro')}
               </p>
             </div>
             <button type="button" className="btn" onClick={() => setLoadModalOpen(true)}>
-              Load a saved plan
+              {t('workflow.loadSavedPlan')}
             </button>
           </div>
 
           <table className="cat-table">
             <thead>
-              <tr><th>Item</th><th>Length mm</th><th>Qty</th><th>Total</th><th aria-label="Remove" /></tr>
+              <tr><th>{t('workflow.item')}</th><th>{t('workflow.lengthMm')}</th><th>{t('workflow.qty')}</th><th>{t('workflow.total')}</th><th aria-label={t('common.remove')} /></tr>
             </thead>
             <tbody>
               {parts.map((part, index) => (
@@ -500,10 +501,10 @@ const CuttingOptimizer = () => {
             </tbody>
           </table>
           <button type="button" className="btn" style={{ marginTop: '12px' }} onClick={addPart}>
-            <Plus /> Add part
+            <Plus /> {t('workflow.addPart')}
           </button>
           <p className="synthetic" style={{ marginTop: '10px' }}>
-            Paste several lines at once — one length and quantity per line
+            {t('workflow.pasteParts')}
           </p>
 
           <div
@@ -511,7 +512,7 @@ const CuttingOptimizer = () => {
             style={{ marginTop: '26px', paddingTop: '22px', borderTop: '1px solid var(--rule-hair)', flexWrap: 'wrap' }}
           >
             <div style={{ flex: 'none' }}>
-              <label className="form-label" htmlFor="saw-kerf">Saw blade</label>
+              <label className="form-label" htmlFor="saw-kerf">{t('workflow.sawBlade')}</label>
               <div className="flex items-center gap-2">
                 <input
                   id="saw-kerf"
@@ -535,7 +536,7 @@ const CuttingOptimizer = () => {
               className={inputErrors.sawKerf ? 'text-danger text-[12.5px] font-semibold' : 'synthetic'}
               style={{ flex: '1 1 220px', margin: 0, paddingBottom: '11px' }}
             >
-              {inputErrors.sawKerf || 'Every cut turns this much material into dust — the plan accounts for it'}
+              {inputErrors.sawKerf || t('workflow.kerfHint')}
             </p>
           </div>
 
@@ -546,12 +547,12 @@ const CuttingOptimizer = () => {
               the sheet's own dimensions are visible for the same reason. */}
           <section style={{ marginTop: '30px', paddingTop: '22px', borderTop: '1px solid var(--rule-hair)' }}>
             <div className="section-rule">
-              <h2 className="section-title">Stock available</h2>
-              <span className="folio">What your supplier sells, not what you need</span>
+              <h2 className="section-title">{t('workflow.stockAvailable')}</h2>
+              <span className="folio">{t('workflow.supplierStock')}</span>
             </div>
             <table className="cat-table">
               <thead>
-                <tr><th>Stock</th><th>Length mm</th><th>Metres</th><th aria-label="Remove" /></tr>
+                <tr><th>{t('workflow.stock')}</th><th>{t('workflow.lengthMm')}</th><th>{t('workflow.metres')}</th><th aria-label={t('common.remove')} /></tr>
               </thead>
               <tbody>
                 {boards.map((board, index) => (
@@ -568,45 +569,43 @@ const CuttingOptimizer = () => {
                   />
                 ))}
                 <tr className="is-sum">
-                  <td>Offered</td>
-                  <td>{validBoards.length} {validBoards.length === 1 ? 'length' : 'lengths'}</td>
+                  <td>{t('workflow.offered')}</td>
+                  <td>{t('workflow.lengthCount', { count: validBoards.length })}</td>
                   <td>—</td>
                   <td />
                 </tr>
               </tbody>
             </table>
             <button type="button" className="btn" style={{ marginTop: '12px' }} onClick={addBoard}>
-              <Plus /> Add stock length
+              <Plus /> {t('workflow.addStockLength')}
             </button>
             <p className="synthetic" style={{ marginTop: '10px' }}>
-              Check these against the yard before you plan. These lengths — and any
-              prices you set for them — are saved with the plan, so a job at a
-              different supplier keeps its own.
+               {t('ui.checkStock')}
             </p>
           </section>
 
           <div style={{ marginTop: '26px' }}>
             <Disclosure
-              title="What this page returns, and its limits"
-              hint="Boards, an order list, a cut order, and the offcut"
+               title={t('ui.whatPageReturns')}
+               hint={t('ui.boardsHint')}
               open={limitsOpen}
               onToggle={() => setLimitsOpen(v => !v)}
             >
               <div className="grid gap-x-8 gap-y-5 md:grid-cols-2">
                 <table className="cat-table is-reference">
                   <tbody>
-                    <tr><td>Boards</td><td>The fewest stock lengths that carry every part</td></tr>
-                    <tr><td>Order list</td><td>What to buy, by stock length</td></tr>
-                    <tr><td>Cut order</td><td>Each board's cuts, in sequence</td></tr>
-                    <tr><td>Offcut</td><td>What is left once parts and blade have taken theirs</td></tr>
+                    <tr><td>{t('legacy.boards')}</td><td>{t('help.cutPlanText')}</td></tr>
+                    <tr><td>{t('workflow.whatToBuy')}</td><td>{t('workflow.supplierStock')}</td></tr>
+                    <tr><td>{t('workflow.cutOrder')}</td><td>{t('workflow.cuttingPlanIntro')}</td></tr>
+                    <tr><td>{t('ui.offcut')}</td><td>{t('help.offcutText')}</td></tr>
                   </tbody>
                 </table>
                 <table className="cat-table is-reference">
                   <tbody>
-                    <tr><td>Part and stock length</td><td>6 000 mm maximum</td></tr>
-                    <tr><td>Parts per plan</td><td>1 000 maximum</td></tr>
-                    <tr><td>Kerf</td><td>Whole millimetres; 2–4 typical</td></tr>
-                    <tr><td>Units</td><td>Millimetres only</td></tr>
+                    <tr><td>{t('workflow.lengthMm')}</td><td>≤ 6 000 mm</td></tr>
+                    <tr><td>{t('workflow.parts')}</td><td>≤ 1 000</td></tr>
+                    <tr><td>{t('help.kerf')}</td><td>{t('legacy.unitsDeclared')}</td></tr>
+                    <tr><td>{t('common.units')}</td><td>{t('common.units')}</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -616,12 +615,12 @@ const CuttingOptimizer = () => {
           <div className="step-foot">
             <p className="synthetic step-foot-note">
               {hasErrors
-                ? 'Fix the struck lines above and the plan can run'
-                : `${partCount} parts against ${validBoards.length} stock ${validBoards.length === 1 ? 'length' : 'lengths'}`}
+                 ? t('ui.fixLines', { kind: t('workflow.thePlan') })
+                 : t('ui.partsAgainstStock', { parts: partCount, stock: validBoards.length, unit: t(validBoards.length === 1 ? 'ui.stockUnit' : 'ui.stockUnits') })}
             </p>
             <div className="step-foot-act">
               <button type="submit" className="btn-order" disabled={loading || hasErrors}>
-                {loading ? <><Loader /> Planning</> : <>Plan the cuts <ArrowRight size={15} /></>}
+                {loading ? <><Loader /> {t('workflow.planning')}</> : <>{t('workflow.planTheCuts')} <ArrowRight size={15} /></>}
               </button>
             </div>
           </div>
@@ -633,10 +632,9 @@ const CuttingOptimizer = () => {
         <div className="step-view">
           <div className="step-head" style={{ marginBottom: '20px' }}>
             <div>
-              <h1 className="step-h1">Your cutting plan</h1>
+              <h1 className="step-h1">{t('workflow.yourCuttingPlan')}</h1>
               <p className="step-lede">
-                Every board drawn at the same scale, with its cuts in the order you
-                make them.
+                {t('workflow.cuttingPlanIntro')}
               </p>
             </div>
           </div>
@@ -653,25 +651,25 @@ const CuttingOptimizer = () => {
               <div className="plan-answer-fig">
                 <b>{plan.boardsUsed}</b>
                 <span className="answer-kicker">
-                  {plan.boardsUsed === 1 ? 'board' : 'boards'} for all {partCount} parts
+                   {t('ui.forAllParts', { count: partCount }).replace('{{count}}', `${plan.boardsUsed} ${t(plan.boardsUsed === 1 ? 'ui.board' : 'ui.boards')}`)}
                 </span>
               </div>
               <dl className="plan-facts">
                 {plan.bought !== null && (
-                  <div className="plan-fact"><dt>Material bought</dt><dd>{mm(plan.bought)} mm</dd></div>
+                   <div className="plan-fact"><dt>{t('ui.materialBought')}</dt><dd>{mm(plan.bought)} mm</dd></div>
                 )}
                 {plan.offcut !== null && (
-                  <div className="plan-fact"><dt>Offcut</dt><dd>{mm(plan.offcut)} mm</dd></div>
+                   <div className="plan-fact"><dt>{t('ui.offcut')}</dt><dd>{mm(plan.offcut)} mm</dd></div>
                 )}
                 {plan.kerfLoss !== null && (
-                  <div className="plan-fact"><dt>Blade takes</dt><dd>{mm(plan.kerfLoss)} mm</dd></div>
+                   <div className="plan-fact"><dt>{t('ui.bladeTakes')}</dt><dd>{mm(plan.kerfLoss)} mm</dd></div>
                 )}
                 {plan.efficiency !== null && (
-                  <div className="plan-fact"><dt>Efficiency</dt><dd>{plan.efficiency} %</dd></div>
+                   <div className="plan-fact"><dt>{t('ui.efficiency')}</dt><dd>{plan.efficiency} %</dd></div>
                 )}
                 {appliedCost && (
                   <div className="plan-fact">
-                    <dt>Cost</dt>
+                     <dt>{t('ui.cost')}</dt>
                     <dd>{Number(appliedCost.totalCost).toFixed(2)} {appliedCost.currency}</dd>
                   </div>
                 )}
@@ -683,12 +681,12 @@ const CuttingOptimizer = () => {
 
           <div style={{ marginTop: '34px' }}>
             <Disclosure
-              title="Cost analysis"
+               title={t('workflow.costAnalysis')}
               hint={pricesDirty
-                ? 'Prices changed — this plan is still costed at the old ones'
+                ? t('auditUi.pricesChanged')
                 : appliedCost
                   ? `Priced · ${Number(appliedCost.totalCost).toFixed(2)} ${appliedCost.currency} for the whole plan`
-                  : 'Price your stock to see what this plan costs'}
+                  : t('auditUi.priceStock')}
               open={costOpen}
               onToggle={() => setCostOpen(v => !v)}
             >
@@ -719,11 +717,11 @@ const CuttingOptimizer = () => {
 
           <div className="step-foot">
             <button type="button" className="btn" onClick={() => setStep(STEP_PARTS)}>
-              <ArrowLeft /> Change the parts
+               <ArrowLeft /> {t('ui.changeParts')}
             </button>
             <div className="step-foot-act">
               <button type="button" className="btn-order" onClick={() => setStep(STEP_SAVE)}>
-                {saved ? 'Back to the save' : 'Name and save'} <ArrowRight size={15} />
+                 {saved ? t('ui.backToSave') : t('ui.nameAndSave')} <ArrowRight size={15} />
               </button>
             </div>
           </div>
@@ -735,11 +733,11 @@ const CuttingOptimizer = () => {
         <form className="step-view is-form" onSubmit={handleSave}>
           <div className="step-head" style={{ marginBottom: '22px' }}>
             <div>
-              <h1 className="step-h1">{saved ? 'Plan saved' : 'Save this plan'}</h1>
+              <h1 className="step-h1">{saved ? t('workflow.planSaved') : t('workflow.saveThisPlan')}</h1>
               <p className="step-lede">
                 {saved
-                  ? 'Kept on this instance under your account, so it follows you to any browser without leaving the machine.'
-                  : 'Name it, choose where it belongs, and it stays on this instance under your account — ready to open again from any browser.'}
+                   ? t('ui.keptPlan')
+                   : t('ui.namePlan')}
               </p>
             </div>
           </div>
@@ -748,18 +746,16 @@ const CuttingOptimizer = () => {
             <div className="saved-mark">
               <Tick size={16} />
               <div>
-                <b>Saved as {saved.name}</b>
+                   <b>{t('ui.savedAs', { name: saved.name })}</b>
                 <p>
-                  {savedGroupName
-                    ? <>Filed under {savedGroupName}. Open it any time from <Link to="/dashboard">your dashboard</Link>.</>
-                    : <>Not in a project. Open it any time from <Link to="/dashboard">your dashboard</Link>.</>}
+                   {savedGroupName ? t('ui.filedUnder', { group: savedGroupName }) : t('ui.unfiled')}
                 </p>
               </div>
             </div>
           ) : (
             <>
               <div style={{ marginBottom: '24px' }}>
-                <label className="form-label" htmlFor="board-save-mode">Save as</label>
+                 <label className="form-label" htmlFor="board-save-mode">{t('ui.saveAs')}</label>
                 <select
                   id="board-save-mode"
                   className="form-select"
@@ -774,14 +770,14 @@ const CuttingOptimizer = () => {
                     }
                   }}
                 >
-                  <option value="new">Create a new plan</option>
-                  <option value="update" disabled={!userProjects.length}>Update existing plan</option>
+                   <option value="new">{t('ui.createNewPlan')}</option>
+                   <option value="update" disabled={!userProjects.length}>{t('ui.updateExistingPlan')}</option>
                 </select>
                 {saveMode === 'update' && editingProject && (
                   <select
                     className="form-select"
                     style={{ marginTop: '10px' }}
-                    aria-label="Plan to update"
+                     aria-label={t('ui.planToUpdate')}
                     value={editingProject.id}
                     onChange={(e) => {
                       const target = userProjects.find(p => p.id === e.target.value);
@@ -804,12 +800,12 @@ const CuttingOptimizer = () => {
               </div>
 
               <div>
-                <label className="form-label" htmlFor="plan-name">Plan name</label>
+                <label className="form-label" htmlFor="plan-name">{t('workflow.planName')}</label>
                 <input
                   id="plan-name"
                   type="text"
                   className={`form-input ${nameError ? 'form-input-error' : ''}`}
-                  placeholder="Chair rails"
+                   placeholder={t('ui.planNamePlaceholder')}
                   value={projectName}
                   onChange={(e) => setProjectName(e.target.value)}
                   aria-invalid={!!nameError}
@@ -821,7 +817,7 @@ const CuttingOptimizer = () => {
                   style={{ marginTop: '7px' }}
                   role={nameError ? 'alert' : undefined}
                 >
-                  {nameError || 'The name goes on the saved diagram, so label it the way you would label the offcut pile'}
+                   {nameError || t('ui.savedNameHint')}
                 </p>
               </div>
             </>
@@ -829,18 +825,18 @@ const CuttingOptimizer = () => {
 
           <div className="step-foot">
             <button type="button" className="btn" onClick={() => setStep(STEP_PLAN)}>
-              <ArrowLeft /> Back to the plan
+              <ArrowLeft /> {t('workflow.backToPlan')}
             </button>
             {saved ? (
               <div className="step-foot-act">
                 <Link to="/dashboard" className="btn-order">
-                  Open your dashboard <ArrowRight size={15} />
+                   {t('ui.openDashboard')} <ArrowRight size={15} />
                 </Link>
               </div>
             ) : (
               <div className="step-foot-act">
                 <button type="submit" className="btn-order" disabled={saving}>
-                  {saving ? <><Loader /> Saving</> : saveMode === 'update' ? 'Update plan' : 'Save plan'}
+                  {saving ? <><Loader /> {t('workflow.saving')}</> : saveMode === 'update' ? t('workflow.updatePlan') : t('workflow.savePlan')}
                 </button>
               </div>
             )}
@@ -850,23 +846,23 @@ const CuttingOptimizer = () => {
 
       {/* ── load a saved plan ─────────────────────────────────────────────── */}
       {loadModalOpen && (
-        <div className="cat-overlay" role="dialog" aria-modal="true" aria-label="Load a saved plan">
+         <div className="cat-overlay" role="dialog" aria-modal="true" aria-label={t('workflow.loadSavedPlan')}>
           <div className="cat-sheet">
             <div className="masthead" style={{ marginTop: 0 }}>
-              <span className="masthead-brand" style={{ fontSize: '13px' }}>YOUR SAVED PLANS</span>
+               <span className="masthead-brand" style={{ fontSize: '13px' }}>{t('ui.savedPlans')}</span>
               <span className="masthead-section" />
               <button type="button" className="masthead-flash" onClick={() => setLoadModalOpen(false)}>
-                Close
+                 {t('ui.close')}
               </button>
             </div>
             <div style={{ padding: '14px 16px 18px' }}>
               {userProjects.length === 0 ? (
                 <p style={{ color: 'var(--ink-3)', fontSize: '13px' }}>
-                  Nothing saved yet. Run a plan, name it, and it lands here.
+                   {t('ui.nothingSavedShort')}
                 </p>
               ) : (
                 <table className="cat-table">
-                  <thead><tr><th>Name</th><th>Parts</th><th aria-label="Actions" /></tr></thead>
+                   <thead><tr><th>{t('ui.name')}</th><th>{t('ui.parts')}</th><th aria-label={t('ui.actions')} /></tr></thead>
                   <tbody>
                     {(() => {
                       const projectRow = (project) => (
@@ -875,7 +871,7 @@ const CuttingOptimizer = () => {
                           <td>{Object.values(project.parts_data).reduce((sum, qty) => sum + qty, 0)}</td>
                           <td style={{ width: '90px' }}>
                             <button className="btn" style={{ padding: '5px 10px', minHeight: 0 }} onClick={() => loadProject(project)}>
-                              Load
+                               {t('ui.load')}
                             </button>
                           </td>
                         </tr>
@@ -910,7 +906,7 @@ const CuttingOptimizer = () => {
                       });
                       const ungrouped = [...byGroup.values()].flat();
                       if (ungrouped.length) {
-                        rows.push(headingRow('ungrouped', 'Not in a project'));
+                        rows.push(headingRow('ungrouped', t('auditUi.ungrouped')));
                         ungrouped.forEach(p => rows.push(projectRow(p)));
                       }
                       return rows;
@@ -919,7 +915,7 @@ const CuttingOptimizer = () => {
                 </table>
               )}
               <p className="synthetic" style={{ marginTop: '12px' }}>
-                To rename or delete a saved plan, use <Link to="/dashboard">your dashboard</Link>.
+                 {t('ui.renameDeleteHint')}
               </p>
             </div>
           </div>

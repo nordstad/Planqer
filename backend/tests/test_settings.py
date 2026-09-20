@@ -59,6 +59,7 @@ def test_get_user_settings(client, authenticated_user_token):
     assert data["default_currency"] == "SEK"
     assert data["preferred_algorithm"] == "auto"
     assert data["preferred_units"] == "mm"
+    assert data["preferred_language"] is None
 
 
 def test_update_user_settings(client, authenticated_user_token):
@@ -69,6 +70,7 @@ def test_update_user_settings(client, authenticated_user_token):
         "default_currency": "EUR",
         "preferred_algorithm": "first_fit_decreasing",
         "preferred_units": "cm",
+        "preferred_language": "sv-SE",
     }
 
     response = client.put(
@@ -84,6 +86,7 @@ def test_update_user_settings(client, authenticated_user_token):
     assert data["default_currency"] == "EUR"
     assert data["preferred_algorithm"] == "first_fit_decreasing"
     assert data["preferred_units"] == "cm"
+    assert data["preferred_language"] == "sv-SE"
 
 
 def test_partial_update_user_settings(client, authenticated_user_token):
@@ -102,6 +105,17 @@ def test_partial_update_user_settings(client, authenticated_user_token):
     assert data["default_saw_blade_width"] == 4.0  # Updated
     assert data["default_currency"] == "SEK"  # Unchanged
     assert data["preferred_algorithm"] == "auto"  # Unchanged
+    assert data["preferred_language"] is None  # Unchanged
+
+
+def test_update_user_settings_rejects_unsupported_language(client, authenticated_user_token):
+    response = client.put(
+        "/api/settings/",
+        headers={"Authorization": f"Bearer {authenticated_user_token}"},
+        json={"preferred_language": "de-DE"},
+    )
+
+    assert response.status_code == 422
 
 
 def test_get_user_settings_normalizes_legacy_board_lengths():
@@ -113,6 +127,7 @@ def test_get_user_settings_normalizes_legacy_board_lengths():
         default_currency="SEK",
         preferred_algorithm="auto",
         preferred_units="mm",
+        preferred_language=None,
     )
 
     response = settings_to_response(settings)

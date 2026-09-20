@@ -48,13 +48,13 @@ const extractErrorMessage = (error) => {
     const detail = error.response.data.detail;
     if (Array.isArray(detail) && detail.length > 0) {
       // Pydantic validation error - extract the human-readable message
-      return detail[0].msg || detail[0].type || 'Validation error';
+      return detail[0].msg || detail[0].type || '';
     } else if (typeof detail === 'string') {
       // Simple string error message
       return detail;
     }
   }
-  return error.message || 'Network error occurred';
+  return error.message || '';
 };
 
 /* ── local account auth ───────────────────────────────────────────────

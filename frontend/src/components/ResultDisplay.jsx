@@ -9,11 +9,15 @@
 */
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Download } from './icons';
+import { translateWithFallback } from '../i18n/translate';
 
 const mm = (n) => (Number.isFinite(n) ? Math.round(n).toLocaleString('sv-SE') : '—');
 
 const ResultDisplay = ({ result, projectName }) => {
+  const { t } = useTranslation();
+  const text = (key, vars) => translateWithFallback(t, key, vars);
   const [diagramOpen, setDiagramOpen] = useState(false);
   const used = result.board_lengths_used;
   const byType = used
@@ -42,16 +46,16 @@ const ResultDisplay = ({ result, projectName }) => {
           className="cut-list-visualization"
           style={{ width: '100%', cursor: 'zoom-in' }}
           onClick={() => setDiagramOpen(true)}
-          aria-label="Enlarge cutting plan diagram"
+           aria-label={text('ui.enlargeBoardDiagram')}
         >
-          <img src={result.visualization} alt="Cutting plan diagram: every board with its cuts in order" id="cutlist-image" />
+           <img src={result.visualization} alt={text('ui.boardDiagramAlt')} id="cutlist-image" />
         </button>
         <figcaption className="flex flex-wrap items-center justify-between gap-3" style={{ marginTop: '12px' }}>
           <span className="synthetic">
-            {result.cut_list.length} boards · drawn to one scale · kerf in red · click to enlarge
+             {text('ui.diagramCaption', { count: result.cut_list.length })}
           </span>
           <button type="button" className="btn" onClick={downloadDiagram}>
-            <Download /> Download diagram
+             <Download /> {text('workflow.downloadDiagram')}
           </button>
         </figcaption>
       </figure>
@@ -59,10 +63,10 @@ const ResultDisplay = ({ result, projectName }) => {
       <div className="grid gap-x-8 gap-y-8 lg:grid-cols-[300px_minmax(0,1fr)]" style={{ marginTop: '34px' }}>
         <section style={{ minWidth: 0 }}>
           <div className="section-rule">
-            <h2 className="section-title">What to buy</h2>
+             <h2 className="section-title">{text('workflow.whatToBuy')}</h2>
           </div>
           <table className="cat-table">
-            <thead><tr><th>Stock</th><th>Length mm</th><th>Qty</th></tr></thead>
+           <thead><tr><th>{text('ui.stock')}</th><th>{text('ui.lengthMm')}</th><th>{text('ui.qty')}</th></tr></thead>
             <tbody>
               {Object.entries(byType).map(([len, qty]) => (
                 <tr key={len}>
@@ -85,8 +89,8 @@ const ResultDisplay = ({ result, projectName }) => {
 
         <section style={{ minWidth: 0 }}>
           <div className="section-rule">
-            <h2 className="section-title">Cut order</h2>
-            <span className="folio">Take this to the saw</span>
+             <h2 className="section-title">{text('workflow.cutOrder')}</h2>
+             <span className="folio">{text('workflow.takeToSaw')}</span>
           </div>
           <ul className="cut-order" style={{ marginTop: '4px' }}>
             {result.cut_list.map((cuts, i) => (
@@ -102,17 +106,17 @@ const ResultDisplay = ({ result, projectName }) => {
       </div>
 
       {diagramOpen && (
-        <div className="cat-overlay" role="dialog" aria-modal="true" aria-label="Cutting plan diagram" onClick={() => setDiagramOpen(false)}>
+         <div className="cat-overlay" role="dialog" aria-modal="true" aria-label={text('ui.cuttingPlanDiagram')} onClick={() => setDiagramOpen(false)}>
           <div className="cat-sheet" style={{ maxWidth: '95vw' }} onClick={(e) => e.stopPropagation()}>
             <div className="masthead" style={{ marginTop: 0 }}>
-              <span className="masthead-brand" style={{ fontSize: '13px' }}>CUTTING PLAN</span>
+               <span className="masthead-brand" style={{ fontSize: '13px' }}>{text('ui.cuttingPlan')}</span>
               <span className="masthead-section" />
               <button type="button" className="masthead-flash" onClick={() => setDiagramOpen(false)}>
-                Close
+                 {t('common.close')}
               </button>
             </div>
             <div style={{ padding: '16px' }}>
-              <img src={result.visualization} alt="Cutting plan diagram: every board with its cuts in order" style={{ display: 'block', width: '100%', height: 'auto' }} />
+               <img src={result.visualization} alt={text('ui.boardDiagramAlt')} style={{ display: 'block', width: '100%', height: 'auto' }} />
             </div>
           </div>
         </div>
