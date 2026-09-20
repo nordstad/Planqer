@@ -201,7 +201,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
       setPrinting(true);
       setError('');
       const withDiagrams = await Promise.all(printable.map(async (p) => {
-        const pf = planFacts(p);
+        const pf = planFacts(p, t);
         return {
           name: p.name,
            facts: [pf.type, pf.count, pf.stock, t('projectUi.saved', { date: formatDate(p.created_at) })],

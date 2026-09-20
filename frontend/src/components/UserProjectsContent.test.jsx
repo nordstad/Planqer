@@ -10,6 +10,7 @@ import {
   deleteProject,
   deleteProjectGroup,
 } from '../utils/api';
+import { printProjectPlans } from '../utils/printProject';
 
 jest.mock('../utils/api', () => ({
   getUserProjects: jest.fn(),
@@ -31,6 +32,10 @@ jest.mock('../contexts/AuthContext', () => ({
   useAuth: () => ({ user: { id: 'user-1', email: 'user@example.com' }, logout: jest.fn() }),
 }));
 
+jest.mock('../utils/printProject', () => ({
+  printProjectPlans: jest.fn().mockResolvedValue(undefined),
+}));
+
 const group = {
   id: 'group-1',
   name: 'Lab',
@@ -41,6 +46,7 @@ const plan = {
   id: 'plan-1',
   project_group_id: group.id,
   name: 'Cut list',
+  has_svg_image: true,
   parts_data: { 100: 1 },
   board_lengths: [300],
   saw_blade_width: 3,
@@ -63,6 +69,8 @@ beforeEach(() => {
   getProjectGroups.mockResolvedValue([group]);
   deleteProject.mockResolvedValue({});
   deleteProjectGroup.mockResolvedValue({});
+  const { downloadProjectImage } = jest.requireMock('../utils/api');
+  downloadProjectImage.mockResolvedValue(new Blob());
 });
 
 it('confirms deletion of a plan on the project detail route', async () => {
@@ -84,4 +92,12 @@ it('confirms deletion of a project on the project detail route', async () => {
   fireEvent.click(within(dialog).getByRole('button', { name: 'Delete', exact: true }));
 
   await waitFor(() => expect(deleteProjectGroup).toHaveBeenCalledWith(group.id));
+});
+
+it('prints a plan from the project detail route', async () => {
+  renderDetail();
+
+  fireEvent.click(await screen.findByRole('button', { name: 'Print 1 plan' }));
+
+  await waitFor(() => expect(printProjectPlans).toHaveBeenCalled());
 });
