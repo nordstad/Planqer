@@ -182,10 +182,10 @@ Object.assign(locale.ui, {
 });
 
 Object.assign(locale.workflow, {
-  materialProfile: 'Material and profile', chooseMaterial: 'Choose material', thickness: 'Thickness', thicknessMm: 'Thickness (mm)', widthMm: 'Width (mm)', packSheets: 'Plan the sheet cuts', tilePurchaseSummary: '{{base}} tiles + {{total}} with {{waste}}% spare',
+  materialProfile: 'Material and profile', chooseMaterial: 'Choose material', thickness: 'Thickness', thicknessMm: 'Thickness (mm)', widthMm: 'Width (mm)', packSheets: 'Plan the sheet cuts', tilesToBuy: 'tiles to buy', fullTiles: 'Full tiles', cutTiles: 'Cut tiles', used: 'Used', changeSurface: 'Change the surface', nameIt: 'Name it',
 });
 
 Object.assign(locale.auditUi, { materialRequired: 'Choose a material and enter its dimensions before planning', sheetThicknessRequired: 'Enter the sheet thickness before planning', sheetMaterialRequired: 'Choose a sheet material before planning', tileMaterialRequired: 'Choose a tile material and enter its thickness before solving' });
-Object.assign(locale.ui, { includesSpare: '{{base}} + {{waste}}% spare' });
+Object.assign(locale.ui, { tileSummary: '{{count}} tiles to buy · tightest cut {{cut}} · {{offcuts}} offcuts reused', waste: 'Waste', strategy: 'Strategy' });
 
 export default locale;

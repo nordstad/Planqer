@@ -180,11 +180,11 @@ Object.assign(locale.ui, {
 });
 
 Object.assign(locale.workflow, {
-  materialProfile: 'Materiale og profil', chooseMaterial: 'Velg materiale', thickness: 'Tykkelse', thicknessMm: 'Tykkelse (mm)', widthMm: 'Bredde (mm)', packSheets: 'Planlegg platekappingen', tilePurchaseSummary: '{{base}} fliser + {{total}} med {{waste}} % ekstra',
+  materialProfile: 'Materiale og profil', chooseMaterial: 'Velg materiale', thickness: 'Tykkelse', thicknessMm: 'Tykkelse (mm)', widthMm: 'Bredde (mm)', packSheets: 'Planlegg platekappingen', tilesToBuy: 'fliser å kjøpe', fullTiles: 'Hele fliser', cutTiles: 'Kappede fliser', used: 'Brukt', changeSurface: 'Endre overflaten', nameIt: 'Gi den et navn',
 });
 
 Object.assign(locale.auditUi, { materialRequired: 'Velg materiale og skriv inn målene før du planlegger', sheetThicknessRequired: 'Skriv inn platetykkelsen før du planlegger', sheetMaterialRequired: 'Velg platemateriale før du planlegger', tileMaterialRequired: 'Velg flismateriale og skriv inn tykkelsen før du løser layouten' });
-Object.assign(locale.ui, { includesSpare: '{{base}} + {{waste}} % ekstra' });
+Object.assign(locale.ui, { waste: 'Svinn', strategy: 'Strategi' });
 Object.assign(locale.ui, {
   updatePlanTitle: 'Oppdater lagret plan',
   updatePlanConfirm: 'Dette erstatter det lagrede resultatet for "{{name}}". Vil du fortsette?',

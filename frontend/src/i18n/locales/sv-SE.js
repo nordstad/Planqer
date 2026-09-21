@@ -179,11 +179,11 @@ Object.assign(locale.ui, {
 });
 
 Object.assign(locale.workflow, {
-  materialProfile: 'Material och profil', chooseMaterial: 'Välj material', thickness: 'Tjocklek', thicknessMm: 'Tjocklek (mm)', widthMm: 'Bredd (mm)', packSheets: 'Planera skivkapningen', tilePurchaseSummary: '{{base}} kakel + {{total}} med {{waste}} % extra',
+  materialProfile: 'Material och profil', chooseMaterial: 'Välj material', thickness: 'Tjocklek', thicknessMm: 'Tjocklek (mm)', widthMm: 'Bredd (mm)', packSheets: 'Planera skivkapningen', tilesToBuy: 'kakel att köpa', fullTiles: 'Hela kakel', cutTiles: 'Kapade kakel', used: 'Använt', changeSurface: 'Ändra ytan', nameIt: 'Ge den ett namn',
 });
 
 Object.assign(locale.auditUi, { materialRequired: 'Välj material och ange måtten innan du planerar', sheetThicknessRequired: 'Ange skivans tjocklek innan du planerar', sheetMaterialRequired: 'Välj skivmaterial innan du planerar', tileMaterialRequired: 'Välj kakelmaterial och ange tjockleken innan du löser layouten' });
-Object.assign(locale.ui, { includesSpare: '{{base}} + {{waste}} % extra' });
+Object.assign(locale.ui, { waste: 'Spill', strategy: 'Strategi' });
 
 Object.assign(locale.ui, {
   updatePlanTitle: 'Uppdatera sparad plan',

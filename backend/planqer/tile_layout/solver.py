@@ -234,6 +234,15 @@ def _build_candidate(
         )
         tiles_to_purchase = len(scored_tiles)
 
+    # Offcut matching is greedy and can otherwise reuse pieces that depend on
+    # each other. The purchased tile count can never be below the covered area
+    # divided by one nominal tile's area.
+    minimum_by_area = math.ceil(
+        sum(placed_tile.area for placed_tile in scored_tiles)
+        / (tile.width * tile.height)
+    )
+    tiles_to_purchase = max(tiles_to_purchase, minimum_by_area)
+
     tiles_to_purchase_with_waste = math.ceil(
         tiles_to_purchase * (1 + max(waste_percent, 0) / 100)
     )

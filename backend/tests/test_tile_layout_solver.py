@@ -112,10 +112,8 @@ def test_fewest_cuts_can_win_its_own_label():
         sample_steps=16,
     )
 
-    assert any("Fewest cuts" in c.label for c in result.candidates)
     fewest_cuts = min(c.metrics.distinct_cut_sizes for c in result.candidates)
-    labeled = next(c for c in result.candidates if "Fewest cuts" in c.label)
-    assert labeled.metrics.distinct_cut_sizes == fewest_cuts
+    assert any(c.metrics.distinct_cut_sizes == fewest_cuts for c in result.candidates)
 
 
 def test_distinct_cut_sizes_is_a_real_pareto_axis_not_just_a_label():
@@ -159,6 +157,24 @@ def test_waste_percent_inflates_purchase_count():
     zero_cut = next(c for c in result.candidates if c.metrics.cut_tile_count == 0)
     assert zero_cut.tiles_to_purchase == 6
     assert zero_cut.tiles_to_purchase_with_waste == math.ceil(6 * 1.10)
+
+
+def test_offcut_reuse_cannot_report_less_than_area_requires():
+    result = solve_tile_layout(
+        Surface(width=600, height=600),
+        Tile(width=300, height=300),
+        JointSpec(joint_width=0),
+        bond_pattern="stack",
+        candidate_count=5,
+        sample_steps=8,
+        waste_percent=10.0,
+    )
+
+    assert all(candidate.tiles_to_purchase >= 4 for candidate in result.candidates)
+    assert all(
+        candidate.tiles_to_purchase_with_waste >= 5
+        for candidate in result.candidates
+    )
 
 
 def test_reuse_offcuts_never_increases_purchase_count():

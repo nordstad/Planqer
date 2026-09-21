@@ -57,9 +57,6 @@ const tileRows = (project) => {
       ? `${mm(project.tile_data.thickness)} × ${mm(width)} × ${mm(height)} mm`
       : `${mm(width)} × ${mm(height)} mm`,
     quantity,
-    ...(project.layout_result?.tiles_to_purchase != null
-      ? { baseQuantity: project.layout_result.tiles_to_purchase, wastePercent: project.options_data?.waste_percent ?? 0 }
-      : {}),
   }];
 };
 
@@ -81,7 +78,7 @@ export const buildMaterialListHtml = (projects, t) => {
       <h2>${escapeHtml(t('workflow.whatToBuy'))}</h2>
       <table class="shopping-table">
         <thead><tr><th>${escapeHtml(t('workflow.planName'))}</th><th>${escapeHtml(t('legacy.material'))}</th><th>${escapeHtml(t('workflow.sizeMm'))}</th><th>${escapeHtml(t('ui.qty'))}</th></tr></thead>
-       <tbody>${rows.map((row) => `<tr><td>${escapeHtml(row.plan)}</td><td>${escapeHtml(materialLabel(row.material, t))}</td><td>${escapeHtml(row.size)}</td><td>${row.quantity}${row.baseQuantity != null && row.baseQuantity !== row.quantity ? `<small>${escapeHtml(t('ui.includesSpare', { base: row.baseQuantity, waste: row.wastePercent }))}</small>` : ''}</td></tr>`).join('')}</tbody>
+       <tbody>${rows.map((row) => `<tr><td>${escapeHtml(row.plan)}</td><td>${escapeHtml(materialLabel(row.material, t))}</td><td>${escapeHtml(row.size)}</td><td>${row.quantity}</td></tr>`).join('')}</tbody>
       </table>
     </section>`;
 };
