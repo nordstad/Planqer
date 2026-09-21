@@ -187,5 +187,9 @@ Object.assign(locale.workflow, {
 
 Object.assign(locale.auditUi, { materialRequired: 'Choose a material and enter its dimensions before planning', sheetThicknessRequired: 'Enter the sheet thickness before planning', sheetMaterialRequired: 'Choose a sheet material before planning', tileMaterialRequired: 'Choose a tile material and enter its thickness before solving' });
 Object.assign(locale.ui, { tileSummary: '{{count}} tiles to buy · tightest cut {{cut}} · {{offcuts}} offcuts reused', waste: 'Waste', strategy: 'Strategy' });
+Object.assign(locale.projectUi, {
+  projectViews: 'Project views', overview: 'Overview', shoppingList: 'Shopping list', cutDiagrams: 'Cut diagrams',
+  shoppingListIntro: 'Everything to buy for this project', shoppingListEmpty: 'There is nothing to buy for this project yet.', diagramViewIntro: 'Open a diagram to inspect it full size. Cut lists appear below tile plans.',
+});
 
 export default locale;

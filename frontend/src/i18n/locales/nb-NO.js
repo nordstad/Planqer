@@ -189,6 +189,10 @@ Object.assign(locale.ui, {
   updatePlanTitle: 'Oppdater lagret plan',
   updatePlanConfirm: 'Dette erstatter det lagrede resultatet for "{{name}}". Vil du fortsette?',
 });
+Object.assign(locale.projectUi, {
+  projectViews: 'Prosjektvisninger', overview: 'Oversikt', shoppingList: 'Innkjøpsliste', cutDiagrams: 'Kappdiagrammer',
+  shoppingListIntro: 'Alt som skal kjøpes til prosjektet', shoppingListEmpty: 'Det er ingenting å kjøpe til dette prosjektet ennå.', diagramViewIntro: 'Åpne et diagram for å se det i full størrelse. Kapplister vises under flisplaner.',
+});
 
 Object.assign(locale.legacy, {
   fileSize: '{{format}} filstørrelse', material: 'Materiale', status: 'Status',

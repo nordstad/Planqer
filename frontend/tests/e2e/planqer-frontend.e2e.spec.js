@@ -130,6 +130,58 @@ test.describe('Planqer Frontend E2E Tests', () => {
     await expect(page.getByRole('heading', { name: /plan saved/i })).toBeVisible();
   });
 
+  test('switches between project overview, shopping list, and cut diagram views', async ({ page }) => {
+    const email = `workspace-${Date.now()}@example.com`;
+    const credential = ['planqer', Date.now(), 'e2e'].join('-');
+    await page.request.post('http://localhost:8002/api/auth/register', {
+      data: { email, password: credential },
+    });
+    const loginResponse = await page.request.post('http://localhost:8002/api/auth/login', {
+      data: { email, password: credential },
+    });
+    const { access_token: accessToken } = await loginResponse.json();
+    await page.addInitScript((token) => localStorage.setItem('auth_token', token), accessToken);
+
+    await page.goto('/cutting');
+    await page.getByLabel('Material').selectOption('oak');
+    await page.getByLabel('Thickness (mm)').fill('45');
+    await page.getByLabel('Width (mm)').fill('45');
+    await page.getByRole('button', { name: /plan the cuts/i }).click();
+    await page.getByRole('button', { name: /name and save/i }).click();
+    await page.locator('#plan-name').fill('E2E workspace plan');
+    await page.getByRole('button', { name: /^save plan$/i }).click();
+    await expect(page.getByRole('heading', { name: /plan saved/i })).toBeVisible();
+
+    await page.goto('/dashboard/project/none');
+    await expect(page.getByRole('button', { name: 'Overview' })).toHaveAttribute('aria-current', 'page');
+    await expect(page.getByTestId('project-shopping-list')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Shopping list' }).click();
+    await expect(page.getByTestId('project-shopping-list')).toBeVisible();
+    await expect(page.getByRole('checkbox', { name: 'Select plan "E2E workspace plan"' })).not.toBeVisible();
+
+    await page.getByRole('button', { name: 'Cut diagrams' }).click();
+    await expect(page.getByRole('button', { name: 'Cut diagrams' })).toHaveAttribute('aria-current', 'page');
+    await expect(page.getByRole('checkbox', { name: 'Select plan "E2E workspace plan"' })).toBeVisible();
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    const tabs = page.locator('.project-view-tab');
+    for (let index = 0; index < await tabs.count(); index += 1) {
+      const box = await tabs.nth(index).boundingBox();
+      expect(box).not.toBeNull();
+      expect(box.x + box.width).toBeLessThanOrEqual(390);
+    }
+    const actions = page.locator('.plan-item-acts');
+    const actionsBox = await actions.boundingBox();
+    expect(actionsBox).not.toBeNull();
+    expect(actionsBox.x + actionsBox.width).toBeLessThanOrEqual(390);
+    for (let index = 0; index < await actions.locator('button').count(); index += 1) {
+      const buttonBox = await actions.locator('button').nth(index).boundingBox();
+      expect(buttonBox).not.toBeNull();
+      expect(buttonBox.x + buttonBox.width).toBeLessThanOrEqual(390);
+    }
+  });
+
   test('requires and accepts custom board material metadata', async ({ page }) => {
     const email = `material-${Date.now()}@example.com`;
     const credential = ['planqer', Date.now(), 'e2e'].join('-');

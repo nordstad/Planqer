@@ -232,5 +232,19 @@ it('shows a tile shopping list and keeps the tile cutlist', async () => {
   expect(await screen.findByRole('heading', { name: 'What to buy', level: 2 })).toBeInTheDocument();
   expect(screen.getByText(/300\s*×\s*600/, { selector: 'td' })).toBeInTheDocument();
   expect(screen.getByText('10', { selector: 'td' })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Cut diagrams' }));
   expect(screen.getByRole('heading', { name: 'Cut list', level: 2 })).toBeInTheDocument();
+});
+
+it('switches between the project browser views', async () => {
+  renderDetail();
+
+  expect(await screen.findByRole('button', { name: 'Overview' })).toHaveAttribute('aria-current', 'page');
+  fireEvent.click(screen.getByRole('button', { name: 'Shopping list' }));
+  expect(screen.getByTestId('project-shopping-list')).toBeInTheDocument();
+  expect(screen.queryByRole('checkbox', { name: 'Select plan "Cut list"' })).not.toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Cut diagrams' }));
+  expect(screen.getByRole('button', { name: 'Cut diagrams' })).toHaveAttribute('aria-current', 'page');
+  expect(screen.getByRole('checkbox', { name: 'Select plan "Cut list"' })).toBeInTheDocument();
 });
