@@ -172,8 +172,7 @@ def test_offcut_reuse_cannot_report_less_than_area_requires():
 
     assert all(candidate.tiles_to_purchase >= 4 for candidate in result.candidates)
     assert all(
-        candidate.tiles_to_purchase_with_waste >= 5
-        for candidate in result.candidates
+        candidate.tiles_to_purchase_with_waste >= 5 for candidate in result.candidates
     )
 
 
