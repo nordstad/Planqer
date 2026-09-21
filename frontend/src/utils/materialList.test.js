@@ -23,7 +23,7 @@ it('builds shopping rows for board, sheet, and tile plans', () => {
       name: 'Tiles',
       projectType: 'tile',
       tile_data: { width: 300, height: 600 },
-      layout_result: { tiles_to_purchase_with_waste: 12 },
+      layout_result: { tiles_to_purchase_with_waste: 9 },
     },
   ]);
 
@@ -31,7 +31,7 @@ it('builds shopping rows for board, sheet, and tile plans', () => {
      { plan: 'Boards', material: 'oak', size: '45 × 45 × 2\u00a0400 mm', quantity: 1 },
      { plan: 'Boards', material: 'oak', size: '45 × 45 × 3\u00a0000 mm', quantity: 2 },
      { plan: 'Sheets', material: 'plywood', size: '12 × 1\u00a0200 × 2\u00a0400 mm', quantity: 2 },
-    { plan: 'Tiles', material: 'tile', size: '300 × 600 mm', quantity: 12 },
+    { plan: 'Tiles', material: 'tile', size: '300 × 600 mm', quantity: 9 },
   ]);
 });
 

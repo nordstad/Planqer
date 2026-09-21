@@ -98,19 +98,16 @@ const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (c) => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
 }[c]));
 
-// A plain-HTML rendering of the same table, for the print document — that
+// A plain-HTML rendering of the same cut list for the print document. The
 // document is built as a raw string for a hidden iframe, not React, so this
 // duplicates the JSX version's structure rather than sharing components.
-// Kept deliberately plain (no color swatches): print is black-and-white-safe
-// by default in most browsers unless the user opts into "print background
-// graphics", so a colored square could silently vanish on a printed page.
-// The size numbers and kind text carry the same information on paper.
 export const buildCutListHtml = (candidate, t) => {
   if (!candidate?.tiles?.length) return '';
   const { fullCount, cutGroups } = buildCutList(candidate.tiles);
   if (fullCount === 0 && cutGroups.length === 0) return '';
 
   const rows = [];
+  const templates = [];
   if (fullCount > 0) {
     rows.push(`<tr><td>${t('ui.fullTile')}</td><td>${t('ui.noCutNeeded')}</td><td>—</td><td>${fullCount}</td></tr>`);
   }
@@ -126,12 +123,19 @@ export const buildCutListHtml = (candidate, t) => {
       : '';
     const labeledKind = `${kind}${detail}${g.isDiagonal && g.label ? ` [${g.label}]` : ''}`;
      const offcut = g.reusedCount > 0 ? `${g.reusedCount} of ${g.count}` : '—';
-    const template = candidate.piece_diagrams?.[g.label]
-       ? `<div class="piece-template-meta"><b>${t('ui.pieceMeta', { label: escapeHtml(g.label), width: mm(g.nominalWidth), height: mm(g.nominalHeight) })}</b><br>${t('ui.finalSize', { width: mm(g.width), height: mm(g.height) })}${g.edgeLengths ? ` | ${t('ui.edges')}: ${g.edgeLengths.map((length) => mm(length)).join(' · ')} mm` : ''}</div><img src="${candidate.piece_diagrams[g.label]}" alt="${t('ui.cutTemplateAria', { label: escapeHtml(g.label) })}" class="piece-template" /><p class="piece-template-note"><b>${t('ui.howToCut')}</b> ${t('ui.cutInstructions')}</p>`
-      : '';
+    if (candidate.piece_diagrams?.[g.label]) {
+      templates.push(`
+        <figure class="piece-template-block">
+          <figcaption>
+            <strong>${t('ui.pieceMeta', { label: escapeHtml(g.label), width: mm(g.nominalWidth), height: mm(g.nominalHeight) })}</strong>
+            <span>${t('ui.finalSize', { width: mm(g.width), height: mm(g.height) })}${g.edgeLengths ? ` <i>|</i> ${t('ui.edges')}: ${g.edgeLengths.map((length) => mm(length)).join(' · ')} mm` : ''}</span>
+          </figcaption>
+          <img src="${candidate.piece_diagrams[g.label]}" alt="${t('ui.cutTemplateAria', { label: escapeHtml(g.label) })}" class="piece-template" />
+        </figure>`);
+    }
     rows.push(
       `<tr><td>${mm(g.width)} \u00d7 ${mm(g.height)}${sliver}</td>`
-      + `<td>${escapeHtml(labeledKind)}${template}</td><td>${offcut}</td><td>${g.count}</td></tr>`,
+      + `<td>${escapeHtml(labeledKind)}</td><td>${offcut}</td><td>${g.count}</td></tr>`,
     );
   });
 
@@ -139,5 +143,6 @@ export const buildCutListHtml = (candidate, t) => {
     <table class="cut-list">
        <thead><tr><th>${t('workflow.sizeMm')}</th><th>${t('ui.kind')}</th><th>${t('ui.fromOffcut')}</th><th>${t('workflow.qty')}</th></tr></thead>
       <tbody>${rows.join('')}</tbody>
-    </table>`;
+     </table>
+     ${templates.length ? `<section class="piece-templates"><h3>${t('help.templatesTitle')}</h3>${templates.join('')}</section>` : ''}`;
 };

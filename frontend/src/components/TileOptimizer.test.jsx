@@ -54,7 +54,7 @@ it('renders translated labels on the tile layout save step', async () => {
    fireEvent.change(await screen.findByLabelText('Thickness (mm)'), { target: { value: '10' } });
    fireEvent.click(await screen.findByRole('button', { name: /Solve the layout/i }));
   await screen.findByRole('heading', { name: 'Pick a layout' });
-  fireEvent.click(await screen.findByRole('button', { name: /Name it/i }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Name it', exact: true }));
 
   await waitFor(() => expect(screen.getByRole('heading', { name: 'Save this layout' })).toBeInTheDocument());
   expect(screen.getByText(/Name it, choose where it belongs/)).toBeInTheDocument();

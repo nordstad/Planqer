@@ -34,7 +34,7 @@ import Loader from './Loader';
 import PlanThumb from './PlanThumb';
 import ConfirmDialog from './ConfirmDialog';
 import TileCutListTable from './TileCutListTable';
-import SavedMaterialList from './SavedMaterialList';
+import ProjectShoppingList from './ProjectShoppingList';
 import { ArrowLeft, ArrowRight, Pencil } from './icons';
 
 // The plans nobody filed. A route segment, not a group id.
@@ -76,7 +76,7 @@ const planFacts = (project, t) => {
     const toBuy = project.layout_result?.tiles_to_purchase_with_waste ?? project.layout_result?.tiles_to_purchase;
     return {
       type: t('common.tileLayout'),
-      count: Number.isFinite(toBuy) ? `${toBuy} ${t('ui.tilesToBuy')}` : '—',
+      count: Number.isFinite(toBuy) ? `${toBuy} ${t('workflow.tilesToBuy')}` : '—',
       stock: `${materialLabel(project.tile_data?.material_type || 'tile', t)} · ${project.tile_data?.thickness || '—'}×${project.tile_data.width}×${project.tile_data.height}mm`,
     };
   }
@@ -118,6 +118,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
   const [paperSize, setPaperSize] = useState('a4');
   const [printing, setPrinting] = useState(false);
   const [selectedPlanIds, setSelectedPlanIds] = useState(() => new Set());
+  const [projectView, setProjectView] = useState('overview');
 
   useEffect(() => {
     if (user) loadProjects();
@@ -125,6 +126,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
 
   useEffect(() => {
     setSelectedPlanIds(new Set());
+    setProjectView('overview');
   }, [groupId]);
 
   const loadProjects = async () => {
@@ -467,13 +469,12 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
              </button>
            </div>
          </article>
-          {project.projectType === 'tile' && project.layout_result && (
-            <div style={{ marginTop: '22px', marginBottom: '28px' }}>
-              <TileCutListTable candidate={project.layout_result} />
-            </div>
-          )}
-          <SavedMaterialList project={project} />
-        </div>
+           {projectView === 'diagrams' && project.projectType === 'tile' && project.layout_result && (
+             <div style={{ marginTop: '22px', marginBottom: '28px' }}>
+               <TileCutListTable candidate={project.layout_result} />
+             </div>
+           )}
+         </div>
       );
    };
 
@@ -609,18 +610,45 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
               )}
             </span>
           )}
-        </header>
+         </header>
 
-        {plans.length > 0 ? (
-          <div className="plan-list">{plans.map(renderPlan)}</div>
-        ) : (
-          <div className="proj-blank">
+         <nav className="project-view-nav" aria-label={t('projectUi.projectViews')}>
+           {[
+             ['overview', 'projectUi.overview'],
+             ['shopping', 'projectUi.shoppingList'],
+             ['diagrams', 'projectUi.cutDiagrams'],
+           ].map(([view, label]) => (
+             <button
+               key={view}
+               type="button"
+               className={`project-view-tab${projectView === view ? ' is-active' : ''}`}
+               aria-current={projectView === view ? 'page' : undefined}
+               onClick={() => setProjectView(view)}
+             >
+               {t(label)}
+             </button>
+           ))}
+         </nav>
+
+         {projectView !== 'diagrams' && (
+           <ProjectShoppingList projects={plans} />
+         )}
+
+         {projectView !== 'shopping' && plans.length > 0 ? (
+           <div className="plan-list">{plans.map(renderPlan)}</div>
+         ) : projectView !== 'shopping' ? (
+           <div className="proj-blank">
             <p>
                {t('projectUi.nothingFiled', { name: title })}
             </p>
              <Link to="/cutting" className="btn btn-primary">{t('projectUi.planACut')}</Link>
-          </div>
-        )}
+           </div>
+         ) : null}
+         {projectView === 'diagrams' && plans.length > 0 && (
+           <div className="project-diagram-note synthetic">
+             {t('projectUi.diagramViewIntro')}
+           </div>
+         )}
         {deleteDialog}
       </>
     );
