@@ -15,7 +15,7 @@ import { translateWithFallback } from '../i18n/translate';
 
 const mm = (n) => (Number.isFinite(n) ? Math.round(n).toLocaleString('sv-SE') : '—');
 
-const ResultDisplay = ({ result, projectName }) => {
+const ResultDisplay = ({ result, projectName, materialType, boardThickness, boardWidth }) => {
   const { t } = useTranslation();
   const text = (key, vars) => translateWithFallback(t, key, vars);
   const [diagramOpen, setDiagramOpen] = useState(false);
@@ -70,8 +70,10 @@ const ResultDisplay = ({ result, projectName }) => {
             <tbody>
               {Object.entries(byType).map(([len, qty]) => (
                 <tr key={len}>
-                  <td>SPF-{Math.round(parseFloat(len) / 100)}</td>
-                  <td>{mm(parseFloat(len))}</td>
+                   <td>{materialType || 'board'}</td>
+                   <td>{boardThickness && boardWidth
+                     ? `${mm(boardThickness)} × ${mm(boardWidth)} × ${mm(parseFloat(len))}`
+                     : mm(parseFloat(len))}</td>
                   <td>{qty}</td>
                 </tr>
               ))}

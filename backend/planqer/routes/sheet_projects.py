@@ -29,6 +29,7 @@ class SheetProjectResponse(BaseModel):
     sheet_height: float
     kerf_width: float
     material_type: str
+    sheet_thickness: float
     algorithm: str | None = None
     allow_rotation: bool
     optimization_result: dict | None = None
@@ -49,6 +50,7 @@ class CreateSheetProjectRequest(BaseModel):
     sheet_height: float
     kerf_width: float
     material_type: str = "plywood"
+    sheet_thickness: float = 0
     algorithm: str | None = None
     allow_rotation: bool = True
     optimization_result: dict | None = None
@@ -62,6 +64,7 @@ class UpdateSheetProjectRequest(BaseModel):
     sheet_height: float | None = None
     kerf_width: float | None = None
     material_type: str | None = None
+    sheet_thickness: float | None = None
     algorithm: str | None = None
     allow_rotation: bool | None = None
     optimization_result: dict | None = None
@@ -108,6 +111,7 @@ def sheet_project_to_response(project: UserSheetProject) -> SheetProjectResponse
         sheet_height=project.sheet_height,
         kerf_width=project.kerf_width,
         material_type=project.material_type,
+        sheet_thickness=project.sheet_thickness,
         algorithm=project.algorithm,
         allow_rotation=project.allow_rotation,
         optimization_result=optimization_result,
@@ -169,6 +173,7 @@ async def create_sheet_project(
         sheet_height=project_data.sheet_height,
         kerf_width=project_data.kerf_width,
         material_type=project_data.material_type,
+        sheet_thickness=project_data.sheet_thickness,
         algorithm=project_data.algorithm,
         allow_rotation=project_data.allow_rotation,
         optimization_result=json.dumps(project_data.optimization_result)
@@ -221,6 +226,8 @@ async def update_sheet_project(
         project.kerf_width = project_data.kerf_width
     if project_data.material_type is not None:
         project.material_type = project_data.material_type
+    if project_data.sheet_thickness is not None:
+        project.sheet_thickness = project_data.sheet_thickness
     if "algorithm" in project_data.model_fields_set:
         project.algorithm = project_data.algorithm
     if project_data.allow_rotation is not None:

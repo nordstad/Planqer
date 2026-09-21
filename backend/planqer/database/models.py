@@ -83,6 +83,9 @@ class UserProject(SQLModel, table=True):
     parts_data: str
     board_lengths: str
     saw_blade_width: float
+    material_type: str = ""
+    board_thickness: float = 0
+    board_width: float = 0
     # The prices this plan was costed with, so loading it back restores the
     # pricing panel rather than asking for every figure again. JSON:
     # {"same_price_for_all": bool, "uniform_price": float|null,
@@ -122,6 +125,7 @@ class UserSheetProject(SQLModel, table=True):
     sheet_height: float
     kerf_width: float
     material_type: str = Field(default="plywood")
+    sheet_thickness: float = Field(default=0)
     algorithm: str | None = None
     allow_rotation: bool = Field(default=True)
     optimization_result: str | None = None

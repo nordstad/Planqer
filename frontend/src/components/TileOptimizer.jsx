@@ -20,6 +20,7 @@ import {
 import { useDebounce } from '../hooks/useDebounce';
 import { useAuth } from '../contexts/AuthContext';
 import CatalogPage from './CatalogPage';
+import ConfirmDialog from './ConfirmDialog';
 import Disclosure from './Disclosure';
 import ProjectPicker from './ProjectPicker';
 import Loader from './Loader';
@@ -76,6 +77,9 @@ const TileOptimizer = () => {
 
   const [tileWidth, setTileWidth] = useState('300');
   const [tileHeight, setTileHeight] = useState('600');
+  const [materialType, setMaterialType] = useState('ceramic');
+  const [customMaterial, setCustomMaterial] = useState('');
+  const [tileThickness, setTileThickness] = useState('');
   const [allowRotation, setAllowRotation] = useState(false);
 
   const [jointWidth, setJointWidth] = useState('3');
@@ -109,6 +113,7 @@ const TileOptimizer = () => {
   const [saved, setSaved] = useState(null);
   const [editingProject, setEditingProject] = useState(null);
   const [saveMode, setSaveMode] = useState('new');
+  const [updateConfirmOpen, setUpdateConfirmOpen] = useState(false);
 
   /* loading one back */
   const [userProjects, setUserProjects] = useState([]);
@@ -194,6 +199,9 @@ const TileOptimizer = () => {
     })));
     setTileWidth(project.tile_data.width.toString());
     setTileHeight(project.tile_data.height.toString());
+    setMaterialType(project.tile_data.material_type || 'ceramic');
+    setCustomMaterial('');
+    setTileThickness(project.tile_data.thickness ? String(project.tile_data.thickness) : '');
     setAllowRotation(!!project.tile_data.allow_rotation);
     setJointWidth((project.bond_data.joint_width ?? 3).toString());
     setPerimeterGap((project.bond_data.perimeter_gap ?? 0).toString());
@@ -212,12 +220,23 @@ const TileOptimizer = () => {
     setStep(STEP_SURFACE);
   };
 
+  useEffect(() => {
+    const editId = new URLSearchParams(window.location.search).get('edit');
+    if (!editId || !userProjects.length) return;
+    const project = userProjects.find((item) => String(item.id) === editId);
+    if (!project) return;
+    loadProject(project);
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }, [userProjects]);
+
   /* ── derived facts ─────────────────────────────────────────────────────── */
   const hasErrors = inputErrors.cutouts.some(Boolean)
     || !!inputErrors.surfaceWidth || !!inputErrors.surfaceHeight
     || !!inputErrors.tileWidth || !!inputErrors.tileHeight
     || !!inputErrors.jointWidth || !!inputErrors.perimeterGap
-    || !!inputErrors.minEdgeCut || !!inputErrors.wastePercent || !!inputErrors.candidateCount;
+     || !!inputErrors.minEdgeCut || !!inputErrors.wastePercent || !!inputErrors.candidateCount
+     || !tileThickness || parseFloat(tileThickness) <= 0
+     || !materialType || (materialType === 'custom' && !customMaterial.trim());
 
   const bondSummary = bondPattern === 'running'
     ? `${t('tileUi.running')} ${Math.round(parseFloat(offsetFraction) * 100)}%`
@@ -247,7 +266,7 @@ const TileOptimizer = () => {
     try {
       const response = await optimizeTileLayout({
         surfaceWidth, surfaceHeight, cutouts,
-        tile: { width: tileWidth, height: tileHeight, allowRotation },
+         tile: { width: tileWidth, height: tileHeight, allowRotation, materialType: materialType === 'custom' ? customMaterial.trim() : materialType, thickness: tileThickness },
         joint: { jointWidth, perimeterGap },
         bond: { pattern: bondPattern, offsetFraction },
         minEdgeCut, reuseOffcuts, wastePercent, candidateCount,
@@ -280,12 +299,7 @@ const TileOptimizer = () => {
     }
   };
 
-  const handleSave = async (e) => {
-    e.preventDefault();
-    setSaveAttempted(true);
-    setApiError('');
-    if (!projectName.trim()) return;
-
+  const savePlan = async () => {
     setSaving(true);
     try {
       const project = await saveTileProject({
@@ -293,7 +307,7 @@ const TileOptimizer = () => {
         name: projectName.trim(),
         projectGroupId: selectedGroupId,
         surfaceWidth, surfaceHeight, cutouts,
-        tile: { width: tileWidth, height: tileHeight, allowRotation },
+         tile: { width: tileWidth, height: tileHeight, allowRotation, materialType: materialType === 'custom' ? customMaterial.trim() : materialType, thickness: tileThickness },
         joint: { jointWidth, perimeterGap },
         bond: { pattern: bondPattern, offsetFraction },
         minEdgeCut, reuseOffcuts, wastePercent, candidateCount,
@@ -307,6 +321,18 @@ const TileOptimizer = () => {
       setApiError(error.message || t('auditUi.saveFailed'));
     }
     setSaving(false);
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setSaveAttempted(true);
+    setApiError('');
+    if (!projectName.trim()) return;
+    if (saveMode === 'update') {
+      setUpdateConfirmOpen(true);
+      return;
+    }
+    await savePlan();
   };
 
   const savedGroupName = saved
@@ -480,6 +506,24 @@ const TileOptimizer = () => {
             <p className={inputErrors.tileWidth || inputErrors.tileHeight ? 'text-danger text-[12.5px] font-semibold' : 'synthetic'} style={{ marginTop: '10px' }}>
                {inputErrors.tileWidth || inputErrors.tileHeight || t('tileUi.tileRange')}
             </p>
+            <div className="grid gap-x-8 gap-y-5 md:grid-cols-2" style={{ marginTop: '18px' }}>
+              <div>
+                <label className="form-label" htmlFor="tile-material">{t('workflow.material')}</label>
+                <select id="tile-material" value={materialType} onChange={(e) => setField(setMaterialType)(e.target.value)} className="form-select" required>
+                  <option value="ceramic">{t('ui.materialCeramic')}</option>
+                  <option value="porcelain">{t('ui.materialPorcelain')}</option>
+                  <option value="stone">{t('ui.materialStone')}</option>
+                  <option value="glass">{t('ui.materialGlass')}</option>
+                  <option value="custom">{t('ui.materialCustom')}</option>
+                </select>
+                {materialType === 'custom' && <input id="custom-tile-material" className="form-input" style={{ marginTop: '8px' }} value={customMaterial} onChange={(e) => setField(setCustomMaterial)(e.target.value)} placeholder={t('ui.customMaterialPlaceholder')} required />}
+              </div>
+              <div>
+                <label className="form-label" htmlFor="tile-thickness">{t('workflow.thicknessMm')}</label>
+                <input id="tile-thickness" type="number" min="0.1" step="0.1" value={tileThickness} onChange={(e) => setField(setTileThickness)(e.target.value)} className={`form-input ${!tileThickness || parseFloat(tileThickness) <= 0 ? 'form-input-error' : ''}`} required />
+              </div>
+            </div>
+            {(!tileThickness || parseFloat(tileThickness) <= 0 || (materialType === 'custom' && !customMaterial.trim())) && <p className="text-danger text-[12.5px] font-semibold" style={{ marginTop: '10px' }}>{t('auditUi.tileMaterialRequired')}</p>}
             <label className="flex items-start gap-3" style={{ marginTop: '14px', cursor: 'pointer' }}>
               <input
                 type="checkbox"
@@ -720,11 +764,11 @@ const TileOptimizer = () => {
         <form className="step-view is-form" onSubmit={handleSave}>
           <div className="step-head" style={{ marginBottom: '22px' }}>
              <div>
-               <h1 className="step-h1">{saved ? t('workflow.layoutSaved') : t('workflow.saveLayout')}</h1>
+                <h1 className="step-h1">{saved ? t('ui.layoutSaved') : t('ui.saveLayout')}</h1>
               <p className="step-lede">
                 {saved
-                   ? t('workflow.keptPlan')
-                   : t('workflow.namePlan')}
+                    ? t('ui.keptPlan')
+                    : t('ui.namePlan')}
               </p>
             </div>
           </div>
@@ -735,16 +779,16 @@ const TileOptimizer = () => {
               <div>
                    <b>{t('workflow.savedAs', { name: saved.name })}</b>
                 <p>
-                  {savedGroupName
-                   ? <>{t('workflow.filedUnder', { group: savedGroupName })}</>
-                     : <>{t('workflow.unfiled')}</>}
+                    {savedGroupName
+                    ? <>{t('ui.filedUnder', { group: savedGroupName })}</>
+                      : <>{t('ui.unfiled')}</>}
                 </p>
               </div>
             </div>
           ) : (
             <>
               <div style={{ marginBottom: '24px' }}>
-                 <label className="form-label" htmlFor="tile-save-mode">{t('workflow.saveAs')}</label>
+                  <label className="form-label" htmlFor="tile-save-mode">{t('ui.saveAs')}</label>
                 <select
                   id="tile-save-mode"
                   className="form-select"
@@ -759,14 +803,14 @@ const TileOptimizer = () => {
                     }
                   }}
                 >
-                   <option value="new">{t('workflow.createNewPlan')}</option>
-                   <option value="update" disabled={!userProjects.length}>{t('workflow.updateExistingPlan')}</option>
+                    <option value="new">{t('ui.createNewPlan')}</option>
+                    <option value="update" disabled={!userProjects.length}>{t('ui.updateExistingPlan')}</option>
                 </select>
                 {saveMode === 'update' && editingProject && (
                   <select
                     className="form-select"
                     style={{ marginTop: '10px' }}
-                     aria-label={t('workflow.planToUpdate')}
+                      aria-label={t('ui.planToUpdate')}
                     value={editingProject.id}
                     onChange={(e) => {
                       const target = userProjects.find(p => p.id === e.target.value);
@@ -789,7 +833,7 @@ const TileOptimizer = () => {
               </div>
 
               <div>
-                 <label className="form-label" htmlFor="tile-plan-name">{t('workflow.planNamePlaceholder')}</label>
+                  <label className="form-label" htmlFor="tile-plan-name">{t('ui.planNamePlaceholder')}</label>
                 <input
                   id="tile-plan-name"
                   type="text"
@@ -806,7 +850,7 @@ const TileOptimizer = () => {
                   style={{ marginTop: '7px' }}
                   role={nameError ? 'alert' : undefined}
                 >
-                   {nameError || t('workflow.savedNameHint')}
+                    {nameError || t('ui.savedNameHint')}
                 </p>
               </div>
             </>
@@ -819,7 +863,7 @@ const TileOptimizer = () => {
             {saved ? (
               <div className="step-foot-act">
                 <Link to="/dashboard" className="btn-order">
-                   {t('workflow.openDashboard')} <ArrowRight size={15} />
+                   {t('ui.openDashboard')} <ArrowRight size={15} />
                 </Link>
               </div>
             ) : (
@@ -834,6 +878,16 @@ const TileOptimizer = () => {
       )}
 
       {/* ── load a saved plan ─────────────────────────────────────────────── */}
+      <ConfirmDialog
+        open={updateConfirmOpen}
+        title={t('ui.updatePlanTitle')}
+        message={t('ui.updatePlanConfirm', { name: editingProject?.name || projectName })}
+        confirmLabel={t('ui.updateExistingPlan')}
+        danger={false}
+        onConfirm={() => { setUpdateConfirmOpen(false); savePlan(); }}
+        onCancel={() => setUpdateConfirmOpen(false)}
+      />
+
       {loadModalOpen && (
          <div className="cat-overlay" role="dialog" aria-modal="true" aria-label={t('workflow.loadSavedPlan')}>
           <div className="cat-sheet">

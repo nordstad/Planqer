@@ -16,7 +16,7 @@
 */
 
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   getUserProjects, updateProject, deleteProject,
@@ -26,12 +26,15 @@ import {
 } from '../utils/api';
 import { svgBlobToPngBlob } from '../utils/svgToPng';
 import { printProjectPlans } from '../utils/printProject';
+import { buildMaterialListHtml } from '../utils/materialList';
+import { materialLabel } from '../utils/materialLabel';
 import { buildCutListHtml } from '../utils/tileCutList';
 import { useAuth } from '../contexts/AuthContext';
 import Loader from './Loader';
 import PlanThumb from './PlanThumb';
 import ConfirmDialog from './ConfirmDialog';
 import TileCutListTable from './TileCutListTable';
+import SavedMaterialList from './SavedMaterialList';
 import { ArrowLeft, ArrowRight, Pencil } from './icons';
 
 // The plans nobody filed. A route segment, not a group id.
@@ -55,7 +58,7 @@ const plural = (n, singular, pluralWord = `${singular}s`) => `${n} ${n === 1 ? s
 
 // The three saved project shapes don't share a "parts" concept — a tile
 // layout has no parts list, just a chosen candidate — so this returns the
-// three facts renderPlan/handlePrintAll actually print (type, count, stock)
+// three facts renderPlan/handlePrint actually print (type, count, stock)
 // rather than forcing a tile project through totalParts/stockLine helpers
 // shaped for board/sheet parts_data.
 const planFacts = (project, t) => {
@@ -66,7 +69,7 @@ const planFacts = (project, t) => {
     return {
       type: t('common.sheetCutting'),
       count: t(count === 1 ? 'workflow.sheetPartsSummary_one' : 'workflow.sheetPartsSummary', { count }),
-      stock: `${project.sheet_width}×${project.sheet_height}mm · ${project.material_type}`,
+      stock: `${materialLabel(project.material_type || 'sheet', t)} · ${project.sheet_thickness || '—'}mm`,
     };
   }
   if (project.projectType === 'tile') {
@@ -74,7 +77,7 @@ const planFacts = (project, t) => {
     return {
       type: t('common.tileLayout'),
       count: Number.isFinite(toBuy) ? `${toBuy} ${t('ui.tilesToBuy')}` : '—',
-      stock: `${project.surface_data.width}×${project.surface_data.height}mm · ${project.tile_data.width}×${project.tile_data.height} tile`,
+      stock: `${materialLabel(project.tile_data?.material_type || 'tile', t)} · ${project.tile_data?.thickness || '—'}×${project.tile_data.width}×${project.tile_data.height}mm`,
     };
   }
   const count = project.parts_data && typeof project.parts_data === 'object'
@@ -83,7 +86,7 @@ const planFacts = (project, t) => {
   return {
     type: t('common.boardCutting'),
     count: t(count === 1 ? 'workflow.partsSummary_one' : 'workflow.partsSummary', { count, demand: '—', kerf: project.saw_blade_width }),
-    stock: `${project.board_lengths.join(', ')}mm · ${project.saw_blade_width}mm kerf`,
+    stock: `${materialLabel(project.material_type || 'board', t)} · ${project.board_thickness || '—'}×${project.board_width || '—'}mm`,
   };
 };
 
@@ -101,6 +104,7 @@ const triggerDownload = (blob, filename) => {
 const UserProjectsContent = ({ onPreview, groupId }) => {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [allProjects, setAllProjects] = useState([]);
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -113,10 +117,15 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
   const [pendingDelete, setPendingDelete] = useState(null);
   const [paperSize, setPaperSize] = useState('a4');
   const [printing, setPrinting] = useState(false);
+  const [selectedPlanIds, setSelectedPlanIds] = useState(() => new Set());
 
   useEffect(() => {
     if (user) loadProjects();
   }, [user]);
+
+  useEffect(() => {
+    setSelectedPlanIds(new Set());
+  }, [groupId]);
 
   const loadProjects = async () => {
     try {
@@ -162,7 +171,12 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
           } else {
             await deleteProject(project.id);
           }
-          setAllProjects((prev) => prev.filter((p) => p.id !== project.id));
+           setAllProjects((prev) => prev.filter((p) => p.id !== project.id));
+           setSelectedPlanIds((prev) => {
+             const next = new Set(prev);
+             next.delete(project.id);
+             return next;
+           });
         } catch (err) {
            setError(t('projectUi.deleteFailed', { message: err.message }));
         } finally {
@@ -193,15 +207,15 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
   // One document, every plan on its own page, via the browser's print
   // dialog — which is also where "save as PDF" lives. See printProject.js
   // for how each diagram picks the page orientation that renders it largest.
-  const handlePrintAll = async (plans, title) => {
+  const handlePrint = async (plans, title, mode = 'diagrams') => {
     const printable = plans.filter((p) => p.has_svg_image || p.cutlist_image);
     if (printable.length === 0) return;
 
     try {
       setPrinting(true);
       setError('');
-      const withDiagrams = await Promise.all(printable.map(async (p) => {
-        const pf = planFacts(p);
+       const withDiagrams = mode === 'shopping' ? [] : await Promise.all(printable.map(async (p) => {
+        const pf = planFacts(p, t);
         return {
           name: p.name,
            facts: [pf.type, pf.count, pf.stock, t('projectUi.saved', { date: formatDate(p.created_at) })],
@@ -209,17 +223,28 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
           extraHtml: p.projectType === 'tile' ? buildCutListHtml(p.layout_result, t) : undefined,
         };
       }));
-      await printProjectPlans({
-        title,
-           meta: `${t(printable.length === 1 ? 'projectUi.printPlan' : 'projectUi.printPlans', { count: printable.length })} · ${t('projectUi.printed', { date: formatDate(new Date()) })}`,
-        paper: paperSize,
-        plans: withDiagrams,
-      });
+       await printProjectPlans({
+         title,
+            meta: `${t(printable.length === 1 ? 'projectUi.printPlan' : 'projectUi.printPlans', { count: printable.length })} · ${t('projectUi.printed', { date: formatDate(new Date()) })}`,
+         paper: paperSize,
+         plans: withDiagrams,
+         shoppingListHtml: mode === 'diagrams' ? undefined : buildMaterialListHtml(printable, t),
+       });
     } catch (err) {
        setError(t('projectUi.printableFailed', { message: err.message }));
     } finally {
       setPrinting(false);
     }
+  };
+
+  const togglePlanSelection = (project) => {
+    if (!(project.has_svg_image || project.cutlist_image)) return;
+    setSelectedPlanIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(project.id)) next.delete(project.id);
+      else next.add(project.id);
+      return next;
+    });
   };
 
   const handlePreview = async (project) => {
@@ -230,6 +255,12 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
     } catch (err) {
        setError(t('projectUi.previewFailed', { message: err.message }));
     }
+  };
+
+  const handleModify = (project) => {
+    const routes = { board: '/cutting', sheet: '/sheet-cutting', tile: '/tile-layout' };
+    const route = routes[project.projectType];
+    if (route) navigate(`${route}?edit=${encodeURIComponent(project.id)}`);
   };
 
   const startEdit = (project) => {
@@ -331,16 +362,39 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
     />
   );
 
+  const deleteDialog = (
+    <ConfirmDialog
+      open={!!pendingDelete}
+      title={t('ui.delete')}
+      message={pendingDelete?.message}
+      onConfirm={() => { pendingDelete.run(); setPendingDelete(null); }}
+      onCancel={() => setPendingDelete(null)}
+    />
+  );
+
   /* ── one saved plan: its own diagram, its facts, its two exports ─────── */
 
    const renderPlan = (project) => {
-     const hasDiagram = Boolean(project.has_svg_image || project.cutlist_image);
-      const facts = planFacts(project, t);
+      const hasDiagram = Boolean(project.has_svg_image || project.cutlist_image);
+       const facts = planFacts(project, t);
+      const printTitle = groupId === LOOSE
+        ? t('projectUi.notInAnyProject')
+        : groups.find((g) => g.id === groupId)?.name || project.name;
 
-     return (
-       <div key={project.id}>
-         <article className="plan-item">
-           <button
+      return (
+        <div key={project.id}>
+          <article className="plan-item">
+            <label style={{ display: 'flex', alignItems: 'center', padding: '0 4px 0 8px' }}>
+              <input
+                type="checkbox"
+                checked={selectedPlanIds.has(project.id)}
+                onChange={() => togglePlanSelection(project)}
+                disabled={!hasDiagram || printing}
+                aria-label={t('projectUi.selectPlan', { name: project.name })}
+                title={hasDiagram ? undefined : t('projectUi.noPlanDiagram')}
+              />
+            </label>
+            <button
              type="button"
              className="plan-item-thumb"
              onClick={() => handlePreview(project)}
@@ -368,16 +422,29 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
                  </button>
                </h3>
              )}
-             <p className="plan-item-facts">
-               <span className="plan-item-type">{facts.type}</span>
-               <span>{facts.count}</span>
-               <span>{facts.stock}</span>
-             </p>
+              <p className="plan-item-facts">
+                <span className="plan-item-type">{facts.type}</span>
+                <span>{facts.count}</span>
+              </p>
+              <p className="plan-item-material">{facts.stock}</p>
               <p className="plan-item-date">{t('projectUi.saved', { date: formatDate(project.created_at) })}</p>
            </div>
 
-           <div className="plan-item-acts">
-             <button
+            <div className="plan-item-acts">
+              <button
+                className="btn btn-sm"
+                onClick={() => handleModify(project)}
+              >
+                {t('projectUi.modify')}
+              </button>
+              <button
+                className="btn btn-sm"
+                onClick={() => handlePrint([project], printTitle)}
+                disabled={printing || !hasDiagram}
+              >
+                {t('projectUi.printOne')}
+              </button>
+              <button
                className="btn btn-sm"
                onClick={() => handleDownload(project, 'svg')}
                disabled={busyId === project.id || !hasDiagram}
@@ -400,13 +467,14 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
              </button>
            </div>
          </article>
-         {project.projectType === 'tile' && project.layout_result && (
-           <div style={{ marginTop: '22px', marginBottom: '28px' }}>
-             <TileCutListTable candidate={project.layout_result} />
-           </div>
-         )}
-       </div>
-     );
+          {project.projectType === 'tile' && project.layout_result && (
+            <div style={{ marginTop: '22px', marginBottom: '28px' }}>
+              <TileCutListTable candidate={project.layout_result} />
+            </div>
+          )}
+          <SavedMaterialList project={project} />
+        </div>
+      );
    };
 
   if (loading) {
@@ -440,7 +508,9 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
 
     const plans = plansIn(groupId);
      const title = group ? group.name : t('projectUi.notInAnyProject');
-    const printableCount = plans.filter((p) => p.has_svg_image || p.cutlist_image).length;
+     const printablePlans = plans.filter((p) => p.has_svg_image || p.cutlist_image);
+     const printableCount = printablePlans.length;
+     const selectedPlans = printablePlans.filter((p) => selectedPlanIds.has(p.id));
 
     return (
       <>
@@ -491,14 +561,41 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
                     <option value="a4">A4</option>
                     <option value="letter">Letter</option>
                   </select>
-                  <button
-                    className="btn"
-                    onClick={() => handlePrintAll(plans, title)}
-                    disabled={printing}
-                     title={t('projectUi.printTitle')}
-                  >
-                     {printing ? t('projectUi.preparing') : t(printableCount === 1 ? 'projectUi.printPlan' : 'projectUi.printPlans', { count: printableCount })}
-                  </button>
+                   <button
+                     className="btn"
+                     onClick={() => handlePrint(selectedPlans, title, 'diagrams')}
+                     disabled={printing || selectedPlans.length === 0}
+                   >
+                     {t('projectUi.printDiagrams', { count: selectedPlans.length })}
+                   </button>
+                   <button
+                     className="btn"
+                     onClick={() => handlePrint(selectedPlans, title, 'shopping')}
+                     disabled={printing || selectedPlans.length === 0}
+                   >
+                     {t('projectUi.printShoppingList')}
+                   </button>
+                   <button
+                     className="btn"
+                     onClick={() => handlePrint(selectedPlans, title, 'project')}
+                     disabled={printing || selectedPlans.length === 0}
+                   >
+                     {t('projectUi.printProject')}
+                   </button>
+                   <button
+                     className="btn"
+                     onClick={() => setSelectedPlanIds(new Set(printablePlans.map((p) => p.id)))}
+                     disabled={printing || selectedPlans.length === printableCount}
+                   >
+                     {t('projectUi.selectAllPlans')}
+                   </button>
+                   <button
+                     className="btn"
+                     onClick={() => setSelectedPlanIds(new Set())}
+                     disabled={printing || selectedPlans.length === 0}
+                   >
+                     {t('projectUi.clearSelection')}
+                   </button>
                 </span>
               )}
               {group && (
@@ -524,6 +621,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
              <Link to="/cutting" className="btn btn-primary">{t('projectUi.planACut')}</Link>
           </div>
         )}
+        {deleteDialog}
       </>
     );
   }
@@ -609,13 +707,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
         </section>
       )}
 
-      <ConfirmDialog
-        open={!!pendingDelete}
-         title={t('ui.delete')}
-        message={pendingDelete?.message}
-        onConfirm={() => { pendingDelete.run(); setPendingDelete(null); }}
-        onCancel={() => setPendingDelete(null)}
-      />
+      {deleteDialog}
     </>
   );
 };

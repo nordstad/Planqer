@@ -134,7 +134,21 @@ const locale = {
   auditUi: { ...en.auditUi, kerfWide: 'Den sågspalten är bredare än alla sågblad – 2 till 4 mm är vanligt', priceRequired: 'Ange ett pris per meter innan planen prissätts', stockPriceRequired: 'Varje lagerlängd behöver ett pris innan planen prissätts', unknownError: 'Okänt fel', nameRequired: 'Ge planen ett namn så att du hittar den igen', createProjectFailed: 'Det gick inte att skapa projektet', saveFailed: 'Det gick inte att spara planen', pricesChanged: 'Priserna ändrades – planen är fortfarande beräknad med de gamla priserna', priceStock: 'Prissätt lagret för att se vad planen kostar', ungrouped: 'Inget projekt', fixLayout: 'Rätta de markerade raderna så kan layouten köras', sheetKerfHint: 'Varje kapning gör så mycket material till spån – planen tar hänsyn till det', sheetStockHint: 'Kontrollera detta mot skivan innan du planerar. Mät din skiva, packningen beror på det.' },
 };
 
+Object.assign(locale.projectUi, {
+  modify: 'Ändra',
+  selectPlan: 'Välj planen "{{name}}"',
+  printOne: 'Skriv ut',
+  printDiagrams: 'Skriv ut diagram ({{count}})',
+  printShoppingList: 'Vad ska köpas',
+  printProject: 'Skriv ut projekt',
+  printSelected: 'Skriv ut valda ({{count}})',
+  selectAllPlans: 'Välj alla',
+  clearSelection: 'Rensa val',
+});
+
 Object.assign(locale.ui, {
+  materialPine: 'Furu', materialSpruce: 'Gran', materialOak: 'Ek', materialBeech: 'Bok', materialBirch: 'Björk', materialPressureTreated: 'Tryckimpregnerat', materialCustom: 'Anpassat', customMaterialPlaceholder: 'Ange material',
+  materialCeramic: 'Keramikkakel', materialPorcelain: 'Porslinskakel', materialStone: 'Stenkakel', materialGlass: 'Glaskakel',
   boardLengthAria: 'Brädlängd i millimeter, rad {{row}}', removeBoardAria: 'Ta bort brädlängd, rad {{row}}', strikeLine: 'Rätta den här raden',
   partLengthAria: 'Dellängd i millimeter, del {{item}}', quantityAria: 'Antal, del {{item}}', removePartAria: 'Ta bort del, del {{item}}',
   cutoutPositionAria: 'Urtagets {{axis}}-position i millimeter, del {{item}}', cutoutSizeAria: 'Urtagets {{axis}} i millimeter, del {{item}}', cutoutLabelAria: 'Urtagets etikett, del {{item}}', removeCutoutAria: 'Ta bort urtag, del {{item}}', window: 'Fönster', optional: 'Valfritt',
@@ -162,6 +176,17 @@ Object.assign(locale.ui, {
   tilesToBuy: 'kakel att köpa', tightestCut: 'Smalaste kapning', noneCut: 'Ingen kapning', distinctCutSizes: 'Olika kapmått',
   changeSurface: 'Ändra ytan', saveLayout: 'Spara layout', saveLayoutButton: 'Spara layout', updateLayout: 'Uppdatera layout',
   tilesAroundOpening: 'Kakel kapat runt en öppning', offcutsReused: 'Återanvända restbitar', sliversBelow: 'Smala bitar under gränsen', materialUsed: 'Använt material', offcutExplanation: 'Restbiten är kostnaden för material som blir kvar efter kapningen.',
+});
+
+Object.assign(locale.workflow, {
+  materialProfile: 'Material och profil', chooseMaterial: 'Välj material', thickness: 'Tjocklek', thicknessMm: 'Tjocklek (mm)', widthMm: 'Bredd (mm)', packSheets: 'Planera skivkapningen',
+});
+
+Object.assign(locale.auditUi, { materialRequired: 'Välj material och ange måtten innan du planerar', sheetThicknessRequired: 'Ange skivans tjocklek innan du planerar', sheetMaterialRequired: 'Välj skivmaterial innan du planerar', tileMaterialRequired: 'Välj kakelmaterial och ange tjockleken innan du löser layouten' });
+
+Object.assign(locale.ui, {
+  updatePlanTitle: 'Uppdatera sparad plan',
+  updatePlanConfirm: 'Detta ersätter det sparade resultatet för "{{name}}". Vill du fortsätta?',
 });
 Object.assign(locale.legacy, {
   fileSize: '{{format}} filstorlek', material: 'Material', status: 'Status',

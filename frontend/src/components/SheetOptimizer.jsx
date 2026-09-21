@@ -13,6 +13,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import CatalogPage from './CatalogPage';
+import ConfirmDialog from './ConfirmDialog';
 import { optimizeSheetCutting, saveSheetProject, getProjectGroups, createProjectGroup, getUserSheetProjects } from '../utils/api';
 import { useDebounce } from '../hooks/useDebounce';
 import { useAuth } from '../contexts/AuthContext';
@@ -63,13 +64,15 @@ const SheetOptimizer = () => {
   const [sheetHeight, setSheetHeight] = useState("2500");
   const [kerfWidth, setKerfWidth] = useState("3");
   const [materialType, setMaterialType] = useState("plywood");
+  const [customMaterial, setCustomMaterial] = useState("");
+  const [sheetThickness, setSheetThickness] = useState("");
   const [algorithm, setAlgorithm] = useState("");
   const [allowRotation, setAllowRotation] = useState(true);
 
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState("");
-  const [inputErrors, setInputErrors] = useState({ parts: [], sheetWidth: "", sheetHeight: "", kerfWidth: "" });
+   const [inputErrors, setInputErrors] = useState({ parts: [], sheetWidth: "", sheetHeight: "", kerfWidth: "", sheetThickness: "", material: "" });
 
   const [strategyOpen, setStrategyOpen] = useState(false);
   const [limitsOpen, setLimitsOpen] = useState(false);
@@ -83,6 +86,7 @@ const SheetOptimizer = () => {
   const [saved, setSaved] = useState(null);
   const [editingProject, setEditingProject] = useState(null);
   const [saveMode, setSaveMode] = useState('new');
+  const [updateConfirmOpen, setUpdateConfirmOpen] = useState(false);
 
   /* loading one back */
   const [userProjects, setUserProjects] = useState([]);
@@ -98,7 +102,7 @@ const SheetOptimizer = () => {
     const height = parseFloat(debouncedSheetHeight);
     const kerf = parseFloat(debouncedKerfWidth);
 
-    setInputErrors({
+     setInputErrors({
        parts: validateSheetParts(debouncedParts, t),
       sheetWidth: !debouncedSheetWidth || isNaN(width) || width <= 0
          ? t('tileUi.positiveWidth')
@@ -106,11 +110,15 @@ const SheetOptimizer = () => {
       sheetHeight: !debouncedSheetHeight || isNaN(height) || height <= 0
          ? t('tileUi.positiveHeight')
          : height > 10000 ? t('tileUi.cannotExceed', { label: t('workflow.height'), max: '10 000 mm' }) : "",
-      kerfWidth: !debouncedKerfWidth || isNaN(kerf) || kerf < 0
-         ? t('modelUi.kerfZero')
-         : kerf > 50 ? t('modelUi.kerfWide') : "",
-    });
-  }, [debouncedParts, debouncedSheetWidth, debouncedSheetHeight, debouncedKerfWidth, t]);
+       kerfWidth: !debouncedKerfWidth || isNaN(kerf) || kerf < 0
+          ? t('modelUi.kerfZero')
+          : kerf > 50 ? t('modelUi.kerfWide') : "",
+       sheetThickness: !sheetThickness || isNaN(parseFloat(sheetThickness)) || parseFloat(sheetThickness) <= 0
+         ? t('auditUi.sheetThicknessRequired') : "",
+       material: !materialType || (materialType === 'custom' && !customMaterial.trim())
+         ? t('auditUi.sheetMaterialRequired') : "",
+     });
+   }, [debouncedParts, debouncedSheetWidth, debouncedSheetHeight, debouncedKerfWidth, sheetThickness, materialType, customMaterial, t]);
 
   // This page requires sign-in, so project groups and saved plans are always available
   useEffect(() => {
@@ -189,6 +197,8 @@ const SheetOptimizer = () => {
     setSheetHeight(project.sheet_height.toString());
     setKerfWidth(project.kerf_width.toString());
     setMaterialType(project.material_type || "plywood");
+    setCustomMaterial('');
+    setSheetThickness(project.sheet_thickness ? String(project.sheet_thickness) : '');
     setAlgorithm(project.algorithm || "");
     setAllowRotation(project.allow_rotation !== false);
     setSelectedGroupId(project.project_group_id || '');
@@ -199,11 +209,21 @@ const SheetOptimizer = () => {
     setStep(STEP_PARTS);
   };
 
+  useEffect(() => {
+    const editId = new URLSearchParams(window.location.search).get('edit');
+    if (!editId || !userProjects.length) return;
+    const project = userProjects.find((item) => String(item.id) === editId);
+    if (!project) return;
+    loadProject(project);
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }, [userProjects]);
+
   /* ── derived facts ─────────────────────────────────────────────────────── */
   const partCount = parts.reduce((n, p) => n + (parseInt(p.quantity, 10) || 0), 0);
   const hasErrors = inputErrors.parts.some(Boolean)
-    || !!inputErrors.sheetWidth || !!inputErrors.sheetHeight || !!inputErrors.kerfWidth;
-  const sheetError = inputErrors.sheetWidth || inputErrors.sheetHeight;
+    || !!inputErrors.sheetWidth || !!inputErrors.sheetHeight || !!inputErrors.kerfWidth
+    || !!inputErrors.sheetThickness || !!inputErrors.material;
+  const sheetError = inputErrors.sheetWidth || inputErrors.sheetHeight || inputErrors.sheetThickness || inputErrors.material;
 
   /* ── running a layout ──────────────────────────────────────────────────── */
   const handleLayoutSubmit = async (e) => {
@@ -215,8 +235,9 @@ const SheetOptimizer = () => {
     setResult(null);
     setSaved(null);
     try {
+      const effectiveMaterial = materialType === 'custom' ? customMaterial.trim() : materialType;
       const response = await optimizeSheetCutting(
-        parts, sheetWidth, sheetHeight, kerfWidth, materialType, algorithm || undefined, allowRotation
+        parts, sheetWidth, sheetHeight, kerfWidth, effectiveMaterial, algorithm || undefined, allowRotation
       );
       setResult(response);
       setStep(STEP_PLAN);
@@ -245,12 +266,7 @@ const SheetOptimizer = () => {
     }
   };
 
-  const handleSave = async (e) => {
-    e.preventDefault();
-    setSaveAttempted(true);
-    setApiError("");
-    if (!projectName.trim()) return;
-
+  const savePlan = async () => {
     setSaving(true);
     try {
       const project = await saveSheetProject({
@@ -260,8 +276,9 @@ const SheetOptimizer = () => {
         parts,
         sheetWidth,
         sheetHeight,
+        sheetThickness,
         kerfWidth,
-        materialType,
+        materialType: materialType === 'custom' ? customMaterial.trim() : materialType,
         algorithm,
         allowRotation,
         result,
@@ -274,6 +291,18 @@ const SheetOptimizer = () => {
       setApiError(error.message || t('auditUi.saveFailed'));
     }
     setSaving(false);
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setSaveAttempted(true);
+    setApiError("");
+    if (!projectName.trim()) return;
+    if (saveMode === 'update') {
+      setUpdateConfirmOpen(true);
+      return;
+    }
+    await savePlan();
   };
 
   const savedGroupName = saved
@@ -430,6 +459,13 @@ const SheetOptimizer = () => {
                   <td style={{ color: 'var(--ink-3)' }}>mm</td>
                 </tr>
                 <tr>
+                    <td style={{ textAlign: 'left' }}>{t('workflow.thickness')}</td>
+                  <td>
+                    <input id="sheet-thickness" type="number" min="0.1" step="0.1" value={sheetThickness} onChange={(e) => setSheetField(setSheetThickness)(e.target.value)} className={`cell-input ${inputErrors.sheetThickness ? 'is-error' : ''}`} required aria-describedby="sheet-stock-error" />
+                  </td>
+                  <td style={{ color: 'var(--ink-3)' }}>mm</td>
+                </tr>
+                <tr>
                     <td style={{ textAlign: 'left' }}>{t('workflow.material')}</td>
                   {/* Kept in the value column rather than spanning into the unit
                       column, so the control lines up with the numbers above it */}
@@ -437,7 +473,7 @@ const SheetOptimizer = () => {
                     <select
                       value={materialType}
                       onChange={(e) => setSheetField(setMaterialType)(e.target.value)}
-                      className="form-select"
+                      className={`form-select ${inputErrors.material ? 'is-error' : ''}`}
                   aria-label={t('ui.materialType')}
                     >
                       <option value="plywood">{t('ui.materialPlywood')}</option>
@@ -445,8 +481,9 @@ const SheetOptimizer = () => {
                       <option value="metal">{t('ui.materialMetal')}</option>
                       <option value="acrylic">{t('ui.materialAcrylic')}</option>
                       <option value="cardboard">{t('ui.materialCardboard')}</option>
-                      <option value="other">{t('ui.materialOther')}</option>
+                      <option value="custom">{t('ui.materialCustom')}</option>
                     </select>
+                    {materialType === 'custom' && <input id="custom-sheet-material" className="form-input" style={{ marginTop: '8px' }} value={customMaterial} onChange={(e) => setSheetField(setCustomMaterial)(e.target.value)} placeholder={t('ui.customMaterialPlaceholder')} required />}
                   </td>
                   <td />
                 </tr>
@@ -455,11 +492,12 @@ const SheetOptimizer = () => {
             {/* Kerf reports next to its own field now, so this line carries only
                 the sheet's own errors. */}
             <p
+              id="sheet-stock-error"
               className={sheetError ? 'text-danger text-[12.5px] font-semibold' : 'synthetic'}
               style={{ marginTop: '10px' }}
             >
-              {sheetError
-                || t('auditUi.sheetStockHint')}
+               {sheetError
+                 || t('auditUi.sheetStockHint')}
             </p>
           </section>
 
@@ -711,6 +749,16 @@ const SheetOptimizer = () => {
       )}
 
       {/* ── load a saved plan ─────────────────────────────────────────────── */}
+      <ConfirmDialog
+        open={updateConfirmOpen}
+        title={t('ui.updatePlanTitle')}
+        message={t('ui.updatePlanConfirm', { name: editingProject?.name || projectName })}
+        confirmLabel={t('ui.updateExistingPlan')}
+        danger={false}
+        onConfirm={() => { setUpdateConfirmOpen(false); savePlan(); }}
+        onCancel={() => setUpdateConfirmOpen(false)}
+      />
+
       {loadModalOpen && (
          <div className="cat-overlay" role="dialog" aria-modal="true" aria-label={t('workflow.loadSavedPlan')}>
           <div className="cat-sheet">
