@@ -94,8 +94,8 @@ const buildHtml = ({ title, meta, paper, plans, shoppingListHtml }) => {
   .plan-head h2 { font-size: 13pt; font-weight: 700; }
   .plan-head p { font-size: 9pt; color: #6b6a60; margin-top: 1mm; }
   .plan img { display: block; max-width: 100%; width: auto; height: auto; margin: 0 auto; }
-  .cut-list { width: 100%; border-collapse: collapse; margin-top: 6mm; font-size: 9pt; }
-  .cut-list th, .cut-list td { text-align: left; padding: 1.5mm 3mm 1.5mm 0; }
+  .cut-list { width: 100%; border-collapse: collapse; margin-top: 5mm; font-size: 9pt; }
+  .cut-list th, .cut-list td { text-align: left; padding: 2.2mm 3mm 2.2mm 0; vertical-align: top; }
   .cut-list th {
     font-size: 7.5pt; text-transform: uppercase; letter-spacing: 0.04em; color: #6b6a60;
     border-bottom: 0.3mm solid #c9c7ba; font-weight: 700;
@@ -103,9 +103,14 @@ const buildHtml = ({ title, meta, paper, plans, shoppingListHtml }) => {
   .cut-list td { border-bottom: 0.2mm solid #e3e1d6; }
   .cut-list tr { break-inside: avoid; page-break-inside: avoid; }
   .cut-list thead { display: table-header-group; } /* repeats on each printed page if the list spans more than one */
-  .piece-template-meta { margin-top: 2mm; line-height: 1.45; }
-  .piece-template { display: block; width: 110mm; max-height: 70mm; object-fit: contain; margin-top: 2mm; }
-  .piece-template-note { margin-top: 2mm; line-height: 1.45; }
+  .piece-templates { margin-top: 7mm; }
+  .piece-templates h3 { padding-bottom: 2mm; border-bottom: 0.25mm solid #c9c7ba; font-size: 8pt; text-transform: uppercase; letter-spacing: 0.06em; color: #6b6a60; }
+  .piece-template-block { display: grid; grid-template-columns: 56mm 1fr; gap: 6mm; align-items: start; margin-top: 4mm; padding: 4mm 0; border-bottom: 0.2mm solid #e3e1d6; break-inside: avoid; page-break-inside: avoid; }
+  .piece-template-block figcaption { display: flex; flex-direction: column; gap: 1.5mm; font-size: 8.5pt; line-height: 1.4; }
+  .piece-template-block figcaption strong { font-size: 10pt; }
+  .piece-template-block figcaption span { color: #6b6a60; }
+  .piece-template-block figcaption i { font-style: normal; padding: 0 1mm; color: #c9c7ba; }
+  .piece-template { display: block; width: 100%; max-height: 58mm; object-fit: contain; object-position: left top; }
   .shopping-list { break-after: page; page-break-after: always; }
   .shopping-list:last-child { break-after: auto; page-break-after: auto; }
   .shopping-list h2 { font-size: 16pt; margin-bottom: 5mm; }
