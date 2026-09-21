@@ -121,7 +121,7 @@ const locale = {
     planning: 'Planlegger', percentUsed: '{{percent}} % utnyttet', percentUsed_other: '{{percent}} % utnyttet', sheetPartsCount: '{{width}} × {{height}} mm · {{count}} del', sheetPartsCount_other: '{{width}} × {{height}} mm · {{count}} deler',
     rowOffset: 'Radforskyvning', sliverGuardBreakage: 'Beskyttelse mot smale biter og brudd', sliverThreshold: 'Grense for smal bit', reuseOffcuts: 'Gjenbruk restbiter',
     backToPlan: 'Tilbake til planen', backToLayout: 'Tilbake til layouten', saving: 'Lagrer', updatePlan: 'Oppdater plan', savePlan: 'Lagre plan',
-    whatToBuy: 'Dette skal kjøpes', cutOrder: 'Kapperekkefølge', takeToSaw: 'Ta med til sagen', downloadDiagram: 'Last ned diagram', sheetBySheet: 'Plate for plate', realProportions: 'Hver plate i riktige proporsjoner', sheetNumber: 'Plate {{number}}', viewFullDiagram: 'Vis hele diagrammet', exactPlacements: 'Nøyaktige plasseringer', placementsHint: 'Hvor hver del ligger, i millimeter fra platens øvre venstre hjørne', byTheNumbers: 'I tall', candidateInFull: 'Denne kandidaten i sin helhet',
+    whatToBuy: 'Å kjøpe', cutOrder: 'Kapperekkefølge', takeToSaw: 'Ta med til sagen', downloadDiagram: 'Last ned diagram', sheetBySheet: 'Plate for plate', realProportions: 'Hver plate i riktige proporsjoner', sheetNumber: 'Plate {{number}}', viewFullDiagram: 'Vis hele diagrammet', exactPlacements: 'Nøyaktige plasseringer', placementsHint: 'Hvor hver del ligger, i millimeter fra platens øvre venstre hjørne', byTheNumbers: 'I tall', candidateInFull: 'Denne kandidaten i sin helhet',
     planTheCuts: 'Planlegg kappingen', yourCuttingPlan: 'Kapplanen din', cuttingPlanIntro: 'Hvert bord tegnes i samme skala, med kappene i rekkefølgen du gjør dem.', costAnalysis: 'Kostnadsanalyse', planSaved: 'Plan lagret', saveThisPlan: 'Lagre denne planen', planName: 'Plannavn', yourSheetLayout: 'Platelayouten din', sheetLayoutIntro: 'Hver plate tegnes i riktige proporsjoner, med hver del plassert der den skal kappes.',
      sheetPartsSummary: '{{count}} deler · {{width}} × {{height}} mm plate', sheetPartsSummary_one: '{{count}} del · {{width}} × {{height}} mm plate', sheetsSummary: '{{count}} plater · {{efficiency}} % utnyttet', sheetsSummary_one: '{{count}} plate · {{efficiency}} % utnyttet', packsFromParts: 'Pakker fra delene dine',
     parts: 'Deler', thePlan: 'Planen', theLayout: 'Layouten', save: 'Lagre', layout: 'Layout', keep: 'Behold', surface: 'Overflate', model: 'Modell', cutlists: 'Kapplister', someLinesNeedFixing: 'Noen linjer må rettes', someFieldsNeedFixing: 'Noen felt må rettes', partsSummary: '{{count}} deler · {{demand}} mm · {{kerf}} mm sagspor', boardsSummary: '{{count}} bord · {{offcut}} mm restbit', runsFromParts: 'Bygger på delene dine', solvesFromSurface: 'Løses fra overflaten din', savedAs: 'Lagret som {{name}}', nameAndKeep: 'Gi navn og lagre', waitsForPlan: 'Venter på en plan', waitsForLayout: 'Venter på en layout', requiredParts: 'Deler som trengs', requiredPartsIntro: 'Alle lengdene du trenger og hvor mange av hver. Planqer regner ut hvor mye lager du skal kjøpe og hvor hvert kutt skal gjøres.', partsToCut: 'Deler som skal kappes', partsToCutIntro: 'Alle rektanglene du trenger fra platelager. Planqer pakker dem på færrest mulige plater og viser hvor de ligger.', loadSavedPlan: 'Last inn en lagret plan', item: 'Del', lengthMm: 'Lengde mm', sizeMm: 'Størrelse mm', qty: 'Antall', total: 'Totalt', name: 'Navn', addPart: 'Legg til del', addOpening: 'Legg til åpning', pasteParts: 'Lim inn flere linjer samtidig — én lengde og ett antall per linje', sawBlade: 'Sagblad', kerfHint: 'Hvert kutt gjør så mye materiale til støv — planen tar høyde for det', stockAvailable: 'Tilgjengelig lager', supplierStock: 'Det leverandøren selger, ikke det du trenger', stock: 'Lager', metres: 'Meter', offered: 'Tilbudt', lengthCount_one: '{{count}} lengde', lengthCount_other: '{{count}} lengder', addStockLength: 'Legg til lagerlengde', sheetSource: 'Platen du kapper fra', sheetSourceHint: 'Det du kapper ut av, ikke det du trenger', width: 'Bredde', height: 'Høyde', material: 'Materiale', packing: 'Pakker', packSheets: 'Pakk platene', surfaceTitle: 'Overflaten du skal flislegge', surfaceIntro: 'Størrelsen, eventuelle åpninger og flisen du skal legge. Planqer regner ut hvor rutenettet skal begynne slik at kuttene mot den fjerneste kanten ikke blir smale fliser.', surfaceHint: 'Veggen, gulvet eller taket du dekker', openings: 'Åpninger', openingsHint: 'Vinduer, dører, stikkontakter og kjøkkenhette', positionMm: 'Posisjon mm', label: 'Etikett', noOpenings: 'Ingen åpninger — et vanlig rektangel.', tile: 'Flis', tileHint: 'Hva trelasthandelen faktisk selger varierer mellom jobber', allowRotation: 'Tillat at hele layouten snus 90°', rotationHint: 'Prøver mønsteret begge veier og beholder det som passer best. Av når flisen har årring eller en bestemt retning.', jointBond: 'Fuge og forband', jointBondHint: 'Fugeåpningen og hvordan hver rad forskyves fra den forrige', solving: 'Løser', solveLayout: 'Løs layouten', uploadModel: 'Last opp en modell', uploadModelIntro: 'En STL- eller STEP-fil — modellen du allerede har laget. Planqer måler hvert fast stoff og sorterer dem i kapplister du kan planlegge og lagre.', dropModel: 'Slipp modellen her', browseFiles: 'Bla gjennom filer', readingModel: 'Leser modell', readModel: 'Les modellen', removeFile: 'Fjern fil', planCuts: 'Planlegg en kapping',
@@ -140,7 +140,7 @@ Object.assign(locale.projectUi, {
   selectPlan: 'Velg planen "{{name}}"',
   printOne: 'Skriv ut',
   printDiagrams: 'Skriv ut diagrammer ({{count}})',
-  printShoppingList: 'Dette skal kjøpes',
+  printShoppingList: 'Å kjøpe',
   printProject: 'Skriv ut prosjekt',
   printSelected: 'Skriv ut valgte ({{count}})',
   selectAllPlans: 'Velg alle',
@@ -148,7 +148,7 @@ Object.assign(locale.projectUi, {
 });
 
 Object.assign(locale.ui, {
-  materialPine: 'Furu', materialSpruce: 'Gran', materialOak: 'Eik', materialBeech: 'Bøk', materialBirch: 'Bjørk', materialPressureTreated: 'Trykkimpregnert', materialCustom: 'Egendefinert', customMaterialPlaceholder: 'Skriv inn materiale',
+  materialPine: 'Furu', materialSpruce: 'Gran', materialOak: 'Eik', materialBeech: 'Bøk', materialBirch: 'Bjørk', materialPressureTreated: 'Trykkimpregnert', materialCustom: 'Egendefinert', customMaterialPlaceholder: 'Skriv inn materiale', tilesToBuyWithSpare: 'Fliser å kjøpe inkl. ekstra',
   materialCeramic: 'Keramiske fliser', materialPorcelain: 'Porselensfliser', materialStone: 'Natursteinfliser', materialGlass: 'Glassfliser',
   boardLengthAria: 'Bordlengde i millimeter, rad {{row}}', removeBoardAria: 'Fjern bordlengde, rad {{row}}', strikeLine: 'Rett denne linjen',
   partLengthAria: 'Dellengde i millimeter, del {{item}}', quantityAria: 'Antall, del {{item}}', removePartAria: 'Fjern del, del {{item}}',
@@ -180,10 +180,11 @@ Object.assign(locale.ui, {
 });
 
 Object.assign(locale.workflow, {
-  materialProfile: 'Materiale og profil', chooseMaterial: 'Velg materiale', thickness: 'Tykkelse', thicknessMm: 'Tykkelse (mm)', widthMm: 'Bredde (mm)', packSheets: 'Planlegg platekappingen',
+  materialProfile: 'Materiale og profil', chooseMaterial: 'Velg materiale', thickness: 'Tykkelse', thicknessMm: 'Tykkelse (mm)', widthMm: 'Bredde (mm)', packSheets: 'Planlegg platekappingen', tilePurchaseSummary: '{{base}} fliser + {{total}} med {{waste}} % ekstra',
 });
 
 Object.assign(locale.auditUi, { materialRequired: 'Velg materiale og skriv inn målene før du planlegger', sheetThicknessRequired: 'Skriv inn platetykkelsen før du planlegger', sheetMaterialRequired: 'Velg platemateriale før du planlegger', tileMaterialRequired: 'Velg flismateriale og skriv inn tykkelsen før du løser layouten' });
+Object.assign(locale.ui, { includesSpare: '{{base}} + {{waste}} % ekstra' });
 Object.assign(locale.ui, {
   updatePlanTitle: 'Oppdater lagret plan',
   updatePlanConfirm: 'Dette erstatter det lagrede resultatet for "{{name}}". Vil du fortsette?',

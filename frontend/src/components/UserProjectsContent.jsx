@@ -74,9 +74,13 @@ const planFacts = (project, t) => {
   }
   if (project.projectType === 'tile') {
     const toBuy = project.layout_result?.tiles_to_purchase_with_waste ?? project.layout_result?.tiles_to_purchase;
+    const baseToBuy = project.layout_result?.tiles_to_purchase ?? toBuy;
+    const wastePercent = project.options_data?.waste_percent ?? 0;
     return {
       type: t('common.tileLayout'),
-      count: Number.isFinite(toBuy) ? `${toBuy} ${t('ui.tilesToBuy')}` : '—',
+      count: Number.isFinite(toBuy)
+        ? t('workflow.tilePurchaseSummary', { base: baseToBuy, total: toBuy, waste: wastePercent })
+        : '—',
       stock: `${materialLabel(project.tile_data?.material_type || 'tile', t)} · ${project.tile_data?.thickness || '—'}×${project.tile_data.width}×${project.tile_data.height}mm`,
     };
   }

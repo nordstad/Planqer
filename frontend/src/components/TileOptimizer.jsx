@@ -728,8 +728,8 @@ const TileOptimizer = () => {
 
           <div className="plan-answer" style={{ marginTop: '26px' }}>
             <div className="plan-answer-fig">
-              <b>{selected.tiles_to_purchase_with_waste}</b>
-               <span className="answer-kicker">{t('workflow.tilesToBuy')}</span>
+              <b>{selected.tiles_to_purchase}</b>
+              <span className="answer-kicker">{t('workflow.tilePurchaseSummary', { base: selected.tiles_to_purchase, total: selected.tiles_to_purchase_with_waste, waste: wastePercent })}</span>
             </div>
             <dl className="plan-facts">
               <div className="plan-fact">

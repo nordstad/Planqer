@@ -19,7 +19,7 @@ const SavedMaterialList = ({ project }) => {
             <tr key={`${row.material}-${row.size}`}>
                <td>{materialLabel(row.material, t)}</td>
               <td>{row.size.replace(' mm', '')}</td>
-              <td>{row.quantity}</td>
+              <td>{row.quantity}{row.baseQuantity != null && row.baseQuantity !== row.quantity && <small className="block text-muted">{t('ui.includesSpare', { base: row.baseQuantity, waste: row.wastePercent })}</small>}</td>
             </tr>
           ))}
         </tbody>

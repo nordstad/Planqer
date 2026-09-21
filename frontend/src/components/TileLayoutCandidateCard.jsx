@@ -35,7 +35,7 @@ const TileLayoutCandidateCard = ({ candidate, selected, onSelect }) => {
         <b className="tile-candidate-label">{candidate.label}</b>
         <dl className="tile-candidate-facts">
           <div>
-            <dt>{t('ui.tilesToBuy')}</dt>
+            <dt>{t('ui.tilesToBuyWithSpare')}</dt>
             <dd>{candidate.tiles_to_purchase_with_waste}</dd>
           </div>
           <div>

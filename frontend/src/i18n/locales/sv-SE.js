@@ -139,7 +139,7 @@ Object.assign(locale.projectUi, {
   selectPlan: 'Välj planen "{{name}}"',
   printOne: 'Skriv ut',
   printDiagrams: 'Skriv ut diagram ({{count}})',
-  printShoppingList: 'Vad ska köpas',
+  printShoppingList: 'Att köpa',
   printProject: 'Skriv ut projekt',
   printSelected: 'Skriv ut valda ({{count}})',
   selectAllPlans: 'Välj alla',
@@ -147,7 +147,7 @@ Object.assign(locale.projectUi, {
 });
 
 Object.assign(locale.ui, {
-  materialPine: 'Furu', materialSpruce: 'Gran', materialOak: 'Ek', materialBeech: 'Bok', materialBirch: 'Björk', materialPressureTreated: 'Tryckimpregnerat', materialCustom: 'Anpassat', customMaterialPlaceholder: 'Ange material',
+  materialPine: 'Furu', materialSpruce: 'Gran', materialOak: 'Ek', materialBeech: 'Bok', materialBirch: 'Björk', materialPressureTreated: 'Tryckimpregnerat', materialCustom: 'Anpassat', customMaterialPlaceholder: 'Ange material', tilesToBuyWithSpare: 'Kakel att köpa inkl. extra',
   materialCeramic: 'Keramikkakel', materialPorcelain: 'Porslinskakel', materialStone: 'Stenkakel', materialGlass: 'Glaskakel',
   boardLengthAria: 'Brädlängd i millimeter, rad {{row}}', removeBoardAria: 'Ta bort brädlängd, rad {{row}}', strikeLine: 'Rätta den här raden',
   partLengthAria: 'Dellängd i millimeter, del {{item}}', quantityAria: 'Antal, del {{item}}', removePartAria: 'Ta bort del, del {{item}}',
@@ -179,10 +179,11 @@ Object.assign(locale.ui, {
 });
 
 Object.assign(locale.workflow, {
-  materialProfile: 'Material och profil', chooseMaterial: 'Välj material', thickness: 'Tjocklek', thicknessMm: 'Tjocklek (mm)', widthMm: 'Bredd (mm)', packSheets: 'Planera skivkapningen',
+  materialProfile: 'Material och profil', chooseMaterial: 'Välj material', thickness: 'Tjocklek', thicknessMm: 'Tjocklek (mm)', widthMm: 'Bredd (mm)', packSheets: 'Planera skivkapningen', tilePurchaseSummary: '{{base}} kakel + {{total}} med {{waste}} % extra',
 });
 
 Object.assign(locale.auditUi, { materialRequired: 'Välj material och ange måtten innan du planerar', sheetThicknessRequired: 'Ange skivans tjocklek innan du planerar', sheetMaterialRequired: 'Välj skivmaterial innan du planerar', tileMaterialRequired: 'Välj kakelmaterial och ange tjockleken innan du löser layouten' });
+Object.assign(locale.ui, { includesSpare: '{{base}} + {{waste}} % extra' });
 
 Object.assign(locale.ui, {
   updatePlanTitle: 'Uppdatera sparad plan',
