@@ -54,11 +54,6 @@ dev = [
     "ruff>=0.12.9",
 ]
 
-[tool.pytest.ini_options]
-filterwarnings = [
-    "ignore::matplotlib.MatplotlibDeprecationWarning"
-]
-
 [tool.coverage.run]
 # TestClient runs the ASGI app on a background thread; without this, coverage
 # only sees the main thread and silently under-reports every route handler.
