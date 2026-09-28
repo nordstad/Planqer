@@ -2,7 +2,11 @@ import logging
 
 from planqer.algorithms import OptimizationAlgorithm
 from planqer.schemas import PlanqerResponse
-from planqer.services import _build_board_plans, run_optimization
+from planqer.services import (
+    _build_board_plans,
+    _select_best_candidate,
+    run_optimization,
+)
 
 
 def test_build_board_plans_keeps_stock_and_cuts_together():
@@ -17,6 +21,23 @@ def test_build_board_plans_keeps_stock_and_cuts_together():
         (360.0, (270.0, 81.0)),
         (300.0, (179.0, 90.0)),
     ]
+
+
+def test_select_best_candidate_returns_the_lowest_waste_candidate():
+    candidate = _select_best_candidate(
+        parts={270.0: 1, 179.0: 1, 90.0: 1, 81.0: 1},
+        valid_boards=[300.0, 360.0, 500.0],
+        kerf=3.0,
+        algorithm=OptimizationAlgorithm.FIRST_FIT_DECREASING,
+    )
+
+    assert candidate[:5] == (
+        360.0,
+        194.0,
+        [[270.0, 81.0], [179.0, 90.0]],
+        94.0,
+        OptimizationAlgorithm.FIRST_FIT_DECREASING,
+    )
 
 
 def test_run_optimization_preserves_public_response_fields():

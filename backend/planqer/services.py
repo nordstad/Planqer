@@ -55,29 +55,16 @@ def secure_temp_file(suffix=".png", prefix="planqer_"):
             pass
 
 
-def _compute_optimization(
+def _select_best_candidate(
     parts,
-    boards,
+    valid_boards,
     kerf,
     algorithm=OptimizationAlgorithm.FIRST_FIT_DECREASING,
     board_costs=None,
     optimize_for="waste",
 ):
-    """
-    Internal function for computing optimization that can be cached.
-
-    Returns: (optimal_board_length, cost, cut_list, total_waste, algorithm_used, computation_time)
-    """
-    max_part = max(parts.keys())
-    valid_boards = [bl for bl in boards if bl >= max_part]
-    if not valid_boards:
-        raise HTTPException(
-            status_code=400, detail="No board is long enough for the largest part."
-        )
-
     penalty = 100
     candidates = []
-    start_time = time.time()
 
     for bl in valid_boards:
         try:
@@ -113,7 +100,29 @@ def _compute_optimization(
         )
 
     # Find best candidate
-    best = min(candidates, key=lambda x: x[1])
+    return min(candidates, key=lambda x: x[1])
+
+
+def _compute_optimization(
+    parts,
+    boards,
+    kerf,
+    algorithm=OptimizationAlgorithm.FIRST_FIT_DECREASING,
+    board_costs=None,
+    optimize_for="waste",
+):
+    """Compute and cache the legacy optimization tuple at the service edge."""
+    max_part = max(parts.keys())
+    valid_boards = [bl for bl in boards if bl >= max_part]
+    if not valid_boards:
+        raise HTTPException(
+            status_code=400, detail="No board is long enough for the largest part."
+        )
+
+    start_time = time.time()
+    best = _select_best_candidate(
+        parts, valid_boards, kerf, algorithm, board_costs, optimize_for
+    )
     computation_time = time.time() - start_time
 
     # Return: (optimal_board_length, cost, cut_list, total_waste, algorithm_used, computation_time)
