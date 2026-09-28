@@ -1,6 +1,7 @@
 import os
 import tempfile
 import time
+from collections import Counter
 from contextlib import contextmanager
 from dataclasses import dataclass
 
@@ -8,8 +9,7 @@ from fastapi import HTTPException
 
 from planqer.algorithms import OptimizationAlgorithm, optimize_cutting
 from planqer.cache import get_cached_optimization
-from planqer.cost_calculator import calculate_cost_analysis
-from planqer.helpers import compute_metrics
+from planqer.cost_calculator import apply_bulk_discount, calculate_cost_analysis
 from planqer.svg_visualization import generate_cut_list_image
 
 
@@ -57,6 +57,7 @@ def secure_temp_file(suffix=".png", prefix="planqer_"):
 
 def _select_best_candidate(
     parts,
+    boards,
     valid_boards,
     kerf,
     algorithm=OptimizationAlgorithm.FIRST_FIT_DECREASING,
@@ -71,24 +72,20 @@ def _select_best_candidate(
             # Use the new algorithm-based optimization
             result = optimize_cutting(parts, bl, kerf, algorithm)
 
-            # Calculate waste metrics
-            total_waste, warnings = compute_metrics(
-                result.cut_list, bl, saw_blade_width=kerf
+            board_plans = _build_board_plans(
+                result.cut_list, bl, boards, kerf
             )
+            total_waste, warnings = _calculate_plan_metrics(board_plans, kerf)
 
             # Calculate cost based on optimization objective
-            if optimize_for == "cost" and board_costs and bl in board_costs:
-                # Use actual monetary cost: number of boards * price per board
-                num_boards = len(result.cut_list)
-                board_cost_data = board_costs.get(bl, {})
-                price_per_board = board_cost_data.get("price_per_board", 0)
-                cost = num_boards * price_per_board
+            if optimize_for == "cost" and board_costs:
+                cost = _calculate_plan_cost(board_plans, board_costs)
             else:
                 # Use waste-based cost (traditional approach)
                 cost = total_waste + warnings * penalty
 
             candidates.append(
-                (bl, cost, result.cut_list, total_waste, result.algorithm_used)
+                (bl, cost, board_plans, total_waste, result.algorithm_used)
             )
         except Exception as e:
             # Re-raise as a more specific error to maintain error handling
@@ -111,7 +108,7 @@ def _compute_optimization(
     board_costs=None,
     optimize_for="waste",
 ):
-    """Compute and cache the legacy optimization tuple at the service edge."""
+    """Compute and cache the selected plan at the service edge."""
     max_part = max(parts.keys())
     valid_boards = [bl for bl in boards if bl >= max_part]
     if not valid_boards:
@@ -121,11 +118,11 @@ def _compute_optimization(
 
     start_time = time.time()
     best = _select_best_candidate(
-        parts, valid_boards, kerf, algorithm, board_costs, optimize_for
+        parts, boards, valid_boards, kerf, algorithm, board_costs, optimize_for
     )
     computation_time = time.time() - start_time
 
-    # Return: (optimal_board_length, cost, cut_list, total_waste, algorithm_used, computation_time)
+    # Return: (optimal_board_length, cost, board_plans, total_waste, algorithm_used, computation_time)
     return (*best[:4], best[4], computation_time)
 
 
@@ -144,6 +141,39 @@ def _build_board_plans(
         )
         plans.append(BoardPlan(stock_length, tuple(board_cuts)))
     return plans
+
+
+def _calculate_plan_metrics(
+    board_plans: list[BoardPlan], kerf: float
+) -> tuple[float, int]:
+    total_waste = 0.0
+    warning_count = 0
+    for board_plan in board_plans:
+        waste = (
+            board_plan.stock_length
+            - sum(board_plan.cuts)
+            - max(len(board_plan.cuts) - 1, 0) * kerf
+        )
+        total_waste += waste
+        if waste < 40:
+            warning_count += 1
+    return total_waste, warning_count
+
+
+def _calculate_plan_cost(
+    board_plans: list[BoardPlan], board_costs: dict
+) -> float:
+    quantities = Counter(board_plan.stock_length for board_plan in board_plans)
+    total_cost = 0.0
+    for stock_length, quantity in quantities.items():
+        cost_data = board_costs.get(stock_length, {})
+        total_cost += apply_bulk_discount(
+            quantity,
+            cost_data.get("price_per_board", 0.0),
+            cost_data.get("bulk_discount", 0.0),
+            cost_data.get("minimum_quantity", 1),
+        ) * quantity
+    return total_cost
 
 
 def run_optimization(
@@ -178,7 +208,7 @@ def run_optimization(
         (
             optimal_board_length,
             cost,
-            cut_list,
+            board_plans,
             total_waste,
             algorithm_used,
             computation_time,
@@ -198,21 +228,15 @@ def run_optimization(
         logger.error(f"Optimization computation failed: {e}")
         raise
 
-    board_plans = _build_board_plans(cut_list, optimal_board_length, boards, kerf)
     planned_cuts = [list(board_plan.cuts) for board_plan in board_plans]
     individual_board_lengths = [board_plan.stock_length for board_plan in board_plans]
 
-    # One source of truth for the plan's material figures. individual_board_lengths
-    # is kerf-aware and is what the diagram draws, so every reported number is
-    # derived from it — cost analysis included. Deriving them twice is how the
-    # order list once said SPF-36 while the diagram drew a 4200 mm board.
+    # BoardPlan is the source of truth for the stock, cuts, waste, and cost
+    # figures, as well as the diagram input.
     material_bought = sum(individual_board_lengths)
-    parts_total = sum(sum(board_plan.cuts) for board_plan in board_plans)
     kerf_loss = (
         sum(max(len(board_plan.cuts) - 1, 0) for board_plan in board_plans) * kerf
     )
-    # Offcut is what is left over after the parts and the blade have taken theirs.
-    total_waste = material_bought - parts_total - kerf_loss
 
     # Generate SVG visualization directly as data URL
     try:
