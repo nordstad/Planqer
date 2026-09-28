@@ -2,6 +2,7 @@ import os
 import tempfile
 import time
 from contextlib import contextmanager
+from dataclasses import dataclass
 
 from fastapi import HTTPException
 
@@ -10,6 +11,12 @@ from planqer.cache import get_cached_optimization
 from planqer.cost_calculator import calculate_cost_analysis
 from planqer.helpers import compute_metrics
 from planqer.svg_visualization import generate_cut_list_image
+
+
+@dataclass(frozen=True)
+class BoardPlan:
+    stock_length: float
+    cuts: tuple[float, ...]
 
 
 @contextmanager
@@ -113,6 +120,23 @@ def _compute_optimization(
     return (*best[:4], best[4], computation_time)
 
 
+def _build_board_plans(
+    cut_list: list[list[float]],
+    optimal_board_length: float,
+    boards: list[float],
+    kerf: float,
+) -> list[BoardPlan]:
+    plans = []
+    for board_cuts in cut_list:
+        total_used = sum(board_cuts) + max(len(board_cuts) - 1, 0) * kerf
+        suitable_lengths = [length for length in boards if length >= total_used]
+        stock_length = (
+            min(suitable_lengths) if suitable_lengths else optimal_board_length
+        )
+        plans.append(BoardPlan(stock_length, tuple(board_cuts)))
+    return plans
+
+
 def run_optimization(
     parts,
     boards,
@@ -165,41 +189,26 @@ def run_optimization(
         logger.error(f"Optimization computation failed: {e}")
         raise
 
-    # Calculate individual board lengths for mixed-length visualization
-    individual_board_lengths = []
-    for board_cuts in cut_list:
-        if not board_cuts:
-            individual_board_lengths.append(optimal_board_length)
-            continue
-
-        # Calculate total length needed for this board (including kerf)
-        total_used = (
-            sum(board_cuts) + kerf * (len(board_cuts) - 1)
-            if len(board_cuts) > 1
-            else sum(board_cuts)
-        )
-
-        # Find the optimal board length for this cutting plan
-        suitable_lengths = [length for length in boards if length >= total_used]
-        if suitable_lengths:
-            individual_board_lengths.append(min(suitable_lengths))
-        else:
-            individual_board_lengths.append(optimal_board_length)
+    board_plans = _build_board_plans(cut_list, optimal_board_length, boards, kerf)
+    planned_cuts = [list(board_plan.cuts) for board_plan in board_plans]
+    individual_board_lengths = [board_plan.stock_length for board_plan in board_plans]
 
     # One source of truth for the plan's material figures. individual_board_lengths
     # is kerf-aware and is what the diagram draws, so every reported number is
     # derived from it — cost analysis included. Deriving them twice is how the
     # order list once said SPF-36 while the diagram drew a 4200 mm board.
     material_bought = sum(individual_board_lengths)
-    parts_total = sum(sum(board_cuts) for board_cuts in cut_list)
-    kerf_loss = sum(max(len(board_cuts) - 1, 0) for board_cuts in cut_list) * kerf
+    parts_total = sum(sum(board_plan.cuts) for board_plan in board_plans)
+    kerf_loss = (
+        sum(max(len(board_plan.cuts) - 1, 0) for board_plan in board_plans) * kerf
+    )
     # Offcut is what is left over after the parts and the blade have taken theirs.
     total_waste = material_bought - parts_total - kerf_loss
 
     # Generate SVG visualization directly as data URL
     try:
         img_url = generate_cut_list_image(
-            cut_list,
+            planned_cuts,
             individual_board_lengths,  # Pass individual board lengths
             "data:temp",  # Signal to return as data URL
             saw_blade_width=kerf,
@@ -215,7 +224,7 @@ def run_optimization(
     if enable_cost_analysis and board_costs:
         try:
             cost_analysis = calculate_cost_analysis(
-                cut_list=cut_list,
+                cut_list=planned_cuts,
                 board_lengths=boards,
                 board_costs=board_costs,
                 currency=currency,
@@ -240,7 +249,7 @@ def run_optimization(
         material_bought=material_bought,
         kerf_loss=kerf_loss,
         board_lengths_used=individual_board_lengths,
-        cut_list=cut_list,
+        cut_list=planned_cuts,
         visualization=img_url,
         algorithm_used=algorithm_used.value,
         computation_time=computation_time,
