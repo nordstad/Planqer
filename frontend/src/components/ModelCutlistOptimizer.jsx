@@ -42,6 +42,7 @@ import {
   optimizeSheetCutting, saveSheetProject,
   getProjectGroups, createProjectGroup,
   getUserSettings,
+  serializeBoardParts,
 } from '../utils/api';
 
 const mm = (n) => (Number.isFinite(n) ? Math.round(n).toLocaleString('sv-SE') : '—');
@@ -276,8 +277,9 @@ const ModelCutlistOptimizer = () => {
 
   const planGroupAlone = (group) => {
     if (group.kind === 'board') {
-      const parts = {};
-      group.lengths.forEach((l) => { parts[l.length.toString()] = l.qty; });
+      const parts = serializeBoardParts(
+        group.lengths.map((l) => ({ length: l.length, quantity: l.qty })),
+      );
       localStorage.setItem('planqer-3d-import', JSON.stringify({
         parts, projectName: planNameFor(modelName, group), source: 'model-cutlist',
       }));
