@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { LanguageProvider } from '../contexts/LanguageContext';
 import SheetOptimizer from './SheetOptimizer';
+import i18n from '../i18n';
 import {
   getProjectGroups,
   getUserSheetProjects,
@@ -110,4 +111,43 @@ it('explains why sheet planning is disabled when thickness is missing', async ()
 
   expect(screen.getByRole('button', { name: /plan the sheet cuts/i })).toBeDisabled();
   expect(await screen.findByText(/enter the sheet thickness before planning/i)).toBeInTheDocument();
+});
+
+it.each([
+  ['bottom_left_fill', 'ui.bottomLeft'],
+  ['best_fit_2d', 'ui.bestFit'],
+  ['genetic_2d', 'ui.genetic'],
+  ['guillotine_cut', 'ui.guillotine'],
+])('uses translated strategy and rotation text for %s', async (algorithm, labelKey) => {
+  window.history.replaceState({}, '', '/sheet-cutting');
+  const translate = jest.spyOn(i18n, 't');
+  try {
+    render(<MemoryRouter><LanguageProvider><SheetOptimizer /></LanguageProvider></MemoryRouter>);
+    await screen.findByText(/enter the sheet thickness before planning/i);
+    expect(translate).toHaveBeenCalledWith('ui.fixLines', expect.any(Object));
+    expect(translate).not.toHaveBeenCalledWith('ui.fixLines', expect.objectContaining({ kind: expect.anything() }));
+    const strategy = screen.getByRole('button', { name: new RegExp(i18n.t('ui.packingStrategy')) });
+    expect(strategy).toHaveTextContent(`${i18n.t('ui.allowRotation')}: ${i18n.t('ui.rotationAllowed')}`);
+    fireEvent.click(strategy);
+    fireEvent.change(screen.getByLabelText(i18n.t('ui.algorithm')), { target: { value: algorithm } });
+    expect(strategy).toHaveTextContent(i18n.t(labelKey));
+    expect(screen.getByText(i18n.t('ui.rotationDescription'))).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('checkbox'));
+    expect(strategy).toHaveTextContent(`${i18n.t('ui.allowRotation')}: ${i18n.t('ui.rotationOff')}`);
+    optimizeSheetCutting.mockResolvedValue({
+      total_sheets: 1,
+      total_waste_area: 100,
+      overall_efficiency: 50,
+      algorithm_used: algorithm,
+      sheets: [],
+    });
+    fireEvent.change(document.getElementById('sheet-thickness'), { target: { value: '18' } });
+    const pack = screen.getByRole('button', { name: /plan the sheet cuts/i });
+    await waitFor(() => expect(pack).not.toBeDisabled());
+    fireEvent.click(pack);
+    await screen.findByRole('heading', { name: i18n.t('workflow.yourSheetLayout') });
+    expect(screen.getByText(i18n.t(labelKey))).toBeInTheDocument();
+  } finally {
+    translate.mockRestore();
+  }
 });

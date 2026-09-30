@@ -75,7 +75,7 @@ const CutoutRow = ({ cutout, index, handleCutoutChange, removeCutout, error, att
           <div className="flex items-end justify-end gap-1">
             <CutoutField
               tag="w"
-              aria-label={t('ui.cutoutSizeAria', { axis: 'width', item: index + 1 })}
+              aria-label={t('ui.cutoutSizeAria', { axis: t('workflow.width'), item: index + 1 })}
               type="number"
               step="0.1"
               value={cutout.width}
@@ -86,7 +86,7 @@ const CutoutRow = ({ cutout, index, handleCutoutChange, removeCutout, error, att
             />
             <CutoutField
               tag="h"
-              aria-label={t('ui.cutoutSizeAria', { axis: 'height', item: index + 1 })}
+              aria-label={t('ui.cutoutSizeAria', { axis: t('workflow.height'), item: index + 1 })}
               type="number"
               step="0.1"
               value={cutout.height}

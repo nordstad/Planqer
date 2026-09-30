@@ -37,6 +37,13 @@ const STEP_PARTS = 0;
 const STEP_PLAN = 1;
 const STEP_SAVE = 2;
 
+const algorithmLabelKeys = {
+  bottom_left_fill: 'ui.bottomLeft',
+  best_fit_2d: 'ui.bestFit',
+  genetic_2d: 'ui.genetic',
+  guillotine_cut: 'ui.guillotine',
+};
+
 const validateSheetParts = (parts, t) => parts.map((part) => {
   const errors = {};
   const width = parseFloat(part.width);
@@ -516,7 +523,7 @@ const SheetOptimizer = () => {
           <div style={{ marginTop: '26px' }}>
             <Disclosure
               title={t('ui.packingStrategy')}
-              hint={`${algorithm ? algorithm.replace(/_/g, ' ') : t('ui.autoSelected')} · 90° rotation ${allowRotation ? t('ui.rotationAllowed') : t('ui.rotationOff')}`}
+              hint={`${algorithm ? (Object.hasOwn(algorithmLabelKeys, algorithm) ? t(algorithmLabelKeys[algorithm]) : algorithm.replace(/_/g, ' ')) : t('ui.autoSelected')} · ${t('ui.allowRotation')}: ${allowRotation ? t('ui.rotationAllowed') : t('ui.rotationOff')}`}
               open={strategyOpen}
               onToggle={() => setStrategyOpen(v => !v)}
             >
@@ -543,8 +550,7 @@ const SheetOptimizer = () => {
                 <span>
                    <b style={{ fontSize: '13.5px' }}>{t('ui.allowRotation')}</b>
                   <span className="block synthetic">
-                    Turns parts to fit tighter. Switch it off when the grain or the
-                    face pattern has to run one way.
+                    {t('ui.rotationDescription')}
                   </span>
                 </span>
               </label>
@@ -580,8 +586,8 @@ const SheetOptimizer = () => {
           <div className="step-foot">
             <p className="synthetic step-foot-note">
               {hasErrors
-                 ? t('ui.fixLines', { kind: t('workflow.layout') })
-                : `${partCount} parts onto ${mm(parseFloat(sheetWidth))} × ${mm(parseFloat(sheetHeight))} mm stock`}
+                 ? t('ui.fixLines')
+                : t('workflow.sheetPartsSummary', { count: partCount, width: mm(parseFloat(sheetWidth)), height: mm(parseFloat(sheetHeight)) })}
             </p>
             <div className="step-foot-act">
               <button type="submit" className="btn-order" disabled={loading || hasErrors}>
@@ -624,7 +630,7 @@ const SheetOptimizer = () => {
                 </dd>
               </div>
               <div className="plan-fact">
-                 <dt>{t('ui.strategy')}</dt><dd>{result.algorithm_used.replace(/_/g, ' ')}</dd>
+                 <dt>{t('ui.strategy')}</dt><dd>{Object.hasOwn(algorithmLabelKeys, result.algorithm_used) ? t(algorithmLabelKeys[result.algorithm_used]) : result.algorithm_used.replace(/_/g, ' ')}</dd>
               </div>
             </dl>
           </div>

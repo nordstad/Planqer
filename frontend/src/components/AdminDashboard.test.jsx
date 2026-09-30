@@ -47,7 +47,7 @@ describe('AdminDashboard', () => {
     await screen.findByText('admin@example.com');
     const ownRow = screen.getByText('admin@example.com').closest('tr');
     expect(ownRow.querySelector('button[title*="own admin status"]')).toBeDisabled();
-    expect(ownRow.querySelector('button[title*="own active status"]')).toBeDisabled();
+    expect(ownRow.querySelector('button[title*="own account\'s active status"]')).toBeDisabled();
     expect(ownRow.querySelector('.btn-outline-danger')).toBeDisabled();
   });
 

@@ -720,6 +720,7 @@ const TileOptimizer = () => {
               <TileLayoutCandidateCard
                 key={index}
                 candidate={candidate}
+                minEdgeCut={minEdgeCut}
                 selected={index === selectedIndex}
                 onSelect={() => setSelectedIndex(index)}
               />
