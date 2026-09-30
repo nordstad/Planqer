@@ -73,7 +73,11 @@ def _select_best_candidate(
             result = optimize_cutting(parts, bl, kerf, algorithm)
 
             board_plans = _build_board_plans(
-                result.cut_list, bl, boards, kerf
+                result.cut_list,
+                bl,
+                boards,
+                kerf,
+                board_costs if optimize_for == "cost" else None,
             )
             total_waste, warnings = _calculate_plan_metrics(board_plans, kerf)
 
@@ -115,6 +119,23 @@ def _compute_optimization(
         raise HTTPException(
             status_code=400, detail="No board is long enough for the largest part."
         )
+    if optimize_for == "cost":
+        if not board_costs:
+            raise HTTPException(
+                status_code=400,
+                detail="Prices are required when optimizing for cost.",
+            )
+        missing_prices = [
+            length
+            for length in valid_boards
+            if length not in board_costs
+            or board_costs[length].get("price_per_board") is None
+        ]
+        if missing_prices:
+            raise HTTPException(
+                status_code=400,
+                detail="Every eligible board length needs a price when optimizing for cost.",
+            )
 
     start_time = time.time()
     best = _select_best_candidate(
@@ -131,14 +152,19 @@ def _build_board_plans(
     optimal_board_length: float,
     boards: list[float],
     kerf: float,
+    board_costs: dict | None = None,
 ) -> list[BoardPlan]:
     plans = []
     for board_cuts in cut_list:
         total_used = sum(board_cuts) + max(len(board_cuts) - 1, 0) * kerf
         suitable_lengths = [length for length in boards if length >= total_used]
-        stock_length = (
-            min(suitable_lengths) if suitable_lengths else optimal_board_length
-        )
+        if suitable_lengths and board_costs:
+            stock_length = min(
+                suitable_lengths,
+                key=lambda length: board_costs[length]["price_per_board"],
+            )
+        else:
+            stock_length = min(suitable_lengths) if suitable_lengths else optimal_board_length
         plans.append(BoardPlan(stock_length, tuple(board_cuts)))
     return plans
 

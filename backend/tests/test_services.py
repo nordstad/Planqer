@@ -1,9 +1,13 @@
 import logging
 
+import pytest
+from fastapi import HTTPException
+
 from planqer.algorithms import OptimizationAlgorithm
 from planqer.schemas import PlanqerResponse
 from planqer.services import (
     _build_board_plans,
+    _compute_optimization,
     _select_best_candidate,
     run_optimization,
 )
@@ -40,6 +44,35 @@ def test_select_best_candidate_returns_the_lowest_waste_candidate():
     ]
     assert candidate[3] == 174.0
     assert candidate[4] == OptimizationAlgorithm.FIRST_FIT_DECREASING
+
+
+def test_cost_mode_can_choose_longer_cheaper_stock():
+    candidate = _select_best_candidate(
+        parts={100.0: 1},
+        boards=[100.0, 200.0],
+        valid_boards=[100.0, 200.0],
+        kerf=3.0,
+        algorithm=OptimizationAlgorithm.FIRST_FIT_DECREASING,
+        board_costs={
+            100.0: {"price_per_board": 100.0},
+            200.0: {"price_per_board": 10.0},
+        },
+        optimize_for="cost",
+    )
+
+    assert candidate[2][0].stock_length == 200.0
+    assert candidate[1] == 10.0
+
+
+def test_cost_mode_rejects_eligible_stock_without_price():
+    with pytest.raises(HTTPException, match="Every eligible board length"):
+        _compute_optimization(
+            parts={100.0: 1},
+            boards=[100.0, 200.0],
+            kerf=3.0,
+            board_costs={100.0: {"price_per_board": 100.0}},
+            optimize_for="cost",
+        )
 
 
 def test_run_optimization_preserves_public_response_fields():
