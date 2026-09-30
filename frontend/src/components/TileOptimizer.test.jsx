@@ -2,12 +2,13 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { LanguageProvider } from '../contexts/LanguageContext';
 import TileOptimizer from './TileOptimizer';
-import { optimizeTileLayout, getProjectGroups, getUserTileProjects } from '../utils/api';
+import { optimizeTileLayout, getProjectGroups, getUserTileProjects, saveTileProject } from '../utils/api';
 
 jest.mock('../utils/api', () => ({
   optimizeTileLayout: jest.fn(),
   getProjectGroups: jest.fn(),
   getUserTileProjects: jest.fn(),
+  saveTileProject: jest.fn(),
 }));
 
 jest.mock('../contexts/AuthContext', () => ({
@@ -86,4 +87,53 @@ it('restores a saved tile plan addressed by the edit query', async () => {
   expect(screen.getByDisplayValue('1200')).toBeInTheDocument();
   expect(screen.getByDisplayValue('300')).toBeInTheDocument();
    expect(screen.getByDisplayValue('600')).toBeInTheDocument();
+});
+
+it('clears the saved confirmation when a different candidate is selected', async () => {
+  const alternative = { ...candidate, label: 'Lowest waste', tiles_to_purchase_with_waste: 11 };
+  optimizeTileLayout.mockResolvedValue({ candidates: [candidate, alternative], recommended_index: 0 });
+  saveTileProject.mockResolvedValue({ name: 'Saved layout', project_group_id: null });
+
+  render(
+    <MemoryRouter>
+      <LanguageProvider><TileOptimizer /></LanguageProvider>
+    </MemoryRouter>,
+  );
+
+  fireEvent.change(await screen.findByLabelText('Thickness (mm)'), { target: { value: '10' } });
+  fireEvent.click(await screen.findByRole('button', { name: /Solve the layout/i }));
+  await screen.findByRole('heading', { name: 'Pick a layout' });
+  fireEvent.click(screen.getByRole('button', { name: /Lowest waste/ }));
+  fireEvent.click(screen.getByRole('button', { name: 'Name it', exact: true }));
+  fireEvent.change(await screen.findByLabelText('Plan name'), { target: { value: 'Saved layout' } });
+  fireEvent.click(screen.getByRole('button', { name: /Save plan/i }));
+  expect(await screen.findByRole('heading', { name: 'Layout saved' })).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole('button', { name: /Back to the layout/i }));
+  fireEvent.click(screen.getByRole('button', { name: /Balanced/ }));
+  expect(screen.getByRole('heading', { name: 'Pick a layout' })).toBeInTheDocument();
+  expect(screen.queryByRole('heading', { name: 'Layout saved' })).not.toBeInTheDocument();
+});
+
+it('ignores a late layout response after the surface changes', async () => {
+  let resolveLayout;
+  optimizeTileLayout.mockImplementationOnce(() => new Promise((resolve) => {
+    resolveLayout = resolve;
+  }));
+
+  render(
+    <MemoryRouter>
+      <LanguageProvider><TileOptimizer /></LanguageProvider>
+    </MemoryRouter>,
+  );
+
+  fireEvent.change(await screen.findByLabelText('Thickness (mm)'), { target: { value: '10' } });
+  fireEvent.click(await screen.findByRole('button', { name: /Solve the layout/i }));
+  await waitFor(() => expect(optimizeTileLayout).toHaveBeenCalled());
+
+  fireEvent.change(screen.getByLabelText(/Surface width/i), { target: { value: '2500' } });
+  resolveLayout({ candidates: [candidate], recommended_index: 0 });
+
+  await waitFor(() => expect(screen.getByRole('button', { name: /Solve the layout/i })).not.toBeDisabled());
+  expect(screen.queryByRole('heading', { name: 'Pick a layout' })).not.toBeInTheDocument();
 });

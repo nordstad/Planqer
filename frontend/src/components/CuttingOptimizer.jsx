@@ -65,6 +65,7 @@ const CuttingOptimizer = () => {
   const [currency, setCurrency] = useState(DEFAULT_CURRENCY);
 
   const [result, setResult] = useState(null);
+  const [acceptedSnapshot, setAcceptedSnapshot] = useState(null);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState("");
   const [inputErrors, setInputErrors] = useState({ parts: [], boards: [], sawKerf: "" });
@@ -87,6 +88,8 @@ const CuttingOptimizer = () => {
   const [userProjects, setUserProjects] = useState([]);
   const [loadModalOpen, setLoadModalOpen] = useState(false);
   const inputRevision = useRef(0);
+  const inputSource = useRef('initial');
+  const defaultsLoaded = useRef(false);
 
   /* prices: an input, so applying them re-runs the plan */
   const [pricesApplied, setPricesApplied] = useState(false);
@@ -126,9 +129,11 @@ const CuttingOptimizer = () => {
   // This page requires sign-in, so project groups and saved plans are always available.
   // Loaded defaults are also applied once so the user settings act as the real starting state.
   useEffect(() => {
-    if (!user) return;
+    if (!user || defaultsLoaded.current) return;
+    defaultsLoaded.current = true;
 
     getUserSettings().then((settings) => {
+      if (inputSource.current !== 'initial') return;
       if (Array.isArray(settings?.default_board_lengths) && settings.default_board_lengths.length > 0) {
         setBoards(settings.default_board_lengths.map(String));
       }
@@ -157,6 +162,7 @@ const CuttingOptimizer = () => {
     try {
       const data = JSON.parse(importData);
       if (data.parts && data.source === 'model-cutlist') {
+        inputSource.current = 'imported';
         setParts(Object.entries(data.parts).map(([length, quantity]) => ({
           length,
           quantity: quantity.toString(),
@@ -178,6 +184,7 @@ const CuttingOptimizer = () => {
     inputRevision.current += 1;
     setLoading(false);
     setResult(null);
+    setAcceptedSnapshot(null);
     setSaved(null);
     setApiError("");
     setPricedBefore(null);
@@ -244,6 +251,7 @@ const CuttingOptimizer = () => {
   };
 
   const loadProject = (project) => {
+    inputSource.current = 'loaded';
     retirePlan();
     setParts(Object.entries(project.parts_data).map(([length, quantity]) => ({
       length,
@@ -382,6 +390,21 @@ const CuttingOptimizer = () => {
         : null;
       const response = await optimizeCutting(parts, boards, sawKerf, costData);
       if (requestRevision !== inputRevision.current) return;
+      setAcceptedSnapshot({
+        parts: parts.map((part) => ({ ...part })),
+        boards: [...boards],
+        sawKerf,
+        materialType: material,
+        boardThickness,
+        boardWidth,
+        currency,
+        boardCosts: withPrices
+          ? Object.fromEntries(Object.entries(boardCosts).map(([length, cost]) => [length, { ...cost }]))
+          : null,
+        samePriceForAll: withPrices ? samePriceForAll : false,
+        uniformPrice: withPrices ? uniformPrice : '',
+        optimizeFor: withPrices ? optimizeFor : null,
+      });
       setResult(response);
       setPricesApplied(withPrices);
       setPricedBefore(before);
@@ -422,25 +445,28 @@ const CuttingOptimizer = () => {
   };
 
   const savePlan = async () => {
+    if (pricesDirty) {
+      setApiError(t('auditUi.pricesMustApply'));
+      return;
+    }
+    if (!acceptedSnapshot) return;
     setSaving(true);
     try {
       const project = await saveProject({
         id: saveMode === 'update' ? editingProject?.id : undefined,
         name: projectName.trim(),
         projectGroupId: selectedGroupId,
-        parts,
-        boards,
-        sawKerf,
-        materialType: material,
-        boardThickness,
-        boardWidth,
-        // Only recorded when the plan on screen was actually costed — otherwise
-        // half-typed prices would be saved as if they had produced this plan.
-        boardCosts: pricesApplied ? {
-          same_price_for_all: samePriceForAll,
-          uniform_price: samePriceForAll ? parseFloat(uniformPrice) || null : null,
-          optimize_for: optimizeFor,
-          board_costs: boardCosts,
+        parts: acceptedSnapshot.parts,
+        boards: acceptedSnapshot.boards,
+        sawKerf: acceptedSnapshot.sawKerf,
+        materialType: acceptedSnapshot.materialType,
+        boardThickness: acceptedSnapshot.boardThickness,
+        boardWidth: acceptedSnapshot.boardWidth,
+        boardCosts: acceptedSnapshot.boardCosts ? {
+          same_price_for_all: acceptedSnapshot.samePriceForAll,
+          uniform_price: acceptedSnapshot.samePriceForAll ? parseFloat(acceptedSnapshot.uniformPrice) || null : null,
+          optimize_for: acceptedSnapshot.optimizeFor,
+          board_costs: acceptedSnapshot.boardCosts,
         } : null,
         result,
       });

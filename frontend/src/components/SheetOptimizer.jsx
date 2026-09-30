@@ -76,6 +76,7 @@ const SheetOptimizer = () => {
   const [allowRotation, setAllowRotation] = useState(true);
 
   const [result, setResult] = useState(null);
+  const [acceptedSnapshot, setAcceptedSnapshot] = useState(null);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState("");
    const [inputErrors, setInputErrors] = useState({ parts: [], sheetWidth: "", sheetHeight: "", kerfWidth: "", sheetThickness: "", material: "" });
@@ -165,6 +166,7 @@ const SheetOptimizer = () => {
     inputRevision.current += 1;
     setLoading(false);
     setResult(null);
+    setAcceptedSnapshot(null);
     setSaved(null);
     setApiError("");
   };
@@ -249,6 +251,16 @@ const SheetOptimizer = () => {
         parts, sheetWidth, sheetHeight, kerfWidth, effectiveMaterial, algorithm || undefined, allowRotation
       );
       if (requestRevision !== inputRevision.current) return;
+      setAcceptedSnapshot({
+        parts: parts.map((part) => ({ ...part })),
+        sheetWidth,
+        sheetHeight,
+        sheetThickness,
+        kerfWidth,
+        materialType: effectiveMaterial,
+        algorithm,
+        allowRotation,
+      });
       setResult(response);
       setStep(STEP_PLAN);
     } catch (error) {
@@ -279,20 +291,21 @@ const SheetOptimizer = () => {
   };
 
   const savePlan = async () => {
+    if (!acceptedSnapshot) return;
     setSaving(true);
     try {
       const project = await saveSheetProject({
         id: saveMode === 'update' ? editingProject?.id : undefined,
         name: projectName.trim(),
         projectGroupId: selectedGroupId,
-        parts,
-        sheetWidth,
-        sheetHeight,
-        sheetThickness,
-        kerfWidth,
-        materialType: materialType === 'custom' ? customMaterial.trim() : materialType,
-        algorithm,
-        allowRotation,
+        parts: acceptedSnapshot.parts,
+        sheetWidth: acceptedSnapshot.sheetWidth,
+        sheetHeight: acceptedSnapshot.sheetHeight,
+        sheetThickness: acceptedSnapshot.sheetThickness,
+        kerfWidth: acceptedSnapshot.kerfWidth,
+        materialType: acceptedSnapshot.materialType,
+        algorithm: acceptedSnapshot.algorithm,
+        allowRotation: acceptedSnapshot.allowRotation,
         result,
       });
       setSaved(project);

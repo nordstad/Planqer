@@ -187,10 +187,6 @@ const ModelCutlistOptimizer = () => {
   useEffect(() => {
     if (!user) return;
 
-    if (step === STEP_SAVE) {
-      getProjectGroups().then(setProjectGroups).catch(() => {});
-    }
-
     getUserSettings().then((settings) => {
       if (Array.isArray(settings?.default_board_lengths) && settings.default_board_lengths.length > 0) {
         setBoards(settings.default_board_lengths.map(String));
@@ -199,6 +195,12 @@ const ModelCutlistOptimizer = () => {
         setBoardKerf(String(settings.default_saw_blade_width));
       }
     }).catch(() => {});
+  }, [user]);
+
+  useEffect(() => {
+    if (user && step === STEP_SAVE) {
+      getProjectGroups().then(setProjectGroups).catch(() => {});
+    }
   }, [user, step]);
 
   /* ── the model ─────────────────────────────────────────────────────── */

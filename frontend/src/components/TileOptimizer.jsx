@@ -10,7 +10,7 @@
   tradeoff that fits the job — see .plans/tile-layout.md Decision #3.
 */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -95,6 +95,7 @@ const TileOptimizer = () => {
   const [guardOpen, setGuardOpen] = useState(false);
 
   const [result, setResult] = useState(null);
+  const [acceptedSnapshot, setAcceptedSnapshot] = useState(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState('');
@@ -118,6 +119,7 @@ const TileOptimizer = () => {
   /* loading one back */
   const [userProjects, setUserProjects] = useState([]);
   const [loadModalOpen, setLoadModalOpen] = useState(false);
+  const inputRevision = useRef(0);
 
   const debounced = {
     surfaceWidth: useDebounce(surfaceWidth, 300),
@@ -166,7 +168,10 @@ const TileOptimizer = () => {
 
   /* ── a layout belongs to its inputs ────────────────────────────────────── */
   const retireLayout = () => {
+    inputRevision.current += 1;
+    setLoading(false);
     setResult(null);
+    setAcceptedSnapshot(null);
     setSelectedIndex(0);
     setApiError('');
     setSaved(null);
@@ -263,22 +268,39 @@ const TileOptimizer = () => {
     setLoading(true);
     setResult(null);
     setSaved(null);
+    const requestRevision = ++inputRevision.current;
+    const effectiveMaterial = materialType === 'custom' ? customMaterial.trim() : materialType;
     try {
       const response = await optimizeTileLayout({
         surfaceWidth, surfaceHeight, cutouts,
-         tile: { width: tileWidth, height: tileHeight, allowRotation, materialType: materialType === 'custom' ? customMaterial.trim() : materialType, thickness: tileThickness },
+         tile: { width: tileWidth, height: tileHeight, allowRotation, materialType: effectiveMaterial, thickness: tileThickness },
         joint: { jointWidth, perimeterGap },
         bond: { pattern: bondPattern, offsetFraction },
         minEdgeCut, reuseOffcuts, wastePercent, candidateCount,
         projectName,
       });
+      if (requestRevision !== inputRevision.current) return;
+      setAcceptedSnapshot({
+        surfaceWidth,
+        surfaceHeight,
+        cutouts: cutouts.map((cutout) => ({ ...cutout })),
+        tile: { width: tileWidth, height: tileHeight, allowRotation, materialType: effectiveMaterial, thickness: tileThickness },
+        joint: { jointWidth, perimeterGap },
+        bond: { pattern: bondPattern, offsetFraction },
+        minEdgeCut,
+        reuseOffcuts,
+        wastePercent,
+        candidateCount,
+      });
       setResult(response);
       setSelectedIndex(response.recommended_index);
       setStep(STEP_LAYOUT);
     } catch (error) {
+      if (requestRevision !== inputRevision.current) return;
       setApiError(error.message || t('auditUi.unknownError'));
+    } finally {
+      if (requestRevision === inputRevision.current) setLoading(false);
     }
-    setLoading(false);
   };
 
   /* ── keeping a layout ──────────────────────────────────────────────────── */
@@ -300,17 +322,23 @@ const TileOptimizer = () => {
   };
 
   const savePlan = async () => {
+    if (!acceptedSnapshot) return;
     setSaving(true);
     try {
       const project = await saveTileProject({
         id: saveMode === 'update' ? editingProject?.id : undefined,
         name: projectName.trim(),
         projectGroupId: selectedGroupId,
-        surfaceWidth, surfaceHeight, cutouts,
-         tile: { width: tileWidth, height: tileHeight, allowRotation, materialType: materialType === 'custom' ? customMaterial.trim() : materialType, thickness: tileThickness },
-        joint: { jointWidth, perimeterGap },
-        bond: { pattern: bondPattern, offsetFraction },
-        minEdgeCut, reuseOffcuts, wastePercent, candidateCount,
+        surfaceWidth: acceptedSnapshot.surfaceWidth,
+        surfaceHeight: acceptedSnapshot.surfaceHeight,
+        cutouts: acceptedSnapshot.cutouts,
+        tile: acceptedSnapshot.tile,
+        joint: acceptedSnapshot.joint,
+        bond: acceptedSnapshot.bond,
+        minEdgeCut: acceptedSnapshot.minEdgeCut,
+        reuseOffcuts: acceptedSnapshot.reuseOffcuts,
+        wastePercent: acceptedSnapshot.wastePercent,
+        candidateCount: acceptedSnapshot.candidateCount,
         candidate: selected,
       });
       setSaved(project);
@@ -721,7 +749,10 @@ const TileOptimizer = () => {
                 key={index}
                 candidate={candidate}
                 selected={index === selectedIndex}
-                onSelect={() => setSelectedIndex(index)}
+                onSelect={() => {
+                  setSelectedIndex(index);
+                  setSaved(null);
+                }}
               />
             ))}
           </div>

@@ -111,3 +111,29 @@ it('explains why sheet planning is disabled when thickness is missing', async ()
   expect(screen.getByRole('button', { name: /plan the sheet cuts/i })).toBeDisabled();
   expect(await screen.findByText(/enter the sheet thickness before planning/i)).toBeInTheDocument();
 });
+
+it('ignores a late layout response after the sheet changes', async () => {
+  let resolveLayout;
+  optimizeSheetCutting.mockImplementationOnce(() => new Promise((resolve) => {
+    resolveLayout = resolve;
+  }));
+
+  render(
+    <MemoryRouter initialEntries={['/sheet-cutting']}>
+      <LanguageProvider><SheetOptimizer /></LanguageProvider>
+    </MemoryRouter>,
+  );
+
+  const thickness = document.getElementById('sheet-thickness');
+  fireEvent.change(thickness, { target: { value: '18' } });
+  const packButton = screen.getByRole('button', { name: /plan the sheet cuts/i });
+  await waitFor(() => expect(packButton).not.toBeDisabled());
+  fireEvent.click(packButton);
+  await waitFor(() => expect(optimizeSheetCutting).toHaveBeenCalled());
+
+  fireEvent.change(screen.getByLabelText(/Sheet width/i), { target: { value: '1300' } });
+  resolveLayout({ total_sheets: 1, total_waste_area: 100, overall_efficiency: 50, algorithm_used: 'best_fit_2d', sheets: [] });
+
+  await waitFor(() => expect(screen.getByRole('button', { name: /plan the sheet cuts/i })).not.toBeDisabled());
+  expect(screen.queryByRole('heading', { name: /Your sheet layout/i })).not.toBeInTheDocument();
+});
