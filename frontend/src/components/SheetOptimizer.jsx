@@ -9,7 +9,7 @@
   auto-selects well, is folded away.
 */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import CatalogPage from './CatalogPage';
@@ -26,6 +26,12 @@ import SheetResultDisplay from './SheetResultDisplay';
 import { ArrowLeft, ArrowRight, Plus, Tick } from './icons';
 
 const mm = (n) => (Number.isFinite(n) ? Math.round(n).toLocaleString('sv-SE') : '—');
+
+const nextPartId = (parts) => {
+  let index = parts.length + 1;
+  while (parts.some((part) => part.id === `part_${index}`)) index += 1;
+  return `part_${index}`;
+};
 
 const STEP_PARTS = 0;
 const STEP_PLAN = 1;
@@ -91,6 +97,7 @@ const SheetOptimizer = () => {
   /* loading one back */
   const [userProjects, setUserProjects] = useState([]);
   const [loadModalOpen, setLoadModalOpen] = useState(false);
+  const inputRevision = useRef(0);
 
   const debouncedParts = useDebounce(parts, 300);
   const debouncedSheetWidth = useDebounce(sheetWidth, 300);
@@ -155,6 +162,8 @@ const SheetOptimizer = () => {
 
   /* ── a layout belongs to its inputs ────────────────────────────────────── */
   const retireLayout = () => {
+    inputRevision.current += 1;
+    setLoading(false);
     setResult(null);
     setSaved(null);
     setApiError("");
@@ -165,15 +174,14 @@ const SheetOptimizer = () => {
     setParts(parts.map((p, i) => {
       if (i !== index) return p;
       const next = { ...p, [field]: value };
-      // The id is what labels the part on the drawing, so it follows the name.
-      if (field === 'name' && value) next.id = value.toLowerCase().replace(/[^a-z0-9]/g, '_');
+      // Keep the row identity stable when its display name changes.
       return next;
     }));
   };
 
   const addPart = () => {
     retireLayout();
-    setParts([...parts, { width: "", height: "", quantity: "", name: "", id: `part_${parts.length + 1}` }]);
+    setParts([...parts, { width: "", height: "", quantity: "", name: "", id: nextPartId(parts) }]);
   };
 
   const removePart = (index) => {
@@ -191,7 +199,7 @@ const SheetOptimizer = () => {
       height: part.height.toString(),
       quantity: part.quantity.toString(),
       name: part.name || `Sheet_${index + 1}`,
-      id: part.name || `sheet_${index + 1}`,
+      id: part.id || `sheet_${index + 1}`,
     })));
     setSheetWidth(project.sheet_width.toString());
     setSheetHeight(project.sheet_height.toString());
@@ -234,17 +242,21 @@ const SheetOptimizer = () => {
     setLoading(true);
     setResult(null);
     setSaved(null);
+    const requestRevision = ++inputRevision.current;
     try {
       const effectiveMaterial = materialType === 'custom' ? customMaterial.trim() : materialType;
       const response = await optimizeSheetCutting(
         parts, sheetWidth, sheetHeight, kerfWidth, effectiveMaterial, algorithm || undefined, allowRotation
       );
+      if (requestRevision !== inputRevision.current) return;
       setResult(response);
       setStep(STEP_PLAN);
     } catch (error) {
+      if (requestRevision !== inputRevision.current) return;
       setApiError(error.message || t('auditUi.unknownError'));
+    } finally {
+      if (requestRevision === inputRevision.current) setLoading(false);
     }
-    setLoading(false);
   };
 
   /* ── keeping a layout ──────────────────────────────────────────────────── */
@@ -366,7 +378,7 @@ const SheetOptimizer = () => {
             <tbody>
               {parts.map((part, index) => (
                 <SheetPartRow
-                  key={index}
+                  key={part.id}
                   part={part}
                   index={index}
                   handlePartChange={handlePartChange}
