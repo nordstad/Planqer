@@ -92,6 +92,16 @@ class TestRectangle:
         assert rect.height == 200
         assert not rect.rotated
 
+    def test_rectangle_copy_is_independent(self):
+        rect = Rectangle(width=100, height=200, part_id="test_1")
+
+        copied = rect.copy()
+        copied.width = 200
+        copied.rotated = True
+
+        assert rect.width == 100
+        assert not rect.rotated
+
     def test_rectangle_fits_in_sheet(self):
         """Test rectangle fitting within sheet boundaries."""
         rect = Rectangle(width=100, height=200)
@@ -547,6 +557,24 @@ class TestSheetOptimization:
         assert result.algorithm_used == SheetOptimizationAlgorithm.BEST_FIT_2D
         assert result.total_sheets == 1
         assert len(result.sheets[0].parts) == 2
+
+    def test_genetic_algorithm_returns_complete_layout(self):
+        parts = {
+            "large": {"width": 500, "height": 400, "quantity": 1},
+            "medium": {"width": 300, "height": 200, "quantity": 2},
+            "small": {"width": 100, "height": 100, "quantity": 4},
+        }
+
+        result = optimize_sheet_cutting(
+            parts=parts,
+            sheet_width=1000,
+            sheet_height=800,
+            kerf_width=3,
+            algorithm=SheetOptimizationAlgorithm.GENETIC_2D,
+            allow_rotation=True,
+        )
+
+        assert_complete_sheet_result(result, parts, 1000, 800, 3)
 
 
 class TestEdgeCases:

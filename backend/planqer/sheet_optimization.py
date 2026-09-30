@@ -56,6 +56,17 @@ class Rectangle:
             rotated=not self.rotated,
         )
 
+    def copy(self) -> "Rectangle":
+        """Return an independent copy of the rectangle."""
+        return Rectangle(
+            width=self.width,
+            height=self.height,
+            x=self.x,
+            y=self.y,
+            part_id=self.part_id,
+            rotated=self.rotated,
+        )
+
     def fits_in(
         self, sheet_width: float, sheet_height: float, kerf: float = 0.0
     ) -> bool:
@@ -661,7 +672,7 @@ def genetic_2d_algorithm(
 
     def create_individual() -> list[Rectangle]:
         """Create a random permutation of rectangles with random rotations."""
-        individual = rectangles.copy()
+        individual = [rectangle.copy() for rectangle in rectangles]
         random.shuffle(individual)
 
         if allow_rotation:
@@ -707,6 +718,9 @@ def genetic_2d_algorithm(
         if current_sheet.parts:
             sheets.append(current_sheet)
 
+        if sum(len(sheet.parts) for sheet in sheets) != len(individual):
+            return float("inf")
+
         # Fitness function: minimize sheets first, then minimize total waste
         num_sheets = len(sheets)
         total_waste = sum(sheet.waste_area for sheet in sheets)
@@ -732,11 +746,13 @@ def genetic_2d_algorithm(
         # Copy segment from parent1
         segment_ids = set()
         for i in range(start, end):
-            offspring[i] = parent1[i]
+            offspring[i] = parent1[i].copy()
             segment_ids.add(parent1[i].part_id)
 
         # Fill remaining positions from parent2
-        parent2_filtered = [rect for rect in parent2 if rect.part_id not in segment_ids]
+        parent2_filtered = [
+            rect.copy() for rect in parent2 if rect.part_id not in segment_ids
+        ]
         p2_index = 0
 
         for i in range(len(offspring)):
@@ -752,14 +768,14 @@ def genetic_2d_algorithm(
                     if rect.part_id not in [
                         r.part_id for r in offspring if r is not None
                     ]:
-                        offspring[i] = rect
+                        offspring[i] = rect.copy()
                         break
 
         return [r for r in offspring if r is not None]
 
     def mutate(individual: list[Rectangle]) -> list[Rectangle]:
         """Mutate by swapping positions and rotating parts."""
-        mutated = individual.copy()
+        mutated = [rect.copy() for rect in individual]
 
         # Swap mutation
         if random.random() < 0.7 and len(mutated) > 1:
@@ -790,9 +806,9 @@ def genetic_2d_algorithm(
             fitness = evaluate_fitness(individual)
             fitness_scores.append((individual, fitness))
 
-            if fitness < best_fitness:
+            if fitness < best_fitness or best_individual is None:
                 best_fitness = fitness
-                best_individual = individual.copy()
+                best_individual = [rect.copy() for rect in individual]
 
         # Sort by fitness (lower is better)
         fitness_scores.sort(key=lambda x: x[1])
@@ -812,6 +828,9 @@ def genetic_2d_algorithm(
             new_population.append(offspring)
 
         population = new_population
+
+    if best_individual is None or best_fitness == float("inf"):
+        raise ValueError("Genetic optimization produced no complete candidate")
 
     # Create final result using best individual
     sheets = []
