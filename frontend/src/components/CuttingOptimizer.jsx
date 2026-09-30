@@ -17,7 +17,7 @@
   named it and chosen its project.
 */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { optimizeCutting, saveProject, getProjectGroups, createProjectGroup, getUserProjects, getUserSettings } from '../utils/api';
@@ -86,6 +86,7 @@ const CuttingOptimizer = () => {
   /* loading one back */
   const [userProjects, setUserProjects] = useState([]);
   const [loadModalOpen, setLoadModalOpen] = useState(false);
+  const inputRevision = useRef(0);
 
   /* prices: an input, so applying them re-runs the plan */
   const [pricesApplied, setPricesApplied] = useState(false);
@@ -174,6 +175,8 @@ const CuttingOptimizer = () => {
      went with it, so the diagram on the plan step is never a plan for
      different parts. Prices are excluded: they have their own apply button. */
   const retirePlan = () => {
+    inputRevision.current += 1;
+    setLoading(false);
     setResult(null);
     setSaved(null);
     setApiError("");
@@ -356,6 +359,8 @@ const CuttingOptimizer = () => {
       return;
     }
 
+    const requestRevision = ++inputRevision.current;
+
     /* The plan stays on screen while the new one computes. Clearing it here
        unmounted the whole plan step mid-request — including the button that
        started it — which collapsed the page, dropped the scroll position to the
@@ -376,15 +381,18 @@ const CuttingOptimizer = () => {
         ? { enabled: true, currency, boardCosts, optimizeFor }
         : null;
       const response = await optimizeCutting(parts, boards, sawKerf, costData);
+      if (requestRevision !== inputRevision.current) return;
       setResult(response);
       setPricesApplied(withPrices);
       setPricedBefore(before);
       setAppliedPriceKey(withPrices ? key : null);
       setStep(STEP_PLAN);
     } catch (error) {
+      if (requestRevision !== inputRevision.current) return;
       setApiError(error.message || t('auditUi.unknownError'));
+    } finally {
+      if (requestRevision === inputRevision.current) setLoading(false);
     }
-    setLoading(false);
   };
 
   const handlePlanSubmit = (e) => {

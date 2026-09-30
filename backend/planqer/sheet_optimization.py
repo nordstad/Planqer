@@ -206,6 +206,22 @@ def expand_sheet_parts(parts: dict[str, dict]) -> list[Rectangle]:
     return sorted(rectangles, key=lambda r: r.area, reverse=True)
 
 
+def _validate_parts_fit(
+    rectangles: list[Rectangle],
+    sheet_width: float,
+    sheet_height: float,
+    allow_rotation: bool,
+) -> None:
+    """Reject parts that cannot fit on any sheet in an allowed orientation."""
+    for rectangle in rectangles:
+        fits = rectangle.width <= sheet_width and rectangle.height <= sheet_height
+        rotated_fits = (
+            rectangle.height <= sheet_width and rectangle.width <= sheet_height
+        )
+        if not fits and not (allow_rotation and rotated_fits):
+            raise ValueError(f"Part {rectangle.part_id} does not fit on the sheet")
+
+
 def bottom_left_fill_algorithm(
     parts: dict[str, dict],
     sheet_width: float,
@@ -230,6 +246,7 @@ def bottom_left_fill_algorithm(
         SheetOptimizationResult with optimized layout
     """
     rectangles = expand_sheet_parts(parts)
+    _validate_parts_fit(rectangles, sheet_width, sheet_height, allow_rotation)
     sheets = []
     current_sheet = SheetLayout(sheet_width, sheet_height, [], kerf_width=kerf_width)
 
@@ -350,6 +367,7 @@ def best_fit_2d_algorithm(
     This is more sophisticated than bottom-left fill.
     """
     rectangles = expand_sheet_parts(parts)
+    _validate_parts_fit(rectangles, sheet_width, sheet_height, allow_rotation)
     sheets = []
 
     for rect in rectangles:
@@ -506,6 +524,7 @@ def guillotine_cut_algorithm(
     lines from edge to edge, which is important for some manufacturing processes.
     """
     rectangles = expand_sheet_parts(parts)
+    _validate_parts_fit(rectangles, sheet_width, sheet_height, allow_rotation)
     sheets = []
 
     # For each sheet, maintain a list of free rectangles
@@ -628,6 +647,7 @@ def genetic_2d_algorithm(
     import random
 
     rectangles = expand_sheet_parts(parts)
+    _validate_parts_fit(rectangles, sheet_width, sheet_height, allow_rotation)
 
     if len(rectangles) <= 5:
         # For very small problems, use simpler algorithm

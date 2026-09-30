@@ -7,6 +7,7 @@ between computation time and solution quality.
 """
 
 import random
+from collections import Counter
 from dataclasses import dataclass
 from enum import Enum
 
@@ -221,6 +222,10 @@ def genetic_algorithm(
     Space Complexity: O(p * n)
     """
     part_list = expand_parts_list(parts)
+    expected_parts = Counter(part_list)
+
+    if any(part > board_length for part in part_list):
+        raise ValueError("Every part must fit on the board")
 
     if len(part_list) <= 5:
         # For very small problems, genetic algorithm overhead isn't worth it
@@ -228,6 +233,9 @@ def genetic_algorithm(
 
     def evaluate_fitness(permutation: list[float]) -> float:
         """Evaluate fitness of a permutation (lower waste = higher fitness)."""
+        if Counter(permutation) != expected_parts:
+            return float("-inf")
+
         boards: list[list[float]] = []
 
         for part in permutation:
@@ -263,11 +271,17 @@ def genetic_algorithm(
         if len(parent1) <= 2:
             return parent1.copy()
 
-        # Simple single-point crossover for robustness
+        # Preserve the multiset while combining the parent ordering.
         crossover_point = random.randint(1, len(parent1) - 1)
 
-        # Take first part from parent1, second part from parent2
-        offspring = parent1[:crossover_point] + parent2[crossover_point:]
+        offspring = parent1[:crossover_point]
+        remaining = Counter(parent1)
+        for part in offspring:
+            remaining[part] -= 1
+        for part in parent2:
+            if remaining[part] > 0:
+                offspring.append(part)
+                remaining[part] -= 1
 
         return offspring
 
@@ -296,6 +310,13 @@ def genetic_algorithm(
         fitness_scores = [
             (individual, evaluate_fitness(individual)) for individual in population
         ]
+        fitness_scores = [
+            (individual, score)
+            for individual, score in fitness_scores
+            if score != float("-inf")
+        ]
+        if len(fitness_scores) < 2:
+            raise ValueError("Genetic algorithm produced no valid candidates")
         fitness_scores.sort(key=lambda x: x[1], reverse=True)
 
         # Select top 50% for reproduction
@@ -310,12 +331,20 @@ def genetic_algorithm(
             parent1, parent2 = random.sample(elite, 2)
             offspring = crossover(parent1, parent2)
             offspring = mutate(offspring)
-            new_population.append(offspring)
+            if evaluate_fitness(offspring) != float("-inf"):
+                new_population.append(offspring)
 
         population = new_population
 
     # Return best solution
-    best_individual = max(population, key=evaluate_fitness)
+    valid_population = [
+        individual
+        for individual in population
+        if evaluate_fitness(individual) != float("-inf")
+    ]
+    if not valid_population:
+        raise ValueError("Genetic algorithm produced no valid final candidate")
+    best_individual = max(valid_population, key=evaluate_fitness)
 
     # Convert best individual back to board layout
     boards: list[list[float]] = []
@@ -335,6 +364,10 @@ def genetic_algorithm(
         # Only create a new board if the part fits.
         if not placed and part <= board_length:
             boards.append([part])
+
+    actual_parts = Counter(part for board in boards for part in board)
+    if actual_parts != expected_parts:
+        raise ValueError("Genetic algorithm produced an incomplete result")
 
     # Calculate final waste
     total_waste = 0.0

@@ -186,25 +186,75 @@ export const getUserProjects = async () => {
   }
 };
 
+export const serializeBoardParts = (parts) => {
+  const payload = {};
+  parts.forEach((part) => {
+    const length = parseFloat(part.length);
+    const quantity = parseInt(part.quantity, 10);
+    if (Number.isFinite(length) && Number.isFinite(quantity)) {
+      payload[length] = (payload[length] || 0) + quantity;
+    }
+  });
+  return payload;
+};
+
+export const serializeBoardLengths = (boards) => [
+  ...new Set(
+    boards
+      .map((board) => parseFloat(board))
+      .filter((length) => Number.isFinite(length)),
+  ),
+];
+
+export const normalizeSheetParts = (parts) => {
+  const usedIds = new Set();
+  return parts.reduce((normalized, part, index) => {
+    const baseId = part.id || `part_${index + 1}`;
+    let id = baseId;
+    let suffix = 2;
+    while (usedIds.has(id)) {
+      id = `${baseId}_${suffix}`;
+      suffix += 1;
+    }
+    usedIds.add(id);
+
+    const width = parseFloat(part.width);
+    const height = parseFloat(part.height);
+    const quantity = parseInt(part.quantity, 10);
+    if (
+      Number.isFinite(width) && width > 0
+      && Number.isFinite(height) && height > 0
+      && Number.isFinite(quantity) && quantity > 0
+    ) {
+      normalized.push({
+        id,
+        name: part.name || `Part ${index + 1}`,
+        width,
+        height,
+        quantity,
+      });
+    }
+    return normalized;
+  }, []);
+};
+
+export const serializeSheetParts = (parts) => Object.fromEntries(
+  normalizeSheetParts(parts).map(({ id, width, height, quantity }) => [
+    id,
+    { width, height, quantity },
+  ]),
+);
+
 /* Keeping a plan is its own step: running one on /cutting-plans computes and
    returns, and nothing is stored until the user has named it here. The diagram
    is redrawn server-side from optimization_result, so none is sent. */
 export const saveProject = async ({ id, name, projectGroupId, parts, boards, sawKerf, materialType = '', boardThickness = 0, boardWidth = 0, boardCosts, result }) => {
-  const partsPayload = {};
-  parts.forEach((part) => {
-    const len = parseFloat(part.length);
-    const qty = parseInt(part.quantity, 10);
-    if (!isNaN(len) && !isNaN(qty)) {
-      partsPayload[len] = qty;
-    }
-  });
-
   try {
     const payload = {
       name,
       project_group_id: projectGroupId || null,
-      parts_data: partsPayload,
-      board_lengths: boards.map((b) => parseFloat(b)).filter((n) => !isNaN(n)),
+      parts_data: serializeBoardParts(parts),
+      board_lengths: serializeBoardLengths(boards),
       saw_blade_width: parseFloat(sawKerf),
       material_type: materialType,
       board_thickness: parseFloat(boardThickness),
@@ -259,12 +309,7 @@ export const saveSheetProject = async ({
     const payload = {
       name,
       project_group_id: projectGroupId || null,
-      parts_data: parts.map((part, index) => ({
-        name: part.name || `Part ${index + 1}`,
-        width: parseFloat(part.width),
-        height: parseFloat(part.height),
-        quantity: parseInt(part.quantity, 10),
-      })),
+      parts_data: normalizeSheetParts(parts),
       sheet_width: parseFloat(sheetWidth),
       sheet_height: parseFloat(sheetHeight),
       sheet_thickness: parseFloat(sheetThickness),
@@ -507,16 +552,8 @@ export const resetUserPassword = async (userId, password) => {
    diagram is captioned when the plan is saved, so the name can be chosen after
    the plan is on screen instead of before it exists. */
 export const optimizeCutting = async (parts, boards, sawKerf, costData = null) => {
-  const partsPayload = {};
-  parts.forEach((part) => {
-    const len = parseFloat(part.length);
-    const qty = parseInt(part.quantity, 10);
-    if (!isNaN(len) && !isNaN(qty)) {
-      partsPayload[len] = qty;
-    }
-  });
-
-  const boardLengths = boards.map((b) => parseFloat(b)).filter((n) => !isNaN(n));
+  const partsPayload = serializeBoardParts(parts);
+  const boardLengths = serializeBoardLengths(boards);
   const kerfValue = parseFloat(sawKerf);
 
   const payload = {
@@ -553,22 +590,8 @@ export const optimizeCutting = async (parts, boards, sawKerf, costData = null) =
 };
 
 export const optimizeSheetCutting = async (parts, sheetWidth, sheetHeight, kerfWidth, materialType, algorithm, allowRotation) => {
-  const partsPayload = {};
-  parts.forEach((part) => {
-    const width = parseFloat(part.width);
-    const height = parseFloat(part.height);
-    const qty = parseInt(part.quantity, 10);
-    if (!isNaN(width) && !isNaN(height) && !isNaN(qty) && width > 0 && height > 0 && qty > 0) {
-      partsPayload[part.id || `part_${width}x${height}`] = {
-        width: width,
-        height: height,
-        quantity: qty
-      };
-    }
-  });
-
   const payload = {
-    parts: partsPayload,
+    parts: serializeSheetParts(parts),
     sheet_width: parseFloat(sheetWidth),
     sheet_height: parseFloat(sheetHeight),
     kerf_width: parseFloat(kerfWidth),

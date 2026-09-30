@@ -2,7 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import CuttingOptimizer from './CuttingOptimizer';
 import { AuthProvider } from '../contexts/AuthContext';
-import { getProjectGroups, getUserProjects, getUserSettings } from '../utils/api';
+import { getProjectGroups, getUserProjects, getUserSettings, optimizeCutting } from '../utils/api';
 
 jest.mock('../utils/api', () => ({
   ...jest.requireActual('../utils/api'),
@@ -62,6 +62,31 @@ describe('CuttingOptimizer', () => {
       expect(screen.getByRole('heading', { name: /Your cutting plan/i })).toBeInTheDocument();
     });
     expect(screen.getByTestId('plan-material-summary')).toHaveTextContent('Oak · 45 × 45 mm');
+  });
+
+  it('ignores a late plan response after the parts change', async () => {
+    let resolvePlan;
+    optimizeCutting.mockImplementationOnce(() => new Promise((resolve) => {
+      resolvePlan = resolve;
+    }));
+
+    renderOptimizer();
+    await screen.findByRole('heading', { name: /Required parts/i });
+    fillMaterial();
+    fireEvent.click(screen.getByRole('button', { name: /Plan the cuts/i }));
+    await waitFor(() => expect(optimizeCutting).toHaveBeenCalled());
+
+    fireEvent.change(screen.getByDisplayValue('80'), { target: { value: '81' } });
+    resolvePlan({
+      board_lengths_used: [2500],
+      cut_list: [[2000]],
+      visualization: 'data:image/svg+xml;base64,PHN2Zy8+',
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Plan the cuts/i })).not.toBeDisabled();
+    });
+    expect(screen.queryByRole('heading', { name: /Your cutting plan/i })).not.toBeInTheDocument();
   });
 
   it('restores a saved plan addressed by the edit query', async () => {
