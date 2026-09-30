@@ -15,6 +15,8 @@ from planqer.sheet_optimization import (
     Rectangle,
     SheetLayout,
     SheetOptimizationAlgorithm,
+    SheetOptimizationResult,
+    _validate_sheet_result,
     bottom_left_fill_algorithm,
     expand_sheet_parts,
     get_sheet_algorithm_recommendation,
@@ -590,6 +592,28 @@ class TestEdgeCases:
             optimize_sheet_cutting(
                 parts=parts, sheet_width=500, sheet_height=500, algorithm=fake_algorithm
             )
+
+    def test_incomplete_result_is_rejected(self):
+        parts = {
+            "first": {"width": 100, "height": 100, "quantity": 1},
+            "second": {"width": 100, "height": 100, "quantity": 1},
+        }
+        incomplete = SheetOptimizationResult(
+            sheets=[
+                SheetLayout(
+                    sheet_width=500,
+                    sheet_height=500,
+                    parts=[Rectangle(100, 100, part_id="first_1")],
+                )
+            ],
+            algorithm_used=SheetOptimizationAlgorithm.BOTTOM_LEFT_FILL,
+            total_sheets=1,
+            total_waste_area=240000,
+            overall_efficiency=4,
+        )
+
+        with pytest.raises(ValueError, match="incomplete layout"):
+            _validate_sheet_result(incomplete, parts, 500, 500, 3, True)
 
 
 if __name__ == "__main__":
