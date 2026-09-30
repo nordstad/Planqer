@@ -2,6 +2,9 @@
 Tests for advanced optimization algorithms.
 """
 
+import random
+from collections import Counter
+
 import pytest
 
 from planqer.algorithms import (
@@ -167,6 +170,24 @@ def test_optimize_cutting_dispatch():
             assert result.algorithm_used == OptimizationAlgorithm.BRANCH_AND_BOUND
         else:
             assert result.algorithm_used == algorithm
+
+
+@pytest.mark.parametrize("algorithm", list(OptimizationAlgorithm))
+def test_optimization_algorithms_conserve_requested_parts(algorithm):
+    """Every algorithm must preserve each requested length and quantity."""
+    parts = {100.0: 3, 80.0: 3, 60.0: 2}
+    expected_parts = Counter(
+        {float(length): quantity for length, quantity in parts.items()}
+    )
+    state = random.getstate()
+    random.seed(0)
+    try:
+        result = optimize_cutting(parts, 300.0, 3.0, algorithm)
+    finally:
+        random.setstate(state)
+
+    actual_parts = Counter(part for board in result.cut_list for part in board)
+    assert actual_parts == expected_parts
 
 
 def test_get_algorithm_recommendation():

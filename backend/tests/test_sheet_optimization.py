@@ -5,6 +5,10 @@ This module tests the 2D bin packing algorithms and sheet optimization features
 including the Bottom-Left Fill algorithm, rotation support, and waste calculation.
 """
 
+import random
+from collections import Counter
+from itertools import combinations
+
 import pytest
 
 from planqer.sheet_optimization import (
@@ -16,6 +20,44 @@ from planqer.sheet_optimization import (
     get_sheet_algorithm_recommendation,
     optimize_sheet_cutting,
 )
+
+
+def assert_complete_sheet_result(result, parts, sheet_width, sheet_height, kerf):
+    expected_part_ids = Counter(
+        f"{part_id}_{index}"
+        for part_id, specs in parts.items()
+        for index in range(1, specs["quantity"] + 1)
+    )
+    actual_part_ids = Counter(
+        part.part_id for sheet in result.sheets for part in sheet.parts
+    )
+    assert actual_part_ids == expected_part_ids
+
+    for sheet in result.sheets:
+        assert sheet.sheet_width == sheet_width
+        assert sheet.sheet_height == sheet_height
+        assert sheet.used_area == pytest.approx(sum(part.area for part in sheet.parts))
+        assert sheet.waste_area == pytest.approx(sheet.total_area - sheet.used_area)
+
+        for part in sheet.parts:
+            assert part.x >= 0
+            assert part.y >= 0
+            assert part.x + part.width <= sheet_width
+            assert part.y + part.height <= sheet_height
+
+        for left, right in combinations(sheet.parts, 2):
+            assert not left.overlaps_with(right, kerf)
+
+    assert result.total_sheets == len(result.sheets)
+    assert result.total_used_area == pytest.approx(
+        sum(sheet.used_area for sheet in result.sheets)
+    )
+    assert result.total_sheet_area == pytest.approx(
+        sum(sheet.total_area for sheet in result.sheets)
+    )
+    assert result.total_waste_area == pytest.approx(
+        sum(sheet.waste_area for sheet in result.sheets)
+    )
 
 
 class TestRectangle:
@@ -261,14 +303,15 @@ class TestSheetOptimization:
             "rect": {"width": 200, "height": 500, "quantity": 1}  # Tall rectangle
         }
 
-        # Test without rotation - should fail or use multiple sheets
-        bottom_left_fill_algorithm(
-            parts=parts,
-            sheet_width=600,
-            sheet_height=300,  # Too short for tall rectangle
-            kerf_width=3,
-            allow_rotation=False,
-        )
+        # Test without rotation - the part cannot fit and must be rejected.
+        with pytest.raises(ValueError, match="does not fit"):
+            bottom_left_fill_algorithm(
+                parts=parts,
+                sheet_width=600,
+                sheet_height=300,  # Too short for tall rectangle
+                kerf_width=3,
+                allow_rotation=False,
+            )
 
         # Test with rotation - should fit by rotating
         result_with_rotation = bottom_left_fill_algorithm(
@@ -414,6 +457,54 @@ class TestSheetOptimization:
         # Results should vary but all be valid
         assert len({r.algorithm_used for r in results}) == 3
 
+    @pytest.mark.parametrize("algorithm", list(SheetOptimizationAlgorithm))
+    def test_algorithms_preserve_sheet_invariants(self, algorithm):
+        parts = {
+            "tall": {"width": 200, "height": 100, "quantity": 2},
+            "wide": {"width": 150, "height": 80, "quantity": 2},
+            "small": {"width": 70, "height": 50, "quantity": 2},
+        }
+        state = random.getstate()
+        random.seed(0)
+        try:
+            result = optimize_sheet_cutting(
+                parts=parts,
+                sheet_width=500,
+                sheet_height=300,
+                kerf_width=3,
+                algorithm=algorithm,
+                allow_rotation=True,
+            )
+        finally:
+            random.setstate(state)
+
+        assert_complete_sheet_result(result, parts, 500, 300, 3)
+
+    @pytest.mark.parametrize("algorithm", list(SheetOptimizationAlgorithm))
+    def test_rotation_is_required_or_rejected(self, algorithm):
+        parts = {"tall": {"width": 200, "height": 500, "quantity": 1}}
+
+        result = optimize_sheet_cutting(
+            parts=parts,
+            sheet_width=600,
+            sheet_height=300,
+            kerf_width=3,
+            algorithm=algorithm,
+            allow_rotation=True,
+        )
+        assert_complete_sheet_result(result, parts, 600, 300, 3)
+        assert result.sheets[0].parts[0].rotated is True
+
+        with pytest.raises(ValueError, match="does not fit"):
+            optimize_sheet_cutting(
+                parts=parts,
+                sheet_width=600,
+                sheet_height=300,
+                kerf_width=3,
+                algorithm=algorithm,
+                allow_rotation=False,
+            )
+
     def test_genetic_2d_algorithm(self):
         """Test the Genetic 2D algorithm."""
         parts = {
@@ -479,16 +570,14 @@ class TestEdgeCases:
         """Test handling of parts too large for any sheet."""
         parts = {"huge_part": {"width": 2000, "height": 2000, "quantity": 1}}
 
-        result = bottom_left_fill_algorithm(
-            parts=parts,
-            sheet_width=1000,
-            sheet_height=1000,
-            kerf_width=3,
-            allow_rotation=False,
-        )
-
-        # Should handle gracefully (might create empty sheets or skip parts)
-        assert isinstance(result.sheets, list)
+        with pytest.raises(ValueError, match="does not fit"):
+            bottom_left_fill_algorithm(
+                parts=parts,
+                sheet_width=1000,
+                sheet_height=1000,
+                kerf_width=3,
+                allow_rotation=False,
+            )
 
     def test_invalid_algorithm(self):
         """Test error handling for invalid algorithm."""
