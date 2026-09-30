@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import HomePage from './HomePage';
 import { AuthProvider } from '../contexts/AuthContext';
+import packageJson from '../../package.json';
 
 jest.mock('../utils/api', () => ({
   ...jest.requireActual('../utils/api'),
@@ -33,6 +34,7 @@ describe('HomePage', () => {
       </MemoryRouter>
     );
 
-    expect(await screen.findByText(/No cloud account.*v0\.6\.0/)).toBeInTheDocument();
+    const version = packageJson.version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    expect(await screen.findByText(new RegExp(`No cloud account.*v${version}`))).toBeInTheDocument();
   });
 });
