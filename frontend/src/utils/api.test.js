@@ -31,6 +31,13 @@ it('aggregates duplicate board part lengths without losing quantity', () => {
   ])).toEqual({ '120.5': 5 });
 });
 
+it('keeps repeated model cutlist lengths lossless for handoff', () => {
+  expect(serializeBoardParts([
+    { length: 1200, quantity: 2 },
+    { length: 1200, quantity: 3 },
+  ])).toEqual({ 1200: 5 });
+});
+
 it('keeps sheet row identity separate from repeated display names', () => {
   expect(normalizeSheetParts([
     { id: 'row-a', name: 'Shelf', width: '10.5', height: '20.25', quantity: '2' },

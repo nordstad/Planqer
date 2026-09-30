@@ -15,6 +15,7 @@ Key Features:
 import logging
 from dataclasses import dataclass
 from enum import Enum
+from itertools import combinations
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +54,17 @@ class Rectangle:
             y=self.y,
             part_id=self.part_id,
             rotated=not self.rotated,
+        )
+
+    def copy(self) -> "Rectangle":
+        """Return an independent copy of the rectangle."""
+        return Rectangle(
+            width=self.width,
+            height=self.height,
+            x=self.x,
+            y=self.y,
+            part_id=self.part_id,
+            rotated=self.rotated,
         )
 
     def fits_in(
@@ -292,8 +304,7 @@ def bottom_left_fill_algorithm(
                     break
 
             if not placed:
-                # Part doesn't fit in any sheet - skip it (or could raise error)
-                continue
+                raise ValueError(f"Part {rect.part_id} could not be placed")
 
     # Add the last sheet if it has parts
     if current_sheet.parts:
@@ -440,6 +451,8 @@ def best_fit_2d_algorithm(
 
             if placed:
                 sheets.append(new_sheet)
+            else:
+                raise ValueError(f"Part {rect.part_id} could not be placed")
 
     # Calculate metrics
     total_waste = sum(sheet.waste_area for sheet in sheets)
@@ -557,6 +570,8 @@ def guillotine_cut_algorithm(
                     sheets.append(new_sheet)
                     placed = True
                     break
+            if not placed:
+                raise ValueError(f"Part {rect.part_id} could not be placed")
 
     # Calculate metrics
     total_waste = sum(sheet.waste_area for sheet in sheets)
@@ -657,7 +672,7 @@ def genetic_2d_algorithm(
 
     def create_individual() -> list[Rectangle]:
         """Create a random permutation of rectangles with random rotations."""
-        individual = rectangles.copy()
+        individual = [rectangle.copy() for rectangle in rectangles]
         random.shuffle(individual)
 
         if allow_rotation:
@@ -697,9 +712,14 @@ def genetic_2d_algorithm(
                 # Place in new sheet (should always work for valid parts)
                 if rect.width <= sheet_width and rect.height <= sheet_height:
                     current_sheet.place_part(rect, 0, 0)
+                else:
+                    raise ValueError(f"Part {rect.part_id} could not be placed")
 
         if current_sheet.parts:
             sheets.append(current_sheet)
+
+        if sum(len(sheet.parts) for sheet in sheets) != len(individual):
+            return float("inf")
 
         # Fitness function: minimize sheets first, then minimize total waste
         num_sheets = len(sheets)
@@ -726,11 +746,13 @@ def genetic_2d_algorithm(
         # Copy segment from parent1
         segment_ids = set()
         for i in range(start, end):
-            offspring[i] = parent1[i]
+            offspring[i] = parent1[i].copy()
             segment_ids.add(parent1[i].part_id)
 
         # Fill remaining positions from parent2
-        parent2_filtered = [rect for rect in parent2 if rect.part_id not in segment_ids]
+        parent2_filtered = [
+            rect.copy() for rect in parent2 if rect.part_id not in segment_ids
+        ]
         p2_index = 0
 
         for i in range(len(offspring)):
@@ -746,14 +768,14 @@ def genetic_2d_algorithm(
                     if rect.part_id not in [
                         r.part_id for r in offspring if r is not None
                     ]:
-                        offspring[i] = rect
+                        offspring[i] = rect.copy()
                         break
 
         return [r for r in offspring if r is not None]
 
     def mutate(individual: list[Rectangle]) -> list[Rectangle]:
         """Mutate by swapping positions and rotating parts."""
-        mutated = individual.copy()
+        mutated = [rect.copy() for rect in individual]
 
         # Swap mutation
         if random.random() < 0.7 and len(mutated) > 1:
@@ -784,9 +806,9 @@ def genetic_2d_algorithm(
             fitness = evaluate_fitness(individual)
             fitness_scores.append((individual, fitness))
 
-            if fitness < best_fitness:
+            if fitness < best_fitness or best_individual is None:
                 best_fitness = fitness
-                best_individual = individual.copy()
+                best_individual = [rect.copy() for rect in individual]
 
         # Sort by fitness (lower is better)
         fitness_scores.sort(key=lambda x: x[1])
@@ -807,6 +829,9 @@ def genetic_2d_algorithm(
 
         population = new_population
 
+    if best_individual is None or best_fitness == float("inf"):
+        raise ValueError("Genetic optimization produced no complete candidate")
+
     # Create final result using best individual
     sheets = []
     current_sheet = SheetLayout(sheet_width, sheet_height, [], kerf_width=kerf_width)
@@ -825,6 +850,8 @@ def genetic_2d_algorithm(
 
             if rect.width <= sheet_width and rect.height <= sheet_height:
                 current_sheet.place_part(rect, 0, 0)
+            else:
+                raise ValueError(f"Part {rect.part_id} could not be placed")
 
     if current_sheet.parts:
         sheets.append(current_sheet)
@@ -893,17 +920,9 @@ def multi_sheet_optimizer(
             logger.warning("Sheet optimization algorithm failed: %s", exc)
             continue  # Skip algorithms that fail
 
-    return (
-        best_result
-        if best_result
-        else SheetOptimizationResult(
-            sheets=[],
-            algorithm_used=SheetOptimizationAlgorithm.BOTTOM_LEFT_FILL,
-            total_sheets=0,
-            total_waste_area=0,
-            overall_efficiency=0,
-        )
-    )
+    if best_result is None:
+        raise ValueError("No sheet optimization algorithm produced a complete layout")
+    return best_result
 
 
 def optimize_sheet_cutting(
@@ -931,23 +950,72 @@ def optimize_sheet_cutting(
         SheetOptimizationResult with optimized layout
     """
     if algorithm == SheetOptimizationAlgorithm.BOTTOM_LEFT_FILL:
-        return bottom_left_fill_algorithm(
+        result = bottom_left_fill_algorithm(
             parts, sheet_width, sheet_height, kerf_width, allow_rotation
         )
     elif algorithm == SheetOptimizationAlgorithm.BEST_FIT_2D:
-        return best_fit_2d_algorithm(
+        result = best_fit_2d_algorithm(
             parts, sheet_width, sheet_height, kerf_width, allow_rotation
         )
     elif algorithm == SheetOptimizationAlgorithm.GUILLOTINE_CUT:
-        return guillotine_cut_algorithm(
+        result = guillotine_cut_algorithm(
             parts, sheet_width, sheet_height, kerf_width, allow_rotation
         )
     elif algorithm == SheetOptimizationAlgorithm.GENETIC_2D:
-        return genetic_2d_algorithm(
+        result = genetic_2d_algorithm(
             parts, sheet_width, sheet_height, kerf_width, allow_rotation
         )
     else:
         raise ValueError(f"Algorithm {algorithm} not yet implemented")
+
+    _validate_sheet_result(
+        result, parts, sheet_width, sheet_height, kerf_width, allow_rotation
+    )
+    return result
+
+
+def _validate_sheet_result(
+    result: SheetOptimizationResult,
+    parts: dict[str, dict],
+    sheet_width: float,
+    sheet_height: float,
+    kerf_width: float,
+    allow_rotation: bool,
+) -> None:
+    """Reject layouts that do not preserve every requested part instance."""
+    expected = {
+        rectangle.part_id: rectangle
+        for rectangle in expand_sheet_parts(parts)
+    }
+    placed = [part for sheet in result.sheets for part in sheet.parts]
+
+    if {part.part_id for part in placed} != set(expected) or len(placed) != len(expected):
+        raise ValueError("Sheet optimization produced an incomplete layout")
+
+    for part in placed:
+        requested = expected[part.part_id]
+        same_orientation = (part.width, part.height) == (
+            requested.width,
+            requested.height,
+        )
+        rotated_orientation = allow_rotation and (part.width, part.height) == (
+            requested.height,
+            requested.width,
+        )
+        if not (same_orientation or rotated_orientation):
+            raise ValueError(f"Sheet optimization changed dimensions for {part.part_id}")
+        if (
+            part.x < 0
+            or part.y < 0
+            or part.x + part.width > sheet_width
+            or part.y + part.height > sheet_height
+        ):
+            raise ValueError(f"Sheet optimization placed {part.part_id} out of bounds")
+
+    for sheet in result.sheets:
+        for left, right in combinations(sheet.parts, 2):
+            if left.overlaps_with(right, kerf_width):
+                raise ValueError("Sheet optimization produced overlapping parts")
 
 
 def get_sheet_algorithm_recommendation(
