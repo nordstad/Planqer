@@ -1,6 +1,15 @@
 import math
 import re
+from collections.abc import Mapping
 from html import escape
+
+# Representative runs: 500 FFD parts took 0.022s, 100 genetic parts 6.854s,
+# and 1000 bottom-left rectangles 0.7s on the development machine.
+MAX_CUTTING_PARTS = 5000
+MAX_SHEET_RECTANGLES = 1000
+MAX_GENETIC_PARTS = 100
+MAX_BRANCH_AND_BOUND_PARTS = 10
+MAX_GENETIC_SHEET_RECTANGLES = 50
 
 
 def sanitize_project_name(name: str | None) -> str | None:
@@ -58,3 +67,39 @@ def sanitize_board_lengths(
     return [
         validate_numeric_input(float(board), 1.0, max_board_length) for board in boards
     ]
+
+
+def validate_cutting_workload(
+    parts: Mapping[float, int], algorithm: str | None = None
+) -> None:
+    expanded_count = sum(parts.values())
+    if expanded_count > MAX_CUTTING_PARTS:
+        raise ValueError(
+            f"Optimization contains {expanded_count} parts; maximum is "
+            f"{MAX_CUTTING_PARTS}"
+        )
+    if algorithm == "genetic" and expanded_count > MAX_GENETIC_PARTS:
+        raise ValueError(
+            f"The genetic algorithm supports at most {MAX_GENETIC_PARTS} parts"
+        )
+    if algorithm == "branch_bound" and expanded_count > MAX_BRANCH_AND_BOUND_PARTS:
+        raise ValueError(
+            "The branch-and-bound algorithm supports at most "
+            f"{MAX_BRANCH_AND_BOUND_PARTS} parts; choose a heuristic algorithm"
+        )
+
+
+def validate_sheet_workload(
+    parts: Mapping[str, Mapping[str, int]], algorithm: str | None = None
+) -> None:
+    expanded_count = sum(spec["quantity"] for spec in parts.values())
+    if expanded_count > MAX_SHEET_RECTANGLES:
+        raise ValueError(
+            f"Optimization contains {expanded_count} rectangles; maximum is "
+            f"{MAX_SHEET_RECTANGLES}"
+        )
+    if algorithm == "genetic_2d" and expanded_count > MAX_GENETIC_SHEET_RECTANGLES:
+        raise ValueError(
+            "The genetic 2D algorithm supports at most "
+            f"{MAX_GENETIC_SHEET_RECTANGLES} rectangles"
+        )

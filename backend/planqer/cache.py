@@ -1,6 +1,7 @@
 import hashlib
 import json
 from collections.abc import Mapping
+from threading import RLock
 
 
 def generate_request_hash(
@@ -40,6 +41,7 @@ def generate_request_hash(
 _optimization_cache = {}
 _cache_max_size = 1000
 _cache_access_order = []
+_cache_lock = RLock()
 
 
 def get_cached_optimization(
@@ -68,27 +70,24 @@ def get_cached_optimization(
         parts, boards, kerf, algorithm_name, optimize_for, board_costs
     )
 
-    # Check if result is cached
-    if request_hash in _optimization_cache:
-        # Move to end (most recently used)
-        _cache_access_order.remove(request_hash)
+    # Hold the lock through computation so concurrent misses cannot duplicate
+    # work or corrupt the LRU order. This intentionally serializes optimization
+    # cache access; CPU-bound request execution happens in worker threads.
+    with _cache_lock:
+        if request_hash in _optimization_cache:
+            _cache_access_order.remove(request_hash)
+            _cache_access_order.append(request_hash)
+            return _optimization_cache[request_hash]
+
+        result = optimization_func(parts, boards, kerf)
+        _optimization_cache[request_hash] = result
         _cache_access_order.append(request_hash)
-        return _optimization_cache[request_hash]
 
-    # Not in cache, compute the result
-    result = optimization_func(parts, boards, kerf)
+        if len(_optimization_cache) > _cache_max_size:
+            lru_key = _cache_access_order.pop(0)
+            del _optimization_cache[lru_key]
 
-    # Add to cache
-    _optimization_cache[request_hash] = result
-    _cache_access_order.append(request_hash)
-
-    # Implement LRU eviction if cache is full
-    if len(_optimization_cache) > _cache_max_size:
-        # Remove least recently used item
-        lru_key = _cache_access_order.pop(0)
-        del _optimization_cache[lru_key]
-
-    return result
+        return result
 
 
 def get_cache_info():
@@ -102,5 +101,6 @@ def get_cache_info():
 
 def clear_cache():
     """Clear the optimization cache."""
-    _optimization_cache.clear()
-    _cache_access_order.clear()
+    with _cache_lock:
+        _optimization_cache.clear()
+        _cache_access_order.clear()

@@ -1,3 +1,4 @@
+import asyncio
 import time
 
 from fastapi import APIRouter, HTTPException
@@ -17,6 +18,8 @@ from planqer.sheet_visualization import generate_sheet_cutting_visualization
 
 router = APIRouter(prefix="/sheet-optimization", tags=["Sheet Material Optimization"])
 from .common import limiter
+
+OPTIMIZATION_TIMEOUT_SECONDS = 30.0
 
 
 @router.post(
@@ -39,14 +42,20 @@ async def create_sheet_optimization(
             if sheet_request.algorithm
             else get_sheet_algorithm_recommendation(parts)
         )
-        result = optimize_sheet_cutting(
-            parts=parts,
-            sheet_width=sheet_request.sheet_width,
-            sheet_height=sheet_request.sheet_height,
-            kerf_width=sheet_request.kerf_width,
-            material_type=sheet_request.material_type,
-            algorithm=algorithm,
-            allow_rotation=sheet_request.allow_rotation,
+        # A timed-out worker thread may finish in the background; input budgets
+        # keep that bounded while preventing it from blocking this event loop.
+        result = await asyncio.wait_for(
+            asyncio.to_thread(
+                optimize_sheet_cutting,
+                parts=parts,
+                sheet_width=sheet_request.sheet_width,
+                sheet_height=sheet_request.sheet_height,
+                kerf_width=sheet_request.kerf_width,
+                material_type=sheet_request.material_type,
+                algorithm=algorithm,
+                allow_rotation=sheet_request.allow_rotation,
+            ),
+            timeout=OPTIMIZATION_TIMEOUT_SECONDS,
         )
         sheets = [
             SheetLayoutInfo(
@@ -88,6 +97,11 @@ async def create_sheet_optimization(
             material_type=sheet_request.material_type,
             visualization=visualization,
         )
+    except TimeoutError as exc:
+        raise HTTPException(
+            status_code=504,
+            detail="Sheet optimization exceeded the 30 second time limit",
+        ) from exc
     except HTTPException:
         raise
     except Exception as exc:

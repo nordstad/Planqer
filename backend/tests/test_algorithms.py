@@ -272,6 +272,26 @@ def test_invalid_algorithm():
         optimize_cutting(parts, board_length, saw_blade_width, "invalid_algorithm")
 
 
+def test_explicit_branch_and_bound_rejects_large_workloads():
+    with pytest.raises(ValueError, match="branch-and-bound algorithm supports at most 10"):
+        optimize_cutting(
+            {100.0: 11},
+            200.0,
+            3.0,
+            OptimizationAlgorithm.BRANCH_AND_BOUND,
+        )
+
+
+def test_explicit_genetic_algorithm_rejects_large_workloads():
+    with pytest.raises(ValueError, match="genetic algorithm supports at most 100"):
+        optimize_cutting(
+            {100.0: 101},
+            200.0,
+            3.0,
+            OptimizationAlgorithm.GENETIC_ALGORITHM,
+        )
+
+
 def test_empty_parts():
     """Test handling of empty parts dictionary."""
     parts = {}
