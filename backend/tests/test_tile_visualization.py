@@ -9,6 +9,7 @@ CSS custom property, because it is rasterized outside the page's stylesheet.
 
 import base64
 import re
+import xml.etree.ElementTree as ET
 
 from planqer.tile_layout.geometry import (
     Cutout,
@@ -61,6 +62,50 @@ def test_visualization_is_a_valid_svg_data_url():
     assert svg.startswith("<?xml")
     assert "<svg" in svg
     assert "Kitchen splashback" in svg
+    ET.fromstring(svg)
+
+
+def test_saved_and_diagonal_svg_data_urls_are_well_formed():
+    surface, result = _solve_simple()
+    candidate = result.candidates[result.recommended_index]
+    ET.fromstring(_decode(generate_saved_tile_diagram(candidate, surface)))
+
+    diagonal_surface = Surface(width=1500, height=1200)
+    diagonal_result = solve_tile_layout(
+        diagonal_surface,
+        Tile(width=300, height=150),
+        JointSpec(joint_width=3),
+        bond_pattern="diagonal",
+        candidate_count=3,
+        sample_steps=6,
+    )
+    diagonal_tile = next(
+        tile
+        for tile in diagonal_result.candidates[0].tiles
+        if tile.kind != TileKind.FULL and tile.vertices
+    )
+    ET.fromstring(_decode(generate_diagonal_piece_diagram(diagonal_tile, "#d9c98a")))
+
+
+def test_diagonal_piece_rendering_terminates_when_annotations_do_not_fit():
+    vertices = ((-150.0, -213.0), (-150.0, 213.0), (62.8, 0.0))
+    tile = PlacedTile(
+        x=0,
+        y=0,
+        width=300,
+        height=426,
+        rotated=False,
+        kind=TileKind.CUT,
+        nominal_width=300,
+        nominal_height=600,
+        vertices=vertices,
+        local_vertices=vertices,
+    )
+
+    svg = _decode(generate_diagonal_piece_diagram(tile, "#d9c98a"))
+
+    ET.fromstring(svg)
+    assert "CUT" in svg
 
 
 def test_svg_has_intrinsic_dimensions_and_no_css_variables():

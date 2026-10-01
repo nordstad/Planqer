@@ -13,6 +13,7 @@ const serverEntry = path.join(projectRoot, 'dist', 'index.js');
 
 let backendCalls = 0;
 let backendAsyncCalls = 0;
+let backendRetryCalls = 0;
 let backendServer: ReturnType<typeof createServer> | null = null;
 let backendUrl = '';
 let client: Client | null = null;
@@ -66,6 +67,14 @@ describe('MCP stdio integration', () => {
         if (!body.parts || !body.available_board_lengths || body.saw_blade_width === undefined) {
           json(res, 400, { detail: 'Missing required payload fields' });
           return;
+        }
+
+        if (body.project_name === 'retry-test') {
+          backendRetryCalls += 1;
+          if (backendRetryCalls === 1) {
+            json(res, 503, { detail: 'temporarily unavailable' });
+            return;
+          }
         }
 
         json(res, 200, {
@@ -177,5 +186,22 @@ describe('MCP stdio integration', () => {
     expect(textBlock!.text).toContain('Task ID:');
     expect(textBlock!.text).toContain('/api/tasks/test-task-123');
     expect(backendAsyncCalls).toBeGreaterThan(0);
+  });
+
+  it('retries transient backend failures before returning a result', async () => {
+    const result = await client!.callTool({
+      name: 'optimize_cutting',
+      arguments: {
+        parts: { '100': 1 },
+        available_board_lengths: [300],
+        saw_blade_width: 3,
+        project_name: 'retry-test',
+      },
+    });
+
+    const textBlock = result.content.find((block: any) => block.type === 'text') as { text: string } | undefined;
+    expect(textBlock).toBeDefined();
+    expect(textBlock!.text).toContain('Optimal board length:');
+    expect(backendRetryCalls).toBe(2);
   });
 });
