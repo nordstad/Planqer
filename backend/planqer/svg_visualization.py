@@ -8,6 +8,8 @@ from xml.sax.saxutils import escape
 
 from .visualization_constants import get_css_styles
 
+_SVG_TEXT_ENTITIES = {'"': "&quot;", "'": "&apos;"}
+
 
 class SVGCuttingVisualizer:
     """Modern SVG-based cutting diagram generator."""
@@ -166,7 +168,7 @@ class SVGCuttingVisualizer:
             return ""
 
         return f"""
-        <text x="80" y="16" class="figure-caption" text-anchor="start">{escape(project_name)}</text>
+        <text x="80" y="16" class="figure-caption" text-anchor="start">{escape(project_name, _SVG_TEXT_ENTITIES)}</text>
         """
 
     def _create_legend(
