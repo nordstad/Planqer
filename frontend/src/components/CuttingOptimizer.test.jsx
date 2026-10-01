@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import CuttingOptimizer from './CuttingOptimizer';
 import { AuthProvider } from '../contexts/AuthContext';
+import i18n from '../i18n';
 import { getProjectGroups, getUserProjects, getUserSettings, optimizeCutting } from '../utils/api';
 
 jest.mock('../utils/api', () => ({
@@ -47,6 +48,18 @@ beforeEach(() => {
 });
 
 describe('CuttingOptimizer', () => {
+  it('requests a standalone validation hint without interpolating a plan noun', async () => {
+    const translate = jest.spyOn(i18n, 't');
+    try {
+      renderOptimizer();
+      await screen.findByRole('heading', { name: /Required parts/i });
+      expect(translate).toHaveBeenCalledWith('ui.fixLines', expect.any(Object));
+      expect(translate).not.toHaveBeenCalledWith('ui.fixLines', expect.objectContaining({ kind: expect.anything() }));
+    } finally {
+      translate.mockRestore();
+    }
+  });
+
   it('renders the parts step with the plan-the-cuts button', async () => {
     renderOptimizer();
     expect(await screen.findByRole('heading', { name: /Required parts/i })).toBeInTheDocument();

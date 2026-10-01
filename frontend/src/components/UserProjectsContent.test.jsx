@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import UserProjectsContent from './UserProjectsContent';
 import { LanguageProvider } from '../contexts/LanguageContext';
+import i18n from '../i18n';
 import {
   getUserProjects,
   getUserSheetProjects,
@@ -115,6 +116,23 @@ beforeEach(() => {
   const { downloadProjectImage } = jest.requireMock('../utils/api');
   downloadProjectImage.mockResolvedValue(new Blob());
   printProjectPlans.mockClear();
+});
+
+it.each([1, 3])('uses the standalone part count for a saved sheet plan with %i parts', async (count) => {
+  const translate = jest.spyOn(i18n, 't');
+  getUserProjects.mockResolvedValue([]);
+  getUserSheetProjects.mockResolvedValue([{
+    ...sheetPlan,
+    parts_data: [{ ...sheetPlan.parts_data[0], quantity: count }],
+  }]);
+  try {
+    renderDetail();
+    await screen.findByText(sheetPlan.name);
+    expect(translate).toHaveBeenCalledWith('ui.partCount', expect.objectContaining({ count }));
+    expect(translate).not.toHaveBeenCalledWith(expect.stringMatching(/^workflow\.sheetPartsSummary/), expect.anything());
+  } finally {
+    translate.mockRestore();
+  }
 });
 
 it('confirms deletion of a plan on the project detail route', async () => {

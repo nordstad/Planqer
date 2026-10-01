@@ -68,7 +68,7 @@ const planFacts = (project, t) => {
       : 0;
     return {
       type: t('common.sheetCutting'),
-      count: t(count === 1 ? 'workflow.sheetPartsSummary_one' : 'workflow.sheetPartsSummary', { count }),
+      count: t('ui.partCount', { count }),
       stock: `${materialLabel(project.material_type || 'sheet', t)} · ${project.sheet_thickness || '—'}mm`,
     };
   }

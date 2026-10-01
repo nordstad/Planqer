@@ -233,7 +233,7 @@ test.describe('Planqer Frontend E2E Tests', () => {
     await page.addInitScript((token) => localStorage.setItem('auth_token', token), accessToken);
 
     await page.goto('/tile-layout');
-    const solveButton = page.getByRole('button', { name: /solve the layout/i });
+    const solveButton = page.getByRole('button', { name: /calculate layout/i });
     await expect(solveButton).toBeDisabled();
     await page.locator('#tile-thickness').fill('10');
     await expect(solveButton).toBeEnabled();

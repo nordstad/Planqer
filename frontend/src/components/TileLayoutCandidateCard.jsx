@@ -15,10 +15,32 @@ import { useTranslation } from 'react-i18next';
 
 const mm = (n) => (Number.isFinite(n) ? Math.round(n).toLocaleString('sv-SE') : '—');
 
-const TileLayoutCandidateCard = ({ candidate, selected, onSelect }) => {
+const candidateLabelKeys = {
+  'Full tile at bottom-left corner': 'ui.candidateBottomLeft',
+  'Full tile at bottom-right corner': 'ui.candidateBottomRight',
+  'Full tile at top-left corner': 'ui.candidateTopLeft',
+  'Full tile at top-right corner': 'ui.candidateTopRight',
+  'Best sliver avoidance': 'ui.candidateBestSliverAvoidance',
+  'Fewest tiles to buy': 'ui.candidateFewestTiles',
+  'Most symmetric': 'ui.candidateMostSymmetric',
+  'Fewest cuts': 'ui.candidateFewestCuts',
+};
+
+const TileLayoutCandidateCard = ({ candidate, selected, onSelect, minEdgeCut }) => {
   const hasSliver = candidate.sliver_count > 0;
   const { t } = useTranslation();
   const smallestCut = smallestCutMm(candidate);
+  let label = candidate.label;
+  const rotated = label.endsWith(' (rotated)');
+  const baseLabel = rotated ? label.slice(0, -10) : label;
+  const labels = baseLabel.split(' & ');
+  if (labels.every((part) => Object.hasOwn(candidateLabelKeys, part))) {
+    label = labels.map((part) => t(candidateLabelKeys[part])).join(' & ');
+    if (rotated) label = t('ui.candidateRotated', { label });
+  } else {
+    const alternative = /^Alternative (\d+)$/.exec(label);
+    if (alternative) label = t('ui.candidateAlternative', { number: alternative[1] });
+  }
 
   return (
     <button
@@ -29,10 +51,10 @@ const TileLayoutCandidateCard = ({ candidate, selected, onSelect }) => {
       aria-pressed={selected}
     >
       <div className="tile-candidate-thumb">
-        <img src={candidate.visualization} alt={`${candidate.label} layout diagram`} />
+        <img src={candidate.visualization} alt={t('ui.candidateDiagram', { label })} />
       </div>
       <div className="tile-candidate-body">
-        <b className="tile-candidate-label">{candidate.label}</b>
+        <b className="tile-candidate-label">{label}</b>
         <dl className="tile-candidate-facts">
           <div>
             <dt>{t('ui.tilesToBuyWithSpare')}</dt>
@@ -53,7 +75,7 @@ const TileLayoutCandidateCard = ({ candidate, selected, onSelect }) => {
         </dl>
         {hasSliver && (
           <p className="tile-candidate-warn">
-            {candidate.sliver_count} sliver{candidate.sliver_count === 1 ? '' : 's'} below the guard
+            {t('ui.sliverWarning', { count: candidate.sliver_count, threshold: minEdgeCut })}
           </p>
         )}
       </div>

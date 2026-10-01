@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { LanguageProvider } from '../contexts/LanguageContext';
 import TileOptimizer from './TileOptimizer';
+import i18n from '../i18n';
 import { optimizeTileLayout, getProjectGroups, getUserTileProjects } from '../utils/api';
 
 jest.mock('../utils/api', () => ({
@@ -52,16 +53,35 @@ it('renders translated labels on the tile layout save step', async () => {
   );
 
    fireEvent.change(await screen.findByLabelText('Thickness (mm)'), { target: { value: '10' } });
-   fireEvent.click(await screen.findByRole('button', { name: /Solve the layout/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /Calculate layout/i }));
   await screen.findByRole('heading', { name: 'Pick a layout' });
   fireEvent.click(await screen.findByRole('button', { name: 'Name it', exact: true }));
 
   await waitFor(() => expect(screen.getByRole('heading', { name: 'Save this layout' })).toBeInTheDocument());
-  expect(screen.getByText(/Name it, choose where it belongs/)).toBeInTheDocument();
+  expect(screen.getByText(/Name the plan, choose a project if needed/)).toBeInTheDocument();
   expect(screen.getByLabelText('Save as')).toBeInTheDocument();
   expect(screen.getByRole('option', { name: 'Create a new plan' })).toBeInTheDocument();
   expect(screen.getByLabelText('Plan name')).toBeInTheDocument();
-  expect(screen.getByText(/The name goes on the saved diagram/)).toBeInTheDocument();
+  expect(screen.getByText(/The name appears on the saved diagram/)).toBeInTheDocument();
+});
+
+it('passes the configured sliver threshold to candidate warnings', async () => {
+  const translate = jest.spyOn(i18n, 't');
+  optimizeTileLayout.mockResolvedValue({
+    candidates: [{ ...candidate, sliver_count: 2 }],
+    recommended_index: 0,
+  });
+  try {
+    render(<MemoryRouter><LanguageProvider><TileOptimizer /></LanguageProvider></MemoryRouter>);
+    fireEvent.change(await screen.findByLabelText('Thickness (mm)'), { target: { value: '10' } });
+    fireEvent.click(screen.getByRole('button', { name: new RegExp(i18n.t('workflow.sliverGuardBreakage')) }));
+    fireEvent.change(screen.getByLabelText(i18n.t('workflow.sliverThreshold')), { target: { value: '42' } });
+    fireEvent.click(screen.getByRole('button', { name: /Calculate layout/i }));
+    await screen.findByRole('heading', { name: 'Pick a layout' });
+    expect(translate).toHaveBeenCalledWith('ui.sliverWarning', expect.objectContaining({ count: 2, threshold: '42' }));
+  } finally {
+    translate.mockRestore();
+  }
 });
 
 it('restores a saved tile plan addressed by the edit query', async () => {

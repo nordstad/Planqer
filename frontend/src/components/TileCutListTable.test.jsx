@@ -24,7 +24,7 @@ describe('TileCutListTable', () => {
     expect(screen.getByText('Piece E - 300×600 mm tile')).toBeInTheDocument();
     expect(screen.getByText(/Final size: 497×285 mm/)).toBeInTheDocument();
     expect(screen.getByText(/Edges: 402 · 300 · 102 · 424 mm/)).toBeInTheDocument();
-    expect(screen.getByText(/The solid \(light\) area is what you keep/)).toBeInTheDocument();
+    expect(screen.getByText(/Keep the light area/)).toBeInTheDocument();
     expect(screen.getByAltText('Cut template for piece E')).toBeInTheDocument();
     expect(document.querySelector('svg polygon')).toBeInTheDocument();
   });

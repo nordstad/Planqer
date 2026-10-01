@@ -684,7 +684,7 @@ const CuttingOptimizer = () => {
           <div className="step-foot">
             <p className="synthetic step-foot-note">
               {hasErrors
-                 ? t('ui.fixLines', { kind: t('workflow.thePlan') })
+                 ? t('ui.fixLines')
                  : t('ui.partsAgainstStock', { parts: partCount, stock: validBoards.length, unit: t(validBoards.length === 1 ? 'ui.stockUnit' : 'ui.stockUnits') })}
             </p>
             <div className="step-foot-act">
