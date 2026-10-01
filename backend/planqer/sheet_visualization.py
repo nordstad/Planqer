@@ -8,6 +8,8 @@ from xml.sax.saxutils import escape
 
 from .visualization_constants import get_css_styles
 
+_SVG_TEXT_ENTITIES = {'"': "&quot;", "'": "&apos;"}
+
 
 class SheetSVGVisualizer:
     """SVG-based sheet cutting diagram generator."""
@@ -123,7 +125,7 @@ class SheetSVGVisualizer:
                     label_text = part["part_id"].split("_")[0]
 
                 svg_elements.append(f'''
-                <text x="{label_x}" y="{label_y}" class="{font_class}" text-anchor="middle" dominant-baseline="middle">{label_text}</text>
+                <text x="{label_x}" y="{label_y}" class="{font_class}" text-anchor="middle" dominant-baseline="middle">{escape(label_text, _SVG_TEXT_ENTITIES)}</text>
                 ''')
 
                 # Add rotation indicator if rotated
@@ -158,7 +160,7 @@ class SheetSVGVisualizer:
             return ""
 
         return f"""
-        <text x="50" y="16" class="figure-caption" text-anchor="start">{escape(project_name)}</text>
+        <text x="50" y="16" class="figure-caption" text-anchor="start">{escape(project_name, _SVG_TEXT_ENTITIES)}</text>
         """
 
     def generate_sheet_visualization(

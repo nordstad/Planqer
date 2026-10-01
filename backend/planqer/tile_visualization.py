@@ -23,6 +23,8 @@ from xml.sax.saxutils import escape
 from .tile_layout.geometry import TileKind
 from .visualization_constants import get_css_styles
 
+_SVG_TEXT_ENTITIES = {'"': "&quot;", "'": "&apos;"}
+
 # Muted, desaturated tones shared with the cutting/sheet visualizers — kept
 # clear of amber (the frontend page's one accent) and revision red (reserved
 # here for slivers, exactly as the design system reserves it for "over-limit
@@ -165,12 +167,12 @@ class TileSVGVisualizer:
         y = 16
         if project_name:
             parts.append(
-                f'<text x="24" y="{y}" class="figure-caption" text-anchor="start">{escape(project_name)}</text>'
+                f'<text x="24" y="{y}" class="figure-caption" text-anchor="start">{escape(project_name, _SVG_TEXT_ENTITIES)}</text>'
             )
             y += 18
         if label:
             parts.append(
-                f'<text x="24" y="{y}" class="surface-info" text-anchor="start">{escape(label)}</text>'
+                f'<text x="24" y="{y}" class="surface-info" text-anchor="start">{escape(label, _SVG_TEXT_ENTITIES)}</text>'
             )
         return "".join(parts)
 
@@ -222,7 +224,7 @@ class TileSVGVisualizer:
                 )
         if label and pw > 22 and ph > 22:
             elements.append(
-                f'<text x="{px + 8:.1f}" y="{py + 11:.1f}" class="tile-label" font-weight="bold">{escape(label)}</text>'
+                f'<text x="{px + 8:.1f}" y="{py + 11:.1f}" class="tile-label" font-weight="bold">{escape(label, _SVG_TEXT_ENTITIES)}</text>'
             )
 
         return "".join(elements)
@@ -288,7 +290,7 @@ class TileSVGVisualizer:
             xs = [x_off + vx * scale for vx, _vy in vertices]
             ys = [y_off + vy * scale for _vx, vy in vertices]
             elements.append(
-                f'<text x="{sum(xs) / len(xs):.1f}" y="{min(ys) + 11:.1f}" class="tile-label" font-weight="bold">{escape(label)}</text>'
+                f'<text x="{sum(xs) / len(xs):.1f}" y="{min(ys) + 11:.1f}" class="tile-label" font-weight="bold">{escape(label, _SVG_TEXT_ENTITIES)}</text>'
             )
 
         return "".join(elements)
@@ -307,7 +309,7 @@ class TileSVGVisualizer:
         if cutout.label and pw > 30 and ph > 16:
             elements.append(
                 f'<text x="{px + pw / 2:.1f}" y="{py + ph / 2:.1f}" class="tile-label" '
-                f'text-anchor="middle" dominant-baseline="middle">{escape(cutout.label)}</text>'
+                f'text-anchor="middle" dominant-baseline="middle">{escape(cutout.label, _SVG_TEXT_ENTITIES)}</text>'
             )
         return "".join(elements)
 
@@ -343,7 +345,7 @@ class TileSVGVisualizer:
         if distinct_cut_sizes > 0:
             note = f"{distinct_cut_sizes} cut size{'s' if distinct_cut_sizes != 1 else ''} \u2014 see the cut list below"
             parts.append(
-                f'<text x="{cx}" y="{y}" class="legend-text">{escape(note)} · letters match the cut list</text>'
+                f'<text x="{cx}" y="{y}" class="legend-text">{escape(note, _SVG_TEXT_ENTITIES)} · letters match the cut list</text>'
             )
 
         return "".join(parts)
