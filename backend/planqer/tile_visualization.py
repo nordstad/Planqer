@@ -537,7 +537,8 @@ def generate_diagonal_piece_diagram(tile, fill: str) -> str:
             )
 
         offset = 22
-        while True:
+        max_attempts = max(1, int(max(svg_width, svg_height) / 22) + 1)
+        for _ in range(max_attempts):
             ox1, oy1 = sx + screen_normal[0] * offset, sy + screen_normal[1] * offset
             ox2, oy2 = ex + screen_normal[0] * offset, ey + screen_normal[1] * offset
             text_x, text_y = (ox1 + ox2) / 2, (oy1 + oy2) / 2 - 5
@@ -556,6 +557,11 @@ def generate_diagonal_piece_diagram(tile, fill: str) -> str:
                 label_boxes.append(box)
                 break
             offset += 22
+        else:
+            # Keep the dimension visible when no collision-free position fits.
+            ox1, oy1 = sx + screen_normal[0] * offset, sy + screen_normal[1] * offset
+            ox2, oy2 = ex + screen_normal[0] * offset, ey + screen_normal[1] * offset
+            text_x, text_y = (ox1 + ox2) / 2, (oy1 + oy2) / 2 - 5
 
         elements.append(
             f'<line x1="{ox1:.1f}" y1="{oy1:.1f}" x2="{ox2:.1f}" y2="{oy2:.1f}" stroke="#d94801" stroke-width="2"/>'

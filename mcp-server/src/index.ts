@@ -324,6 +324,22 @@ class PlanqerServer {
           response = candidate;
           break;
         } catch (error) {
+          if (
+            axios.isAxiosError(error)
+            && error.response
+            && isRetryableStatus(error.response.status)
+            && attempt < maxAttempts
+          ) {
+            const delayMs = retryDelayMs(attempt);
+            log('WARN', 'api_response_retryable', {
+              requestId: rid,
+              status: error.response.status,
+              attempt,
+              nextDelayMs: delayMs,
+            });
+            await sleep(delayMs);
+            continue;
+          }
           if (axios.isAxiosError(error) && !error.response && attempt < maxAttempts) {
             const delayMs = retryDelayMs(attempt);
             log('WARN', 'api_request_retry', {
