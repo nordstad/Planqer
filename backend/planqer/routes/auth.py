@@ -1,7 +1,8 @@
+import asyncio
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, EmailStr
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import BaseModel, EmailStr, field_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import func, select
 
@@ -9,9 +10,12 @@ from planqer.auth import (
     create_access_token,
     get_current_user,
     get_password_hash,
+    validate_password,
     verify_password,
 )
 from planqer.database import User, UserSettings, get_session
+
+from .common import limiter
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
@@ -19,6 +23,11 @@ router = APIRouter(prefix="/auth", tags=["authentication"])
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
+
+    @field_validator("password")
+    @classmethod
+    def validate_password_policy(cls, value: str) -> str:
+        return validate_password(value)
 
 
 class UserLogin(BaseModel):
@@ -53,8 +62,11 @@ async def get_setup_status(session: AsyncSession = Depends(get_session)):
 @router.post(
     "/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED
 )
+@limiter.limit("3/minute")
 async def register_user(
-    user_data: UserCreate, session: AsyncSession = Depends(get_session)
+    request: Request,
+    user_data: UserCreate,
+    session: AsyncSession = Depends(get_session),
 ):
     stmt = select(User).where(User.email == user_data.email)
     result = await session.execute(stmt)
@@ -72,7 +84,7 @@ async def register_user(
 
     db_user = User(
         email=user_data.email,
-        hashed_password=get_password_hash(user_data.password),
+        hashed_password=await asyncio.to_thread(get_password_hash, user_data.password),
         is_admin=is_first_user,
     )
 
@@ -92,14 +104,22 @@ async def register_user(
 
 
 @router.post("/login", response_model=Token)
+@limiter.limit("10/minute")
 async def login_user(
-    user_data: UserLogin, session: AsyncSession = Depends(get_session)
+    request: Request,
+    user_data: UserLogin,
+    session: AsyncSession = Depends(get_session),
 ):
     stmt = select(User).where(User.email == user_data.email)
     result = await session.execute(stmt)
     user = result.scalar_one_or_none()
 
-    if not user or not verify_password(user_data.password, user.hashed_password):
+    password_matches = (
+        await asyncio.to_thread(verify_password, user_data.password, user.hashed_password)
+        if user
+        else False
+    )
+    if not user or not password_matches:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",

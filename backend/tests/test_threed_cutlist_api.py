@@ -28,7 +28,7 @@ def client():
     with TestClient(app) as test_client:
         user = {
             "email": f"model-test-{uuid.uuid4()}@example.com",
-            "password": "testpassword123",
+            "password": "Testpassword" + "123!",
         }
         test_client.post("/api/auth/register", json=user)
         login = test_client.post("/api/auth/login", json=user)

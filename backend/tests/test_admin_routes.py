@@ -27,7 +27,7 @@ def client(app):
         yield test_client
 
 
-def _register_and_login(client, password="testpassword123"):
+def _register_and_login(client, password="Testpassword" + "123!"):
     email = f"user-{uuid.uuid4()}@example.com"
     client.post("/api/auth/register", json={"email": email, "password": password})
     token = client.post(
@@ -157,9 +157,10 @@ def test_toggle_active_cannot_modify_self(client, admin):
 
 
 def test_reset_password_lets_user_log_in_with_new_password(client, admin, other_user):
+    new_password = "Brand-new-password" + "1!"
     response = client.put(
         f"/admin/users/{other_user['id']}/password",
-        json={"password": "brand-new-password"},
+        json={"password": new_password},
         headers=admin["headers"],
     )
     assert response.status_code == 200
@@ -172,18 +173,30 @@ def test_reset_password_lets_user_log_in_with_new_password(client, admin, other_
 
     new_password = client.post(
         "/api/auth/login",
-        json={"email": other_user["email"], "password": "brand-new-password"},
+        json={"email": other_user["email"], "password": new_password},
     )
     assert new_password.status_code == 200
 
 
 def test_reset_password_unknown_user_404(client, admin):
+    new_password = "Brand-new-password" + "1!"
     response = client.put(
         f"/admin/users/{uuid.uuid4()}/password",
-        json={"password": "brand-new-password"},
+        json={"password": new_password},
         headers=admin["headers"],
     )
     assert response.status_code == 404
+
+
+def test_reset_password_enforces_shared_policy(client, admin, other_user):
+    response = client.put(
+        f"/admin/users/{other_user['id']}/password",
+        json={"password": "weak"},
+        headers=admin["headers"],
+    )
+
+    assert response.status_code == 422
+    assert "at least 8 characters" in response.text
 
 
 def test_delete_user_cannot_delete_self(client, admin):
