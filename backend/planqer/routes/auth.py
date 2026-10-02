@@ -62,7 +62,7 @@ async def get_setup_status(session: AsyncSession = Depends(get_session)):
 @router.post(
     "/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED
 )
-@limiter.limit("3/minute")
+@limiter.limit("10/minute")
 async def register_user(
     request: Request,
     user_data: UserCreate,

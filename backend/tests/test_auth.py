@@ -147,10 +147,10 @@ def test_registration_rate_limit_is_separate_from_login(client):
                 "password": valid_password,
             },
         )
-        for _ in range(4)
+        for _ in range(11)
     ]
 
-    assert [response.status_code for response in responses[:3]] == [201] * 3
+    assert [response.status_code for response in responses[:10]] == [201] * 10
     assert responses[-1].status_code == 429
 
 
