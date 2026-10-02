@@ -49,3 +49,14 @@ it('renders a printable shopping list', () => {
   expect(html).toContain('22 × 120 × 3\u00a0000 mm');
   expect(html).toContain('<td>2</td>');
 });
+
+it('keeps fractional board lengths in shopping rows', () => {
+  const rows = buildMaterialRows([{
+    name: 'Fractional boards',
+    projectType: 'board',
+    material_type: 'oak',
+    optimization_result: { board_lengths_used: [2500.5] },
+  }]);
+
+  expect(rows[0].size).toBe('2\u00a0500,5 mm');
+});

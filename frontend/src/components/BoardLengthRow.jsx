@@ -21,7 +21,7 @@ const BoardLengthRow = ({ board, index, handleBoardChange, handleBoardsPaste, re
         <input
           aria-label={text('ui.boardLengthAria', { row: index + 1 })}
           type="number"
-          step="1"
+          step="any"
           placeholder="3000"
           value={board}
           onChange={(e) => handleBoardChange(index, e.target.value)}

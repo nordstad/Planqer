@@ -1,6 +1,8 @@
 import { materialLabel } from './materialLabel';
 
-const mm = (value) => (Number.isFinite(value) ? Math.round(value).toLocaleString('sv-SE') : '—');
+const mm = (value) => (Number.isFinite(value)
+  ? value.toLocaleString('sv-SE', { maximumFractionDigits: 20 })
+  : '—');
 
 const boardRows = (project) => {
   const result = project.optimization_result;
