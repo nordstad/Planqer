@@ -162,6 +162,12 @@ const CuttingOptimizer = () => {
           quantity: quantity.toString(),
         })));
         setProjectName(data.projectName || '');
+        if (data.materialType === 'custom') {
+          setMaterialType('custom');
+          setCustomMaterial(data.customMaterial || 'unknown');
+        }
+        if (data.boardThickness != null) setBoardThickness(String(data.boardThickness));
+        if (data.boardWidth != null) setBoardWidth(String(data.boardWidth));
         localStorage.removeItem('planqer-3d-import');
         window.history.replaceState({}, document.title, '/cutting');
       }

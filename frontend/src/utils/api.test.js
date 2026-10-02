@@ -7,6 +7,7 @@ import {
   saveSheetProject,
   serializeBoardParts,
 } from './api';
+import { modelGroupMetadata } from '../components/ModelCutlistOptimizer';
 
 jest.mock('axios', () => ({
   delete: jest.fn(),
@@ -127,4 +128,31 @@ it('preserves sheet IDs, names, fractional values, and metadata', async () => {
     algorithm: 'best_fit_2d',
     allow_rotation: false,
   }));
+});
+
+it('does not replace an explicitly unknown sheet material with plywood', async () => {
+  await saveSheetProject({
+    name: 'Unknown material',
+    parts: [{ id: 'row-a', name: 'Part', width: '100', height: '200', quantity: '1' }],
+    sheetWidth: '1200',
+    sheetHeight: '2500',
+    sheetThickness: '12',
+    kerfWidth: '3',
+    materialType: 'unknown',
+    result: { sheets: [] },
+  });
+
+  expect(axios.post.mock.calls[0][1].material_type).toBe('unknown');
+});
+
+it('keeps model board and sheet material profiles for batch saves', () => {
+  expect(modelGroupMetadata({ kind: 'board', material: 'oak', thickness: 45, width: 70 })).toEqual({
+    materialType: 'oak',
+    boardThickness: 45,
+    boardWidth: 70,
+  });
+  expect(modelGroupMetadata({ kind: 'sheet', material: null, thickness: 12 })).toEqual({
+    materialType: 'unknown',
+    sheetThickness: 12,
+  });
 });

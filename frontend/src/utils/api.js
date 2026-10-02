@@ -314,7 +314,7 @@ export const saveSheetProject = async ({
       sheet_height: parseFloat(sheetHeight),
       sheet_thickness: parseFloat(sheetThickness),
       kerf_width: parseFloat(kerfWidth),
-      material_type: materialType || 'plywood',
+      material_type: materialType,
       algorithm: algorithm || null,
       allow_rotation: allowRotation !== false,
       optimization_result: result,

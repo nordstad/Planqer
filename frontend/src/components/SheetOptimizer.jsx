@@ -159,6 +159,11 @@ const SheetOptimizer = () => {
           id: part.id || `sheet_${index + 1}`,
         })));
         setProjectName(data.projectName || '');
+        if (data.materialType === 'custom') {
+          setMaterialType('custom');
+          setCustomMaterial(data.customMaterial || 'unknown');
+        }
+        if (data.sheetThickness != null) setSheetThickness(String(data.sheetThickness));
         localStorage.removeItem('planqer-3d-sheet-import');
         window.history.replaceState({}, document.title, '/sheet-cutting');
       }
