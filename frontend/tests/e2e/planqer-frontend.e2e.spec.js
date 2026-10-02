@@ -76,7 +76,7 @@ test.describe('Planqer Frontend E2E Tests', () => {
 
   test('modifies an existing board plan from the dashboard', async ({ page }) => {
     const email = `modify-${Date.now()}@example.com`;
-    const credential = ['planqer', Date.now(), 'e2e'].join('-');
+    const credential = ['Planqer', Date.now(), 'e2e'].join('-') + '!1';
 
     await page.request.post('http://localhost:8002/api/auth/register', {
       data: { email, password: credential },
@@ -132,7 +132,7 @@ test.describe('Planqer Frontend E2E Tests', () => {
 
   test('switches between project overview, shopping list, and cut diagram views', async ({ page }) => {
     const email = `workspace-${Date.now()}@example.com`;
-    const credential = ['planqer', Date.now(), 'e2e'].join('-');
+    const credential = ['Planqer', Date.now(), 'e2e'].join('-') + '!1';
     await page.request.post('http://localhost:8002/api/auth/register', {
       data: { email, password: credential },
     });
@@ -184,7 +184,7 @@ test.describe('Planqer Frontend E2E Tests', () => {
 
   test('requires and accepts custom board material metadata', async ({ page }) => {
     const email = `material-${Date.now()}@example.com`;
-    const credential = ['planqer', Date.now(), 'e2e'].join('-');
+    const credential = ['Planqer', Date.now(), 'e2e'].join('-') + '!1';
     await page.request.post('http://localhost:8002/api/auth/register', { data: { email, password: credential } });
     const loginResponse = await page.request.post('http://localhost:8002/api/auth/login', { data: { email, password: credential } });
     const { access_token: accessToken } = await loginResponse.json();
@@ -202,7 +202,7 @@ test.describe('Planqer Frontend E2E Tests', () => {
 
   test('requires sheet thickness and supports custom sheet material', async ({ page }) => {
     const email = `sheet-material-${Date.now()}@example.com`;
-    const credential = ['planqer', Date.now(), 'e2e'].join('-');
+    const credential = ['Planqer', Date.now(), 'e2e'].join('-') + '!1';
     await page.request.post('http://localhost:8002/api/auth/register', { data: { email, password: credential } });
     const loginResponse = await page.request.post('http://localhost:8002/api/auth/login', { data: { email, password: credential } });
     const { access_token: accessToken } = await loginResponse.json();
@@ -226,7 +226,7 @@ test.describe('Planqer Frontend E2E Tests', () => {
 
   test('requires tile material details before solving a layout', async ({ page }) => {
     const email = `tile-material-${Date.now()}@example.com`;
-    const credential = ['planqer', Date.now(), 'e2e'].join('-');
+    const credential = ['Planqer', Date.now(), 'e2e'].join('-') + '!1';
     await page.request.post('http://localhost:8002/api/auth/register', { data: { email, password: credential } });
     const loginResponse = await page.request.post('http://localhost:8002/api/auth/login', { data: { email, password: credential } });
     const { access_token: accessToken } = await loginResponse.json();
