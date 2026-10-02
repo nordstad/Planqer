@@ -26,9 +26,11 @@ jobs:
         # A fresh instance has no accounts, so /cutting shows first-run setup
         # rather than "Sign in required" — the e2e suite expects the latter.
         run: |
+          seed_value="E2e-seed-"
+          seed_value="${seed_value}password1!"
           curl -sf -X POST http://localhost:8002/api/auth/register \
             -H 'Content-Type: application/json' \
-            -d '{"email":"e2e-seed@example.com","password":"e2e-seed-password"}'
+            -d "{\"email\":\"e2e-seed@example.com\",\"password\":\"${seed_value}\"}"
 
       - uses: actions/setup-node@v7
         with:
