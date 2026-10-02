@@ -1,7 +1,11 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, model_validator
 
 from planqer.sheet_optimization import SheetOptimizationAlgorithm
-from planqer.validation import sanitize_project_name, validate_numeric_input
+from planqer.validation import (
+    sanitize_project_name,
+    validate_numeric_input,
+    validate_sheet_workload,
+)
 
 
 class SheetPartSpec(BaseModel):
@@ -62,6 +66,14 @@ class SheetOptimizationRequest(BaseModel):
         if len(v) > 100:
             raise ValueError("Maximum 100 different part types allowed")
         return v
+
+    @model_validator(mode="after")
+    def validate_workload(self):
+        validate_sheet_workload(
+            {part_id: spec.model_dump() for part_id, spec in self.parts.items()},
+            self.algorithm,
+        )
+        return self
 
 
 class SheetLayoutInfo(BaseModel):

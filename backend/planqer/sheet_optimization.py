@@ -17,6 +17,8 @@ from dataclasses import dataclass
 from enum import Enum
 from itertools import combinations
 
+from planqer.validation import validate_sheet_workload
+
 logger = logging.getLogger(__name__)
 
 
@@ -949,6 +951,7 @@ def optimize_sheet_cutting(
     Returns:
         SheetOptimizationResult with optimized layout
     """
+    validate_sheet_workload(parts, algorithm.value)
     if algorithm == SheetOptimizationAlgorithm.BOTTOM_LEFT_FILL:
         result = bottom_left_fill_algorithm(
             parts, sheet_width, sheet_height, kerf_width, allow_rotation

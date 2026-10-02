@@ -1,10 +1,11 @@
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from planqer.algorithms import OptimizationAlgorithm
 from planqer.validation import (
     sanitize_board_lengths,
     sanitize_parts_dict,
     sanitize_project_name,
+    validate_cutting_workload,
     validate_numeric_input,
 )
 
@@ -92,6 +93,11 @@ class PlanqerRequest(BaseModel):
                 f"Invalid currency '{v}'. Valid options: SEK, NOK, DKK, USD, EUR"
             )
         return v
+
+    @model_validator(mode="after")
+    def validate_workload(self):
+        validate_cutting_workload(self.parts, self.algorithm)
+        return self
 
 
 class PlanqerResponse(BaseModel):

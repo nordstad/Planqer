@@ -30,6 +30,7 @@ from .common import limiter
 router = APIRouter(prefix="/cutting-plans", tags=["Cutting Plans"])
 task_router = APIRouter()
 logger = logging.getLogger("planqer.api")
+OPTIMIZATION_TIMEOUT_SECONDS = 30.0
 
 
 @router.post(
@@ -79,18 +80,24 @@ async def create_cutting_plan(request: Request, planqer_request: PlanqerRequest)
             currency = planqer_request.currency
             enabled = planqer_request.enable_cost_analysis
             optimize_for = "waste"
-        result = run_optimization(
-            parts,
-            planqer_request.available_board_lengths,
-            planqer_request.saw_blade_width,
-            planqer_request.project_name,
-            algorithm,
-            logger,
-            PlanqerResponse,
-            board_costs=costs,
-            currency=currency,
-            enable_cost_analysis=enabled,
-            optimize_for=optimize_for,
+        # A timed-out worker thread may finish in the background; input budgets
+        # keep that bounded while preventing it from blocking this event loop.
+        result = await asyncio.wait_for(
+            asyncio.to_thread(
+                run_optimization,
+                parts,
+                planqer_request.available_board_lengths,
+                planqer_request.saw_blade_width,
+                planqer_request.project_name,
+                algorithm,
+                logger,
+                PlanqerResponse,
+                board_costs=costs,
+                currency=currency,
+                enable_cost_analysis=enabled,
+                optimize_for=optimize_for,
+            ),
+            timeout=OPTIMIZATION_TIMEOUT_SECONDS,
         )
         duration = time.time() - start_time
         track_optimization_metrics(
@@ -104,6 +111,11 @@ async def create_cutting_plan(request: Request, planqer_request: PlanqerRequest)
             else 0,
         )
         return result
+    except TimeoutError as exc:
+        raise HTTPException(
+            status_code=504,
+            detail="Optimization exceeded the 30 second time limit",
+        ) from exc
     except HTTPException:
         raise
     except Exception as exc:

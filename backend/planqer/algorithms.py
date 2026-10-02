@@ -11,6 +11,8 @@ from collections import Counter
 from dataclasses import dataclass
 from enum import Enum
 
+from planqer.validation import validate_cutting_workload
+
 
 class OptimizationAlgorithm(Enum):
     """Available optimization algorithms for cutting stock problems."""
@@ -490,6 +492,9 @@ def optimize_cutting(
     Returns:
         OptimizationResult containing the solution
     """
+    if not isinstance(algorithm, OptimizationAlgorithm):
+        raise ValueError(f"Unknown algorithm: {algorithm}")  # noqa: TRY004
+    validate_cutting_workload(parts, algorithm.value)
     if algorithm == OptimizationAlgorithm.FIRST_FIT_DECREASING:
         return first_fit_decreasing(parts, board_length, saw_blade_width)
     elif algorithm == OptimizationAlgorithm.BEST_FIT:

@@ -1,3 +1,5 @@
+import time
+
 from fastapi.testclient import TestClient
 
 from planqer.api import app
@@ -33,6 +35,63 @@ def test_planqer_invalid_board():
     }
     response = client.post("/api/cutting-plans", json=payload)
     assert response.status_code == 400
+
+
+def test_cutting_rejects_expanded_workload_before_solving():
+    response = client.post(
+        "/api/cutting-plans",
+        json={
+            "parts": {"100": 5001},
+            "available_board_lengths": [200],
+        },
+    )
+
+    assert response.status_code == 422
+    assert "maximum is 5000" in response.text
+
+
+def test_sheet_rejects_expanded_workload_before_solving():
+    response = client.post(
+        "/api/sheet-optimization",
+        json={
+            "parts": {
+                **{
+                    f"panel_{index}": {
+                        "width": 100,
+                        "height": 100,
+                        "quantity": 10,
+                    }
+                    for index in range(99)
+                },
+                "panel_last": {
+                    "width": 100,
+                    "height": 100,
+                    "quantity": 11,
+                },
+            },
+            "sheet_width": 1000,
+            "sheet_height": 1000,
+        },
+    )
+
+    assert response.status_code == 422
+    assert "maximum is 1000" in response.text
+
+
+def test_cutting_timeout_returns_actionable_gateway_error(monkeypatch):
+    def slow_optimization(*args, **kwargs):
+        time.sleep(0.05)
+
+    monkeypatch.setattr("planqer.routes.cutting.run_optimization", slow_optimization)
+    monkeypatch.setattr("planqer.routes.cutting.OPTIMIZATION_TIMEOUT_SECONDS", 0.01)
+
+    response = client.post(
+        "/api/cutting-plans",
+        json={"parts": {"100": 1}, "available_board_lengths": [200]},
+    )
+
+    assert response.status_code == 504
+    assert "30 second time limit" in response.text
 
 
 def test_async_submission_and_http_polling(monkeypatch):
