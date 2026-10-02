@@ -9,6 +9,7 @@ import bcrypt
 import jwt
 from jwt.exceptions import InvalidTokenError
 
+from planqer.auth.password_policy import MAX_PASSWORD_BYTES, validate_password
 from planqer.helpers import load_config
 
 logger = logging.getLogger("planqer.auth")
@@ -31,7 +32,7 @@ if not SECRET_KEY:
 ALGORITHM = auth_config.get("algorithm", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = auth_config.get("access_token_expire_minutes", 30)
 
-BCRYPT_MAX_PASSWORD_BYTES = 72
+BCRYPT_MAX_PASSWORD_BYTES = MAX_PASSWORD_BYTES
 
 
 def _password_bytes(password: str) -> bytes:
@@ -53,6 +54,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 def get_password_hash(password: str) -> str:
+    validate_password(password)
     return bcrypt.hashpw(_password_bytes(password), bcrypt.gensalt()).decode("utf-8")
 
 

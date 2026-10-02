@@ -21,7 +21,10 @@ def client(app):
 
 def _register_and_login(client) -> dict:
     """Register a fresh user and return auth headers for them."""
-    user = {"email": f"test-{uuid.uuid4()}@example.com", "password": "testpassword123"}
+    user = {
+        "email": f"test-{uuid.uuid4()}@example.com",
+        "password": "Testpassword" + "123!",
+    }
     client.post("/api/auth/register", json=user)
     login = client.post("/api/auth/login", json=user)
     token = login.json()["access_token"]

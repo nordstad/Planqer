@@ -1,13 +1,14 @@
+import asyncio
 from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, field_validator
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import func, select
 
-from planqer.auth import get_current_admin_user, get_password_hash
+from planqer.auth import get_current_admin_user, get_password_hash, validate_password
 from planqer.database import (
     User,
     UserProject,
@@ -42,7 +43,12 @@ class ToggleAdminRequest(BaseModel):
 
 
 class ResetPasswordRequest(BaseModel):
-    password: str = Field(min_length=6)
+    password: str
+
+    @field_validator("password")
+    @classmethod
+    def validate_password_policy(cls, value: str) -> str:
+        return validate_password(value)
 
 
 @router.get("/users", response_model=list[UserListResponse])
@@ -180,7 +186,7 @@ async def reset_user_password(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
 
-    user.hashed_password = get_password_hash(request.password)
+    user.hashed_password = await asyncio.to_thread(get_password_hash, request.password)
     await session.commit()
 
     return {"message": f"Password reset for {user.email}"}

@@ -27,7 +27,7 @@ def unique_user():
     """Generate a unique user for each test"""
     return {
         "email": f"settings-test-{uuid.uuid4()}@example.com",
-        "password": "testpassword123",
+        "password": "Testpassword" + "123!",
     }
 
 

@@ -15,27 +15,13 @@ import sys
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
-from planqer.auth.security import get_password_hash
+from planqer.auth import get_password_hash, validate_password
 from planqer.database import User, engine
 
 
 def validate_email(email: str) -> bool:
     pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
     return re.match(pattern, email) is not None
-
-
-def validate_password(password: str) -> tuple[bool, str]:
-    if len(password) < 8:
-        return False, "Password must be at least 8 characters long"
-    if not re.search(r"[A-Z]", password):
-        return False, "Password must contain at least one uppercase letter"
-    if not re.search(r"[a-z]", password):
-        return False, "Password must contain at least one lowercase letter"
-    if not re.search(r"\d", password):
-        return False, "Password must contain at least one digit"
-    if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
-        return False, "Password must contain at least one special character"
-    return True, ""
 
 
 def get_secure_password(
@@ -47,9 +33,11 @@ def get_secure_password(
             print("Password cannot be empty. Please try again.")
             continue
 
-        if not validate_password(password)[0]:
+        try:
+            validate_password(password)
+        except ValueError as exc:
             print(
-                "Password does not meet the required policy. Please choose a different password."
+                f"{exc}. Please choose a different password."
             )
             continue
 
@@ -110,8 +98,10 @@ async def create_admin_user(
         if not password:
             password = get_secure_password(email)
         else:
-            if not validate_password(password)[0]:
-                print("Password validation failed. Please choose a different password.")
+            try:
+                validate_password(password)
+            except ValueError as exc:
+                print(f"{exc}. Please choose a different password.")
                 return None
 
         admin_user = User(
@@ -154,8 +144,10 @@ async def set_user_password(
                 email, prompt="Enter new password for '{email}': "
             )
         else:
-            if not validate_password(password)[0]:
-                print("Password validation failed. Please choose a different password.")
+            try:
+                validate_password(password)
+            except ValueError as exc:
+                print(f"{exc}. Please choose a different password.")
                 return None
 
         user.hashed_password = get_password_hash(password)
