@@ -1,22 +1,22 @@
 import { materialLabel } from './materialLabel';
 
-const mm = (value) => (Number.isFinite(value)
-  ? value.toLocaleString('sv-SE', { maximumFractionDigits: 20 })
-  : '—');
+const mm = (value) => (Number.isFinite(value) ? Math.round(value).toLocaleString('sv-SE') : '—');
 
 const boardRows = (project) => {
   const result = project.optimization_result;
   const byLength = Array.isArray(result?.board_lengths_used)
-    ? result.board_lengths_used.reduce((counts, length) => ({
-      ...counts,
-      [length]: (counts[length] || 0) + 1,
-    }), {})
+    ? result.board_lengths_used.reduce((counts, length) => {
+      counts.set(Number(length), (counts.get(Number(length)) || 0) + 1);
+      return counts;
+    }, new Map())
     : result?.cost_analysis?.boards_needed_by_type
-      || (result?.optimal_board_length && result?.cut_list
-        ? { [result.optimal_board_length]: result.cut_list.length }
-        : {});
+      ? new Map(Object.entries(result.cost_analysis.boards_needed_by_type)
+        .map(([length, quantity]) => [Number(length), quantity]))
+      : result?.optimal_board_length && result?.cut_list
+        ? new Map([[Number(result.optimal_board_length), result.cut_list.length]])
+        : new Map();
 
-  return Object.entries(byLength).map(([size, quantity]) => ({
+  return [...byLength].sort(([left], [right]) => left - right).map(([size, quantity]) => ({
     plan: project.name,
     material: project.material_type || 'board',
     size: project.board_thickness && project.board_width
@@ -28,12 +28,14 @@ const boardRows = (project) => {
 
 const sheetRows = (project) => {
   const bySize = (project.optimization_result?.sheets || []).reduce((counts, sheet) => {
-    const size = `${sheet.sheet_width}x${sheet.sheet_height}`;
-    return { ...counts, [size]: (counts[size] || 0) + 1 };
-  }, {});
+    const width = Number(sheet.sheet_width);
+    const height = Number(sheet.sheet_height);
+    const key = `${width}:${height}`;
+    counts.set(key, { width, height, quantity: (counts.get(key)?.quantity || 0) + 1 });
+    return counts;
+  }, new Map());
 
-  return Object.entries(bySize).map(([size, quantity]) => {
-    const [width, height] = size.split('x');
+  return [...bySize.values()].map(({ width, height, quantity }) => {
     return {
       plan: project.name,
       material: project.material_type || 'sheet',
