@@ -1,13 +1,10 @@
-import base64
 import json
 import logging
-import re
 from datetime import datetime
 from types import SimpleNamespace
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.responses import Response
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
@@ -15,6 +12,7 @@ from sqlmodel import select
 from planqer.auth import get_current_user
 from planqer.database import User, UserTileProject, get_session
 from planqer.routes.project_groups import _get_owned_group
+from planqer.saved_project_adapters import load_saved_json, update_saved_image
 from planqer.tile_layout.geometry import Cutout, PlacedTile, Surface, TileKind
 from planqer.tile_visualization import generate_saved_tile_diagram
 
@@ -126,25 +124,29 @@ def _render_saved_layout(
         return None
 
 
-def _load_json_dict(value: str | None) -> dict:
-    if not value:
-        return {}
-    try:
-        return json.loads(value)
-    except (json.JSONDecodeError, TypeError):
-        return {}
-
-
 def tile_project_to_response(project: UserTileProject) -> TileProjectResponse:
     return TileProjectResponse(
         id=project.id,
         project_group_id=project.project_group_id,
         name=project.name,
-        surface_data=_load_json_dict(project.surface_data),
-        tile_data=_load_json_dict(project.tile_data),
-        bond_data=_load_json_dict(project.bond_data),
-        options_data=_load_json_dict(project.options_data),
-        layout_result=_load_json_dict(project.layout_result) or None,
+        surface_data=load_saved_json(
+            project.surface_data, field="tile surface", default={}, expected=dict
+        ),
+        tile_data=load_saved_json(
+            project.tile_data, field="tile definition", default={}, expected=dict
+        ),
+        bond_data=load_saved_json(
+            project.bond_data, field="tile bond", default={}, expected=dict
+        ),
+        options_data=load_saved_json(
+            project.options_data, field="tile options", default={}, expected=dict
+        ),
+        layout_result=load_saved_json(
+            project.layout_result,
+            field="tile layout result",
+            default=None,
+            expected=dict,
+        ),
         cutlist_image=project.cutlist_image,
         has_svg_image=bool(project.cutlist_image_svg),
         created_at=project.created_at.isoformat(),
@@ -255,13 +257,19 @@ async def update_tile_project(
 
     # A rename or changed layout inputs both change what the diagram should show.
     svg_data_url = _render_saved_layout(
-        _load_json_dict(project.surface_data),
-        _load_json_dict(project.layout_result),
+        load_saved_json(
+            project.surface_data, field="tile surface", default={}, expected=dict
+        ),
+        load_saved_json(
+            project.layout_result,
+            field="tile layout result",
+            default=None,
+            expected=dict,
+        ),
         project.name,
     )
-    if svg_data_url:
-        project.cutlist_image = svg_data_url
-        project.cutlist_image_svg = svg_data_url
+    project.cutlist_image = svg_data_url
+    project.cutlist_image_svg = svg_data_url
 
     project.updated_at = datetime.now()
 
@@ -295,58 +303,6 @@ async def get_tile_project_image(
     project = await _get_owned_tile_project(project_id, current_user, session)
 
     selected_image = project.cutlist_image_svg or project.cutlist_image
-    if not selected_image:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No diagram was saved with this layout",
-        )
-
-    if not selected_image.strip():
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Image data is empty"
-        )
-
-    if selected_image.startswith(
-        ("data:image/png;base64,", "data:image/svg+xml;base64,")
-    ):
-        image_data = selected_image.split(",", 1)[1]
-    else:
-        image_data = selected_image
-
-    if not image_data.strip():
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Base64 image data is empty"
-        )
-
-    try:
-        if not re.match(r"^[A-Za-z0-9+/]*={0,2}$", image_data):
-            raise ValueError("Invalid base64 format")
-
-        image_bytes = base64.b64decode(image_data, validate=True)
-        if len(image_bytes) == 0:
-            raise ValueError("Decoded image data is empty")
-
-        if selected_image.startswith("data:image/svg+xml;base64,"):
-            media_type, file_extension = "image/svg+xml", "svg"
-        else:
-            media_type, file_extension = "image/png", "png"
-
-        project_name_safe = re.sub(r"[^\w\-_\. ]", "", project.name)
-        filename = f"{project_name_safe} - Tile Layout.{file_extension}"
-
-        return Response(
-            content=image_bytes,
-            media_type=media_type,
-            headers={
-                "Content-Disposition": f'attachment; filename="{filename}"',
-                "Content-Length": str(len(image_bytes)),
-            },
-        )
-    except Exception as e:
-        logger.error(
-            f"Failed to decode base64 image data for tile project {project_id}: {e}"
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to decode image data: {e}",
-        )
+    return update_saved_image(
+        selected_image, project_name=project.name, diagram_label="tile layout"
+    )

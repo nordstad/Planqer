@@ -1,12 +1,9 @@
-import base64
 import json
 import logging
-import re
 from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.responses import Response
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
@@ -14,6 +11,7 @@ from sqlmodel import select
 from planqer.auth import get_current_user
 from planqer.database import User, UserProject, get_session
 from planqer.routes.project_groups import _get_owned_group
+from planqer.saved_project_adapters import load_saved_json, update_saved_image
 from planqer.svg_visualization import generate_saved_diagram
 
 router = APIRouter(prefix="/projects", tags=["user-projects"])
@@ -104,20 +102,21 @@ def _render_saved_diagram(
 
 
 def project_to_response(project: UserProject) -> ProjectResponse:
-    try:
-        parts_data = json.loads(project.parts_data)
-        board_lengths = json.loads(project.board_lengths)
-        optimization_result = (
-            json.loads(project.optimization_result)
-            if project.optimization_result
-            else None
-        )
-        board_costs = json.loads(project.board_costs) if project.board_costs else None
-    except (json.JSONDecodeError, TypeError):
-        parts_data = {}
-        board_lengths = []
-        optimization_result = None
-        board_costs = None
+    parts_data = load_saved_json(
+        project.parts_data, field="board parts", default={}, expected=dict
+    )
+    board_lengths = load_saved_json(
+        project.board_lengths, field="board lengths", default=[], expected=list
+    )
+    optimization_result = load_saved_json(
+        project.optimization_result,
+        field="board optimization result",
+        default=None,
+        expected=dict,
+    )
+    board_costs = load_saved_json(
+        project.board_costs, field="board costs", default=None, expected=dict
+    )
 
     return ProjectResponse(
         id=project.id,
@@ -310,58 +309,6 @@ async def get_project_image(
     project = await _get_owned_project(project_id, current_user, session)
 
     selected_image = project.cutlist_image_svg or project.cutlist_image
-    if not selected_image:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No diagram was saved with this plan",
-        )
-
-    if not selected_image.strip():
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Image data is empty"
-        )
-
-    if selected_image.startswith(
-        ("data:image/png;base64,", "data:image/svg+xml;base64,")
-    ):
-        image_data = selected_image.split(",", 1)[1]
-    else:
-        image_data = selected_image
-
-    if not image_data.strip():
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Base64 image data is empty"
-        )
-
-    try:
-        if not re.match(r"^[A-Za-z0-9+/]*={0,2}$", image_data):
-            raise ValueError("Invalid base64 format")
-
-        image_bytes = base64.b64decode(image_data, validate=True)
-        if len(image_bytes) == 0:
-            raise ValueError("Decoded image data is empty")
-
-        if selected_image.startswith("data:image/svg+xml;base64,"):
-            media_type, file_extension = "image/svg+xml", "svg"
-        else:
-            media_type, file_extension = "image/png", "png"
-
-        project_name_safe = re.sub(r"[^\w\-_\. ]", "", project.name)
-        filename = f"{project_name_safe} - Cutlist.{file_extension}"
-
-        return Response(
-            content=image_bytes,
-            media_type=media_type,
-            headers={
-                "Content-Disposition": f'attachment; filename="{filename}"',
-                "Content-Length": str(len(image_bytes)),
-            },
-        )
-    except Exception as e:
-        logger.error(
-            f"Failed to decode base64 image data for project {project_id}: {e}"
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to decode image data: {e}",
-        )
+    return update_saved_image(
+        selected_image, project_name=project.name, diagram_label="cutlist"
+    )
