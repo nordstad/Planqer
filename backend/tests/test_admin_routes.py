@@ -186,6 +186,44 @@ def test_reset_password_lets_user_log_in_with_new_password(client, admin, other_
     assert new_password.status_code == 200
 
 
+def test_reset_password_revokes_existing_session_only_for_reset_user(
+    client, admin, other_user
+):
+    unrelated_user = _register_and_login(client)
+
+    reset_response = client.put(
+        f"/admin/users/{other_user['id']}/password",
+        json={"password": "Brand-new-password" + "1!"},
+        headers=admin["headers"],
+    )
+    assert reset_response.status_code == 200
+
+    revoked_session = client.get(
+        "/api/auth/me", headers=other_user["headers"]
+    )
+    unrelated_session = client.get(
+        "/api/auth/me", headers=unrelated_user["headers"]
+    )
+
+    assert revoked_session.status_code == 401
+    assert unrelated_session.status_code == 200
+    assert unrelated_session.json()["id"] == unrelated_user["id"]
+
+
+def test_cli_password_reset_revokes_existing_session(client, other_user):
+    from create_admin import set_user_password
+
+    asyncio.run(
+        set_user_password(
+            other_user["email"], password="Cli-reset-password" + "1!", force=True
+        )
+    )
+
+    response = client.get("/api/auth/me", headers=other_user["headers"])
+
+    assert response.status_code == 401
+
+
 def test_reset_password_unknown_user_404(client, admin):
     new_password = "Brand-new-password" + "1!"
     response = client.put(

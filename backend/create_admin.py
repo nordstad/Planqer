@@ -151,6 +151,7 @@ async def set_user_password(
                 return None
 
         user.hashed_password = get_password_hash(password)
+        user.session_version += 1
         await session.commit()
 
         print(f"Password updated for '{email}'.")
