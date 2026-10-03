@@ -3,6 +3,8 @@ import uuid
 import pytest
 from fastapi.testclient import TestClient
 
+pytestmark = pytest.mark.api
+
 
 @pytest.fixture
 def app():

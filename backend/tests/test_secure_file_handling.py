@@ -6,6 +6,8 @@ import os
 import tempfile
 from unittest.mock import patch
 
+import pytest
+
 from planqer.services import secure_temp_file
 
 
@@ -131,6 +133,7 @@ def test_temp_file_unpredictable_names():
         assert len(name_without_ext) > 0  # Random part should exist
 
 
+@pytest.mark.api
 def test_visualization_uses_secure_temp_file():
     """Test that the visualization generation uses secure temp files."""
     from fastapi.testclient import TestClient

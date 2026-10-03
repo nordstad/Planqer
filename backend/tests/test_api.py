@@ -1,9 +1,12 @@
 import time
 
+import pytest
 from fastapi.testclient import TestClient
 
 from planqer.api import app
 from planqer.async_processing import TaskStatus, task_manager
+
+pytestmark = pytest.mark.api
 
 client = TestClient(app)
 client.headers["X-Planqer-Setup-Secret"] = "test-setup-secret"

@@ -7,6 +7,8 @@ from fastapi.testclient import TestClient
 
 from planqer.api import app
 
+pytestmark = pytest.mark.api
+
 client = TestClient(app)
 client.headers["X-Planqer-Setup-Secret"] = "test-setup-secret"
 
