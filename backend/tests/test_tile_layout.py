@@ -14,6 +14,8 @@ from planqer.tile_layout.bonds import (
     DiagonalHerringboneBond,
     DoubleHerringboneBond,
     HerringboneBond,
+    PlacementAnchor,
+    RawPlacement,
     RunningBond,
     StackBond,
 )
@@ -335,6 +337,35 @@ def test_place_and_clip_at_angle_45_matches_place_and_clip_diagonal():
 # ── Bonds ─────────────────────────────────────────────────────────────────
 
 
+@pytest.mark.parametrize(
+    "bond",
+    [
+        StackBond(),
+        RunningBond(),
+        HerringboneBond(),
+        DiagonalBond(),
+        DiagonalHerringboneBond(),
+        DoubleHerringboneBond(),
+        DiagonalDoubleHerringboneBond(),
+    ],
+)
+def test_bonds_emit_explicit_raw_placement_semantics(bond):
+    surface = Surface(width=1000, height=1000)
+    tile = Tile(width=300, height=150)
+    raw = next(bond.raw_positions(surface, tile, JointSpec(), 0, 0))
+
+    assert isinstance(raw, RawPlacement)
+    if raw.anchor == PlacementAnchor.TOP_LEFT:
+        assert raw.width is None
+        assert raw.height is None
+        assert raw.angle_degrees is None
+    else:
+        assert raw.anchor == PlacementAnchor.CENTER
+        assert raw.width is not None
+        assert raw.height is not None
+        assert raw.angle_degrees == pytest.approx(45.0)
+
+
 def test_stack_bond_covers_exact_grid_with_no_partial_tiles():
     # 3 columns x 2 rows exactly, pitch 303 x 603 (300+3 joint, 600+3 joint)
     surface = Surface(width=909, height=1206)
@@ -346,8 +377,9 @@ def test_stack_bond_covers_exact_grid_with_no_partial_tiles():
     )
     placed = [
         p
-        for (x, y, rotated) in positions
-        if (p := place_and_clip(x, y, rotated, tile, surface, joint)) is not None
+        for raw in positions
+        if (p := place_and_clip(raw.x, raw.y, raw.rotated, tile, surface, joint))
+        is not None
     ]
 
     assert len(placed) == 6
@@ -366,8 +398,9 @@ def test_stack_bond_produces_one_cut_column_when_width_does_not_divide_evenly():
     )
     placed = [
         p
-        for (x, y, rotated) in positions
-        if (p := place_and_clip(x, y, rotated, tile, surface, joint)) is not None
+        for raw in positions
+        if (p := place_and_clip(raw.x, raw.y, raw.rotated, tile, surface, joint))
+        is not None
     ]
 
     full = [p for p in placed if p.kind == TileKind.FULL]
@@ -389,8 +422,8 @@ def test_running_bond_shifts_alternate_rows_by_offset_fraction():
     positions = list(bond.raw_positions(surface, tile, joint, offset_x=0, offset_y=0))
 
     pitch_x = 300 + 3
-    row0_xs = sorted({x for (x, y, _r) in positions if abs(y - 0) < 1e-6})
-    row1_xs = sorted({x for (x, y, _r) in positions if abs(y - 603) < 1e-6})
+    row0_xs = sorted({p.x for p in positions if abs(p.y - 0) < 1e-6})
+    row1_xs = sorted({p.x for p in positions if abs(p.y - 603) < 1e-6})
 
     # The shift is defined as a fraction of the tile width (not the pitch,
     # which would also fold in the joint) — see RunningBond's docstring.
@@ -410,10 +443,11 @@ def test_running_bond_rejects_offset_fraction_out_of_range():
 def _clipped(bond, surface, tile, joint, offset_x=0.0, offset_y=0.0):
     return [
         p
-        for (x, y, rotated) in bond.raw_positions(
+        for raw in bond.raw_positions(
             surface, tile, joint, offset_x, offset_y
         )
-        if (p := place_and_clip(x, y, rotated, tile, surface, joint)) is not None
+        if (p := place_and_clip(raw.x, raw.y, raw.rotated, tile, surface, joint))
+        is not None
     ]
 
 
@@ -489,10 +523,11 @@ def test_herringbone_bond_leaves_no_gap():
 def _diagonal_clipped(bond, surface, tile, joint, offset_x=0.0, offset_y=0.0):
     return [
         p
-        for (cx, cy, _rotated) in bond.raw_positions(
+        for raw in bond.raw_positions(
             surface, tile, joint, offset_x, offset_y
         )
-        if (p := place_and_clip_diagonal(cx, cy, tile, surface, joint)) is not None
+        if (p := place_and_clip_diagonal(raw.x, raw.y, tile, surface, joint))
+        is not None
     ]
 
 
@@ -625,17 +660,14 @@ def test_diagonal_bond_respects_the_joint_gap():
 
 
 def _diagonal_herringbone_clipped(surface, tile, joint, offset_x=0.0, offset_y=0.0):
-    """DiagonalHerringboneBond yields (cx, cy, is_v_tile) -- is_v_tile
-    picks which of the motif's two piece shapes (l x s "H" or s x l "V")
-    this position is; both share the same 45-degree global angle (see
-    solver._generate_layout's dispatch for this bond)."""
-    l, s = max(tile.width, tile.height), min(tile.width, tile.height)
+    """Clip the explicit centered placements emitted by diagonal herringbone."""
     placed = []
-    for cx, cy, is_v in DiagonalHerringboneBond().raw_positions(
+    for raw in DiagonalHerringboneBond().raw_positions(
         surface, tile, joint, offset_x, offset_y
     ):
-        width, height = (s, l) if is_v else (l, s)
-        p = place_and_clip_at_angle(cx, cy, width, height, 45.0, surface, joint)
+        p = place_and_clip_at_angle(
+            raw.x, raw.y, raw.width, raw.height, raw.angle_degrees, surface, joint
+        )
         if p is not None:
             placed.append(p)
     return placed
@@ -746,13 +778,13 @@ def test_double_herringbone_places_pairs_of_identical_planks():
 def _diagonal_double_herringbone_clipped(
     surface, tile, joint, offset_x=0.0, offset_y=0.0
 ):
-    l, s = max(tile.width, tile.height), min(tile.width, tile.height)
     placed = []
-    for cx, cy, is_v in DiagonalDoubleHerringboneBond().raw_positions(
+    for raw in DiagonalDoubleHerringboneBond().raw_positions(
         surface, tile, joint, offset_x, offset_y
     ):
-        width, height = (s, l) if is_v else (l, s)
-        p = place_and_clip_at_angle(cx, cy, width, height, 45.0, surface, joint)
+        p = place_and_clip_at_angle(
+            raw.x, raw.y, raw.width, raw.height, raw.angle_degrees, surface, joint
+        )
         if p is not None:
             placed.append(p)
     return placed
@@ -802,8 +834,9 @@ def _placed_layout_for_1000x600():
     )
     placed = [
         p
-        for (x, y, rotated) in positions
-        if (p := place_and_clip(x, y, rotated, tile, surface, joint)) is not None
+        for raw in positions
+        if (p := place_and_clip(raw.x, raw.y, raw.rotated, tile, surface, joint))
+        is not None
     ]
     return surface, tile, placed
 
@@ -838,8 +871,9 @@ def test_distinct_cut_sizes_ignores_full_tiles_and_groups_by_rounded_size():
     )
     placed = [
         p
-        for (x, y, rotated) in positions
-        if (p := place_and_clip(x, y, rotated, tile, surface, joint)) is not None
+        for raw in positions
+        if (p := place_and_clip(raw.x, raw.y, raw.rotated, tile, surface, joint))
+        is not None
     ]
 
     _scored, metrics = score_layout(placed, surface)
@@ -880,8 +914,9 @@ def test_distinct_cut_sizes_groups_notched_and_cut_of_the_same_size_together():
     )
     placed = [
         p
-        for (x, y, rotated) in positions
-        if (p := place_and_clip(x, y, rotated, tile, surface, joint)) is not None
+        for raw in positions
+        if (p := place_and_clip(raw.x, raw.y, raw.rotated, tile, surface, joint))
+        is not None
     ]
 
     _scored, metrics = score_layout(placed, surface)
@@ -929,8 +964,9 @@ def test_symmetry_delta_zero_when_layout_is_centered():
     )
     placed = [
         p
-        for (x, y, rotated) in positions
-        if (p := place_and_clip(x, y, rotated, tile, surface, joint)) is not None
+        for raw in positions
+        if (p := place_and_clip(raw.x, raw.y, raw.rotated, tile, surface, joint))
+        is not None
     ]
 
     _scored, metrics = score_layout(placed, surface)

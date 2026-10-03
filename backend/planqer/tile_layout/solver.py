@@ -23,6 +23,8 @@ from .bonds import (
     DiagonalHerringboneBond,
     DoubleHerringboneBond,
     HerringboneBond,
+    PlacementAnchor,
+    RawPlacement,
     RunningBond,
     StackBond,
 )
@@ -33,7 +35,6 @@ from .geometry import (
     Tile,
     place_and_clip,
     place_and_clip_at_angle,
-    place_and_clip_diagonal,
 )
 from .offcuts import OffcutResult, match_diagonal_offcuts, match_offcuts
 from .scoring import LayoutMetrics, score_layout
@@ -107,32 +108,36 @@ def _generate_layout(
     offset_y: float,
 ) -> list[PlacedTile]:
     placed = []
-    is_diagonal = isinstance(bond, DiagonalBond)
-    is_diagonal_herringbone = isinstance(
-        bond, (DiagonalHerringboneBond, DiagonalDoubleHerringboneBond)
-    )
-    l, s = max(tile.width, tile.height), min(tile.width, tile.height)
-    for x, y, rotated in bond.raw_positions(surface, tile, joint, offset_x, offset_y):
-        if is_diagonal:
-            # (x, y) here is the tile's center, not its pre-clip top-left
-            # corner — DiagonalBond's raw_positions docstring explains why
-            # a different clip function (polygon, not rectangle) is needed.
-            p = place_and_clip_diagonal(x, y, tile, surface, joint)
-        elif is_diagonal_herringbone:
-            # (x, y) is this piece's center; `rotated` is reused to mean
-            # "is this the V piece" (l x s "H", or s x l "V" — already two
-            # different rectangle shapes in local space, not one shape
-            # needing an extra 90-degree twist) — both get the *same*
-            # global angle. Shared by DiagonalHerringboneBond and
-            # DiagonalDoubleHerringboneBond, whose sub-planks are always
-            # the tile's own l x s / s x l size regardless of pairing.
-            width, height = (s, l) if rotated else (l, s)
-            p = place_and_clip_at_angle(x, y, width, height, 45.0, surface, joint)
-        else:
-            p = place_and_clip(x, y, rotated, tile, surface, joint)
+    for raw in bond.raw_positions(surface, tile, joint, offset_x, offset_y):
+        p = _clip_raw_placement(raw, tile, surface, joint)
         if p is not None:
             placed.append(p)
     return placed
+
+
+def _clip_raw_placement(
+    raw: RawPlacement, tile: Tile, surface: Surface, joint: JointSpec
+) -> PlacedTile | None:
+    """Normalize a bond placement at the single solver-to-geometry seam."""
+    if raw.anchor == PlacementAnchor.TOP_LEFT:
+        if raw.width is not None or raw.height is not None or raw.angle_degrees is not None:
+            raise ValueError("top-left placements cannot define angled dimensions")
+        return place_and_clip(raw.x, raw.y, raw.rotated, tile, surface, joint)
+
+    if raw.anchor == PlacementAnchor.CENTER:
+        if raw.width is None or raw.height is None or raw.angle_degrees is None:
+            raise ValueError("center placements must define dimensions and angle")
+        return place_and_clip_at_angle(
+            raw.x,
+            raw.y,
+            raw.width,
+            raw.height,
+            raw.angle_degrees,
+            surface,
+            joint,
+        )
+
+    raise ValueError(f"Unsupported placement anchor: {raw.anchor!r}")
 
 
 def _signature(metrics: LayoutMetrics) -> tuple:
