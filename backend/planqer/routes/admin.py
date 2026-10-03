@@ -189,6 +189,7 @@ async def reset_user_password(
         )
 
     user.hashed_password = await asyncio.to_thread(get_password_hash, request.password)
+    user.session_version += 1
     await session.commit()
 
     return {"message": f"Password reset for {user.email}"}

@@ -131,7 +131,9 @@ async def login_user(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user"
         )
 
-    access_token = create_access_token(data={"sub": str(user.id)})
+    access_token = create_access_token(
+        data={"sub": str(user.id), "session_version": user.session_version}
+    )
 
     return Token(access_token=access_token, token_type="bearer")
 

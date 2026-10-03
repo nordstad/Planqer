@@ -11,6 +11,7 @@ class User(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     email: str = Field(unique=True, index=True)
     hashed_password: str
+    session_version: int = Field(default=0)
     is_active: bool = Field(default=True)
     is_admin: bool = Field(default=False)
     created_at: datetime | None = Field(
