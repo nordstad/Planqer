@@ -5,6 +5,13 @@ from sqlalchemy import Column, DateTime
 from sqlmodel import Field, Relationship, SQLModel
 
 
+class InstanceBootstrap(SQLModel, table=True):
+    __tablename__ = "instance_bootstrap"
+
+    id: int = Field(default=1, primary_key=True)
+    claimed: bool = Field(default=False)
+
+
 class User(SQLModel, table=True):
     __tablename__ = "users"
 

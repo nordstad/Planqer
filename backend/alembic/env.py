@@ -10,6 +10,7 @@ from alembic import context
 
 # Import all models so they are registered on SQLModel.metadata
 from planqer.database.models import (  # noqa: F401
+    InstanceBootstrap,
     User,
     UserProject,
     UserSettings,

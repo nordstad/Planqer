@@ -6,6 +6,7 @@ from planqer.api import app
 from planqer.async_processing import TaskStatus, task_manager
 
 client = TestClient(app)
+client.headers["X-Planqer-Setup-Secret"] = "test-setup-secret"
 
 
 def test_root():

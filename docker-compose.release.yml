@@ -7,6 +7,7 @@ services:
     environment:
       # Set to keep login sessions valid across container restarts.
       - SECRET_KEY=${SECRET_KEY:-}
+      - PLANQER_SETUP_SECRET=${PLANQER_SETUP_SECRET:-}
       - DATABASE_URL=${DATABASE_URL:-}
       # Comma-separated origins allowed to call the API, in addition to
       # localhost/127.0.0.1. Set this to the address(es) you reach Planqer on

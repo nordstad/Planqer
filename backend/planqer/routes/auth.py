@@ -1,8 +1,11 @@
 import asyncio
+import hmac
+import os
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, EmailStr, field_validator
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import func, select
 
@@ -13,7 +16,7 @@ from planqer.auth import (
     validate_password,
     verify_password,
 )
-from planqer.database import User, UserSettings, get_session
+from planqer.database import InstanceBootstrap, User, UserSettings, get_session
 
 from .common import limiter
 
@@ -77,10 +80,24 @@ async def register_user(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered"
         )
 
-    # The first account on a fresh self-hosted instance becomes its admin automatically.
-    is_first_user = (
-        (await session.execute(select(func.count(User.id)))).scalar() or 0
-    ) == 0
+    user_count = (await session.execute(select(func.count(User.id)))).scalar() or 0
+    if user_count == 0 and not _initial_registration_is_allowed(request):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Fresh-instance registration requires local access or the setup secret",
+        )
+
+    is_first_user = False
+    if user_count == 0:
+        claim = await session.execute(
+            update(InstanceBootstrap)
+            .where(
+                InstanceBootstrap.id == 1,
+                InstanceBootstrap.claimed == False,
+            )
+            .values(claimed=True)
+        )
+        is_first_user = claim.rowcount == 1
 
     db_user = User(
         email=user_data.email,
@@ -101,6 +118,16 @@ async def register_user(
         is_active=db_user.is_active,
         is_admin=db_user.is_admin,
     )
+
+
+def _initial_registration_is_allowed(request: Request) -> bool:
+    client_host = request.client.host if request.client else None
+    if client_host in {"127.0.0.1", "::1", "localhost"}:
+        return True
+
+    setup_secret = os.environ.get("PLANQER_SETUP_SECRET")
+    provided_secret = request.headers.get("X-Planqer-Setup-Secret", "")
+    return bool(setup_secret) and hmac.compare_digest(provided_secret, setup_secret)
 
 
 @router.post("/login", response_model=Token)
