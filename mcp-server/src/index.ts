@@ -37,6 +37,7 @@ const MCP_API_MAX_RETRIES = Math.max(0, parseIntEnv('MCP_API_MAX_RETRIES', 2));
 const MCP_API_RETRY_BASE_DELAY_MS = Math.max(0, parseIntEnv('MCP_API_RETRY_BASE_DELAY_MS', 200));
 const MCP_API_RETRY_MAX_DELAY_MS = Math.max(MCP_API_RETRY_BASE_DELAY_MS, parseIntEnv('MCP_API_RETRY_MAX_DELAY_MS', 2000));
 const RETRYABLE_STATUS_CODES = new Set([408, 425, 429, 500, 502, 503, 504]);
+const MCP_SERVER_VERSION = '0.6.0';
 
 const shouldLog = (level: LogLevel): boolean => LOG_LEVELS[level] >= LOG_LEVELS[currentLevel];
 const REDACT_FIELDS = new Set(['parts', 'project_name', 'cut_list', 'visualization', 'content', 'structuredContent']);
@@ -85,11 +86,8 @@ const log = (level: LogLevel, event: string, fields: Record<string, unknown> = {
     ...fields,
   };
   const line = JSON.stringify(payload);
-  if (level === 'ERROR') {
-    console.error(line);
-  } else {
-    console.log(line);
-  }
+  // stdout is reserved for newline-delimited JSON-RPC messages in stdio mode.
+  console.error(line);
 };
 
 const makeRequestId = (): string => randomUUID().replace(/-/g, '').slice(0, 12);
@@ -133,9 +131,9 @@ const loadDemoPayloads = (): DemoPayloadMap => {
 };
 
 // Validation schemas
-const PartsSchema = z.record(z.string(), z.number().positive());
-const BoardLengthsSchema = z.array(z.number().positive());
-const SawKerfSchema = z.number().nonnegative();
+const PartsSchema = z.record(z.string(), z.number().int().positive());
+const BoardLengthsSchema = z.array(z.number().min(1));
+const SawKerfSchema = z.number().positive();
 const ProjectNameSchema = z.string().optional();
 const AlgorithmSchema = z.enum(['first_fit_decreasing', 'best_fit', 'best_fit_decreasing', 'genetic', 'branch_bound']).optional();
 
@@ -162,7 +160,7 @@ class PlanqerServer {
     this.server = new Server(
       {
         name: 'planqer-mcp-server',
-        version: '0.5.0',
+        version: MCP_SERVER_VERSION,
       },
       {
         capabilities: {
@@ -292,7 +290,9 @@ class PlanqerServer {
       const endpoint = useAsync ? '/cutting-plans/async' : '/cutting-plans';
       log('DEBUG', 'api_request_start', { requestId: rid, endpoint, async: useAsync });
       log('DEBUG', 'api_request_payload', { requestId: rid, payload: redactForLog(apiPayload) });
-      const maxAttempts = MCP_API_MAX_RETRIES + 1;
+      // Async POST creates a job. Retrying it without an idempotency key could
+      // create duplicate jobs, so only synchronous requests are retried.
+      const maxAttempts = useAsync ? 1 : MCP_API_MAX_RETRIES + 1;
       let response: { status: number; data: any } | null = null;
 
       for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {

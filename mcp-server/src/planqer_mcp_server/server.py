@@ -36,6 +36,7 @@ MCP_API_RETRY_MAX_DELAY_MS = max(
     MCP_API_RETRY_BASE_DELAY_MS,
     int(os.getenv("MCP_API_RETRY_MAX_DELAY_MS", "2000")),
 )
+MCP_SERVER_VERSION = "0.6.0"
 
 RETRYABLE_STATUS_CODES = {408, 425, 429, 500, 502, 503, 504}
 
@@ -125,6 +126,10 @@ def _retry_delay_seconds(attempt_number: int) -> float:
 
 def _is_retryable_status(status_code: int) -> bool:
     return status_code in RETRYABLE_STATUS_CODES
+
+
+def _is_error_content(content: list[types.TextContent]) -> bool:
+    return any(item.text.startswith("❌") for item in content)
 
 
 def format_optimization_result(
@@ -226,19 +231,19 @@ async def handle_call_tool(
     if name == "optimize_cutting":
         result = await handle_optimize_cutting(arguments, request_id=request_id)
         logger.info("event=mcp_call_end request_id=%s tool=%s", request_id, name)
-        return types.CallToolResult(content=result)
+        return types.CallToolResult(content=result, isError=_is_error_content(result))
     elif name == "optimize_demo":
         result = await handle_optimize_demo(arguments, request_id=request_id)
         logger.info("event=mcp_call_end request_id=%s tool=%s", request_id, name)
-        return types.CallToolResult(content=result)
+        return types.CallToolResult(content=result, isError=_is_error_content(result))
     elif name == "get_demo_payloads":
         result = handle_get_demo_payloads(arguments)
         logger.info("event=mcp_call_end request_id=%s tool=%s", request_id, name)
-        return types.CallToolResult(content=result)
+        return types.CallToolResult(content=result, isError=_is_error_content(result))
     elif name == "get_cutting_example":
         result = handle_get_example()
         logger.info("event=mcp_call_end request_id=%s tool=%s", request_id, name)
-        return types.CallToolResult(content=result)
+        return types.CallToolResult(content=result, isError=_is_error_content(result))
     else:
         logger.warning(
             "event=mcp_call_unknown_tool request_id=%s tool=%s", request_id, name
@@ -267,6 +272,22 @@ async def handle_optimize_cutting(
         for field in required_fields:
             if field not in arguments:
                 raise ValueError(f"Missing required field: {field}")
+
+        parts = arguments["parts"]
+        boards = arguments["available_board_lengths"]
+        saw_blade_width = arguments["saw_blade_width"]
+        if not isinstance(parts, dict) or not parts:
+            raise ValueError("parts must be a non-empty object")
+        if any(not isinstance(quantity, int) or quantity < 1 for quantity in parts.values()):
+            raise ValueError("parts quantities must be positive integers")
+        if (
+            not isinstance(boards, list)
+            or not boards
+            or any(not isinstance(length, (int, float)) or length < 1 for length in boards)
+        ):
+            raise ValueError("available_board_lengths must contain values of at least 1")
+        if not isinstance(saw_blade_width, (int, float)) or saw_blade_width <= 0:
+            raise ValueError("saw_blade_width must be greater than 0")
 
         # Check if using async processing
         use_async = bool(arguments.get("use_async", False))
@@ -303,7 +324,9 @@ async def handle_optimize_cutting(
 
         # Make the API request with bounded retries for transient failures.
         response = None
-        max_attempts = MCP_API_MAX_RETRIES + 1
+        # Async POST creates a job. Retrying it without an idempotency key could
+        # create duplicate jobs, so only synchronous requests are retried.
+        max_attempts = 1 if use_async else MCP_API_MAX_RETRIES + 1
         async with httpx.AsyncClient(timeout=timeout) as client:
             for attempt in range(1, max_attempts + 1):
                 logger.debug(
@@ -601,7 +624,7 @@ async def main():
             write_stream,
             InitializationOptions(
                 server_name="planqer-mcp-server",
-                server_version="0.5.0",
+                server_version=MCP_SERVER_VERSION,
                 capabilities=server.get_capabilities(
                     notification_options=NotificationOptions(),
                     experimental_capabilities={},

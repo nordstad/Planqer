@@ -18,13 +18,13 @@
                     "description": "Array of available board lengths in the same units as parts",
                     "items": {
                         "type": "number",
-                        "minimum": 0.1
+                        "minimum": 1
                     }
                 },
                 "saw_blade_width": {
                     "type": "number",
                     "description": "Width of the saw blade (kerf) to account for material lost during cutting",
-                    "minimum": 0
+                    "minimum": 0.1
                 },
                 "project_name": {
                     "type": "string",
