@@ -17,8 +17,10 @@ from planqer.sheet_optimization import (
     SheetOptimizationAlgorithm,
     SheetOptimizationResult,
     _validate_sheet_result,
+    best_fit_2d_algorithm,
     bottom_left_fill_algorithm,
     expand_sheet_parts,
+    find_best_fit_position,
     get_sheet_algorithm_recommendation,
     optimize_sheet_cutting,
 )
@@ -414,6 +416,36 @@ class TestSheetOptimization:
         assert result.total_sheets == 1
         assert len(result.sheets[0].parts) == 5  # 1 large + 4 small
         assert result.overall_efficiency > 0
+
+    def test_best_fit_prefers_compact_remaining_geometry(self):
+        sheet = SheetLayout(
+            sheet_width=1000,
+            sheet_height=1000,
+            parts=[Rectangle(width=400, height=400, x=0, y=0, part_id="existing")],
+            kerf_width=3,
+        )
+        part = Rectangle(width=500, height=100, part_id="next")
+
+        assert find_best_fit_position(sheet, part) == (0, 403)
+
+    def test_best_fit_is_deterministic_and_preserves_invariants(self):
+        parts = {
+            "wide": {"width": 500, "height": 100, "quantity": 2},
+            "tall": {"width": 100, "height": 500, "quantity": 2},
+            "square": {"width": 200, "height": 200, "quantity": 2},
+        }
+
+        first = best_fit_2d_algorithm(parts, 800, 800, kerf_width=3)
+        second = best_fit_2d_algorithm(parts, 800, 800, kerf_width=3)
+
+        assert [
+            [(part.part_id, part.x, part.y, part.rotated) for part in sheet.parts]
+            for sheet in first.sheets
+        ] == [
+            [(part.part_id, part.x, part.y, part.rotated) for part in sheet.parts]
+            for sheet in second.sheets
+        ]
+        assert_complete_sheet_result(first, parts, 800, 800, 3)
 
     def test_guillotine_cut_algorithm(self):
         """Test the Guillotine Cut algorithm."""
