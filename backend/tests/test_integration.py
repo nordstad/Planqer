@@ -1,9 +1,12 @@
+import pytest
 from fastapi.testclient import TestClient
 
 from planqer.api import app
 
 client = TestClient(app)
 client.headers["X-Planqer-Setup-Secret"] = "test-setup-secret"
+
+pytestmark = pytest.mark.api
 
 
 def test_planqer_integration_multiple_boards():

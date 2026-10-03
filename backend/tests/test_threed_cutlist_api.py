@@ -12,7 +12,7 @@ from planqer.api import app
 from planqer.threed_cutlist import ComponentType, CutListItem
 
 # Patch the rate limiter at module level to disable it for all tests
-pytestmark = pytest.mark.usefixtures("disable_rate_limiting")
+pytestmark = [pytest.mark.api, pytest.mark.usefixtures("disable_rate_limiting")]
 
 
 # Skip rate limiting issues by disabling problematic tests

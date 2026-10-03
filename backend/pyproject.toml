@@ -65,3 +65,8 @@ concurrency = ["thread", "greenlet"]
 # these handlers deliberately catch/log broad failures at API boundaries.
 # Database timestamps are naive because the schema uses timezone=False.
 ignore = ["B008", "BLE001", "DTZ005"]
+
+[tool.pytest.ini_options]
+markers = [
+    "api: test exercises the FastAPI application and migration-backed infrastructure",
+]

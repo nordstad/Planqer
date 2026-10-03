@@ -13,6 +13,8 @@ from planqer.api import (
     validate_numeric_input,
 )
 
+pytestmark = pytest.mark.api
+
 client = TestClient(app)
 client.headers["X-Planqer-Setup-Secret"] = "test-setup-secret"
 

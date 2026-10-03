@@ -20,6 +20,8 @@ from planqer.database import (
     engine,
 )
 
+pytestmark = pytest.mark.api
+
 
 @pytest.fixture
 def app():

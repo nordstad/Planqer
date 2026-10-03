@@ -1,8 +1,23 @@
 import os
+import tempfile
+from pathlib import Path
 
 import pytest
 
-TEST_DB_PATH = "./test_planqer.db"
+_WORKER_ID = os.environ.get("PYTEST_XDIST_WORKER", "master")
+TEST_DB_PATH = str(
+    Path(tempfile.gettempdir()) / f"planqer-test-{_WORKER_ID}-{os.getpid()}.db"
+)
+
+
+def _remove_test_database() -> None:
+    for suffix in ("", "-wal", "-shm"):
+        Path(f"{TEST_DB_PATH}{suffix}").unlink(missing_ok=True)
+
+
+# Remove stale files before any application module reads DATABASE_URL. The
+# process/worker suffix prevents parallel runs from opening the same database.
+_remove_test_database()
 
 # Set at collection time, before any test module's top-level `from planqer.api
 # import app` runs — planqer.database.connection reads DATABASE_URL once, at
@@ -15,8 +30,7 @@ os.environ["PLANQER_SETUP_SECRET"] = "test-setup-secret"
 @pytest.fixture(scope="session", autouse=True)
 def _cleanup_test_database():
     yield
-    if os.path.exists(TEST_DB_PATH):
-        os.remove(TEST_DB_PATH)
+    _remove_test_database()
 
 
 # The rate-limited endpoints (/cutting-plans, /sheet-optimization,
@@ -30,7 +44,11 @@ def _cleanup_test_database():
 # independent of how many other tests happened to run first — this is a
 # test-isolation fix, not a loosening of the real limit real users see.
 @pytest.fixture(autouse=True)
-def _reset_rate_limits():
+def _reset_rate_limits(request):
+    if request.node.get_closest_marker("api") is None:
+        yield
+        return
+
     from planqer.api import app
 
     app.state.limiter.reset()
