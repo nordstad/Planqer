@@ -10,6 +10,8 @@ from planqer.schemas import (
     StepCutlistResponse,
     ThreeDCutlistResponse,
 )
+from planqer.step_cutlist import process_uploaded_step
+from planqer.threed_cutlist import process_uploaded_stl
 from planqer.validation import sanitize_project_name
 
 router = APIRouter(tags=["3D Model Cutlist", "STEP Model Cutlist"])
@@ -45,9 +47,7 @@ async def create_3d_cutlist(
     project_name = sanitize_project_name(project_name) if project_name else None
     started = time.time()
     try:
-        from planqer import api
-
-        items, parts = await api.process_uploaded_stl(
+        items, parts = await process_uploaded_stl(
             file=file,
             units=units,
             round_precision=round_precision,
@@ -103,8 +103,6 @@ async def create_step_cutlist(
     project_name = sanitize_project_name(project_name) if project_name else None
     started = time.time()
     try:
-        from planqer.step_cutlist import process_uploaded_step
-
         items, parts = await process_uploaded_step(
             file=file,
             units=units,

@@ -73,7 +73,7 @@ def test_3d_cutlist_invalid_precision(client):
     assert "Round precision must be between 0 and 3" in response.json()["detail"]
 
 
-@patch("planqer.api.process_uploaded_stl")
+@patch("planqer.routes.cutlists.process_uploaded_stl")
 def test_3d_cutlist_success(mock_process, client):
     """Test successful 3D cutlist processing."""
     # Mock the processing function
@@ -165,7 +165,7 @@ def test_3d_cutlist_success(mock_process, client):
     assert sheet_item_all["volume"] == 8640.0
 
 
-@patch("planqer.api.process_uploaded_stl")
+@patch("planqer.routes.cutlists.process_uploaded_stl")
 def test_3d_cutlist_processing_error(mock_process, client):
     """Test 3D cutlist processing error handling."""
     # Mock processing to raise an exception
@@ -182,7 +182,7 @@ def test_3d_cutlist_processing_error(mock_process, client):
 
 def test_3d_cutlist_default_values(client):
     """Test 3D cutlist endpoint with default values."""
-    with patch("planqer.api.process_uploaded_stl") as mock_process:
+    with patch("planqer.routes.cutlists.process_uploaded_stl") as mock_process:
         mock_process.return_value = ([], {})
 
         files = {"file": ("test.stl", b"fake stl content", "application/octet-stream")}
@@ -205,7 +205,7 @@ def test_3d_cutlist_default_values(client):
 
 
 @pytest.mark.skip(reason="Rate limiter persists across tests causing 429 errors")
-@patch("planqer.api.process_uploaded_stl")
+@patch("planqer.routes.cutlists.process_uploaded_stl")
 def test_3d_cutlist_no_boards(mock_process, client):
     """Test 3D cutlist response when no board components found."""
     # Mock only sheet and other components
@@ -254,7 +254,7 @@ def test_3d_cutlist_rate_limiting():
     with TestClient(app) as test_client:
         files = {"file": ("test.stl", b"fake stl content", "application/octet-stream")}
 
-        with patch("planqer.api.process_uploaded_stl") as mock_process:
+        with patch("planqer.routes.cutlists.process_uploaded_stl") as mock_process:
             mock_process.return_value = ([], {})
 
             # Make 6 rapid requests - first 5 should succeed, 6th should be rate limited
@@ -275,7 +275,7 @@ def test_3d_cutlist_rate_limiting():
 @pytest.mark.skip(reason="Rate limiter persists across tests causing 429 errors")
 def test_3d_cutlist_project_name_sanitization(client):
     """Test project name sanitization."""
-    with patch("planqer.api.process_uploaded_stl") as mock_process:
+    with patch("planqer.routes.cutlists.process_uploaded_stl") as mock_process:
         mock_process.return_value = ([], {})
 
         files = {"file": ("test.stl", b"fake stl content", "application/octet-stream")}

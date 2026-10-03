@@ -16,13 +16,15 @@ model exported both ways must produce the same cutlist.
 import logging
 import os
 import tempfile
-from dataclasses import dataclass
-from enum import Enum
 
 from fastapi import HTTPException, UploadFile
 
+from planqer.step_policy import (
+    StepComponentType,
+    StepCutListItem,
+    measured_bodies_to_cutlist,
+)
 from planqer.step_reader import StepParseError, read_step_file
-from planqer.threed_cutlist import is_sheet
 
 logger = logging.getLogger("planqer.step_cutlist")
 
@@ -43,44 +45,6 @@ UNIT_SCALE = {
 }
 
 
-class StepComponentType(Enum):
-    """Component classification for woodworking from STEP files."""
-
-    BOARD = "board"
-    SHEET = "sheet"
-    ASSEMBLY = "assembly"
-
-
-@dataclass
-class StepCutListItem:
-    """One line of the cut list, with the metadata CAD gave it."""
-
-    type: StepComponentType
-    length: float
-    width: float
-    thickness: float
-    quantity: int
-    name: str
-    volume: float
-    material: str | None = None
-    assembly_path: str | None = None
-    cad_id: str | None = None
-
-    def to_dict(self) -> dict:
-        return {
-            "type": self.type.value,
-            "length": self.length,
-            "width": self.width,
-            "thickness": self.thickness,
-            "quantity": self.quantity,
-            "name": self.name,
-            "volume": self.volume,
-            "material": self.material,
-            "assembly_path": self.assembly_path,
-            "cad_id": self.cad_id,
-        }
-
-
 class StepProcessor:
     """Reads a STEP file and groups its solids into a cut list."""
 
@@ -90,9 +54,6 @@ class StepProcessor:
         # Only a fallback now. The file's own declared unit wins, because a
         # STEP file that says it is in inches is in inches whatever the form said.
         self.unit_scale = UNIT_SCALE.get(units.lower(), 1.0)
-
-    def _round(self, value: float) -> float:
-        return round(value, self.round_precision)
 
     def process_step_file(
         self, file_path: str, project_name: str | None = None
@@ -111,76 +72,7 @@ class StepProcessor:
                 status_code=500, detail=f"STEP processing failed: {e}"
             ) from e
 
-        grouped: dict[tuple, dict] = {}
-        for body in bodies:
-            length = self._round(body.length)
-            width = self._round(body.width)
-            thickness = self._round(body.thickness)
-
-            # Below a millimetre is noise from the export, not something anyone
-            # cuts; a zero thickness is broken geometry.
-            if max(length, width, thickness) < 1.0 or thickness <= 0.5:
-                logger.info(
-                    f"Skipping '{body.name}': {length}×{width}×{thickness} mm is not cuttable"
-                )
-                continue
-
-            component_type = (
-                StepComponentType.SHEET
-                if is_sheet(length, width, thickness)
-                else StepComponentType.BOARD
-            )
-
-            # Material joins the key: 18mm birch ply and 18mm MDF are the same
-            # rectangle and different purchases.
-            key = (component_type, length, width, thickness, body.material or "")
-            if key in grouped:
-                grouped[key]["quantity"] += body.quantity
-                grouped[key]["names"].append(body.name)
-            else:
-                grouped[key] = {
-                    "type": component_type,
-                    "length": length,
-                    "width": width,
-                    "thickness": thickness,
-                    "quantity": body.quantity,
-                    "name": body.name,
-                    "names": [body.name],
-                    "volume": self._round(body.volume),
-                    "material": body.material,
-                    "assembly_path": body.assembly_path,
-                    "cad_id": body.cad_id,
-                }
-
-        items = []
-        for data in grouped.values():
-            names = dict.fromkeys(data["names"])  # distinct, in the order read
-            name = data["name"]
-            if len(names) > 1:
-                name = f"{next(iter(names))} (and {len(names) - 1} more)"
-            items.append(
-                StepCutListItem(
-                    type=data["type"],
-                    length=data["length"],
-                    width=data["width"],
-                    thickness=data["thickness"],
-                    quantity=data["quantity"],
-                    name=name,
-                    volume=data["volume"],
-                    material=data["material"],
-                    assembly_path=data["assembly_path"],
-                    cad_id=data["cad_id"],
-                )
-            )
-
-        items.sort(
-            key=lambda item: (
-                item.type.value,
-                item.material or "",
-                -item.length,
-                -item.width,
-            )
-        )
+        items = measured_bodies_to_cutlist(bodies, self.round_precision)
         logger.info(f"STEP processing completed: {len(items)} distinct components")
         return items
 

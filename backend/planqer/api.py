@@ -56,8 +56,6 @@ from planqer.schemas import (  # noqa: F401
     planqerRequest,
     planqerResponse,
 )
-from planqer.step_cutlist import process_uploaded_step
-from planqer.threed_cutlist import process_uploaded_stl
 from planqer.validation import (
     sanitize_board_lengths,
     sanitize_parts_dict,
@@ -67,8 +65,6 @@ from planqer.validation import (
 
 __all__ = [
     "app",
-    "process_uploaded_step",
-    "process_uploaded_stl",
     "sanitize_board_lengths",
     "sanitize_parts_dict",
     "sanitize_project_name",

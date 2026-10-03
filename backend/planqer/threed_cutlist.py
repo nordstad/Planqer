@@ -14,6 +14,8 @@ from enum import Enum
 import trimesh
 from fastapi import HTTPException, UploadFile
 
+from planqer.cad_policy import is_sheet
+
 logger = logging.getLogger("planqer.threed_cutlist")
 
 
@@ -22,23 +24,6 @@ class ComponentType(Enum):
 
     BOARD = "board"
     SHEET = "sheet"
-
-
-# "Sheet" is very thin relative to L/W; everything else is a board.
-SHEET_THICKNESS_RATIO = 0.18
-
-
-def is_sheet(length: float, width: float, thickness: float) -> bool:
-    """Whether these dimensions describe sheet stock rather than a board.
-
-    Lives here, at module level, because the STEP reader classifies with it too.
-    The same model exported as STL and as STEP has to land on the same cutlist —
-    one rule, or the answer depends on which format the user happened to pick.
-    """
-    return (
-        thickness / max(1e-6, min(length, width)) <= SHEET_THICKNESS_RATIO
-        and width / length >= 0.1
-    )
 
 
 @dataclass
