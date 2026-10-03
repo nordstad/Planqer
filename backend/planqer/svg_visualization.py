@@ -210,6 +210,19 @@ class SVGCuttingVisualizer:
 
         return "".join(svg_elements)
 
+    def _create_cut_schedule(self, cut_list: list[list[float]], start_y: int) -> str:
+        """Keep narrow or standalone diagrams executable with a whole-mm schedule."""
+        svg_elements = [
+            f'<text x="80" y="{start_y}" class="board-label">CUT SCHEDULE</text>'
+        ]
+        for index, cuts in enumerate(cut_list):
+            values = " · ".join(f"{cut:.0f}" for cut in cuts)
+            svg_elements.append(
+                f'<text x="80" y="{start_y + 18 + index * 18}" '
+                f'class="legend-text">B{index + 1}: {values} MM</text>'
+            )
+        return "".join(svg_elements)
+
     def generate_svg_cut_list(
         self,
         cut_list: list[list[float]],
@@ -250,11 +263,11 @@ class SVGCuttingVisualizer:
         width = 1000
         header_height = 22  # just enough air for the one-line job-name caption
         row_height = 95  # Increased spacing for better visual separation between boards
-        legend_height = 10  # no legend: each cell already prints its own length
+        schedule_height = 42 + num_boards * 18
         # Add extra space for board labels positioned above each board
         label_padding = 25
         height = (
-            header_height + (num_boards * row_height) + legend_height + label_padding
+            header_height + (num_boards * row_height) + schedule_height + label_padding
         )
 
         # Assign colors
@@ -295,6 +308,12 @@ class SVGCuttingVisualizer:
             )
             current_y += row_height
 
+        svg_parts.append(
+            self._create_cut_schedule(
+                cut_list,
+                header_height + (num_boards * row_height) + label_padding,
+            )
+        )
         # Add legend
         svg_parts.append("</svg>")
 
