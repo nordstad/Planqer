@@ -250,6 +250,25 @@ def test_updating_layout_result_redraws_the_saved_diagram(client, solved_result)
         assert first_image != second_image
 
 
+def test_invalid_replacement_layout_clears_stale_diagram(client, solved_result):
+    headers = _register_and_login(client)
+    saved = client.post(
+        "/api/tile-projects/", json=_save_payload(solved_result), headers=headers
+    ).json()
+
+    response = client.put(
+        f"/api/tile-projects/{saved['id']}",
+        json={"layout_result": {"tiles": "not-a-list"}},
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["has_svg_image"] is False
+    assert client.get(
+        f"/api/tile-projects/{saved['id']}/image", headers=headers
+    ).status_code == 404
+
+
 def test_saved_diagonal_project_redraws_the_true_polygon_shape(client):
     """The re-render adapter (_render_saved_layout) rebuilds PlacedTile
     from the stored JSON — it must carry `vertices` through, or a saved
