@@ -77,7 +77,7 @@ async def get_available_algorithms():
 async def get_available_sheet_algorithms():
     descriptions = {
         SheetOptimizationAlgorithm.BOTTOM_LEFT_FILL: "Bottom-left fill algorithm for efficient 2D rectangular packing",
-        SheetOptimizationAlgorithm.BEST_FIT_2D: "2D best fit algorithm that minimizes waste by optimizing placement",
+        SheetOptimizationAlgorithm.BEST_FIT_2D: "2D best fit algorithm that minimizes occupied envelope and remaining fragmentation",
         SheetOptimizationAlgorithm.GENETIC_2D: "Genetic algorithm for 2D optimization with multi-sheet waste minimization",
         SheetOptimizationAlgorithm.GUILLOTINE_CUT: "Guillotine cutting algorithm ensuring straight-line cuts",
     }

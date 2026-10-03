@@ -376,8 +376,10 @@ def best_fit_2d_algorithm(
     """
     Best Fit 2D algorithm for sheet optimization.
 
-    For each part, finds the sheet and position that minimizes waste.
-    This is more sophisticated than bottom-left fill.
+    For each part, finds the sheet and position that minimizes the occupied
+    envelope, then uses deterministic tie-breakers. Unlike total sheet waste,
+    the envelope changes with placement and captures how much usable geometry
+    a candidate leaves fragmented.
     """
     rectangles = expand_sheet_parts(parts)
     _validate_parts_fit(rectangles, sheet_width, sheet_height, allow_rotation)
@@ -386,7 +388,7 @@ def best_fit_2d_algorithm(
     for rect in rectangles:
         best_sheet_idx = -1
         best_position = None
-        best_waste_increase = float("inf")
+        best_placement_score = None
         best_orientation = rect
 
         # Try both orientations if rotation is allowed
@@ -403,31 +405,12 @@ def best_fit_2d_algorithm(
                 position = find_best_fit_position(sheet, orientation)
                 if position:
                     x, y = position
-                    # Calculate waste increase if we place here
-                    old_waste = sheet.waste_area
-
-                    # Simulate placing the part
-                    temp_sheet = SheetLayout(
-                        sheet.sheet_width,
-                        sheet.sheet_height,
-                        sheet.parts.copy(),
-                        kerf_width=kerf_width,
-                    )
-                    temp_part = Rectangle(
-                        orientation.width,
-                        orientation.height,
-                        x,
-                        y,
-                        orientation.part_id,
-                        orientation.rotated,
-                    )
-                    temp_sheet.parts.append(temp_part)
-
-                    new_waste = temp_sheet.waste_area
-                    waste_increase = new_waste - old_waste
-
-                    if waste_increase < best_waste_increase:
-                        best_waste_increase = waste_increase
+                    placement_score = _placement_score(sheet, orientation, position)
+                    if (
+                        best_placement_score is None
+                        or placement_score < best_placement_score
+                    ):
+                        best_placement_score = placement_score
                         best_sheet_idx = i
                         best_position = (x, y)
                         best_orientation = orientation
@@ -475,7 +458,7 @@ def find_best_fit_position(
     sheet: SheetLayout, part: Rectangle
 ) -> tuple[float, float] | None:
     """
-    Find the position that minimizes waste for best fit algorithm.
+    Find the position that minimizes placement-sensitive fragmentation.
     """
     # Generate more candidate positions than bottom-left
     candidates = [(0, 0)]
@@ -502,27 +485,41 @@ def find_best_fit_position(
             ]
         )
 
-    # Filter out invalid positions and find the one with minimum waste
+    # Filter out invalid positions and score the resulting occupied envelope.
     valid_positions = []
     for x, y in candidates:
         if x >= 0 and y >= 0 and sheet.can_place_part(part, x, y):
-            # Calculate resulting waste if we place here
-            temp_sheet = SheetLayout(
-                sheet.sheet_width,
-                sheet.sheet_height,
-                sheet.parts.copy(),
-                kerf_width=sheet.kerf_width,
-            )
-            temp_part = Rectangle(part.width, part.height, x, y, part.part_id)
-            temp_sheet.parts.append(temp_part)
-            waste = temp_sheet.waste_area
-            valid_positions.append(((x, y), waste))
+            valid_positions.append(((x, y), _placement_score(sheet, part, (x, y))))
 
     if not valid_positions:
         return None
 
-    # Return position with minimum waste
-    return min(valid_positions, key=lambda x: x[1])[0]
+    return min(valid_positions, key=lambda candidate: candidate[1])[0]
+
+
+def _placement_score(
+    sheet: SheetLayout, part: Rectangle, position: tuple[float, float]
+) -> tuple[float, float, float, float, float, float]:
+    """Score a candidate by the geometry it leaves behind.
+
+    Total sheet waste is invariant for every position of the same part. The
+    occupied envelope is not: a compact envelope leaves larger contiguous
+    residual regions than a placement that stretches the layout in both axes.
+    The remaining tuple entries make equal envelopes deterministic and prefer
+    the lower/left placement without relying on candidate iteration order.
+    """
+    x, y = position
+    right = x + part.width
+    top = y + part.height
+    left = min([0.0, *(existing.x for existing in sheet.parts), x])
+    bottom = min([0.0, *(existing.y for existing in sheet.parts), y])
+    right = max([right, *(existing.x + existing.width for existing in sheet.parts)])
+    top = max([top, *(existing.y + existing.height for existing in sheet.parts)])
+    envelope_width = right - left
+    envelope_height = top - bottom
+    envelope_area = envelope_width * envelope_height
+    envelope_perimeter = 2 * (envelope_width + envelope_height)
+    return (envelope_area, envelope_perimeter, right, top, y, x)
 
 
 def guillotine_cut_algorithm(
