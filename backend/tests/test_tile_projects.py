@@ -15,6 +15,7 @@ def app():
 def client(app):
     """Create a test client, entering the app's lifespan so migrations run"""
     with TestClient(app) as test_client:
+        test_client.headers["X-Planqer-Setup-Secret"] = "test-setup-secret"
         yield test_client
 
 
@@ -50,6 +51,7 @@ def solved_result():
     from planqer.api import app
 
     with TestClient(app) as one_off_client:
+        one_off_client.headers["X-Planqer-Setup-Secret"] = "test-setup-secret"
         response = one_off_client.post("/api/tile-layout", json=TILE_PAYLOAD)
         assert response.status_code == 200
         return response.json()

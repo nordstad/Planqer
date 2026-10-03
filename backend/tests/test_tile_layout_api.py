@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 from planqer.api import app
 
 client = TestClient(app)
+client.headers["X-Planqer-Setup-Secret"] = "test-setup-secret"
 
 
 BASE_PAYLOAD = {

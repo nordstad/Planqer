@@ -32,6 +32,7 @@ def app():
 @pytest.fixture
 def client(app):
     with TestClient(app) as test_client:
+        test_client.headers["X-Planqer-Setup-Secret"] = "test-setup-secret"
         yield test_client
 
 

@@ -1,10 +1,24 @@
+import asyncio
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import delete, update
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from planqer.auth.password_policy import validate_password
 from planqer.auth.security import get_password_hash, verify_password
+from planqer.database import (
+    InstanceBootstrap,
+    ProjectGroup,
+    User,
+    UserProject,
+    UserSettings,
+    UserSheetProject,
+    UserTileProject,
+    engine,
+)
 
 
 @pytest.fixture
@@ -19,6 +33,7 @@ def app():
 def client(app):
     """Create a test client, entering the app's lifespan so migrations run"""
     with TestClient(app) as test_client:
+        test_client.headers["X-Planqer-Setup-Secret"] = "test-setup-secret"
         yield test_client
 
 
@@ -40,6 +55,69 @@ def test_register_user_success(client, unique_user):
     assert data["email"] == unique_user["email"]
     assert data["is_active"] is True
     assert "id" in data
+
+
+def test_concurrent_first_registration_has_one_admin(client):
+    async def reset_database():
+        async with AsyncSession(engine) as session:
+            for model in (
+                UserProject,
+                UserSheetProject,
+                UserTileProject,
+                UserSettings,
+                ProjectGroup,
+                User,
+            ):
+                await session.execute(delete(model))
+            await session.execute(
+                update(InstanceBootstrap).values(claimed=False).where(
+                    InstanceBootstrap.id == 1
+                )
+            )
+            await session.commit()
+
+    asyncio.run(reset_database())
+
+    def register():
+        return client.post(
+            "/api/auth/register",
+            json={
+                "email": f"concurrent-{uuid.uuid4()}@example.com",
+                "password": "Testpassword" + "123!",
+            },
+        )
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        responses = list(executor.map(lambda _: register(), range(2)))
+
+    assert [response.status_code for response in responses] == [201, 201]
+    assert sum(response.json()["is_admin"] for response in responses) == 1
+
+
+def test_fresh_registration_rejects_missing_setup_secret(client, monkeypatch):
+    async def reset_database():
+        async with AsyncSession(engine) as session:
+            await session.execute(delete(User))
+            await session.execute(
+                update(InstanceBootstrap).values(claimed=False).where(
+                    InstanceBootstrap.id == 1
+                )
+            )
+            await session.commit()
+
+    asyncio.run(reset_database())
+    monkeypatch.delenv("PLANQER_SETUP_SECRET")
+
+    response = client.post(
+        "/api/auth/register",
+        json={
+            "email": f"untrusted-{uuid.uuid4()}@example.com",
+            "password": "Testpassword" + "123!",
+        },
+        headers={"X-Planqer-Setup-Secret": "wrong"},
+    )
+
+    assert response.status_code == 403
 
 
 def test_register_user_duplicate_email(client, unique_user):

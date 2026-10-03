@@ -1,5 +1,6 @@
 from .connection import create_db_and_tables, engine, get_session
 from .models import (
+    InstanceBootstrap,
     ProjectGroup,
     User,
     UserProject,
@@ -9,6 +10,7 @@ from .models import (
 )
 
 __all__ = [
+    "InstanceBootstrap",
     "ProjectGroup",
     "User",
     "UserProject",

@@ -26,6 +26,7 @@ def disable_rate_limiting():
 def client():
     """Create test client."""
     with TestClient(app) as test_client:
+        test_client.headers["X-Planqer-Setup-Secret"] = "test-setup-secret"
         user = {
             "email": f"model-test-{uuid.uuid4()}@example.com",
             "password": "Testpassword" + "123!",

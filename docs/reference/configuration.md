@@ -41,6 +41,12 @@ accounts and saved projects.
 - `SECRET_KEY`: defaults to a random value per process. Signs login sessions.
   Set it explicitly and keep it stable across restarts, or every restart
   invalidates existing sessions.
+- `PLANQER_SETUP_SECRET`: optional secret for claiming the first administrator
+  through a non-local connection. Fresh-instance registration is local-only
+  without it; set it before exposing the API through a LAN or reverse proxy.
+  The secret is accepted only for the first account and should be removed after
+  setup. Alternatively, create the first administrator with `create_admin.py`
+  from the host/container.
 - `PLANQER_CORS_ORIGINS`: no default. Comma-separated list of extra origins
   allowed to call the API, added to the built-in defaults.
 - `DATABASE_URL`: defaults to a local SQLite file. Overrides the database
@@ -80,6 +86,7 @@ docker compose --profile mcp up -d
 # Backend
 PLANQER_VERSION=0.4.1
 SECRET_KEY=<random-32-byte-hex>
+PLANQER_SETUP_SECRET=<random-32-byte-hex>
 PLANQER_CORS_ORIGINS=https://planqer.example.com,https://cuts.example.com
 
 # Frontend

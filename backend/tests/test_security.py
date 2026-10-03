@@ -14,6 +14,7 @@ from planqer.api import (
 )
 
 client = TestClient(app)
+client.headers["X-Planqer-Setup-Secret"] = "test-setup-secret"
 
 
 def test_sanitize_project_name_basic():

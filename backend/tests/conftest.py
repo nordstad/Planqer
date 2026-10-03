@@ -9,6 +9,7 @@ TEST_DB_PATH = "./test_planqer.db"
 # import time, so setting this inside a fixture would be too late for
 # whichever test file happens to get collected (and thus imported) first.
 os.environ["DATABASE_URL"] = f"sqlite+aiosqlite:///{TEST_DB_PATH}"
+os.environ["PLANQER_SETUP_SECRET"] = "test-setup-secret"
 
 
 @pytest.fixture(scope="session", autouse=True)
