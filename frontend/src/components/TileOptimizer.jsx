@@ -66,6 +66,26 @@ const validateCutouts = (cutouts, surfaceWidth, surfaceHeight, t) => cutouts.map
   return Object.keys(errors).length > 0 ? errors : null;
 });
 
+const validateTileInputs = (values, t) => ({
+  cutouts: validateCutouts(values.cutouts, values.surfaceWidth, values.surfaceHeight, t),
+  surfaceWidth: numberError(values.surfaceWidth, { min: 100, max: 20000, label: t('tileUi.surfaceWidth'), t }),
+  surfaceHeight: numberError(values.surfaceHeight, { min: 100, max: 20000, label: t('tileUi.surfaceHeight'), t }),
+  tileWidth: numberError(values.tileWidth, { min: 10, max: 3000, label: t('tileUi.tileWidth'), t }),
+  tileHeight: numberError(values.tileHeight, { min: 10, max: 3000, label: t('tileUi.tileHeight'), t }),
+  jointWidth: numberError(values.jointWidth, { min: 0, max: 50, label: t('tileUi.jointWidth'), allowZero: true, t }),
+  perimeterGap: numberError(values.perimeterGap, { min: 0, max: 200, label: t('tileUi.perimeterGap'), allowZero: true, t }),
+  minEdgeCut: values.minEdgeCut === ''
+    ? ''
+    : numberError(values.minEdgeCut, { min: 0, max: 3000, label: t('tileUi.sliverThreshold'), allowZero: true, t }),
+  wastePercent: numberError(values.wastePercent, { min: 0, max: 100, label: t('tileUi.breakageAllowance'), allowZero: true, t }),
+  candidateCount: (() => {
+    const n = Number(values.candidateCount);
+    if (!values.candidateCount || !Number.isInteger(n) || n < 1) return t('tileUi.greaterThan', { label: t('tileUi.candidateCount'), min: 0 });
+    if (n > 20) return t('tileUi.cannotExceed', { label: t('tileUi.candidateCount'), max: 20 });
+    return '';
+  })(),
+});
+
 const TileOptimizer = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -133,25 +153,18 @@ const TileOptimizer = () => {
   };
 
   useEffect(() => {
-    setInputErrors({
-       cutouts: validateCutouts(debounced.cutouts, debounced.surfaceWidth, debounced.surfaceHeight, t),
-       surfaceWidth: numberError(debounced.surfaceWidth, { min: 100, max: 20000, label: t('tileUi.surfaceWidth'), t }),
-       surfaceHeight: numberError(debounced.surfaceHeight, { min: 100, max: 20000, label: t('tileUi.surfaceHeight'), t }),
-       tileWidth: numberError(debounced.tileWidth, { min: 10, max: 3000, label: t('tileUi.tileWidth'), t }),
-       tileHeight: numberError(debounced.tileHeight, { min: 10, max: 3000, label: t('tileUi.tileHeight'), t }),
-       jointWidth: numberError(debounced.jointWidth, { min: 0, max: 50, label: t('tileUi.jointWidth'), allowZero: true, t }),
-       perimeterGap: numberError(debounced.perimeterGap, { min: 0, max: 200, label: t('tileUi.perimeterGap'), allowZero: true, t }),
-      minEdgeCut: debounced.minEdgeCut === ''
-        ? ''
-         : numberError(debounced.minEdgeCut, { min: 0, max: 3000, label: t('tileUi.sliverThreshold'), allowZero: true, t }),
-       wastePercent: numberError(debounced.wastePercent, { min: 0, max: 100, label: t('tileUi.breakageAllowance'), allowZero: true, t }),
-      candidateCount: (() => {
-        const n = parseInt(debounced.candidateCount, 10);
-         if (!debounced.candidateCount || isNaN(n) || n < 1) return t('tileUi.greaterThan', { label: t('tileUi.candidateCount'), min: 0 });
-         if (n > 20) return t('tileUi.cannotExceed', { label: t('tileUi.candidateCount'), max: 20 });
-        return '';
-      })(),
-    });
+    setInputErrors(validateTileInputs({
+      surfaceWidth: debounced.surfaceWidth,
+      surfaceHeight: debounced.surfaceHeight,
+      cutouts: debounced.cutouts,
+      tileWidth: debounced.tileWidth,
+      tileHeight: debounced.tileHeight,
+      jointWidth: debounced.jointWidth,
+      perimeterGap: debounced.perimeterGap,
+      minEdgeCut: debounced.minEdgeCut,
+      wastePercent: debounced.wastePercent,
+      candidateCount: debounced.candidateCount,
+    }, t));
   }, [
     debounced.cutouts, debounced.surfaceWidth, debounced.surfaceHeight, debounced.tileWidth, debounced.tileHeight,
     debounced.jointWidth, debounced.perimeterGap, debounced.minEdgeCut, debounced.wastePercent, debounced.candidateCount,
@@ -258,7 +271,12 @@ const TileOptimizer = () => {
     e.preventDefault();
     setApiError('');
     setSurfaceAttempted(true);
-    if (hasErrors) return;
+    const currentErrors = validateTileInputs({
+      surfaceWidth, surfaceHeight, cutouts, tileWidth, tileHeight,
+      jointWidth, perimeterGap, minEdgeCut, wastePercent, candidateCount,
+    }, t);
+    setInputErrors(currentErrors);
+    if (Object.values(currentErrors).some((error) => Array.isArray(error) ? error.some(Boolean) : Boolean(error))) return;
 
     setLoading(true);
     setResult(null);

@@ -34,7 +34,7 @@ import BoardLengthRow from './BoardLengthRow';
 import AuthModal from './auth/AuthModal';
 import { useAuth } from '../contexts/AuthContext';
 import { useDebounce } from '../hooks/useDebounce';
-import { validateBoards } from '../utils/validators';
+import { SAW_KERF_MIN, SAW_KERF_MAX, validateBoards } from '../utils/validators';
 import { ArrowLeft, ArrowRight, Plus, Tick, Strike, CubeIcon } from './icons';
 import {
   process3DCutlist, processStepCutlist,
@@ -166,22 +166,22 @@ const ModelCutlistOptimizer = () => {
   const boardErrors = hasBoards ? validateBoards(debouncedBoards, t) : [];
   const validBoards = boards.filter((b) => b && !isNaN(parseFloat(b)));
   const boardKerfError = hasBoards
-    ? (!debouncedBoardKerf || parseFloat(debouncedBoardKerf) <= 0
+     ? (!debouncedBoardKerf || parseFloat(debouncedBoardKerf) < SAW_KERF_MIN
        ? t('modelUi.kerfZero')
-      : parseFloat(debouncedBoardKerf) > 20
+       : parseFloat(debouncedBoardKerf) > SAW_KERF_MAX
         ? t('modelUi.kerfWide')
         : "")
     : "";
   const sheetWidthError = hasSheets
-    ? (!debouncedSheetWidth || isNaN(parseFloat(debouncedSheetWidth)) || parseFloat(debouncedSheetWidth) <= 0
+     ? (!debouncedSheetWidth || isNaN(parseFloat(debouncedSheetWidth)) || parseFloat(debouncedSheetWidth) < 100 || parseFloat(debouncedSheetWidth) > 10000
        ? t('modelUi.sheetWidthPositive') : "")
     : "";
   const sheetHeightError = hasSheets
-    ? (!debouncedSheetHeight || isNaN(parseFloat(debouncedSheetHeight)) || parseFloat(debouncedSheetHeight) <= 0
+     ? (!debouncedSheetHeight || isNaN(parseFloat(debouncedSheetHeight)) || parseFloat(debouncedSheetHeight) < 100 || parseFloat(debouncedSheetHeight) > 10000
        ? t('modelUi.sheetHeightPositive') : "")
     : "";
   const sheetKerfError = hasSheets
-    ? (!debouncedSheetKerf || isNaN(parseFloat(debouncedSheetKerf)) || parseFloat(debouncedSheetKerf) < 0
+     ? (!debouncedSheetKerf || isNaN(parseFloat(debouncedSheetKerf)) || parseFloat(debouncedSheetKerf) < SAW_KERF_MIN || parseFloat(debouncedSheetKerf) > 50
        ? t('modelUi.kerfZero') : "")
     : "";
   const stockHasErrors = boardErrors.some(Boolean) || !!boardKerfError
@@ -396,7 +396,17 @@ const ModelCutlistOptimizer = () => {
 
   const planAndSaveAll = async () => {
     setApiError('');
-    if (stockHasErrors) return;
+    const currentBoardErrors = hasBoards ? validateBoards(boards, t) : [];
+    const currentBoardKerf = parseFloat(boardKerf);
+    const currentSheetWidth = parseFloat(sheetWidth);
+    const currentSheetHeight = parseFloat(sheetHeight);
+    const currentSheetKerf = parseFloat(sheetKerf);
+    const currentHasErrors = currentBoardErrors.some(Boolean)
+      || (hasBoards && (!boardKerf || !Number.isFinite(currentBoardKerf) || currentBoardKerf < SAW_KERF_MIN || currentBoardKerf > SAW_KERF_MAX))
+      || (hasSheets && (!sheetWidth || !Number.isFinite(currentSheetWidth) || currentSheetWidth < 100 || currentSheetWidth > 10000))
+      || (hasSheets && (!sheetHeight || !Number.isFinite(currentSheetHeight) || currentSheetHeight < 100 || currentSheetHeight > 10000))
+      || (hasSheets && (!sheetKerf || !Number.isFinite(currentSheetKerf) || currentSheetKerf < SAW_KERF_MIN || currentSheetKerf > 50));
+    if (stockHasErrors || currentHasErrors) return;
     setSaving(true);
     // One at a time: /cutting-plans and /sheet-optimization are both rate
     // limited to 10 requests a minute, and this keeps the per-row status
@@ -672,11 +682,11 @@ const ModelCutlistOptimizer = () => {
                         <input
                           id="model-board-kerf"
                           type="number"
-                          step="1"
-                          min="1"
-                          max="20"
-                          value={boardKerf}
-                          onChange={(e) => setBoardKerf(e.target.value.replace(/\D/g, '').slice(0, 2))}
+                           min={SAW_KERF_MIN}
+                           max={SAW_KERF_MAX}
+                           step="0.1"
+                           value={boardKerf}
+                           onChange={(e) => setBoardKerf(e.target.value)}
                           className={`form-input kerf-input ${boardKerfError ? 'form-input-error' : ''}`}
                           style={{ width: '78px' }}
                         />
@@ -698,7 +708,7 @@ const ModelCutlistOptimizer = () => {
                             <td style={{ textAlign: 'left' }}>{t('legacy.width')}</td>
                             <td>
                               <input
-                                type="number" step="0.1" min="10"
+                                 type="number" step="0.1" min="100" max="10000"
                                 value={sheetWidth}
                                 onChange={(e) => setSheetWidth(e.target.value)}
                                 className={`cell-input ${sheetWidthError ? 'is-error' : ''}`}
@@ -711,7 +721,7 @@ const ModelCutlistOptimizer = () => {
                             <td style={{ textAlign: 'left' }}>{t('legacy.height')}</td>
                             <td>
                               <input
-                                type="number" step="0.1" min="10"
+                                 type="number" step="0.1" min="100" max="10000"
                                 value={sheetHeight}
                                 onChange={(e) => setSheetHeight(e.target.value)}
                                 className={`cell-input ${sheetHeightError ? 'is-error' : ''}`}
@@ -724,7 +734,7 @@ const ModelCutlistOptimizer = () => {
                             <td style={{ textAlign: 'left' }}>{t('legacy.kerf')}</td>
                             <td>
                               <input
-                                type="number" step="0.1" min="0"
+                                 type="number" step="0.1" min={SAW_KERF_MIN} max="50"
                                 value={sheetKerf}
                                 onChange={(e) => setSheetKerf(e.target.value)}
                                 className={`cell-input ${sheetKerfError ? 'is-error' : ''}`}

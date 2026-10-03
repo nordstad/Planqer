@@ -5,6 +5,7 @@
 import { Strike } from './icons';
 import { useTranslation } from 'react-i18next';
 import { translateWithFallback } from '../i18n/translate';
+import { MIN_PART_LENGTH, MAX_PART_QUANTITY } from '../utils/validators';
 
 const PartInputRow = ({ part, index, handlePartChange, handlePartsPaste, removePart, error, canRemove }) => {
   const total = (parseFloat(part.length) || 0) * (parseFloat(part.quantity) || 0);
@@ -19,14 +20,14 @@ const PartInputRow = ({ part, index, handlePartChange, handlePartsPaste, removeP
           id={`length-${index}`}
           aria-label={text('ui.partLengthAria', { item: index + 1 })}
           type="number"
-          step="1"
+          step="any"
           placeholder="1000"
           value={part.length}
           onChange={(e) => handlePartChange(index, 'length', e.target.value)}
           onPaste={(e) => handlePartsPaste(index, e)}
           className={`cell-input ${error ? 'is-error' : ''}`}
           required
-          min="1"
+          min={MIN_PART_LENGTH}
         />
         {error && <p className="text-danger text-[11px] font-semibold text-right">{error}</p>}
       </td>
@@ -42,6 +43,7 @@ const PartInputRow = ({ part, index, handlePartChange, handlePartsPaste, removeP
           className="cell-input"
           required
           min="1"
+          max={MAX_PART_QUANTITY}
         />
       </td>
       <td style={{ width: '86px', color: 'var(--ink-3)' }}>

@@ -11,6 +11,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { SAW_KERF_MIN, SAW_KERF_MAX } from '../utils/validators';
 import { Link } from 'react-router-dom';
 import CatalogPage from './CatalogPage';
 import ConfirmDialog from './ConfirmDialog';
@@ -50,10 +51,10 @@ const validateSheetParts = (parts, t) => parts.map((part) => {
   const height = parseFloat(part.height);
   const quantity = parseInt(part.quantity, 10);
 
-  if (!part.width || isNaN(width) || width <= 0) errors.width = t('tileUi.positiveWidth');
+   if (!part.width || isNaN(width) || width < 1) errors.width = t('tileUi.positiveWidth');
   else if (width > 5000) errors.width = t('tileUi.cannotExceed', { label: t('workflow.width'), max: '5000 mm' });
 
-  if (!part.height || isNaN(height) || height <= 0) errors.height = t('tileUi.positiveHeight');
+   if (!part.height || isNaN(height) || height < 1) errors.height = t('tileUi.positiveHeight');
   else if (height > 5000) errors.height = t('tileUi.cannotExceed', { label: t('workflow.height'), max: '5000 mm' });
 
   if (!part.quantity || isNaN(quantity) || quantity <= 0) errors.quantity = t('tileUi.numberRequired', { label: t('workflow.qty') });
@@ -118,13 +119,13 @@ const SheetOptimizer = () => {
 
      setInputErrors({
        parts: validateSheetParts(debouncedParts, t),
-      sheetWidth: !debouncedSheetWidth || isNaN(width) || width <= 0
+       sheetWidth: !debouncedSheetWidth || isNaN(width) || width < 100
          ? t('tileUi.positiveWidth')
          : width > 10000 ? t('tileUi.cannotExceed', { label: t('workflow.width'), max: '10 000 mm' }) : "",
-      sheetHeight: !debouncedSheetHeight || isNaN(height) || height <= 0
+       sheetHeight: !debouncedSheetHeight || isNaN(height) || height < 100
          ? t('tileUi.positiveHeight')
          : height > 10000 ? t('tileUi.cannotExceed', { label: t('workflow.height'), max: '10 000 mm' }) : "",
-       kerfWidth: !debouncedKerfWidth || isNaN(kerf) || kerf < 0
+       kerfWidth: !debouncedKerfWidth || isNaN(kerf) || kerf < SAW_KERF_MIN
           ? t('modelUi.kerfZero')
           : kerf > 50 ? t('modelUi.kerfWide') : "",
        sheetThickness: !sheetThickness || isNaN(parseFloat(sheetThickness)) || parseFloat(sheetThickness) <= 0
@@ -249,7 +250,20 @@ const SheetOptimizer = () => {
   const handleLayoutSubmit = async (e) => {
     e.preventDefault();
     setApiError("");
-    if (hasErrors) return;
+     const currentParts = validateSheetParts(parts, t);
+     const currentWidth = parseFloat(sheetWidth);
+     const currentHeight = parseFloat(sheetHeight);
+     const currentKerf = parseFloat(kerfWidth);
+     const currentErrors = {
+       parts: currentParts,
+       sheetWidth: !sheetWidth || isNaN(currentWidth) || currentWidth < 100 || currentWidth > 10000 ? t('tileUi.positiveWidth') : '',
+       sheetHeight: !sheetHeight || isNaN(currentHeight) || currentHeight < 100 || currentHeight > 10000 ? t('tileUi.positiveHeight') : '',
+       kerfWidth: !kerfWidth || isNaN(currentKerf) || currentKerf < SAW_KERF_MIN || currentKerf > SAW_KERF_MAX ? t('modelUi.kerfZero') : '',
+       sheetThickness: inputErrors.sheetThickness,
+       material: inputErrors.material,
+     };
+     setInputErrors(currentErrors);
+     if (currentParts.some(Boolean) || currentErrors.sheetWidth || currentErrors.sheetHeight || currentErrors.kerfWidth || currentErrors.sheetThickness || currentErrors.material) return;
 
     setLoading(true);
     setResult(null);
@@ -421,8 +435,9 @@ const SheetOptimizer = () => {
                 <input
                   id="sheet-kerf"
                   type="number"
-                  step="0.1"
-                  min="0"
+                   step="0.1"
+                   min={SAW_KERF_MIN}
+                   max={SAW_KERF_MAX}
                   value={kerfWidth}
                   onChange={(e) => setSheetField(setKerfWidth)(e.target.value)}
                   className={`form-input ${inputErrors.kerfWidth ? 'form-input-error' : ''}`}
@@ -456,7 +471,7 @@ const SheetOptimizer = () => {
                     <input
                       type="number"
                       step="0.1"
-                      min="10"
+                       min="100"
                       value={sheetWidth}
                       onChange={(e) => setSheetField(setSheetWidth)(e.target.value)}
                       className={`cell-input ${inputErrors.sheetWidth ? 'is-error' : ''}`}
@@ -472,7 +487,7 @@ const SheetOptimizer = () => {
                     <input
                       type="number"
                       step="0.1"
-                      min="10"
+                       min="100"
                       value={sheetHeight}
                       onChange={(e) => setSheetField(setSheetHeight)(e.target.value)}
                       className={`cell-input ${inputErrors.sheetHeight ? 'is-error' : ''}`}

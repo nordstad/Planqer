@@ -84,7 +84,7 @@ const locale = {
     tile: 'Logg inn eller opprett en lokal konto på denne instansen for å planlegge en fliselayout.',
     model: 'Logg inn eller opprett en lokal konto på denne instansen for å laste opp en 3D-modell.',
   },
-  validation: { positiveLength: 'Lengden må være et positivt tall', maxLength: 'Lengden kan ikke overstige {{max}} mm', positiveQuantity: 'Antallet må være et positivt tall' },
+  validation: { positiveLength: 'Lengden må være et positivt tall', maxLength: 'Lengden kan ikke overstige {{max}} mm', positiveQuantity: 'Antallet må være et positivt heltall', maxQuantity: 'Antallet kan ikke overstige {{max}}' },
   auth: {
     enterCredentials: 'Skriv inn e-postadressen og passordet ditt',
     email: 'E-post',

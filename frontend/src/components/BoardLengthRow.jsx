@@ -5,6 +5,7 @@
 import { Strike } from './icons';
 import { useTranslation } from 'react-i18next';
 import { translateWithFallback } from '../i18n/translate';
+import { MIN_BOARD_LENGTH, MAX_BOARD_LENGTH } from '../utils/validators';
 
 const BoardLengthRow = ({ board, index, handleBoardChange, handleBoardsPaste, removeBoard, error, canRemove, inPlan }) => {
   const mm = parseFloat(board);
@@ -28,7 +29,8 @@ const BoardLengthRow = ({ board, index, handleBoardChange, handleBoardsPaste, re
           onPaste={(e) => handleBoardsPaste(index, e)}
           className={`cell-input ${error ? 'is-error' : ''}`}
           required
-          min="1"
+           min={MIN_BOARD_LENGTH}
+           max={MAX_BOARD_LENGTH}
         />
         {error && <p className="text-danger text-[11px] font-semibold text-right">{error}</p>}
       </td>

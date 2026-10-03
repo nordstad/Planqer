@@ -84,7 +84,7 @@ const locale = {
     tile: 'Sign in or create a local account on this instance to plan a tile layout.',
     model: 'Sign in or create a local account on this instance to upload a 3D model.',
   },
-  validation: { positiveLength: 'Length must be a positive number', maxLength: 'Length cannot exceed {{max}} mm', positiveQuantity: 'Quantity must be a positive number' },
+  validation: { positiveLength: 'Length must be a positive number', maxLength: 'Length cannot exceed {{max}} mm', positiveQuantity: 'Quantity must be a positive whole number', maxQuantity: 'Quantity cannot exceed {{max}}' },
   auth: {
     enterCredentials: 'Enter your email and password',
     email: 'Email',

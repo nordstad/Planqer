@@ -22,7 +22,12 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { optimizeCutting, saveProject, getProjectGroups, createProjectGroup, getUserProjects, getUserSettings } from '../utils/api';
 import { materialLabel } from '../utils/materialLabel';
-import { validateBoards, validateParts } from '../utils/validators';
+import {
+  SAW_KERF_MAX,
+  SAW_KERF_MIN,
+  validateBoards,
+  validateParts,
+} from '../utils/validators';
 import { useDebounce } from '../hooks/useDebounce';
 import { useAuth } from '../contexts/AuthContext';
 import BoardLengthRow from './BoardLengthRow';
@@ -115,9 +120,9 @@ const CuttingOptimizer = () => {
     setInputErrors({
       parts: validateParts(debouncedParts, t),
       boards: validateBoards(debouncedBoards, t),
-      sawKerf: !debouncedSawKerf || kerfValue <= 0
+      sawKerf: !debouncedSawKerf || kerfValue < SAW_KERF_MIN
         ? "A kerf of zero would plan cuts that lose no material"
-        : kerfValue > 20
+        : kerfValue > SAW_KERF_MAX
           ? t('auditUi.kerfWide')
           : "",
     });
@@ -202,7 +207,7 @@ const CuttingOptimizer = () => {
 
   const handleKerfChange = (value) => {
     retirePlan();
-    setSawKerf(value.replace(/\D/g, '').slice(0, 2));
+    setSawKerf(value);
   };
 
   // Pasting multiple lines (e.g. from a spreadsheet) expands into one row per
@@ -403,6 +408,15 @@ const CuttingOptimizer = () => {
 
   const handlePlanSubmit = (e) => {
     e.preventDefault();
+    const currentErrors = {
+      parts: validateParts(parts, t),
+      boards: validateBoards(boards, t),
+      sawKerf: !sawKerf || parseFloat(sawKerf) < SAW_KERF_MIN
+        ? t('workflow.kerfHint')
+        : parseFloat(sawKerf) > SAW_KERF_MAX ? t('auditUi.kerfWide') : '',
+    };
+    setInputErrors(currentErrors);
+    if (currentErrors.parts.some(Boolean) || currentErrors.boards.some(Boolean) || currentErrors.sawKerf) return;
     runPlan(pricesApplied);
   };
 
@@ -563,9 +577,9 @@ const CuttingOptimizer = () => {
                 <input
                   id="saw-kerf"
                   type="number"
-                  step="1"
-                  min="1"
-                  max="20"
+                  min={SAW_KERF_MIN}
+                   max={SAW_KERF_MAX}
+                   step="0.1"
                   value={sawKerf}
                   onChange={(e) => handleKerfChange(e.target.value)}
                   className={`form-input kerf-input ${inputErrors.sawKerf ? 'form-input-error' : ''}`}

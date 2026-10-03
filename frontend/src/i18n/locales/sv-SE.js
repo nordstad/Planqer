@@ -84,7 +84,7 @@ const locale = {
     tile: 'Logga in eller skapa ett lokalt konto på den här instansen för att planera en plattlayout.',
     model: 'Logga in eller skapa ett lokalt konto på den här instansen för att ladda upp en 3D-modell.',
   },
-  validation: { positiveLength: 'Längden måste vara ett positivt tal', maxLength: 'Längden får inte överstiga {{max}} mm', positiveQuantity: 'Antalet måste vara ett positivt tal' },
+  validation: { positiveLength: 'Längden måste vara ett positivt tal', maxLength: 'Längden får inte överstiga {{max}} mm', positiveQuantity: 'Antalet måste vara ett positivt heltal', maxQuantity: 'Antalet får inte överstiga {{max}}' },
   auth: {
     enterCredentials: 'Ange din e-postadress och ditt lösenord',
     email: 'E-post',
