@@ -15,6 +15,8 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Start backend and frontend
+        env:
+          PLANQER_SETUP_SECRET: e2e-setup-secret
         run: docker compose up -d --build backend frontend
 
       - name: Wait for backend and frontend to be healthy
@@ -30,6 +32,7 @@ jobs:
           seed_value="${seed_value}password1!"
           curl -sf -X POST http://localhost:8002/api/auth/register \
             -H 'Content-Type: application/json' \
+            -H 'X-Planqer-Setup-Secret: e2e-setup-secret' \
             -d "{\"email\":\"e2e-seed@example.com\",\"password\":\"${seed_value}\"}"
 
       - uses: actions/setup-node@v7
