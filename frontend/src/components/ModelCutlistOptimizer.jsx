@@ -61,6 +61,7 @@ const formatFileSize = (bytes) => {
 
 const extensionOf = (filename) => filename.toLowerCase().match(/\.[a-z0-9]+$/)?.[0] || '';
 const ACCEPTED = ['.stl', '.step', '.stp'];
+const UNKNOWN_MATERIAL = 'unknown';
 
 /* Every distinct size Planqer found becomes one cutlist, whatever format it
    came from. Material joins the grouping key: two identical rectangles in
@@ -105,6 +106,13 @@ const groupSheets = (items) => {
 const dimLabel = (group) => (group.kind === 'board'
   ? `${group.width} × ${group.thickness} mm boards`
   : `${group.thickness} mm sheet`);
+
+export const modelGroupMetadata = (group) => ({
+  materialType: group.material || UNKNOWN_MATERIAL,
+  ...(group.kind === 'board'
+    ? { boardThickness: group.thickness, boardWidth: group.width }
+    : { sheetThickness: group.thickness }),
+});
 
 const planNameFor = (modelName, group) => {
   const label = dimLabel(group);
@@ -277,20 +285,33 @@ const ModelCutlistOptimizer = () => {
 
   const planGroupAlone = (group) => {
     if (group.kind === 'board') {
+      const metadata = modelGroupMetadata(group);
       const parts = serializeBoardParts(
         group.lengths.map((l) => ({ length: l.length, quantity: l.qty })),
       );
       localStorage.setItem('planqer-3d-import', JSON.stringify({
-        parts, projectName: planNameFor(modelName, group), source: 'model-cutlist',
+        parts,
+        projectName: planNameFor(modelName, group),
+        materialType: 'custom',
+        customMaterial: metadata.materialType,
+        boardThickness: metadata.boardThickness,
+        boardWidth: metadata.boardWidth,
+        source: 'model-cutlist',
       }));
       window.location.href = '/cutting?import=3d';
     } else {
+      const metadata = modelGroupMetadata(group);
       const parts = group.sizes.map((s, i) => ({
         width: s.width, height: s.length, quantity: s.qty,
          name: `${group.names[0] || t('ui.sheet')}_${i + 1}`, id: `sheet_${i + 1}`,
       }));
       localStorage.setItem('planqer-3d-sheet-import', JSON.stringify({
-        parts, projectName: planNameFor(modelName, group), source: 'model-cutlist-sheet',
+        parts,
+        projectName: planNameFor(modelName, group),
+        materialType: 'custom',
+        customMaterial: metadata.materialType,
+        sheetThickness: metadata.sheetThickness,
+        source: 'model-cutlist-sheet',
       }));
       window.location.href = '/sheet-cutting?import=3d';
     }
@@ -330,23 +351,40 @@ const ModelCutlistOptimizer = () => {
     setStatuses((prev) => ({ ...prev, [group.id]: 'running' }));
     try {
       if (group.kind === 'board') {
+        const metadata = modelGroupMetadata(group);
         const parts = group.lengths.map((l) => ({ length: String(l.length), quantity: String(l.qty) }));
         const result = await optimizeCutting(parts, boards, boardKerf, null);
         await saveProject({
           name: planNameFor(modelName, group),
           projectGroupId: selectedGroupId,
-          parts, boards, sawKerf: boardKerf, boardCosts: null, result,
+          parts,
+          boards,
+          sawKerf: boardKerf,
+          materialType: metadata.materialType,
+          boardThickness: metadata.boardThickness,
+          boardWidth: metadata.boardWidth,
+          boardCosts: null,
+          result,
         });
       } else {
         const parts = group.sizes.map((s, i) => ({
           width: String(s.width), height: String(s.length), quantity: String(s.qty),
            name: `${group.names[0] || t('ui.sheet')}_${i + 1}`, id: `sheet_${i + 1}`,
         }));
-        const result = await optimizeSheetCutting(parts, sheetWidth, sheetHeight, sheetKerf, materialType, undefined, allowRotation);
+        const metadata = modelGroupMetadata(group);
+        const result = await optimizeSheetCutting(parts, sheetWidth, sheetHeight, sheetKerf, metadata.materialType, undefined, allowRotation);
         await saveSheetProject({
           name: planNameFor(modelName, group),
           projectGroupId: selectedGroupId,
-          parts, sheetWidth, sheetHeight, kerfWidth: sheetKerf, materialType, algorithm: '', allowRotation, result,
+          parts,
+          sheetWidth,
+          sheetHeight,
+          sheetThickness: metadata.sheetThickness,
+          kerfWidth: sheetKerf,
+          materialType: metadata.materialType,
+          algorithm: '',
+          allowRotation,
+          result,
         });
       }
       setStatuses((prev) => ({ ...prev, [group.id]: 'done' }));

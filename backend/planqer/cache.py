@@ -12,9 +12,15 @@ def generate_request_hash(
     optimize_for: str = "waste",
     board_costs: Mapping | None = None,
 ) -> str:
-    """Generate a deterministic cache key for optimization requests."""
-    sorted_parts = dict(sorted(parts.items()))
-    sorted_boards = sorted(boards)
+    """Generate a deterministic key from the exact validated request values.
+
+    Numeric inputs are validated before reaching the service/cache boundary.
+    The JSON representation preserves their validated float values rather than
+    applying a lossy precision limit that could merge distinct solver inputs.
+    """
+    normalized_parts = {float(length): quantity for length, quantity in parts.items()}
+    sorted_parts = dict(sorted(normalized_parts.items()))
+    sorted_boards = sorted(float(board) for board in boards)
     normalized_board_costs = None
     if board_costs:
         normalized_board_costs = {
@@ -25,7 +31,7 @@ def generate_request_hash(
     request_data = {
         "parts": sorted_parts,
         "boards": sorted_boards,
-        "kerf": round(float(kerf), 3),
+        "kerf": float(kerf),
         "algorithm": algorithm_name,
         "optimize_for": optimize_for,
         "board_costs": normalized_board_costs,

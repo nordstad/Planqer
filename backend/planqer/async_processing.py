@@ -10,6 +10,7 @@ import asyncio
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from enum import Enum
+from functools import partial
 from typing import Any
 from uuid import uuid4
 
@@ -158,6 +159,10 @@ async def process_optimization_async(
     algorithm: OptimizationAlgorithm | None,
     logger,
     planqer_response_class,
+    board_costs=None,
+    currency="SEK",
+    enable_cost_analysis=False,
+    optimize_for="waste",
 ):
     """
     Process optimization in background with progress updates.
@@ -225,14 +230,20 @@ async def process_optimization_async(
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(
             None,
-            run_optimization,
-            parts,
-            boards,
-            kerf,
-            project_name,
-            algorithm,
-            logger,
-            planqer_response_class,
+            partial(
+                run_optimization,
+                parts,
+                boards,
+                kerf,
+                project_name,
+                algorithm,
+                logger,
+                planqer_response_class,
+                board_costs=board_costs,
+                currency=currency,
+                enable_cost_analysis=enable_cost_analysis,
+                optimize_for=optimize_for,
+            ),
         )
 
         # Update progress after optimization
@@ -245,10 +256,12 @@ async def process_optimization_async(
         await asyncio.sleep(0.1)
 
         # Convert result to dict for JSON serialization
-        if hasattr(result, "__dict__"):
-            result_dict = result.__dict__
+        if hasattr(result, "model_dump"):
+            result_dict = result.model_dump(mode="json")
         elif hasattr(result, "dict"):
             result_dict = result.dict()
+        elif hasattr(result, "__dict__"):
+            result_dict = result.__dict__
         else:
             # Convert pydantic model to dict
             result_dict = {

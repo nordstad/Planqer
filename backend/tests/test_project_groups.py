@@ -265,6 +265,40 @@ def test_saved_board_plan_keeps_the_prices_it_was_costed_with(client):
     )
 
 
+def test_fractional_board_lengths_round_trip_through_project_endpoints(client):
+    headers = _register_and_login(client)
+    fractional_lengths = [2500.5, 3600.25]
+    payload = {
+        **_save_payload(SOLVED_PLAN),
+        "board_lengths": fractional_lengths,
+    }
+
+    created = client.post("/api/projects/", json=payload, headers=headers)
+    assert created.status_code == 200
+    project_id = created.json()["id"]
+    assert created.json()["board_lengths"] == fractional_lengths
+
+    fetched = client.get(f"/api/projects/{project_id}", headers=headers)
+    assert fetched.status_code == 200
+    assert fetched.json()["board_lengths"] == fractional_lengths
+
+    listed = client.get("/api/projects/", headers=headers)
+    assert listed.status_code == 200
+    assert listed.json()[0]["board_lengths"] == fractional_lengths
+
+    updated_lengths = [2500.75]
+    updated = client.put(
+        f"/api/projects/{project_id}",
+        json={"board_lengths": updated_lengths},
+        headers=headers,
+    )
+    assert updated.status_code == 200
+    assert updated.json()["board_lengths"] == updated_lengths
+
+    refetched = client.get(f"/api/projects/{project_id}", headers=headers)
+    assert refetched.json()["board_lengths"] == updated_lengths
+
+
 def test_unpriced_board_plan_stores_no_prices(client):
     """An empty pricing panel is not a deliberate zero — it is absent."""
     headers = _register_and_login(client)

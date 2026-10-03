@@ -13,7 +13,9 @@ import { useTranslation } from 'react-i18next';
 import { Download } from './icons';
 import { translateWithFallback } from '../i18n/translate';
 
-const mm = (n) => (Number.isFinite(n) ? Math.round(n).toLocaleString('sv-SE') : '—');
+const mm = (n) => (Number.isFinite(n)
+  ? n.toLocaleString('sv-SE', { maximumFractionDigits: 20 })
+  : '—');
 
 const ResultDisplay = ({ result, projectName, materialType, boardThickness, boardWidth }) => {
   const { t } = useTranslation();

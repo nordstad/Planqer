@@ -49,3 +49,36 @@ it('renders a printable shopping list', () => {
   expect(html).toContain('22 × 120 × 3\u00a0000 mm');
   expect(html).toContain('<td>2</td>');
 });
+
+it('keeps fractional board lengths in shopping rows', () => {
+  const rows = buildMaterialRows([{
+    name: 'Fractional boards',
+    projectType: 'board',
+    material_type: 'oak',
+    optimization_result: { board_lengths_used: [2500.5] },
+  }]);
+
+  expect(rows[0].size).toBe('2\u00a0501 mm');
+});
+
+it('keeps stock and sheet dimensions distinct when display values are close', () => {
+  const rows = buildMaterialRows([
+    {
+      name: 'Fractional boards',
+      optimization_result: { board_lengths_used: [2500.4, 2500.49] },
+    },
+    {
+      name: 'Fractional sheets',
+      projectType: 'sheet',
+      optimization_result: {
+        sheets: [
+          { sheet_width: 1200.4, sheet_height: 2400.4 },
+          { sheet_width: 1200.49, sheet_height: 2400.49 },
+        ],
+      },
+    },
+  ]);
+
+  expect(rows).toHaveLength(4);
+  expect(rows.map((row) => row.quantity)).toEqual([1, 1, 1, 1]);
+});

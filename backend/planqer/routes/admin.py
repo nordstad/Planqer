@@ -10,10 +10,12 @@ from sqlmodel import func, select
 
 from planqer.auth import get_current_admin_user, get_password_hash, validate_password
 from planqer.database import (
+    ProjectGroup,
     User,
     UserProject,
     UserSettings,
     UserSheetProject,
+    UserTileProject,
     get_session,
 )
 
@@ -212,14 +214,23 @@ async def delete_user(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
 
-    # No ON DELETE CASCADE on these foreign keys, so related rows must go first.
-    await session.execute(delete(UserSettings).where(UserSettings.user_id == user_id))
-    await session.execute(delete(UserProject).where(UserProject.user_id == user_id))
-    await session.execute(
-        delete(UserSheetProject).where(UserSheetProject.user_id == user_id)
-    )
+    # No ON DELETE CASCADE on these foreign keys, so every owned child must go
+    # first. All statements share this session transaction and the user is only
+    # removed after the complete ownership tree has been deleted.
+    try:
+        for model in (
+            UserSettings,
+            UserProject,
+            UserSheetProject,
+            UserTileProject,
+            ProjectGroup,
+        ):
+            await session.execute(delete(model).where(model.user_id == user_id))
 
-    await session.delete(user)
-    await session.commit()
+        await session.delete(user)
+        await session.commit()
+    except Exception:
+        await session.rollback()
+        raise
 
     return {"message": "User deleted successfully"}

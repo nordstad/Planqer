@@ -25,7 +25,7 @@ class ProjectResponse(BaseModel):
     project_group_id: UUID | None = None
     name: str
     parts_data: dict
-    board_lengths: list[int]
+    board_lengths: list[float]
     saw_blade_width: float
     material_type: str
     board_thickness: float

@@ -11,7 +11,15 @@ from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
-from planqer.database import User, engine
+from planqer.database import (
+    ProjectGroup,
+    User,
+    UserProject,
+    UserSettings,
+    UserSheetProject,
+    UserTileProject,
+    engine,
+)
 
 
 @pytest.fixture
@@ -237,3 +245,97 @@ def test_delete_user_removes_account_and_its_saved_project(client, admin, other_
         u["email"] for u in client.get("/admin/users", headers=admin["headers"]).json()
     }
     assert other_user["email"] not in users
+
+
+def test_delete_user_removes_all_owned_data_but_not_another_users_data(
+    client, admin, other_user
+):
+    other_user_id = uuid.UUID(other_user["id"])
+    admin_id = uuid.UUID(admin["id"])
+    target_group = client.post(
+        "/api/project-groups/",
+        json={"name": "Target group"},
+        headers=other_user["headers"],
+    ).json()
+    group_id = target_group["id"]
+
+    board = client.post(
+        "/api/projects/",
+        json={
+            "name": "Target board",
+            "project_group_id": group_id,
+            "parts_data": {"100": 1},
+            "board_lengths": [200],
+            "saw_blade_width": 3,
+            "optimization_result": {"cut_list": [[100]]},
+        },
+        headers=other_user["headers"],
+    )
+    sheet = client.post(
+        "/api/sheet-projects/",
+        json={
+            "name": "Target sheet",
+            "project_group_id": group_id,
+            "parts_data": [{"name": "panel", "width": 100, "height": 100, "quantity": 1}],
+            "sheet_width": 500,
+            "sheet_height": 500,
+            "kerf_width": 3,
+            "sheet_thickness": 12,
+            "optimization_result": {"sheets": []},
+        },
+        headers=other_user["headers"],
+    )
+    tile = client.post(
+        "/api/tile-projects/",
+        json={
+            "name": "Target tile",
+            "project_group_id": group_id,
+            "surface_data": {"width": 300, "height": 300, "cutouts": []},
+            "tile_data": {"width": 100, "height": 100, "allow_rotation": True},
+            "bond_data": {"pattern": "stack", "offset_fraction": 0.5},
+            "options_data": {},
+        },
+        headers=other_user["headers"],
+    )
+    assert board.status_code == sheet.status_code == tile.status_code == 200
+
+    admin_group = client.post(
+        "/api/project-groups/",
+        json={"name": "Admin group"},
+        headers=admin["headers"],
+    ).json()
+    admin_board = client.post(
+        "/api/projects/",
+        json={
+            "name": "Admin board",
+            "project_group_id": admin_group["id"],
+            "parts_data": {"100": 1},
+            "board_lengths": [200],
+            "saw_blade_width": 3,
+            "optimization_result": {"cut_list": [[100]]},
+        },
+        headers=admin["headers"],
+    )
+    assert admin_board.status_code == 200
+
+    response = client.delete(
+        f"/admin/users/{other_user['id']}", headers=admin["headers"]
+    )
+    assert response.status_code == 200
+
+    async def counts():
+        async with AsyncSession(engine) as session:
+            return {
+                "user": (await session.execute(select(User).where(User.id == other_user_id))).scalar_one_or_none(),
+                "settings": (await session.execute(select(UserSettings).where(UserSettings.user_id == other_user_id))).scalars().all(),
+                "groups": (await session.execute(select(ProjectGroup).where(ProjectGroup.user_id == other_user_id))).scalars().all(),
+                "boards": (await session.execute(select(UserProject).where(UserProject.user_id == other_user_id))).scalars().all(),
+                "sheets": (await session.execute(select(UserSheetProject).where(UserSheetProject.user_id == other_user_id))).scalars().all(),
+                "tiles": (await session.execute(select(UserTileProject).where(UserTileProject.user_id == other_user_id))).scalars().all(),
+                "admin_boards": (await session.execute(select(UserProject).where(UserProject.user_id == admin_id))).scalars().all(),
+            }
+
+    remaining = asyncio.run(counts())
+    assert remaining["user"] is None
+    assert all(not remaining[key] for key in ("settings", "groups", "boards", "sheets", "tiles"))
+    assert len(remaining["admin_boards"]) == 1

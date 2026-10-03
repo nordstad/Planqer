@@ -33,6 +33,52 @@ logger = logging.getLogger("planqer.api")
 OPTIMIZATION_TIMEOUT_SECONDS = 30.0
 
 
+def normalize_optimization_options(planqer_request: PlanqerRequest):
+    """Normalize solver options once for sync and background execution."""
+    algorithm = (
+        OptimizationAlgorithm(planqer_request.algorithm)
+        if planqer_request.algorithm
+        else get_algorithm_recommendation(planqer_request.parts)
+    )
+    if planqer_request.cost_analysis and planqer_request.cost_analysis.get("enabled"):
+        analysis = planqer_request.cost_analysis
+        costs = {
+            float(length): {
+                "price_per_board": data.get("price_per_board", 0.0),
+                "supplier": "default",
+                "bulk_discount": 0.0,
+                "minimum_quantity": 1,
+            }
+            for length, data in (
+                analysis.get("board_costs", {}) or analysis.get("boardCosts", {})
+            ).items()
+        }
+        return (
+            algorithm,
+            costs,
+            analysis.get("currency", "SEK"),
+            True,
+            analysis.get("optimizeFor", "waste"),
+        )
+
+    costs = {
+        float(key): {
+            "price_per_board": value.price_per_board,
+            "supplier": value.supplier,
+            "bulk_discount": value.bulk_discount,
+            "minimum_quantity": value.minimum_quantity,
+        }
+        for key, value in planqer_request.board_costs.items()
+    }
+    return (
+        algorithm,
+        costs,
+        planqer_request.currency,
+        planqer_request.enable_cost_analysis,
+        "waste",
+    )
+
+
 @router.post(
     "",
     response_model=PlanqerResponse,
@@ -45,41 +91,9 @@ async def create_cutting_plan(request: Request, planqer_request: PlanqerRequest)
     algorithm = None
     try:
         parts = planqer_request.parts
-        algorithm = (
-            OptimizationAlgorithm(planqer_request.algorithm)
-            if planqer_request.algorithm
-            else get_algorithm_recommendation(parts)
+        algorithm, costs, currency, enabled, optimize_for = normalize_optimization_options(
+            planqer_request
         )
-        costs = {}
-        if planqer_request.cost_analysis and planqer_request.cost_analysis.get(
-            "enabled"
-        ):
-            analysis = planqer_request.cost_analysis
-            for length, data in (
-                analysis.get("board_costs", {}) or analysis.get("boardCosts", {})
-            ).items():
-                costs[float(length)] = {
-                    "price_per_board": data.get("price_per_board", 0.0),
-                    "supplier": "default",
-                    "bulk_discount": 0.0,
-                    "minimum_quantity": 1,
-                }
-            currency = analysis.get("currency", "SEK")
-            enabled = True
-            optimize_for = analysis.get("optimizeFor", "waste")
-        else:
-            costs = {
-                float(k): {
-                    "price_per_board": v.price_per_board,
-                    "supplier": v.supplier,
-                    "bulk_discount": v.bulk_discount,
-                    "minimum_quantity": v.minimum_quantity,
-                }
-                for k, v in planqer_request.board_costs.items()
-            }
-            currency = planqer_request.currency
-            enabled = planqer_request.enable_cost_analysis
-            optimize_for = "waste"
         # A timed-out worker thread may finish in the background; input budgets
         # keep that bounded while preventing it from blocking this event loop.
         result = await asyncio.wait_for(
@@ -136,10 +150,8 @@ async def create_cutting_plan_async(
     request: Request, planqer_request: PlanqerRequest, background_tasks: BackgroundTasks
 ):
     task_id = generate_task_id()
-    algorithm = (
-        OptimizationAlgorithm(planqer_request.algorithm)
-        if planqer_request.algorithm
-        else get_algorithm_recommendation(planqer_request.parts)
+    algorithm, costs, currency, enabled, optimize_for = normalize_optimization_options(
+        planqer_request
     )
     task_manager.create_task(task_id)
     background_tasks.add_task(
@@ -152,13 +164,18 @@ async def create_cutting_plan_async(
         algorithm,
         logger,
         PlanqerResponse,
+        costs,
+        currency,
+        enabled,
+        optimize_for,
     )
+    root_path = request.scope.get("root_path", "")
     return {
         "task_id": task_id,
         "status": "queued",
         "message": "Optimization task started. Connect to WebSocket for progress updates.",
-        "websocket_url": f"/ws/{task_id}",
-        "progress_url": f"/api/tasks/{task_id}",
+        "websocket_url": f"{root_path}/ws/{task_id}",
+        "progress_url": f"{root_path}/tasks/{task_id}",
     }
 
 
