@@ -19,12 +19,11 @@ from alembic.script import ScriptDirectory
 from sqlalchemy.engine import make_url
 
 from planqer import __version__
-from planqer.helpers import load_config
+from planqer.database_url import resolve_database_url
 
 BACKUP_FORMAT = "planqer-backup-v1"
 DATABASE_FILENAME = "planqer.db"
 MANIFEST_FILENAME = "manifest.json"
-DEFAULT_DATABASE_URL = "sqlite+aiosqlite:///./data/planqer.db"
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 CONFIG_PATH = BACKEND_DIR / "config.yaml"
 
@@ -181,11 +180,7 @@ def database_path_from_url(
 def configured_database_url(*, config_path: Path | None = None) -> str:
     """Resolve the app database URL using the same precedence as runtime."""
 
-    if database_url := os.getenv("DATABASE_URL"):
-        return database_url
-
-    config = load_config(config_path or CONFIG_PATH)
-    return config.get("database", {}).get("url") or DEFAULT_DATABASE_URL
+    return resolve_database_url(config_path=config_path)
 
 
 def _copy_sqlite_database(source: Path, destination: Path) -> None:

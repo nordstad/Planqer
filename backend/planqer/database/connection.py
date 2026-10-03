@@ -1,22 +1,16 @@
-import os
 from pathlib import Path
 
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import SQLModel
 
+from planqer.database_url import DEFAULT_DATABASE_URL, resolve_database_url
 from planqer.helpers import load_config
 
 CONFIG_PATH = Path(__file__).parent.parent.parent / "config.yaml"
 config = load_config(CONFIG_PATH)
 
-DEFAULT_DATABASE_URL = "sqlite+aiosqlite:///./data/planqer.db"
-
-DATABASE_URL = (
-    os.getenv("DATABASE_URL")
-    or config.get("database", {}).get("url")
-    or DEFAULT_DATABASE_URL
-)
+DATABASE_URL = resolve_database_url()
 
 if DATABASE_URL == DEFAULT_DATABASE_URL:
     Path("./data").mkdir(parents=True, exist_ok=True)

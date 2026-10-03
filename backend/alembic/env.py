@@ -1,5 +1,4 @@
 import asyncio
-import os
 from logging.config import fileConfig
 
 from sqlalchemy import pool
@@ -16,6 +15,7 @@ from planqer.database.models import (  # noqa: F401
     UserSettings,
     UserSheetProject,
 )
+from planqer.database_url import resolve_database_url
 
 config = context.config
 
@@ -26,7 +26,7 @@ target_metadata = SQLModel.metadata
 
 
 def get_url():
-    return os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./data/planqer.db")
+    return resolve_database_url()
 
 
 def run_migrations_offline() -> None:
