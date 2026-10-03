@@ -48,6 +48,13 @@ docker compose --profile mcp up -d
 See [Configuration](../reference/configuration.md) for the environment
 variables.
 
+The two MCP runtimes share the same tool schema and version (`0.6.0`). In
+stdio mode, stdout is reserved for MCP JSON-RPC messages and logs go to stderr.
+Transient synchronous API failures (`408`, `425`, `429`, `500`, `502`, `503`,
+`504`) use bounded exponential backoff; async job submissions are not retried
+without an idempotency key. Tool execution failures are returned with
+`isError: true`.
+
 ## Running it yourself
 
 ```bash

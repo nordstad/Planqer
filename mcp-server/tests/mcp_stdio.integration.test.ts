@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import type { AddressInfo } from 'node:net';
+import { spawn } from 'node:child_process';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import path from 'node:path';
@@ -14,6 +15,7 @@ const serverEntry = path.join(projectRoot, 'dist', 'index.js');
 let backendCalls = 0;
 let backendAsyncCalls = 0;
 let backendRetryCalls = 0;
+let backendAsyncRetryCalls = 0;
 let backendServer: ReturnType<typeof createServer> | null = null;
 let backendUrl = '';
 let client: Client | null = null;
@@ -47,6 +49,12 @@ describe('MCP stdio integration', () => {
 
         if (!body.parts || !body.available_board_lengths || body.saw_blade_width === undefined) {
           json(res, 400, { detail: 'Missing required payload fields' });
+          return;
+        }
+
+        if (body.project_name === 'async-retry-test') {
+          backendAsyncRetryCalls += 1;
+          json(res, 503, { detail: 'temporarily unavailable' });
           return;
         }
 
@@ -164,6 +172,7 @@ describe('MCP stdio integration', () => {
     expect(textBlock).toBeDefined();
     expect(textBlock!.text).toContain('Cutting Optimization Results');
     expect(textBlock!.text).toContain('Optimal board length:');
+    expect(result.isError).not.toBe(true);
     expect(backendCalls).toBeGreaterThan(0);
   });
 
@@ -203,5 +212,49 @@ describe('MCP stdio integration', () => {
     expect(textBlock).toBeDefined();
     expect(textBlock!.text).toContain('Optimal board length:');
     expect(backendRetryCalls).toBe(2);
+  });
+
+  it('does not retry async submissions without idempotency support', async () => {
+    const result = await client!.callTool({
+      name: 'optimize_cutting',
+      arguments: {
+        parts: { '100': 1 },
+        available_board_lengths: [300],
+        saw_blade_width: 3,
+        project_name: 'async-retry-test',
+        use_async: true,
+      },
+    });
+
+    expect(result.isError).toBe(true);
+    expect(backendAsyncRetryCalls).toBe(1);
+  });
+
+  it('keeps TypeScript stdio stdout free of non-JSON-RPC logs', async () => {
+    const child = spawn('node', [serverEntry], {
+      cwd: projectRoot,
+      env: { ...process.env, PLANQER_API_URL: backendUrl },
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    let stdout = '';
+    child.stdout.on('data', (chunk: Buffer) => { stdout += chunk.toString(); });
+    child.stdin.write(`${JSON.stringify({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'initialize',
+      params: {
+        protocolVersion: '2025-06-18',
+        capabilities: {},
+        clientInfo: { name: 'stdout-test', version: '1.0.0' },
+      },
+    })}\n`);
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    child.kill();
+
+    const lines = stdout.trim().split('\n').filter(Boolean);
+    expect(lines.length).toBeGreaterThan(0);
+    for (const line of lines) {
+      expect(() => JSON.parse(line)).not.toThrow();
+    }
   });
 });

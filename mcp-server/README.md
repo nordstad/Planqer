@@ -115,6 +115,13 @@ Environment controls:
   (default: `200`).
 - `MCP_API_RETRY_MAX_DELAY_MS` sets max delay cap in ms (default: `2000`).
 
+Retry policy is identical in both runtimes: synchronous optimization requests
+retry transient `408`, `425`, `429`, `500`, `502`, `503`, and `504` responses
+with bounded exponential backoff and jitter. Async submissions are not retried
+because a second POST could create a duplicate background job. In stdio mode,
+stdout contains MCP JSON-RPC messages only, logs go to stderr, and tool
+execution failures return `isError: true`.
+
 Redaction rules:
 
 - The following fields are redacted before writing logs:

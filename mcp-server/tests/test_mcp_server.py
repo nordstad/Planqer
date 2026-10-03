@@ -13,11 +13,12 @@ from mcp import types
 from planqer_mcp_server.server import (
     DEMO_PAYLOADS,
     format_optimization_result,
+    handle_call_tool,
     handle_get_demo_payloads,
     handle_get_example,
+    handle_list_tools,
     handle_optimize_cutting,
     handle_optimize_demo,
-    handle_list_tools,
 )
 
 
@@ -245,29 +246,51 @@ class TestOptimizeCutting:
     async def test_optimize_cutting_retries_transient_status(
         self, mock_post, mock_sleep
     ):
-        retry_response = MagicMock(status_code=503)
-        retry_response.json.return_value = {"detail": "temporarily unavailable"}
-        success_response = MagicMock(status_code=200)
-        success_response.json.return_value = {
-            "optimal_board_length": 300.0,
-            "cost": 1.0,
-            "total_waste": 0.0,
-            "algorithm_used": "first_fit_decreasing",
-            "cut_list": [[100.0]],
-        }
-        mock_post.side_effect = [retry_response, success_response]
+        for status_code in (429, 500, 503):
+            retry_response = MagicMock(status_code=status_code)
+            retry_response.json.return_value = {"detail": "temporarily unavailable"}
+            success_response = MagicMock(status_code=200)
+            success_response.json.return_value = {
+                "optimal_board_length": 300.0,
+                "cost": 1.0,
+                "total_waste": 0.0,
+                "algorithm_used": "first_fit_decreasing",
+                "cut_list": [[100.0]],
+            }
+            mock_post.reset_mock()
+            mock_sleep.reset_mock()
+            mock_post.side_effect = [retry_response, success_response]
+
+            result = await handle_optimize_cutting(
+                {
+                    "parts": {"100": 1},
+                    "available_board_lengths": [300],
+                    "saw_blade_width": 3.0,
+                }
+            )
+
+            assert "**Optimal board length:** 300.0" in result[0].text
+            assert mock_post.call_count == 2
+            mock_sleep.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    @patch("httpx.AsyncClient.post")
+    async def test_async_submission_is_not_retried(self, mock_post):
+        response = MagicMock(status_code=503)
+        response.json.return_value = {"detail": "temporarily unavailable"}
+        mock_post.return_value = response
 
         result = await handle_optimize_cutting(
             {
                 "parts": {"100": 1},
                 "available_board_lengths": [300],
                 "saw_blade_width": 3.0,
+                "use_async": True,
             }
         )
 
-        assert "**Optimal board length:** 300.0" in result[0].text
-        assert mock_post.call_count == 2
-        mock_sleep.assert_awaited_once()
+        assert "❌ API Error (503)" in result[0].text
+        assert mock_post.call_count == 1
 
 
 def test_mcp_tool_contract_exposes_all_tools():
@@ -278,6 +301,29 @@ def test_mcp_tool_contract_exposes_all_tools():
         "get_demo_payloads",
         "get_cutting_example",
     }
+
+
+@pytest.mark.asyncio
+@patch("httpx.AsyncClient.post")
+async def test_protocol_result_marks_tool_execution_failures(mock_post):
+    response = MagicMock(status_code=400)
+    response.json.return_value = {"detail": "Invalid input data"}
+    mock_post.return_value = response
+
+    result = await handle_call_tool(
+        None,
+        types.CallToolRequestParams(
+            name="optimize_cutting",
+            arguments={
+                "parts": {"100": 1},
+                "available_board_lengths": [300],
+                "saw_blade_width": 3.0,
+            },
+        ),
+    )
+
+    assert result.is_error is True
+    assert result.content[0].text.startswith("❌ API Error (400)")
 
 
 class TestOptimizeDemo:
