@@ -248,7 +248,17 @@ describe('MCP stdio integration', () => {
         clientInfo: { name: 'stdout-test', version: '1.0.0' },
       },
     })}\n`);
-    await new Promise((resolve) => setTimeout(resolve, 250));
+    await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error('stdio server did not respond')), 5000);
+      child.stdout.once('data', () => {
+        clearTimeout(timeout);
+        resolve();
+      });
+      child.once('error', (error) => {
+        clearTimeout(timeout);
+        reject(error);
+      });
+    });
     child.kill();
 
     const lines = stdout.trim().split('\n').filter(Boolean);

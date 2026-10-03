@@ -15,13 +15,14 @@ place_and_clip's existing rectangle-clip logic applies unchanged. Diagonal
 (also below) needed real additions to geometry.py (polygon clipping),
 scoring.py (a caliper-width metric), and offcuts.py (triangle-pair
 matching) — see .plans/tile-layout.md Phase 4b for that design — but this
-module itself still holds to the seam: DiagonalBond only emits raw (x, y,
-rotated) positions, same as every other bond here.
+module itself still holds to the seam: every bond emits RawPlacement values,
+while the solver owns the normalization into geometry clipping calls.
 """
 
 import math
 from collections.abc import Iterator
 from dataclasses import dataclass
+from enum import Enum
 from typing import Protocol
 
 from .geometry import JointSpec, Surface, Tile
@@ -37,6 +38,50 @@ def _index_range(offset: float, pitch: float, extent: float, span: float) -> ran
     return range(int(i_min), int(i_max) + 1)
 
 
+class PlacementAnchor(str, Enum):
+    """Which point in a raw placement the coordinates identify."""
+
+    TOP_LEFT = "top_left"
+    CENTER = "center"
+
+
+@dataclass(frozen=True)
+class RawPlacement:
+    """A bond's placement before clipping.
+
+    Axis-aligned placements use a top-left anchor and ``rotated`` to describe
+    the tile's 90-degree orientation. Angled placements use a center anchor,
+    explicit dimensions, and an angle. Keeping those meanings in named fields
+    prevents the solver from interpreting a tuple position differently for
+    each bond implementation.
+    """
+
+    x: float
+    y: float
+    anchor: PlacementAnchor
+    rotated: bool = False
+    width: float | None = None
+    height: float | None = None
+    angle_degrees: float | None = None
+
+    @classmethod
+    def top_left(cls, x: float, y: float, rotated: bool = False) -> "RawPlacement":
+        return cls(x=x, y=y, anchor=PlacementAnchor.TOP_LEFT, rotated=rotated)
+
+    @classmethod
+    def center(
+        cls, x: float, y: float, width: float, height: float, angle_degrees: float
+    ) -> "RawPlacement":
+        return cls(
+            x=x,
+            y=y,
+            anchor=PlacementAnchor.CENTER,
+            width=width,
+            height=height,
+            angle_degrees=angle_degrees,
+        )
+
+
 class BondGenerator(Protocol):
     """Generates raw (pre-clip) tile positions for one candidate offset."""
 
@@ -47,10 +92,8 @@ class BondGenerator(Protocol):
         joint: JointSpec,
         offset_x: float,
         offset_y: float,
-    ) -> Iterator[tuple[float, float, bool]]:
-        """Yields (x, y, rotated) for every tile whose raw footprint could
-        overlap the surface. Rotation is always False in the MVP bonds;
-        rotation search (when tile.allow_rotation) happens one level up."""
+    ) -> Iterator[RawPlacement]:
+        """Yield typed placements whose raw footprint could overlap the surface."""
         ...
 
 
@@ -65,7 +108,7 @@ class StackBond:
         joint: JointSpec,
         offset_x: float,
         offset_y: float,
-    ) -> Iterator[tuple[float, float, bool]]:
+    ) -> Iterator[RawPlacement]:
         pitch_x = tile.width + joint.joint_width
         pitch_y = tile.height + joint.joint_width
 
@@ -73,7 +116,7 @@ class StackBond:
             y = offset_y + j * pitch_y
             for i in _index_range(offset_x, pitch_x, tile.width, surface.width):
                 x = offset_x + i * pitch_x
-                yield (x, y, False)
+                yield RawPlacement.top_left(x, y)
 
 
 @dataclass(frozen=True)
@@ -99,7 +142,7 @@ class RunningBond:
         joint: JointSpec,
         offset_x: float,
         offset_y: float,
-    ) -> Iterator[tuple[float, float, bool]]:
+    ) -> Iterator[RawPlacement]:
         pitch_x = tile.width + joint.joint_width
         pitch_y = tile.height + joint.joint_width
 
@@ -109,7 +152,7 @@ class RunningBond:
             row_offset_x = offset_x + row_shift
             for i in _index_range(row_offset_x, pitch_x, tile.width, surface.width):
                 x = row_offset_x + i * pitch_x
-                yield (x, y, False)
+                yield RawPlacement.top_left(x, y)
 
 
 @dataclass(frozen=True)
@@ -145,7 +188,7 @@ class HerringboneBond:
         joint: JointSpec,
         offset_x: float,
         offset_y: float,
-    ) -> Iterator[tuple[float, float, bool]]:
+    ) -> Iterator[RawPlacement]:
         g = joint.joint_width
         wide = tile.width >= tile.height
         s, l = (tile.height, tile.width) if wide else (tile.width, tile.height)
@@ -173,8 +216,8 @@ class HerringboneBond:
             for j in range(-margin_j, margin_j):
                 ox = offset_x + i * t1x + j * t2x
                 oy = offset_y + i * t1y + j * t2y
-                yield (ox, oy, h_rotated)
-                yield (ox + l + g, oy, v_rotated)
+                yield RawPlacement.top_left(ox, oy, h_rotated)
+                yield RawPlacement.top_left(ox + l + g, oy, v_rotated)
 
 
 @dataclass(frozen=True)
@@ -218,7 +261,7 @@ class DiagonalBond:
         joint: JointSpec,
         offset_x: float,
         offset_y: float,
-    ) -> Iterator[tuple[float, float, bool]]:
+    ) -> Iterator[RawPlacement]:
         pitch_lx = tile.width + joint.joint_width
         pitch_ly = tile.height + joint.joint_width
 
@@ -241,7 +284,7 @@ class DiagonalBond:
                 lx = offset_x + i * pitch_lx
                 cx = _C45 * (lx - ly)
                 cy = _C45 * (lx + ly)
-                yield (cx, cy, False)
+                yield RawPlacement.center(cx, cy, tile.width, tile.height, 45.0)
 
 
 @dataclass(frozen=True)
@@ -264,13 +307,10 @@ class DiagonalHerringboneBond:
     the same reasoning DiagonalBond's own docstring relies on for a
     plain grid, just applied to a more complex motif here.
 
-    yields (cx, cy, is_v_tile) — is_v_tile reuses the tuple's bool slot
-    to say which of the motif's two piece shapes (l x s "H", or s x l
-    "V" — already two different rectangle shapes in local space, not one
-    shape needing an extra rotation) this position is; solver.py's
-    dispatch for this bond turns that into the (width, height) pair
-    place_and_clip_at_angle needs, both pieces sharing the same 45-degree
-    global angle.
+    emits a centered RawPlacement with explicit dimensions for each motif
+    piece. The H piece is l x s and the V piece is s x l; both carry the same
+    45-degree angle, so no solver branch needs to infer the shape from a
+    boolean field.
     """
 
     def raw_positions(
@@ -280,7 +320,7 @@ class DiagonalHerringboneBond:
         joint: JointSpec,
         offset_x: float,
         offset_y: float,
-    ) -> Iterator[tuple[float, float, bool]]:
+    ) -> Iterator[RawPlacement]:
         g = joint.joint_width
         l, s = max(tile.width, tile.height), min(tile.width, tile.height)
 
@@ -303,12 +343,16 @@ class DiagonalHerringboneBond:
 
                 # H piece: local top-left (ox, oy), local shape l x s.
                 h_cx, h_cy = ox + l / 2, oy + s / 2
-                yield (_C45 * (h_cx - h_cy), _C45 * (h_cx + h_cy), False)
+                yield RawPlacement.center(
+                    _C45 * (h_cx - h_cy), _C45 * (h_cx + h_cy), l, s, 45.0
+                )
 
                 # V piece: local top-left (ox + l + g, oy), local shape s x l.
                 v_ox = ox + l + g
                 v_cx, v_cy = v_ox + s / 2, oy + l / 2
-                yield (_C45 * (v_cx - v_cy), _C45 * (v_cx + v_cy), True)
+                yield RawPlacement.center(
+                    _C45 * (v_cx - v_cy), _C45 * (v_cx + v_cy), s, l, 45.0
+                )
 
 
 @dataclass(frozen=True)
@@ -338,7 +382,7 @@ class DoubleHerringboneBond:
         joint: JointSpec,
         offset_x: float,
         offset_y: float,
-    ) -> Iterator[tuple[float, float, bool]]:
+    ) -> Iterator[RawPlacement]:
         g = joint.joint_width
         wide = tile.width >= tile.height
         s, l = (tile.height, tile.width) if wide else (tile.width, tile.height)
@@ -361,15 +405,15 @@ class DoubleHerringboneBond:
 
                 # H arm: composite top-left (ox, oy), footprint l wide x
                 # s_pair tall -- two l x s planks stacked along local y.
-                yield (ox, oy, h_rotated)
-                yield (ox, oy + s + g, h_rotated)
+                yield RawPlacement.top_left(ox, oy, h_rotated)
+                yield RawPlacement.top_left(ox, oy + s + g, h_rotated)
 
                 # V arm: composite top-left (ox + l + g, oy), footprint
                 # s_pair wide x l tall -- two s x l planks side by side
                 # along local x.
                 v_ox = ox + l + g
-                yield (v_ox, oy, v_rotated)
-                yield (v_ox + s + g, oy, v_rotated)
+                yield RawPlacement.top_left(v_ox, oy, v_rotated)
+                yield RawPlacement.top_left(v_ox + s + g, oy, v_rotated)
 
 
 @dataclass(frozen=True)
@@ -389,7 +433,7 @@ class DiagonalDoubleHerringboneBond:
         joint: JointSpec,
         offset_x: float,
         offset_y: float,
-    ) -> Iterator[tuple[float, float, bool]]:
+    ) -> Iterator[RawPlacement]:
         g = joint.joint_width
         l, s = max(tile.width, tile.height), min(tile.width, tile.height)
         s_pair = 2 * s + g
@@ -411,7 +455,9 @@ class DiagonalDoubleHerringboneBond:
                 # each independently rotated 45 degrees about its own center.
                 for k in (0, 1):
                     h_cx, h_cy = ox + l / 2, oy + k * (s + g) + s / 2
-                    yield (_C45 * (h_cx - h_cy), _C45 * (h_cx + h_cy), False)
+                    yield RawPlacement.center(
+                        _C45 * (h_cx - h_cy), _C45 * (h_cx + h_cy), l, s, 45.0
+                    )
 
                 # V arm: composite local top-left (ox + l + g, oy),
                 # footprint s_pair x l -- two s x l planks side by side
@@ -419,4 +465,6 @@ class DiagonalDoubleHerringboneBond:
                 v_ox = ox + l + g
                 for k in (0, 1):
                     v_cx, v_cy = v_ox + k * (s + g) + s / 2, oy + l / 2
-                    yield (_C45 * (v_cx - v_cy), _C45 * (v_cx + v_cy), True)
+                    yield RawPlacement.center(
+                        _C45 * (v_cx - v_cy), _C45 * (v_cx + v_cy), s, l, 45.0
+                    )
