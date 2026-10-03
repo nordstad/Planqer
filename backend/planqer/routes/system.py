@@ -11,7 +11,7 @@ from planqer.sheet_optimization import SheetOptimizationAlgorithm
 router = APIRouter(tags=["System"])
 
 
-@router.get("/api/tasks/{task_id}", summary="Get task progress")
+@router.get("/tasks/{task_id}", summary="Get task progress")
 async def get_task_status(task_id: str):
     progress = get_task_progress(task_id)
     if not progress:
