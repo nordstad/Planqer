@@ -138,6 +138,7 @@ class UserSheetProject(SQLModel, table=True):
     sheet_thickness: float = Field(default=0)
     algorithm: str | None = None
     allow_rotation: bool = Field(default=True)
+    pricing: str | None = None
     optimization_result: str | None = None
     cutlist_image: str | None = None
     cutlist_image_svg: str | None = None
@@ -180,6 +181,7 @@ class UserTileProject(SQLModel, table=True):
     layout_result: str | None = (
         None  # JSON: the selected candidate, as returned by /api/tile-layout
     )
+    pricing: str | None = None
     cutlist_image: str | None = None
     cutlist_image_svg: str | None = None
 

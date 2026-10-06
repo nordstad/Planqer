@@ -182,6 +182,33 @@ def test_save_sheet_cutlist_into_project_group(client):
     assert cutlists[0]["project_group_id"] == group["id"]
 
 
+def test_sheet_project_round_trips_pricing(client):
+    headers = _register_and_login(client)
+    pricing = {
+        "price_per_unit": 650.0,
+        "currency": "SEK",
+        "vat_rate": 25,
+        "prices_include_vat": True,
+    }
+    payload = _save_sheet_payload(_layout(client, headers))
+    payload["pricing"] = pricing
+
+    saved = client.post("/api/sheet-projects/", json=payload, headers=headers).json()
+    assert saved["pricing"] == pricing
+    assert (
+        client.get("/api/sheet-projects/", headers=headers).json()[0]["pricing"]
+        == pricing
+    )
+
+    updated_pricing = {**pricing, "price_per_unit": 700.0}
+    updated = client.put(
+        f"/api/sheet-projects/{saved['id']}",
+        json={"pricing": updated_pricing},
+        headers=headers,
+    ).json()
+    assert updated["pricing"] == updated_pricing
+
+
 def test_cutlist_without_group_stays_ungrouped(client):
     headers = _register_and_login(client)
 

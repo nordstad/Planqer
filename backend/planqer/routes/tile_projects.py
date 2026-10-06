@@ -29,6 +29,7 @@ class TileProjectResponse(BaseModel):
     bond_data: dict
     options_data: dict
     layout_result: dict | None = None
+    pricing: dict | None = None
     cutlist_image: str | None = None
     has_svg_image: bool = False
     created_at: str
@@ -47,6 +48,7 @@ class CreateTileProjectRequest(BaseModel):
     bond_data: dict
     options_data: dict = {}
     layout_result: dict | None = None
+    pricing: dict | None = None
 
 
 class UpdateTileProjectRequest(BaseModel):
@@ -57,6 +59,7 @@ class UpdateTileProjectRequest(BaseModel):
     bond_data: dict | None = None
     options_data: dict | None = None
     layout_result: dict | None = None
+    pricing: dict | None = None
 
 
 def _render_saved_layout(
@@ -147,6 +150,9 @@ def tile_project_to_response(project: UserTileProject) -> TileProjectResponse:
             default=None,
             expected=dict,
         ),
+        pricing=load_saved_json(
+            project.pricing, field="tile pricing", default=None, expected=dict
+        ),
         cutlist_image=project.cutlist_image,
         has_svg_image=bool(project.cutlist_image_svg),
         created_at=project.created_at.isoformat(),
@@ -207,6 +213,7 @@ async def create_tile_project(
         layout_result=json.dumps(project_data.layout_result)
         if project_data.layout_result
         else None,
+        pricing=json.dumps(project_data.pricing) if project_data.pricing else None,
         cutlist_image=svg_data_url,
         cutlist_image_svg=svg_data_url,
     )
@@ -254,6 +261,10 @@ async def update_tile_project(
         project.options_data = json.dumps(project_data.options_data)
     if project_data.layout_result is not None:
         project.layout_result = json.dumps(project_data.layout_result)
+    if "pricing" in project_data.model_fields_set:
+        project.pricing = (
+            json.dumps(project_data.pricing) if project_data.pricing else None
+        )
 
     # A rename or changed layout inputs both change what the diagram should show.
     svg_data_url = _render_saved_layout(

@@ -113,6 +113,32 @@ def test_save_and_list_tile_project(client, solved_result):
     assert listed[0]["id"] == saved["id"]
 
 
+def test_tile_project_round_trips_pricing(client, solved_result):
+    headers = _register_and_login(client)
+    payload = _save_payload(solved_result)
+    payload["pricing"] = {
+        "price_per_unit": 42.5,
+        "currency": "SEK",
+        "vat_rate": 25,
+        "prices_include_vat": True,
+    }
+
+    saved = client.post("/api/tile-projects/", json=payload, headers=headers).json()
+    assert saved["pricing"] == payload["pricing"]
+    assert (
+        client.get("/api/tile-projects/", headers=headers).json()[0]["pricing"]
+        == payload["pricing"]
+    )
+
+    updated_pricing = {**payload["pricing"], "price_per_unit": 45.0}
+    updated = client.put(
+        f"/api/tile-projects/{saved['id']}",
+        json={"pricing": updated_pricing},
+        headers=headers,
+    ).json()
+    assert updated["pricing"] == updated_pricing
+
+
 def test_saved_tile_project_keeps_the_candidate_it_was_given(client, solved_result):
     """The saved layout is the one candidate the user picked from the ranked
     list, not a fresh solve — the solver's offset sampling could otherwise

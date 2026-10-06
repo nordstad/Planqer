@@ -6,12 +6,14 @@ import i18n from '../i18n';
 import {
   getProjectGroups,
   getUserSheetProjects,
+  getUserSettings,
   optimizeSheetCutting,
 } from '../utils/api';
 
 vi.mock('../utils/api', () => ({
   getProjectGroups: vi.fn(),
   getUserSheetProjects: vi.fn(),
+  getUserSettings: vi.fn(),
   optimizeSheetCutting: vi.fn(),
 }));
 
@@ -22,6 +24,7 @@ vi.mock('../contexts/AuthContext', () => ({
 beforeEach(() => {
   getProjectGroups.mockResolvedValue([]);
   getUserSheetProjects.mockResolvedValue([]);
+  getUserSettings.mockResolvedValue({ default_currency: 'SEK', default_vat_rate: 25, default_prices_include_vat: true });
   optimizeSheetCutting.mockResolvedValue({
     total_sheets: 1,
     total_waste_area: 100,
@@ -42,6 +45,7 @@ it('restores a saved sheet plan addressed by the edit query', async () => {
     kerf_width: 3,
     material_type: 'plywood',
     allow_rotation: true,
+    pricing: { price_per_unit: 650, currency: 'NOK', vat_rate: 15, prices_include_vat: false },
   }]);
   window.history.replaceState({}, '', '/sheet-cutting?edit=sheet-1');
 
@@ -55,6 +59,20 @@ it('restores a saved sheet plan addressed by the edit query', async () => {
   expect(screen.getByDisplayValue('1200')).toBeInTheDocument();
   expect(screen.getByDisplayValue('2400')).toBeInTheDocument();
   expect(screen.getByDisplayValue('3')).toBeInTheDocument();
+  expect(screen.getByLabelText('Price per sheet · NOK')).toHaveValue(650);
+});
+
+it('shows the sheet material cost using the configured VAT basis', async () => {
+  window.history.replaceState({}, '', '/sheet-cutting');
+  render(<MemoryRouter><LanguageProvider><SheetOptimizer /></LanguageProvider></MemoryRouter>);
+
+  fireEvent.change(document.getElementById('sheet-thickness'), { target: { value: '18' } });
+  fireEvent.change(screen.getByLabelText('Price per sheet · SEK'), { target: { value: '250' } });
+  const pack = screen.getByRole('button', { name: /plan the sheet cuts/i });
+  await waitFor(() => expect(pack).not.toBeDisabled());
+  fireEvent.click(pack);
+
+  expect(await screen.findByText('250.00 SEK · including VAT (25%)')).toBeInTheDocument();
 });
 
 it('reruns restored rows without collapsing identical names', async () => {

@@ -10,12 +10,12 @@
   tradeoff that fits the job — see .plans/tile-layout.md Decision #3.
 */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   optimizeTileLayout, getProjectGroups, createProjectGroup,
-  saveTileProject, getUserTileProjects,
+  saveTileProject, getUserTileProjects, getUserSettings,
 } from '../utils/api';
 import { useDebounce } from '../hooks/useDebounce';
 import { useAuth } from '../contexts/AuthContext';
@@ -101,6 +101,9 @@ const TileOptimizer = () => {
   const [customMaterial, setCustomMaterial] = useState('');
   const [tileThickness, setTileThickness] = useState('');
   const [allowRotation, setAllowRotation] = useState(false);
+  const [unitPrice, setUnitPrice] = useState('');
+  const [pricingDefaults, setPricingDefaults] = useState({ currency: 'SEK', vatRate: 25, pricesIncludeVat: true });
+  const pricingLoadedFromProject = useRef(false);
 
   const [jointWidth, setJointWidth] = useState('3');
   const [perimeterGap, setPerimeterGap] = useState('0');
@@ -123,6 +126,13 @@ const TileOptimizer = () => {
     jointWidth: '', perimeterGap: '', minEdgeCut: '', wastePercent: '', candidateCount: '',
   });
   const [surfaceAttempted, setSurfaceAttempted] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    getUserSettings().then((settings) => {
+      if (!pricingLoadedFromProject.current) setPricingDefaults({ currency: settings.default_currency || 'SEK', vatRate: settings.default_vat_rate ?? 25, pricesIncludeVat: settings.default_prices_include_vat ?? true });
+    }).catch(() => {});
+  }, [user]);
 
   /* the save step */
   const [projectGroups, setProjectGroups] = useState([]);
@@ -229,6 +239,11 @@ const TileOptimizer = () => {
     setProjectName(project.name);
     setEditingProject(project);
     setSaveMode('update');
+    setUnitPrice(project.pricing?.price_per_unit != null ? String(project.pricing.price_per_unit) : '');
+    if (project.pricing) {
+      pricingLoadedFromProject.current = true;
+      setPricingDefaults({ currency: project.pricing.currency, vatRate: project.pricing.vat_rate ?? 25, pricesIncludeVat: project.pricing.prices_include_vat ?? true });
+    }
     setLoadModalOpen(false);
     setStep(STEP_SURFACE);
   };
@@ -330,6 +345,7 @@ const TileOptimizer = () => {
         bond: { pattern: bondPattern, offsetFraction },
         minEdgeCut, reuseOffcuts, wastePercent, candidateCount,
         candidate: selected,
+        pricing: parseFloat(unitPrice) > 0 ? { price_per_unit: parseFloat(unitPrice), currency: pricingDefaults.currency, vat_rate: pricingDefaults.vatRate, prices_include_vat: pricingDefaults.pricesIncludeVat } : null,
       });
       setSaved(project);
       setUserProjects(prev => saveMode === 'update'
@@ -519,6 +535,13 @@ const TileOptimizer = () => {
                     />
                   </td>
                   <td style={{ color: 'var(--ink-3)' }}>mm</td>
+                </tr>
+                <tr>
+                  <td style={{ textAlign: 'left' }}>{t('ui.pricePerTile', { currency: pricingDefaults.currency })}</td>
+                  <td>
+                    <input id="tile-unit-price" type="number" min="0" step="0.01" className="cell-input" value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} placeholder={t('ui.optional')} aria-label={t('ui.pricePerTile', { currency: pricingDefaults.currency })} />
+                  </td>
+                  <td />
                 </tr>
               </tbody>
             </table>
@@ -761,6 +784,9 @@ const TileOptimizer = () => {
               <div className="plan-fact">
                  <dt>{t('workflow.used')}</dt><dd>{(selected.efficiency * 100).toFixed(1)}%</dd>
               </div>
+              {parseFloat(unitPrice) > 0 && <div className="plan-fact">
+                <dt>{t('ui.cost')}</dt><dd>{(selected.tiles_to_purchase_with_waste * parseFloat(unitPrice)).toFixed(2)} {pricingDefaults.currency} · {pricingDefaults.pricesIncludeVat ? t('ui.includingVat') : t('ui.excludingVat')} ({pricingDefaults.vatRate}%)</dd>
+              </div>}
             </dl>
           </div>
 

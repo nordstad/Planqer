@@ -15,7 +15,7 @@ import { SAW_KERF_MIN, SAW_KERF_MAX } from '../utils/validators';
 import { Link } from 'react-router-dom';
 import CatalogPage from './CatalogPage';
 import ConfirmDialog from './ConfirmDialog';
-import { optimizeSheetCutting, saveSheetProject, getProjectGroups, createProjectGroup, getUserSheetProjects } from '../utils/api';
+import { optimizeSheetCutting, saveSheetProject, getProjectGroups, createProjectGroup, getUserSheetProjects, getUserSettings } from '../utils/api';
 import { useDebounce } from '../hooks/useDebounce';
 import { useAuth } from '../contexts/AuthContext';
 import Disclosure from './Disclosure';
@@ -82,6 +82,9 @@ const SheetOptimizer = () => {
   const [sheetThickness, setSheetThickness] = useState("");
   const [algorithm, setAlgorithm] = useState("");
   const [allowRotation, setAllowRotation] = useState(true);
+  const [unitPrice, setUnitPrice] = useState('');
+  const [pricingDefaults, setPricingDefaults] = useState({ currency: 'SEK', vatRate: 25, pricesIncludeVat: true });
+  const pricingLoadedFromProject = useRef(false);
 
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -111,6 +114,13 @@ const SheetOptimizer = () => {
   const debouncedSheetWidth = useDebounce(sheetWidth, 300);
   const debouncedSheetHeight = useDebounce(sheetHeight, 300);
   const debouncedKerfWidth = useDebounce(kerfWidth, 300);
+
+  useEffect(() => {
+    if (!user) return;
+    getUserSettings().then((settings) => {
+      if (!pricingLoadedFromProject.current) setPricingDefaults({ currency: settings.default_currency || 'SEK', vatRate: settings.default_vat_rate ?? 25, pricesIncludeVat: settings.default_prices_include_vat ?? true });
+    }).catch(() => {});
+  }, [user]);
 
   useEffect(() => {
     const width = parseFloat(debouncedSheetWidth);
@@ -226,6 +236,11 @@ const SheetOptimizer = () => {
     setProjectName(project.name);
     setEditingProject(project);
     setSaveMode('update');
+    setUnitPrice(project.pricing?.price_per_unit != null ? String(project.pricing.price_per_unit) : '');
+    if (project.pricing) {
+      pricingLoadedFromProject.current = true;
+      setPricingDefaults({ currency: project.pricing.currency, vatRate: project.pricing.vat_rate ?? 25, pricesIncludeVat: project.pricing.prices_include_vat ?? true });
+    }
     setLoadModalOpen(false);
     setStep(STEP_PARTS);
   };
@@ -320,6 +335,7 @@ const SheetOptimizer = () => {
         algorithm,
         allowRotation,
         result,
+        pricing: parseFloat(unitPrice) > 0 ? { price_per_unit: parseFloat(unitPrice), currency: pricingDefaults.currency, vat_rate: pricingDefaults.vatRate, prices_include_vat: pricingDefaults.pricesIncludeVat } : null,
       });
       setSaved(project);
       setUserProjects(prev => saveMode === 'update'
@@ -527,6 +543,13 @@ const SheetOptimizer = () => {
                   </td>
                   <td />
                 </tr>
+                <tr>
+                  <td style={{ textAlign: 'left' }}>{t('ui.pricePerSheet', { currency: pricingDefaults.currency })}</td>
+                  <td>
+                    <input id="sheet-unit-price" type="number" min="0" step="0.01" className="cell-input" value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} placeholder={t('ui.optional')} aria-label={t('ui.pricePerSheet', { currency: pricingDefaults.currency })} />
+                  </td>
+                  <td />
+                </tr>
               </tbody>
             </table>
             {/* Kerf reports next to its own field now, so this line carries only
@@ -653,6 +676,9 @@ const SheetOptimizer = () => {
               <div className="plan-fact">
                  <dt>{t('ui.strategy')}</dt><dd>{Object.hasOwn(algorithmLabelKeys, result.algorithm_used) ? t(algorithmLabelKeys[result.algorithm_used]) : result.algorithm_used.replace(/_/g, ' ')}</dd>
               </div>
+              {parseFloat(unitPrice) > 0 && <div className="plan-fact">
+                <dt>{t('ui.cost')}</dt><dd>{(result.total_sheets * parseFloat(unitPrice)).toFixed(2)} {pricingDefaults.currency} · {pricingDefaults.pricesIncludeVat ? t('ui.includingVat') : t('ui.excludingVat')} ({pricingDefaults.vatRate}%)</dd>
+              </div>}
             </dl>
           </div>
 
