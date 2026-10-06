@@ -15,6 +15,7 @@ const UserSettings = () => {
     default_currency: 'SEK',
     preferred_language: activeLanguage,
   });
+  const [boardLengthsInput, setBoardLengthsInput] = useState('3000, 3600, 5000');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -27,6 +28,7 @@ const UserSettings = () => {
         setLoading(true);
         const loadedSettings = await getUserSettings();
         setSettings({ ...loadedSettings, preferred_language: loadedSettings.preferred_language || activeLanguage });
+        setBoardLengthsInput(loadedSettings.default_board_lengths.join(', '));
       } catch (err) {
         setError(t('settings.loadError', { message: err.message }));
       } finally {
@@ -36,8 +38,7 @@ const UserSettings = () => {
   }, [user]);
 
   const handleBoardLengthsChange = (value) => {
-    const lengths = value.split(',').map((l) => parseFloat(l.trim())).filter((l) => !isNaN(l));
-    setSettings((prev) => ({ ...prev, default_board_lengths: lengths }));
+    setBoardLengthsInput(value);
   };
 
   const handleSave = async (e) => {
@@ -47,7 +48,11 @@ const UserSettings = () => {
     setSavedNotice('');
 
     try {
-      await updateUserSettings(settings);
+      const boardLengths = boardLengthsInput
+        .split(',')
+        .map((length) => parseFloat(length.trim()))
+        .filter((length) => !isNaN(length));
+      await updateUserSettings({ ...settings, default_board_lengths: boardLengths });
       await changeLanguage(settings.preferred_language, { persistAccount: false });
       setSavedNotice(t('common.settingsSaved'));
       setTimeout(() => setSavedNotice(''), 3000);
@@ -80,7 +85,7 @@ const UserSettings = () => {
             id="board-lengths"
             type="text"
             className="form-input"
-            value={settings.default_board_lengths.join(', ')}
+            value={boardLengthsInput}
             onChange={(e) => handleBoardLengthsChange(e.target.value)}
             placeholder={t('settings.boardLengthsPlaceholder')}
             disabled={saving}

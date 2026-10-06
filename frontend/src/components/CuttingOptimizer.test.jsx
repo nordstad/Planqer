@@ -66,6 +66,36 @@ describe('CuttingOptimizer', () => {
     expect(screen.getByRole('button', { name: /Plan the cuts/i })).toBeInTheDocument();
   });
 
+  it('shows optional stock prices and keeps lowest cost disabled until complete', async () => {
+    renderOptimizer();
+    await screen.findByRole('heading', { name: /Required parts/i });
+
+    expect(screen.getByLabelText(/SEK price per metre for board length 2500 mm/i)).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /Lowest cost/i })).toBeDisabled();
+    expect(screen.getByText(/Add a price for every stock length/i)).toBeInTheDocument();
+  });
+
+  it('sends a cost payload on the first run when every stock length is priced', async () => {
+    renderOptimizer();
+    await screen.findByRole('heading', { name: /Required parts/i });
+    ['2500', '3600', '4200', '5100'].forEach((length) => {
+      fireEvent.change(screen.getByLabelText(new RegExp(`SEK price per metre for board length ${length} mm`)), {
+        target: { value: '30' },
+      });
+    });
+
+    expect(screen.getByRole('radio', { name: /Lowest cost/i })).not.toBeDisabled();
+    fillMaterial();
+    fireEvent.click(screen.getByRole('button', { name: /Plan the cuts/i }));
+
+    await waitFor(() => expect(optimizeCutting).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({ enabled: true, optimizeFor: 'waste' })
+    ));
+  });
+
   it('shows a cutting plan after planning the cuts', async () => {
     renderOptimizer();
     await screen.findByRole('heading', { name: /Required parts/i });

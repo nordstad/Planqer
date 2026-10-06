@@ -108,8 +108,7 @@ const CuttingOptimizer = () => {
   // Which price fields to flag red: only once the user has touched them, or
   // tried to price a plan — flagging every field the instant the panel opens
   // reads as the page scolding the user for its own toggle.
-  const [costTouched, setCostTouched] = useState({});
-  const [costSubmitAttempted, setCostSubmitAttempted] = useState(false);
+  const stockSectionRef = useRef(null);
 
   const debouncedParts = useDebounce(parts, 300);
   const debouncedBoards = useDebounce(boards, 300);
@@ -202,7 +201,18 @@ const CuttingOptimizer = () => {
 
   const handleBoardChange = (index, value) => {
     retirePlan();
+    const previousBoard = boards[index];
     setBoards(boards.map((b, i) => (i === index ? value : b)));
+    const previousLength = parseFloat(previousBoard);
+    const nextLength = parseFloat(value);
+    setBoardCosts((previous) => {
+      const next = { ...previous };
+      if (Number.isFinite(previousLength)) delete next[previousLength];
+      if (Number.isFinite(nextLength) && previous[previousLength] && !next[nextLength]) {
+        next[nextLength] = previous[previousLength];
+      }
+      return next;
+    });
   };
 
   const handleKerfChange = (value) => {
@@ -239,6 +249,9 @@ const CuttingOptimizer = () => {
     const newBoards = [...boards];
     newBoards.splice(index, 1, ...rows);
     setBoards(newBoards);
+    setBoardCosts((previous) => Object.fromEntries(
+      Object.entries(previous).filter(([length]) => newBoards.some((board) => parseFloat(board) === parseFloat(length)))
+    ));
   };
 
   const addPart = () => { retirePlan(); setParts([...parts, { length: "", quantity: "" }]); };
@@ -251,7 +264,16 @@ const CuttingOptimizer = () => {
   const removeBoard = (index) => {
     if (boards.length <= 1) return;
     retirePlan();
-    setBoards(boards.filter((_, i) => i !== index));
+    const removedLength = parseFloat(boards[index]);
+    const remainingBoards = boards.filter((_, i) => i !== index);
+    setBoards(remainingBoards);
+    if (!remainingBoards.some((board) => parseFloat(board) === removedLength)) {
+      setBoardCosts((previous) => {
+        const next = { ...previous };
+        delete next[removedLength];
+        return next;
+      });
+    }
   };
 
   const loadProject = (project) => {
@@ -281,8 +303,6 @@ const CuttingOptimizer = () => {
     setOptimizeFor(priced?.optimize_for || 'waste');
     setPricesApplied(!!priced);
     setCostOpen(!!priced);
-    setCostTouched({});
-    setCostSubmitAttempted(false);
 
     setLoadModalOpen(false);
     setStep(STEP_PARTS);
@@ -305,6 +325,45 @@ const CuttingOptimizer = () => {
   const hasErrors = inputErrors.parts.some(Boolean) || inputErrors.boards.some(Boolean) || !!inputErrors.sawKerf
     || !material || !parseFloat(boardThickness) || !parseFloat(boardWidth);
   const validBoards = boards.filter(b => b && !isNaN(parseFloat(b)));
+  const uniqueValidBoards = [...new Set(validBoards.map((board) => parseFloat(board)))];
+  const pricedBoardCount = uniqueValidBoards.filter((board) => boardCosts[board]?.price_per_meter > 0).length;
+  const pricingComplete = uniqueValidBoards.length > 0 && pricedBoardCount === uniqueValidBoards.length;
+  const pricingPartial = pricedBoardCount > 0 && !pricingComplete;
+
+  useEffect(() => {
+    if (!pricingComplete && optimizeFor === 'cost') setOptimizeFor('waste');
+  }, [pricingComplete, optimizeFor]);
+
+  const handleBoardPriceChange = (board, value) => {
+    retirePlan();
+    setSamePriceForAll(false);
+    const boardLength = parseFloat(board);
+    const pricePerMeter = parseFloat(value) || 0;
+    setBoardCosts((previous) => ({
+      ...previous,
+      [boardLength]: {
+        price_per_meter: pricePerMeter,
+        price_per_board: pricePerMeter * (boardLength / 1000),
+      },
+    }));
+  };
+
+  const priceEveryBoard = (pricePerMeter) => {
+    const next = {};
+    uniqueValidBoards.forEach((boardLength) => {
+      next[boardLength] = {
+        price_per_meter: pricePerMeter,
+        price_per_board: pricePerMeter * (boardLength / 1000),
+      };
+    });
+    setBoardCosts(next);
+    retirePlan();
+  };
+
+  const handleUniformPriceChange = (value) => {
+    setUniformPrice(value);
+    if (samePriceForAll) priceEveryBoard(parseFloat(value) || 0);
+  };
 
   /* Only the solver's own figures go in the answer. Deriving a second yield here
      once put 98.9% beside the diagram's 91.7% — the same quantity, two numbers,
@@ -350,25 +409,9 @@ const CuttingOptimizer = () => {
   const pricesDirty = !!appliedCost && appliedPriceKey !== null && appliedPriceKey !== priceKey();
 
   /* ── running a plan ────────────────────────────────────────────────────── */
-  const missingPrices = () => {
-    if (samePriceForAll) return !uniformPrice || parseFloat(uniformPrice) <= 0;
-    return validBoards.some(board => {
-      const costData = boardCosts[parseFloat(board)];
-      return !costData || !costData.price_per_meter || costData.price_per_meter <= 0;
-    });
-  };
-
   const runPlan = async (withPrices) => {
     setApiError("");
     if (hasErrors) return;
-
-    if (withPrices && missingPrices()) {
-      setCostSubmitAttempted(true);
-      setApiError(samePriceForAll
-        ? t('auditUi.priceRequired')
-        : t('auditUi.stockPriceRequired'));
-      return;
-    }
 
     const requestRevision = ++inputRevision.current;
 
@@ -417,10 +460,16 @@ const CuttingOptimizer = () => {
     };
     setInputErrors(currentErrors);
     if (currentErrors.parts.some(Boolean) || currentErrors.boards.some(Boolean) || currentErrors.sawKerf) return;
-    runPlan(pricesApplied);
+    runPlan(pricingComplete);
   };
 
-  const handleApplyPrices = () => runPlan(true);
+  const addStockPrices = () => {
+    setStep(STEP_PARTS);
+    window.setTimeout(() => {
+      stockSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      stockSectionRef.current?.focus();
+    }, 0);
+  };
 
   /* ── keeping a plan ────────────────────────────────────────────────────── */
   const nameError = saveAttempted && !projectName.trim()
@@ -634,43 +683,116 @@ const CuttingOptimizer = () => {
               yard actually stocks changes between jobs, and a plan against the
               wrong lengths is wrong at the till. Mirrors the sheet page, where
               the sheet's own dimensions are visible for the same reason. */}
-          <section style={{ marginTop: '30px', paddingTop: '22px', borderTop: '1px solid var(--rule-hair)' }}>
+          <section ref={stockSectionRef} tabIndex="-1" style={{ marginTop: '30px', paddingTop: '22px', borderTop: '1px solid var(--rule-hair)' }}>
             <div className="section-rule">
               <h2 className="section-title">{t('workflow.stockAvailable')}</h2>
               <span className="folio">{t('workflow.supplierStock')}</span>
             </div>
-            <table className="cat-table">
-              <thead>
-                <tr><th>{t('workflow.stock')}</th><th>{t('workflow.lengthMm')}</th><th>{t('workflow.metres')}</th><th aria-label={t('common.remove')} /></tr>
-              </thead>
-              <tbody>
-                {boards.map((board, index) => (
-                  <BoardLengthRow
-                    key={index}
-                    board={board}
-                    index={index}
-                    handleBoardChange={handleBoardChange}
-                    handleBoardsPaste={handleBoardsPaste}
-                    removeBoard={removeBoard}
-                    error={inputErrors.boards[index]}
-                    canRemove={boards.length > 1}
-                    inPlan={null}
-                  />
-                ))}
-                <tr className="is-sum">
-                  <td>{t('workflow.offered')}</td>
-                  <td>{t('workflow.lengthCount', { count: validBoards.length })}</td>
-                  <td>—</td>
-                  <td />
-                </tr>
-              </tbody>
-            </table>
+            <p className="synthetic" style={{ margin: '8px 0 12px' }}>{t('ui.stockPricingOptional')}</p>
+            <div className="stock-table-wrap">
+              <table className="cat-table">
+                <thead>
+                  <tr><th>{t('workflow.stock')}</th><th>{t('workflow.lengthMm')}</th><th>{t('workflow.metres')}</th><th>{t('ui.stockPrice')}</th><th aria-label={t('common.remove')} /></tr>
+                </thead>
+                <tbody>
+                  {boards.map((board, index) => (
+                    <BoardLengthRow
+                      key={index}
+                      board={board}
+                      index={index}
+                      handleBoardChange={handleBoardChange}
+                      handleBoardsPaste={handleBoardsPaste}
+                      removeBoard={removeBoard}
+                      error={inputErrors.boards[index]}
+                      canRemove={boards.length > 1}
+                      inPlan={null}
+                      currency={currency}
+                      price={boardCosts[parseFloat(board)]?.price_per_meter}
+                      handlePriceChange={handleBoardPriceChange}
+                    />
+                  ))}
+                  <tr className="is-sum">
+                    <td>{t('workflow.offered')}</td>
+                    <td>{t('workflow.lengthCount', { count: validBoards.length })}</td>
+                    <td>—</td>
+                    <td />
+                    <td />
+                  </tr>
+                </tbody>
+              </table>
+            </div>
             <button type="button" className="btn" style={{ marginTop: '12px' }} onClick={addBoard}>
               <Plus /> {t('workflow.addStockLength')}
             </button>
             <p className="synthetic" style={{ marginTop: '10px' }}>
                {t('ui.checkStock')}
             </p>
+            <div style={{ marginTop: '22px', paddingTop: '18px', borderTop: '1px solid var(--rule-hair)' }}>
+              <div className="flex items-center justify-between" style={{ gap: '12px', flexWrap: 'wrap' }}>
+                <span className="kicker">{t('ui.pricingOptions')}</span>
+                <label className="flex items-center gap-2" style={{ cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={samePriceForAll}
+                    onChange={(e) => {
+                      retirePlan();
+                      setSamePriceForAll(e.target.checked);
+                      if (e.target.checked && uniformPrice) priceEveryBoard(parseFloat(uniformPrice) || 0);
+                    }}
+                  />
+                  <span className="kicker" style={{ color: 'var(--ink)' }}>{t('ui.onePriceAll')}</span>
+                </label>
+              </div>
+              {samePriceForAll && (
+                <div style={{ marginTop: '10px', maxWidth: '280px' }}>
+                  <label className="form-label" htmlFor="uniform-stock-price">{t('ui.uniformPrice', { currency })}</label>
+                  <input
+                    id="uniform-stock-price"
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={uniformPrice}
+                    onChange={(e) => handleUniformPriceChange(e.target.value)}
+                    className="form-input"
+                    placeholder="35.0"
+                  />
+                </div>
+              )}
+              {pricingPartial && <p className="synthetic" style={{ marginTop: '10px' }}>
+                {t('ui.pricesProgress', { priced: pricedBoardCount, total: uniqueValidBoards.length })}
+              </p>}
+              {pricingComplete && <p className="synthetic" style={{ marginTop: '10px' }} role="status">
+                {t('ui.pricesComplete', { total: uniqueValidBoards.length })}
+              </p>}
+              <fieldset style={{ marginTop: '16px', border: 0, padding: 0, minWidth: 0 }}>
+                <legend className="form-label" style={{ padding: 0 }}>{t('ui.whatChase')}</legend>
+                <label className="flex items-start gap-3" style={{ cursor: 'pointer', padding: '5px 0' }}>
+                  <input
+                    type="radio"
+                    name="optimizeFor-input"
+                    value="waste"
+                    checked={optimizeFor === 'waste'}
+                    onChange={() => { retirePlan(); setOptimizeFor('waste'); }}
+                    style={{ marginTop: '3px' }}
+                  />
+                  <span><b style={{ fontSize: '13.5px' }}>{t('ui.leastWaste')}</b><span className="block synthetic">{t('ui.leastWasteHint')}</span></span>
+                </label>
+                <label className="flex items-start gap-3" style={{ cursor: pricingComplete ? 'pointer' : 'default', padding: '5px 0' }}>
+                  <input
+                    type="radio"
+                    name="optimizeFor-input"
+                    value="cost"
+                    checked={optimizeFor === 'cost'}
+                    onChange={() => { retirePlan(); setOptimizeFor('cost'); }}
+                    disabled={!pricingComplete}
+                    aria-describedby="lowest-cost-help"
+                    style={{ marginTop: '3px' }}
+                  />
+                  <span><b style={{ fontSize: '13.5px' }}>{t('ui.leastMoney')}</b><span className="block synthetic">{t('ui.leastMoneyHint')}</span></span>
+                </label>
+                {!pricingComplete && <p id="lowest-cost-help" className="synthetic" style={{ margin: '4px 0 0 28px' }}>{t('ui.lowestCostNeedsPrices')}</p>}
+              </fieldset>
+            </div>
           </section>
 
           <div style={{ marginTop: '26px' }}>
@@ -773,36 +895,23 @@ const CuttingOptimizer = () => {
 
           <div style={{ marginTop: '34px' }}>
             <Disclosure
-               title={t('workflow.costAnalysis')}
-              hint={pricesDirty
-                ? t('auditUi.pricesChanged')
-                : appliedCost
-                   ? t('ui.pricedForPlan', { total: Number(appliedCost.totalCost).toFixed(2), currency: appliedCost.currency })
-                  : t('auditUi.priceStock')}
+               title={t('ui.pricesAndCost')}
+               hint={pricesDirty
+                 ? t('auditUi.pricesChanged')
+                 : appliedCost
+                    ? t('ui.pricedForPlan', { total: Number(appliedCost.totalCost).toFixed(2), currency: appliedCost.currency })
+                   : t('auditUi.priceStock')}
               open={costOpen}
               onToggle={() => setCostOpen(v => !v)}
             >
               <CostAnalysisPanel
-                currency={currency}
-                validBoards={validBoards}
-                boardCosts={boardCosts}
-                setBoardCosts={setBoardCosts}
-                samePriceForAll={samePriceForAll}
-                setSamePriceForAll={setSamePriceForAll}
-                uniformPrice={uniformPrice}
-                setUniformPrice={setUniformPrice}
                 optimizeFor={optimizeFor}
-                setOptimizeFor={setOptimizeFor}
-                costTouched={costTouched}
-                setCostTouched={setCostTouched}
-                costSubmitAttempted={costSubmitAttempted}
-                onApply={handleApplyPrices}
-                applying={loading}
                 appliedCost={appliedCost}
                 pricesDirty={pricesDirty}
                 previous={pricedBefore}
                 boardsUsed={plan.boardsUsed}
                 offcut={plan.offcut}
+                onAddStockPrices={addStockPrices}
               />
             </Disclosure>
           </div>

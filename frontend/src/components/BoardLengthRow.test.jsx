@@ -59,6 +59,6 @@ describe('BoardLengthRow', () => {
     );
 
     expect(screen.getByLabelText(/Board length in millimetres, row 1/i)).toHaveValue(300.5);
-    expect(screen.getByRole('spinbutton')).toHaveAttribute('step', 'any');
+    expect(screen.getByLabelText(/Board length in millimetres, row 1/i)).toHaveAttribute('step', 'any');
   });
 });

@@ -1,4 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import UserSettings from './UserSettings';
 import { AuthProvider } from '../contexts/AuthContext';
 import * as api from '../utils/api';
@@ -47,5 +48,24 @@ describe('UserSettings', () => {
       );
     });
     expect(await screen.findByText('Settings saved')).toBeInTheDocument();
+  });
+
+  it('allows typing a comma-separated board length', async () => {
+    const user = userEvent.setup();
+    renderSettings();
+    const input = await screen.findByLabelText(/Default board lengths/i);
+
+    await user.clear(input);
+    await user.type(input, '3000, 4200');
+
+    expect(input).toHaveValue('3000, 4200');
+
+    updateUserSettings.mockClear();
+    await user.click(screen.getByRole('button', { name: /Save settings/i }));
+    await waitFor(() => {
+      expect(updateUserSettings).toHaveBeenCalledWith(
+        expect.objectContaining({ default_board_lengths: [3000, 4200] })
+      );
+    });
   });
 });
