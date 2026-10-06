@@ -3,8 +3,8 @@ import xml.etree.ElementTree as ET
 
 from planqer.sheet_visualization import (
     generate_saved_sheet_diagram,
-    generate_single_sheet_visualization,
     generate_sheet_cutting_visualization,
+    generate_single_sheet_visualization,
 )
 from planqer.svg_visualization import generate_cut_list_image, generate_saved_diagram
 from planqer.tile_layout.geometry import Cutout, JointSpec, Surface, Tile
