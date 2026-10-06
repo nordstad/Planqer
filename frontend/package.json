@@ -17,28 +17,25 @@
   "scripts": {
     "start": "vite",
     "build": "vite build",
-    "test": "jest",
+    "test": "vitest run",
     "dev": "vite",
     "test:e2e": "playwright test"
   },
   "devDependencies": {
-    "@babel/core": "8.0.6",
-    "@babel/preset-env": "^8.0.6",
-    "@babel/preset-react": "^8.0.1",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",
-    "@vitejs/plugin-react": "^6.1.1",
+    "@vitejs/plugin-react": "^6.1.2",
     "autoprefixer": "^10.6.1",
-    "babel-jest": "^30.5.2",
     "esbuild": "^0.28.2",
-    "jest": "^30.5.2",
-    "jest-environment-jsdom": "^30.5.2",
+    "jsdom": "^27.4.0",
     "playwright": "^1.55.0",
-    "postcss": "^8.5.28",
+    "postcss": "^8.5.29",
+    "source-map-js": "^1.2.2",
     "tailwindcss": "^4.3.3",
-    "vite": "^8.3.1"
+    "vite": "^8.3.3",
+    "vitest": "^5.0.3"
   }
 }

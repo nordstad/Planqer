@@ -10,31 +10,32 @@ import {
   getProjectGroups,
   deleteProject,
   deleteProjectGroup,
+  downloadProjectImage,
 } from '../utils/api';
 import { printProjectPlans } from '../utils/printProject';
 
-jest.mock('../utils/api', () => ({
-  getUserProjects: jest.fn(),
-  getUserSheetProjects: jest.fn(),
-  getUserTileProjects: jest.fn(),
-  getProjectGroups: jest.fn(),
-  deleteProject: jest.fn(),
-  deleteProjectGroup: jest.fn(),
-  updateProject: jest.fn(),
-  updateSheetProject: jest.fn(),
-  deleteSheetProject: jest.fn(),
-  updateTileProject: jest.fn(),
-  deleteTileProject: jest.fn(),
-  downloadProjectImage: jest.fn(),
-  renameProjectGroup: jest.fn(),
+vi.mock('../utils/api', () => ({
+  getUserProjects: vi.fn(),
+  getUserSheetProjects: vi.fn(),
+  getUserTileProjects: vi.fn(),
+  getProjectGroups: vi.fn(),
+  deleteProject: vi.fn(),
+  deleteProjectGroup: vi.fn(),
+  updateProject: vi.fn(),
+  updateSheetProject: vi.fn(),
+  deleteSheetProject: vi.fn(),
+  updateTileProject: vi.fn(),
+  deleteTileProject: vi.fn(),
+  downloadProjectImage: vi.fn(),
+  renameProjectGroup: vi.fn(),
 }));
 
-jest.mock('../contexts/AuthContext', () => ({
-  useAuth: () => ({ user: mockUser, logout: jest.fn() }),
+vi.mock('../contexts/AuthContext', () => ({
+  useAuth: () => ({ user: mockUser, logout: vi.fn() }),
 }));
 
-jest.mock('../utils/printProject', () => ({
-  printProjectPlans: jest.fn().mockResolvedValue(undefined),
+vi.mock('../utils/printProject', () => ({
+  printProjectPlans: vi.fn().mockResolvedValue(undefined),
 }));
 
 const group = {
@@ -66,7 +67,7 @@ const renderDetail = () => render(
   <MemoryRouter>
     <LanguageProvider>
       <LocationProbe />
-      <UserProjectsContent onPreview={jest.fn()} groupId={group.id} />
+      <UserProjectsContent onPreview={vi.fn()} groupId={group.id} />
     </LanguageProvider>
   </MemoryRouter>,
 );
@@ -113,13 +114,12 @@ beforeEach(() => {
   getProjectGroups.mockResolvedValue([group]);
   deleteProject.mockResolvedValue({});
   deleteProjectGroup.mockResolvedValue({});
-  const { downloadProjectImage } = jest.requireMock('../utils/api');
   downloadProjectImage.mockResolvedValue(new Blob());
   printProjectPlans.mockClear();
 });
 
 it.each([1, 3])('uses the standalone part count for a saved sheet plan with %i parts', async (count) => {
-  const translate = jest.spyOn(i18n, 't');
+  const translate = vi.spyOn(i18n, 't');
   getUserProjects.mockResolvedValue([]);
   getUserSheetProjects.mockResolvedValue([{
     ...sheetPlan,

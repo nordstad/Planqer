@@ -9,19 +9,25 @@ import {
 } from './api';
 import { modelGroupMetadata } from '../components/ModelCutlistOptimizer';
 
-jest.mock('axios', () => ({
-  delete: jest.fn(),
-  get: jest.fn(),
-  interceptors: {
-    request: { use: jest.fn() },
-    response: { use: jest.fn() },
-  },
-  post: jest.fn(),
-  put: jest.fn(),
-}));
+vi.mock('axios', () => {
+  const mockAxios = {
+    delete: vi.fn(),
+    get: vi.fn(),
+    interceptors: {
+      request: { use: vi.fn() },
+      response: { use: vi.fn() },
+    },
+    post: vi.fn(),
+    put: vi.fn(),
+  };
+
+  return {
+    default: mockAxios,
+  };
+});
 
 beforeEach(() => {
-  jest.clearAllMocks();
+  vi.clearAllMocks();
   axios.post.mockResolvedValue({ data: { ok: true } });
 });
 

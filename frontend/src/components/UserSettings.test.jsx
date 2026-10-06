@@ -1,21 +1,22 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import UserSettings from './UserSettings';
 import { AuthProvider } from '../contexts/AuthContext';
+import * as api from '../utils/api';
 
-jest.mock('../utils/api', () => ({
-  ...jest.requireActual('../utils/api'),
-  getSetupStatus: jest.fn().mockResolvedValue({ needs_setup: false }),
-  getCurrentUser: jest.fn().mockResolvedValue({ id: 'me', email: 'me@example.com', is_admin: false }),
-  getAuthToken: jest.fn().mockReturnValue('fake-token'),
-  getUserSettings: jest.fn().mockResolvedValue({
+vi.mock('../utils/api', async () => ({
+  ...(await vi.importActual('../utils/api')),
+  getSetupStatus: vi.fn().mockResolvedValue({ needs_setup: false }),
+  getCurrentUser: vi.fn().mockResolvedValue({ id: 'me', email: 'me@example.com', is_admin: false }),
+  getAuthToken: vi.fn().mockReturnValue('fake-token'),
+  getUserSettings: vi.fn().mockResolvedValue({
     default_board_lengths: [2500, 3600],
     default_saw_blade_width: 3,
     default_currency: 'SEK',
   }),
-  updateUserSettings: jest.fn().mockResolvedValue({}),
+  updateUserSettings: vi.fn().mockResolvedValue({}),
 }));
 
-const { updateUserSettings } = jest.requireMock('../utils/api');
+const { updateUserSettings } = api;
 
 const renderSettings = () =>
   render(

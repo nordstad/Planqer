@@ -9,13 +9,13 @@ import {
   optimizeSheetCutting,
 } from '../utils/api';
 
-jest.mock('../utils/api', () => ({
-  getProjectGroups: jest.fn(),
-  getUserSheetProjects: jest.fn(),
-  optimizeSheetCutting: jest.fn(),
+vi.mock('../utils/api', () => ({
+  getProjectGroups: vi.fn(),
+  getUserSheetProjects: vi.fn(),
+  optimizeSheetCutting: vi.fn(),
 }));
 
-jest.mock('../contexts/AuthContext', () => ({
+vi.mock('../contexts/AuthContext', () => ({
   useAuth: () => ({ user: { id: 'user-1' } }),
 }));
 
@@ -120,7 +120,7 @@ it.each([
   ['guillotine_cut', 'ui.guillotine'],
 ])('uses translated strategy and rotation text for %s', async (algorithm, labelKey) => {
   window.history.replaceState({}, '', '/sheet-cutting');
-  const translate = jest.spyOn(i18n, 't');
+  const translate = vi.spyOn(i18n, 't');
   try {
     render(<MemoryRouter><LanguageProvider><SheetOptimizer /></LanguageProvider></MemoryRouter>);
     await screen.findByText(/enter the sheet thickness before planning/i);

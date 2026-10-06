@@ -29,6 +29,12 @@ export default defineConfig(({ mode }) => {
       alias: [{ find: /^~([^/])/, replacement: "$1" }],
       extensions: ['.mjs', '.js', '.jsx', '.json']
     },
+    test: {
+      environment: "jsdom",
+      globals: true,
+      setupFiles: "./vitest.setup.js",
+      include: ["src/**/*.test.{js,jsx}"],
+    },
   };
 });
 

@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import TileLayoutCandidateCard from './TileLayoutCandidateCard';
 
-const mockTranslate = jest.fn((key, options) => {
+const mockTranslate = vi.fn((key, options) => {
   if (key === 'ui.candidateDiagram') return `Diagram: ${options.label}`;
   if (key === 'ui.candidateRotated') return `Rotated: ${options.label}`;
   if (key === 'ui.candidateAlternative') return `Alternative: ${options.number}`;
@@ -9,7 +9,7 @@ const mockTranslate = jest.fn((key, options) => {
   return `translated:${key}`;
 });
 
-jest.mock('react-i18next', () => ({
+vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: mockTranslate }),
 }));
 
@@ -38,7 +38,7 @@ it.each([
   ['My layout (rotated)', 'My layout (rotated)'],
   ['Fewest cuts & My label', 'Fewest cuts & My label'],
 ])('renders label and diagram text for %s', (label, translated) => {
-  const onSelect = jest.fn();
+  const onSelect = vi.fn();
   render(<TileLayoutCandidateCard candidate={{ ...candidate, label }} selected onSelect={onSelect} />);
   expect(screen.getByText(translated)).toBeInTheDocument();
   expect(screen.getByRole('img', { name: `Diagram: ${translated}` })).toBeInTheDocument();

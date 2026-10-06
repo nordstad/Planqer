@@ -2,27 +2,28 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
 import { MemoryRouter } from 'react-router-dom';
 import AdminDashboard from './AdminDashboard';
 import { AuthProvider } from '../contexts/AuthContext';
+import * as api from '../utils/api';
 
-jest.mock('../utils/api', () => ({
-  ...jest.requireActual('../utils/api'),
-  getSetupStatus: jest.fn().mockResolvedValue({ needs_setup: false }),
-  getCurrentUser: jest.fn().mockResolvedValue({ id: 'me', email: 'signed-in-admin@example.com', is_admin: true }),
-  getAuthToken: jest.fn().mockReturnValue('fake-token'),
-  getAdminStats: jest.fn().mockResolvedValue({
+vi.mock('../utils/api', async () => ({
+  ...(await vi.importActual('../utils/api')),
+  getSetupStatus: vi.fn().mockResolvedValue({ needs_setup: false }),
+  getCurrentUser: vi.fn().mockResolvedValue({ id: 'me', email: 'signed-in-admin@example.com', is_admin: true }),
+  getAuthToken: vi.fn().mockReturnValue('fake-token'),
+  getAdminStats: vi.fn().mockResolvedValue({
     total_users: 2,
     active_users: 2,
     admin_users: 1,
     total_projects: 3,
     total_sheet_projects: 1,
   }),
-  getAdminUsers: jest.fn().mockResolvedValue([
+  getAdminUsers: vi.fn().mockResolvedValue([
     { id: 'me', email: 'admin@example.com', is_active: true, is_admin: true, project_count: 2, sheet_project_count: 0, created_at: '2026-01-01T00:00:00Z' },
     { id: 'other', email: 'someone@example.com', is_active: true, is_admin: false, project_count: 1, sheet_project_count: 1, created_at: '2026-01-02T00:00:00Z' },
   ]),
-  deleteUser: jest.fn().mockResolvedValue({}),
+  deleteUser: vi.fn().mockResolvedValue({}),
 }));
 
-const { getAdminUsers, deleteUser } = jest.requireMock('../utils/api');
+const { getAdminUsers, deleteUser } = api;
 
 const renderDashboard = () =>
   render(

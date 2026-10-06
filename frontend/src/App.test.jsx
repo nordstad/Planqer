@@ -8,9 +8,9 @@ const renderAt = (path) => {
   return render(<App />);
 };
 
-jest.mock('./utils/api', () => ({
-  ...jest.requireActual('./utils/api'),
-  getSetupStatus: jest.fn().mockResolvedValue({ needs_setup: false }),
+vi.mock('./utils/api', async () => ({
+  ...(await vi.importActual('./utils/api')),
+  getSetupStatus: vi.fn().mockResolvedValue({ needs_setup: false }),
 }));
 
 describe('App', () => {

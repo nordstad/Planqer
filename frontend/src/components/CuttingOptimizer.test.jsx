@@ -5,13 +5,13 @@ import { AuthProvider } from '../contexts/AuthContext';
 import i18n from '../i18n';
 import { getProjectGroups, getUserProjects, getUserSettings, optimizeCutting } from '../utils/api';
 
-jest.mock('../utils/api', () => ({
-  ...jest.requireActual('../utils/api'),
-  getSetupStatus: jest.fn().mockResolvedValue({ needs_setup: false }),
-  getProjectGroups: jest.fn(),
-  getUserProjects: jest.fn(),
-  getUserSettings: jest.fn(),
-  optimizeCutting: jest.fn().mockResolvedValue({
+vi.mock('../utils/api', async () => ({
+  ...(await vi.importActual('../utils/api')),
+  getSetupStatus: vi.fn().mockResolvedValue({ needs_setup: false }),
+  getProjectGroups: vi.fn(),
+  getUserProjects: vi.fn(),
+  getUserSettings: vi.fn(),
+  optimizeCutting: vi.fn().mockResolvedValue({
     board_lengths_used: [2500, 2500],
     cut_list: [
       [2000, 150, 150, 80],
@@ -21,8 +21,8 @@ jest.mock('../utils/api', () => ({
   }),
 }));
 
-jest.mock('../contexts/AuthContext', () => ({
-  ...jest.requireActual('../contexts/AuthContext'),
+vi.mock('../contexts/AuthContext', async () => ({
+  ...(await vi.importActual('../contexts/AuthContext')),
   useAuth: () => ({ user: { id: 'user-1' } }),
 }));
 
@@ -49,7 +49,7 @@ beforeEach(() => {
 
 describe('CuttingOptimizer', () => {
   it('requests a standalone validation hint without interpolating a plan noun', async () => {
-    const translate = jest.spyOn(i18n, 't');
+    const translate = vi.spyOn(i18n, 't');
     try {
       renderOptimizer();
       await screen.findByRole('heading', { name: /Required parts/i });
