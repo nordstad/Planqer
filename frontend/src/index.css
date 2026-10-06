@@ -458,6 +458,8 @@
   .cat-table.is-reference td:last-child { text-align: left; font-size: 13px; color: var(--ink-2); }
   .stock-table-wrap { overflow-x: auto; }
   .stock-price-label { display: none; }
+  .stock-table-wrap .cat-table th:nth-child(4),
+  .stock-table-wrap .cat-table td:nth-child(4) { width: 124px; }
   @media (max-width: 640px) {
     .stock-table-wrap { overflow-x: visible; }
     .stock-table-wrap .cat-table { min-width: 0; }
@@ -615,7 +617,9 @@
     padding: 2px 4px; min-height: 30px; font-variant-numeric: tabular-nums; border-radius: 4px;
   }
   .cell-input:focus { outline: none; background: var(--accent-bg); color: var(--ink); }
-  .stock-table-wrap .stock-price-input { background: var(--card); border: 1px solid var(--rule-hair); border-radius: 6px; padding: 4px 6px; }
+  .stock-table-wrap .stock-price-input {
+    width: 112px; background: var(--card); border: 1px solid var(--rule-hair); border-radius: 6px; padding: 4px 6px;
+  }
   .stock-table-wrap .stock-price-input:focus { border-color: var(--accent); }
   .kerf-input { appearance: textfield; -moz-appearance: textfield; }
   .kerf-input::-webkit-outer-spin-button, .kerf-input::-webkit-inner-spin-button {
