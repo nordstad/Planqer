@@ -89,9 +89,10 @@ axios.interceptors.response.use(
   }
 );
 
-export const registerUser = async (email, password) => {
+export const registerUser = async (email, password, setupSecret = '') => {
   try {
-    const response = await axios.post(`${API_URL}/api/auth/register`, { email, password });
+    const headers = setupSecret ? { 'X-Planqer-Setup-Secret': setupSecret } : undefined;
+    const response = await axios.post(`${API_URL}/api/auth/register`, { email, password }, { headers });
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));

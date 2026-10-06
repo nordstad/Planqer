@@ -208,7 +208,7 @@ def print_usage():
     print("  PLANQER_ADMIN_PASSWORD   Admin password (use with caution)")
     print()
     print("Docker usage:")
-    print("  docker exec -it planqer-web-backend uv run python create_admin.py")
+    print("  docker exec -it planqer-web-backend python create_admin.py")
 
 
 async def main():

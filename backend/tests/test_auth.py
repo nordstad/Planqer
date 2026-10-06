@@ -122,6 +122,33 @@ def test_fresh_registration_rejects_missing_setup_secret(client, monkeypatch):
     assert response.status_code == 403
 
 
+def test_trusted_bootstrap_allows_first_registration_from_compose(client, monkeypatch):
+    async def reset_database():
+        async with AsyncSession(engine) as session:
+            await session.execute(delete(User))
+            await session.execute(
+                update(InstanceBootstrap)
+                .values(claimed=False)
+                .where(InstanceBootstrap.id == 1)
+            )
+            await session.commit()
+
+    asyncio.run(reset_database())
+    monkeypatch.setenv("PLANQER_TRUSTED_BOOTSTRAP", "true")
+    monkeypatch.delenv("PLANQER_SETUP_SECRET")
+
+    response = client.post(
+        "/api/auth/register",
+        json={
+            "email": f"local-{uuid.uuid4()}@example.com",
+            "password": "Testpassword" + "123!",
+        },
+    )
+
+    assert response.status_code == 201
+    assert response.json()["is_admin"] is True
+
+
 def test_register_user_duplicate_email(client, unique_user):
     """Test that registering with duplicate email fails"""
     client.post("/api/auth/register", json=unique_user)

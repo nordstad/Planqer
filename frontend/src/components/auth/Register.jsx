@@ -8,6 +8,7 @@ const Register = ({ onClose, onSwitchToLogin, isFirstRun = false }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [setupSecret, setSetupSecret] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -33,7 +34,7 @@ const Register = ({ onClose, onSwitchToLogin, isFirstRun = false }) => {
     setError('');
 
     try {
-      await registerUser(email, password);
+      await registerUser(email, password, setupSecret);
       await loginUser(email, password);
       login(await getCurrentUser());
       onClose();
@@ -109,6 +110,22 @@ const Register = ({ onClose, onSwitchToLogin, isFirstRun = false }) => {
                 required
               />
             </div>
+
+            {isFirstRun && (
+              <div className="space-y-2" style={{ marginBottom: '16px' }}>
+                <label className="form-label" htmlFor="setup-secret">{t('auth.setupCode')}</label>
+                <input
+                  id="setup-secret"
+                  type="password"
+                  className="form-input"
+                  value={setupSecret}
+                  onChange={(e) => setSetupSecret(e.target.value)}
+                  disabled={loading}
+                  autoComplete="off"
+                />
+                <p className="synthetic">{t('auth.setupCodeHint')}</p>
+              </div>
+            )}
 
             <button type="submit" className="btn-order" disabled={loading}>
               {loading ? t('auth.creatingAccount') : isFirstRun ? t('auth.createAdminAccount') : t('auth.createAccount')}

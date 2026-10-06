@@ -11,8 +11,6 @@ on:
 jobs:
   e2e:
     runs-on: ubuntu-latest
-    env:
-      PLANQER_SETUP_SECRET: e2e-setup-secret
     steps:
       - uses: actions/checkout@v7
 
@@ -23,17 +21,6 @@ jobs:
         run: |
           timeout 120 bash -c 'until curl -sf http://localhost:8002/health; do sleep 2; done'
           timeout 120 bash -c 'until curl -sf http://localhost:3001/; do sleep 2; done'
-
-      - name: Seed an account
-        # A fresh instance has no accounts, so /cutting shows first-run setup
-        # rather than "Sign in required" — the e2e suite expects the latter.
-        run: |
-          seed_value="E2e-seed-"
-          seed_value="${seed_value}password1!"
-          curl -sf -X POST http://localhost:8002/api/auth/register \
-            -H 'Content-Type: application/json' \
-            -H 'X-Planqer-Setup-Secret: e2e-setup-secret' \
-            -d "{\"email\":\"e2e-seed@example.com\",\"password\":\"${seed_value}\"}"
 
       - uses: actions/setup-node@v7
         with:
@@ -49,14 +36,20 @@ jobs:
         working-directory: frontend
         run: npx playwright install --with-deps chromium
 
-      - name: Run Playwright tests
+      - name: Verify browser bootstrap on a fresh instance
         working-directory: frontend
         env:
           # playwright.config.js otherwise starts its own dev server and fails
           # fast if port 3001 is taken — here it's already serving the stack
           # docker compose just brought up.
           SKIP_WEB_SERVER: "1"
-        run: npx playwright test
+        run: npx playwright test tests/e2e/first-run-bootstrap.e2e.spec.js
+
+      - name: Run remaining Playwright tests
+        working-directory: frontend
+        env:
+          SKIP_WEB_SERVER: "1"
+        run: npx playwright test tests/e2e/planqer-frontend.e2e.spec.js
 
       - name: Upload Playwright report
         if: always()
