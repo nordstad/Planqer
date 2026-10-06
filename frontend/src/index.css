@@ -213,41 +213,21 @@
     font-size: 13px; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums;
   }
 
-  /* ── sheet layouts: one plate per sheet, drawn to its real proportions ──
-     Positioned in percentages off the sheet's own dimensions, so a plate keeps
-     its aspect ratio at any column width instead of being scaled in pixels. */
-  /* auto-fit with a capped max so a one-sheet plan draws its single plate large
-     instead of leaving most of the page empty, while an eight-sheet plan still
-     lines up four to a row rather than stretching one plate to full width — a
-     portrait sheet at 1080px would be two thousand pixels tall. */
-  .sheet-grid {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 340px));
-    justify-content: start; gap: 26px 24px;
-  }
-  .sheet-plate {
-    position: relative; width: 100%;
-    border: 1.5px solid var(--ink-4); border-radius: 8px; overflow: hidden;
-    background-color: var(--ground-2);
-    background-image: repeating-linear-gradient(45deg, transparent 0 5px, var(--waste-dot) 5px 6px);
-  }
-  .sheet-part {
-    position: absolute; overflow: hidden;
-    background: var(--card); border: 1px solid var(--ink); border-radius: 3px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 11px; font-weight: 700; color: var(--ink); text-align: center;
-    /* Part ids are long and the cells are small — wrapping mid-token beats a
-       label sliced off at the edge, and 11px is the system's legible floor. */
-    line-height: 1.05; padding: 1px 2px; word-break: break-all;
-  }
-  .sheet-part[data-rotated="true"] { border-style: dashed; }
-  .sheet-cap {
-    display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
-    margin-bottom: 8px;
-  }
-  .sheet-cap b { font-size: 13.5px; font-weight: 700; }
-  .sheet-cap span {
-    font-family: 'Archivo Narrow', sans-serif; font-size: 12px; color: var(--ink-3); white-space: nowrap;
-  }
+   .sheet-navigator {
+     display: flex; align-items: end; gap: 8px; margin-bottom: 12px;
+   }
+   .sheet-picker { display: grid; gap: 3px; min-width: min(280px, calc(100vw - 164px)); }
+   .sheet-picker > span {
+     font-family: 'Archivo Narrow', sans-serif; font-size: 11px; font-weight: 700;
+     letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3);
+   }
+   .sheet-picker select { width: 100%; min-height: 30px; font: inherit; font-size: 13px; }
+
+   /* Each selected portrait sheet has a purpose-built wide SVG canvas, so it
+      fills the same diagram frame as boards without distorting the material. */
+   .sheet-diagram-image {
+     display: block; width: 100%; height: auto;
+   }
 
   /* ── tile layout candidates: one card per ranked option ──────────────
      Selection borrows .plan-steps'/.app-nav's own grammar (a 2px amber

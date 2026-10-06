@@ -12,7 +12,10 @@ from planqer.auth import get_current_user
 from planqer.database import User, UserSheetProject, get_session
 from planqer.routes.project_groups import _get_owned_group
 from planqer.saved_project_adapters import load_saved_json, update_saved_image
-from planqer.sheet_visualization import generate_saved_sheet_diagram
+from planqer.sheet_visualization import (
+    generate_saved_sheet_diagram,
+    generate_single_sheet_visualization,
+)
 
 router = APIRouter(prefix="/sheet-projects", tags=["user-sheet-projects"])
 logger = logging.getLogger("planqer.routes.sheet_projects")
@@ -98,6 +101,14 @@ def sheet_project_to_response(project: UserSheetProject) -> SheetProjectResponse
         default=None,
         expected=dict,
     )
+    if optimization_result and optimization_result.get("sheets") and not optimization_result.get("sheet_visualizations"):
+        optimization_result = {
+            **optimization_result,
+            "sheet_visualizations": [
+                generate_single_sheet_visualization(sheet, sheet_index)
+                for sheet_index, sheet in enumerate(optimization_result["sheets"])
+            ],
+        }
 
     return SheetProjectResponse(
         id=project.id,

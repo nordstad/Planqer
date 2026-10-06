@@ -3,6 +3,7 @@ import xml.etree.ElementTree as ET
 
 from planqer.sheet_visualization import (
     generate_saved_sheet_diagram,
+    generate_single_sheet_visualization,
     generate_sheet_cutting_visualization,
 )
 from planqer.svg_visualization import generate_cut_list_image, generate_saved_diagram
@@ -66,6 +67,23 @@ def test_sheet_live_and_saved_svgs_escape_part_ids_and_project_names():
         text = "".join(root.itertext())
         assert SPECIAL_TEXT in text
         assert f"{SPECIAL_TEXT} 1" in text
+
+
+def test_single_sheet_svg_uses_a_wide_canvas_with_safe_title_spacing():
+    sheet = {
+        "sheet_width": 1200,
+        "sheet_height": 2500,
+        "efficiency": 50.0,
+        "parts": [],
+    }
+
+    root = _parse(generate_single_sheet_visualization(sheet, sheet_index=6))
+
+    assert root.attrib["width"] == "1100"
+    title = next(element for element in root if element.tag.endswith("text"))
+    assert float(title.attrib["y"]) > 0
+    assert title.text == "Sheet 7"
+    assert 'fill="#e3e0d4"' in _decode(generate_single_sheet_visualization(sheet))
 
 
 def test_tile_live_and_saved_svgs_escape_cutout_labels_and_project_names():

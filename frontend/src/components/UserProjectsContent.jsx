@@ -101,6 +101,8 @@ const triggerDownload = (blob, filename) => {
   window.URL.revokeObjectURL(url);
 };
 
+const dataUrlToBlob = async (dataUrl) => (await fetch(dataUrl)).blob();
+
 const UserProjectsContent = ({ onPreview, groupId }) => {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
@@ -216,15 +218,26 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
     try {
       setPrinting(true);
       setError('');
-       const withDiagrams = mode === 'shopping' ? [] : await Promise.all(printable.map(async (p) => {
-        const pf = planFacts(p, t);
-        return {
-          name: p.name,
-           facts: [pf.type, pf.count, pf.stock, t('projectUi.saved', { date: formatDate(p.created_at) })],
-          svgBlob: await downloadProjectImage(p.id, p.projectType),
-          extraHtml: p.projectType === 'tile' ? buildCutListHtml(p.layout_result, t) : undefined,
-        };
-      }));
+       const withDiagrams = mode === 'shopping' ? [] : (await Promise.all(printable.map(async (p) => {
+         const pf = planFacts(p, t);
+         const facts = [pf.type, pf.count, pf.stock, t('projectUi.saved', { date: formatDate(p.created_at) })];
+         const sheetVisualizations = p.projectType === 'sheet'
+           ? p.optimization_result?.sheet_visualizations
+           : null;
+         if (sheetVisualizations?.length) {
+           return Promise.all(sheetVisualizations.map(async (visualization, sheetIndex) => ({
+             name: `${p.name} — ${t('workflow.sheetNumber', { number: sheetIndex + 1 })}`,
+             facts,
+             svgBlob: await dataUrlToBlob(visualization),
+           })));
+         }
+         return {
+           name: p.name,
+            facts,
+           svgBlob: await downloadProjectImage(p.id, p.projectType),
+           extraHtml: p.projectType === 'tile' ? buildCutListHtml(p.layout_result, t) : undefined,
+         };
+       }))).flat();
        await printProjectPlans({
          title,
             meta: `${t(printable.length === 1 ? 'projectUi.printPlan' : 'projectUi.printPlans', { count: printable.length })} · ${t('projectUi.printed', { date: formatDate(new Date()) })}`,
@@ -251,6 +264,10 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
 
   const handlePreview = async (project) => {
     try {
+      if (project.projectType === 'sheet' && project.optimization_result?.sheet_visualizations?.length) {
+        onPreview({ ...project, imageUrl: null });
+        return;
+      }
       onPreview({ ...project, imageUrl: null });
       const blob = await downloadProjectImage(project.id, project.projectType);
       onPreview({ ...project, imageUrl: window.URL.createObjectURL(blob) });
