@@ -27,25 +27,16 @@ Open:
 - Health check: <http://localhost:8002/health>
 
 !!! note "First account is the admin"
-    On a local installation, the first account you register on a fresh instance
-    becomes its admin. Fresh-instance registration from a network or reverse
-    proxy is blocked unless `PLANQER_SETUP_SECRET` is configured. For a hosted
-    install, set that secret in `.env` before starting, or create the first
-    administrator locally with `create_admin.py` inside the backend container.
-    Every account is **local to that instance** — there is no cloud tier, and
-    accounts never leave your own server.
+    The default Compose files bind Planqer only to `127.0.0.1`. Open the app on
+    the same computer and create the first account in the browser; it becomes
+    the instance administrator. Every account is **local to that instance** —
+    there is no cloud tier, and accounts never leave your own server.
 
-!!! warning "Set up before network exposure"
-    Do not expose a fresh instance before completing first-admin setup. To use a
-    setup secret, add `PLANQER_SETUP_SECRET` to `.env`, recreate the backend,
-    then send the secret as `X-Planqer-Setup-Secret` with the first registration
-    request. The secret is one-time setup material; remove it after the first
-    account exists. The safer alternative is to run:
-
-    ```bash
-    docker compose -f docker-compose.release.yml exec backend \
-      python create_admin.py
-    ```
+!!! warning "LAN and reverse-proxy deployments"
+    Before exposing a fresh instance, set `PLANQER_BIND_ADDRESS=0.0.0.0`,
+    `PLANQER_TRUSTED_BOOTSTRAP=false`, and a random `PLANQER_SETUP_SECRET` in
+    `.env`. The first-run form has a **Setup code** field: enter that secret
+    there to create the first administrator. Remove the secret after setup.
 
 !!! note "Backups"
     Saved projects and local accounts live in the backend data volume. Create

@@ -3,6 +3,7 @@ import {
   normalizeSheetParts,
   optimizeCutting,
   optimizeSheetCutting,
+  registerUser,
   saveProject,
   saveSheetProject,
   serializeBoardParts,
@@ -36,6 +37,17 @@ it('aggregates duplicate board part lengths without losing quantity', () => {
     { length: '120.5', quantity: '2' },
     { length: '120.5', quantity: '3' },
   ])).toEqual({ '120.5': 5 });
+});
+
+it('sends the optional first-run setup code as a request header', async () => {
+  const password = ['Testpassword', '123!'].join('');
+  await registerUser('owner@example.com', password, 'setup-code');
+
+  expect(axios.post).toHaveBeenCalledWith(
+    expect.stringMatching(/\/api\/auth\/register$/),
+    { email: 'owner@example.com', password },
+    { headers: { 'X-Planqer-Setup-Secret': 'setup-code' } }
+  );
 });
 
 it('keeps repeated model cutlist lengths lossless for handoff', () => {

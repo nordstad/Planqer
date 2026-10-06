@@ -103,6 +103,8 @@ const locale = {
     ['confirmPassword']: 'Bekräfta lösenord',
     creatingAccount: 'Skapar konto…',
     createAdminAccount: 'Skapa administratörskonto',
+    setupCode: 'Installationskod',
+    setupCodeHint: 'Lämna tomt på den här datorn. Om instansen är exponerad på ett nätverk anger du PLANQER_SETUP_SECRET från administratören.',
     haveAccount: 'Har du redan ett konto?',
   },
   help: {
@@ -301,7 +303,7 @@ Object.assign(locale.ui, {
   pricedForPlan: 'Prissatt · {{total}} {{currency}} för hela planen',
   tileSummary: '{{count}} plattor att köpa · smalaste kapning {{cut}} · återanvända restbitar: {{offcuts}}',
   forAllParts: 'för alla {{count}} delar', changeParts: 'Ändra delarna', backToSave: 'Tillbaka till sparsteget', nameAndSave: 'Namnge och spara', keptPlan: 'Sparad på den här instansen under ditt konto. Logga in på samma instans för att öppna den från en annan webbläsare.', namePlan: 'Ge planen ett namn, välj ett projekt vid behov och tryck på Spara för att spara den på den här instansen.', filedUnder: 'Placerad under {{group}}.', unfiled: 'Inget projekt. Öppna den från instrumentpanelen.',
-  planNamePlaceholder: 'Plannamn', savedNameHint: 'Namnet visas på det sparade diagrammet.', planToUpdate: 'Plan att uppdatera', close: 'Stäng', load: 'Ladda', actions: 'Åtgärder', planProgress: 'Planens framsteg', working: 'Arbetar',
+   planNamePlaceholder: 'Plannamn', savedNameHint: 'Namnet visas på det sparade diagrammet.', planToUpdate: 'Plan att uppdatera', close: 'Stäng', load: 'Ladda', actions: 'Åtgärder', planProgress: 'Planens framsteg', working: 'Arbetar',
   readyToRead: 'Klar att läsa', chooseFileContinue: 'Välj en fil för att fortsätta', include: 'Inkludera', cutlist: 'Kaplista', planAlone: 'Planera separat', cutlistsFound: 'Kaplistor hittades', cutlistsIntro: 'Varje unik storlek i {{model}}, grupperad så att du kan planera dem tillsammans eller separat.',
   readsFromModel: 'Läser från din modell', planAndKeep: 'Planera och spara dem', waitsForCutlists: 'Väntar på valda kaplistor', modelFileRequired: 'Välj en modellfil', noModelComponents: 'Inga bräd- eller skivdelar hittades. Planqer behöver solider som kan identifieras som dessa typer av delar.', modelReadFailed: 'Det gick inte att läsa modellen', noFileYet: 'Ingen fil ännu',
   enlargeBoardDiagram: 'Förstora kapplansdiagrammet', boardDiagramAlt: 'Kapplansdiagram: varje bräda med kapningarna i ordning', diagramCaption: '{{count}} brädor · samma skala · sågspår i rött · klicka för att förstora', cuttingPlanDiagram: 'Kapplansdiagram', cuttingPlan: 'KAPPLAN', lengthMm: 'Längd mm', qty: 'Antal',

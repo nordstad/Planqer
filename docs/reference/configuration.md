@@ -47,12 +47,16 @@ accounts and saved projects.
   values are never written to the generated key file. The application backup
   archive contains the database only, not `data/.secret_key`; retain the data
   volume or configure an explicit key when restoring elsewhere.
-- `PLANQER_SETUP_SECRET`: optional secret for claiming the first administrator
-  through a non-local connection. Fresh-instance registration is local-only
-  without it; set it before exposing the API through a LAN or reverse proxy.
-  The secret is accepted only for the first account and should be removed after
-  setup. Alternatively, create the first administrator with `create_admin.py`
-  from the host/container.
+- `PLANQER_BIND_ADDRESS`: defaults to `127.0.0.1`, so a new instance is only
+  reachable from its own host. Set `0.0.0.0` only for LAN or reverse-proxy
+  deployments.
+- `PLANQER_TRUSTED_BOOTSTRAP`: defaults to `true` with the default loopback
+  binding, allowing the first browser account to become administrator. Set it
+  to `false` before exposing the instance.
+- `PLANQER_SETUP_SECRET`: required to claim the first administrator after
+  `PLANQER_TRUSTED_BOOTSTRAP=false`. Enter it in the first-run form's Setup
+  code field. The secret is accepted only for the first account and should be
+  removed after setup.
 - `PLANQER_CORS_ORIGINS`: no default. Comma-separated list of extra origins
   allowed to call the API, added to the built-in defaults.
 - `DATABASE_URL`: defaults to a local SQLite file. Overrides the database
@@ -94,6 +98,8 @@ PLANQER_VERSION=0.4.1
 # Optional when using a single backend with the persistent data volume.
 SECRET_KEY=<random-32-byte-hex>
 PLANQER_SETUP_SECRET=<random-32-byte-hex>
+PLANQER_BIND_ADDRESS=0.0.0.0
+PLANQER_TRUSTED_BOOTSTRAP=false
 PLANQER_CORS_ORIGINS=https://planqer.example.com,https://cuts.example.com
 
 # Frontend

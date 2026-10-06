@@ -103,6 +103,8 @@ const locale = {
     ['confirmPassword']: 'Confirm password',
     creatingAccount: 'Creating account…',
     createAdminAccount: 'Create admin account',
+    setupCode: 'Setup code',
+    setupCodeHint: 'Leave blank for this computer. If this instance is exposed to a network, enter the PLANQER_SETUP_SECRET configured by its administrator.',
     haveAccount: 'Already have an account?',
   },
   help: {

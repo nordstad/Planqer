@@ -3,11 +3,14 @@ services:
     container_name: planqer-web-backend
     image: ghcr.io/nordstad/planqer-backend:${PLANQER_VERSION:-latest}
     ports:
-      - "${BACKEND_PORT:-8002}:8002"
+      - "${PLANQER_BIND_ADDRESS:-127.0.0.1}:${BACKEND_PORT:-8002}:8002"
     environment:
       # Optional override; otherwise the key is persisted in backend_data.
       - SECRET_KEY=${SECRET_KEY:-}
       - PLANQER_SETUP_SECRET=${PLANQER_SETUP_SECRET:-}
+      # Safe only while the service is bound to loopback (the default below).
+      # Set false when exposing the service and use PLANQER_SETUP_SECRET instead.
+      - PLANQER_TRUSTED_BOOTSTRAP=${PLANQER_TRUSTED_BOOTSTRAP:-true}
       - DATABASE_URL=${DATABASE_URL:-}
       # Comma-separated origins allowed to call the API, in addition to
       # localhost/127.0.0.1. Set this to the address(es) you reach Planqer on
@@ -33,7 +36,7 @@ services:
       # (proxied) or at port 8002 on the same host (direct). An origin, no path.
       - VITE_API_URL=${VITE_API_URL:-}
     ports:
-      - "${FRONTEND_PORT:-3001}:3001"
+      - "${PLANQER_BIND_ADDRESS:-127.0.0.1}:${FRONTEND_PORT:-3001}:3001"
     networks:
       - planqer-network
 

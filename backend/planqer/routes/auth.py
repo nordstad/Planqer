@@ -121,6 +121,9 @@ async def register_user(
 
 
 def _initial_registration_is_allowed(request: Request) -> bool:
+    if os.environ.get("PLANQER_TRUSTED_BOOTSTRAP", "").lower() == "true":
+        return True
+
     client_host = request.client.host if request.client else None
     if client_host in {"127.0.0.1", "::1", "localhost"}:
         return True
