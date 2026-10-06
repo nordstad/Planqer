@@ -13,6 +13,8 @@ const UserSettings = () => {
     default_board_lengths: [3000, 3600, 5000],
     default_saw_blade_width: 3.0,
     default_currency: 'SEK',
+    default_vat_rate: 25,
+    default_prices_include_vat: true,
     preferred_language: activeLanguage,
   });
   const [boardLengthsInput, setBoardLengthsInput] = useState('3000, 3600, 5000');
@@ -27,7 +29,12 @@ const UserSettings = () => {
       try {
         setLoading(true);
         const loadedSettings = await getUserSettings();
-        setSettings({ ...loadedSettings, preferred_language: loadedSettings.preferred_language || activeLanguage });
+        setSettings({
+          ...loadedSettings,
+          default_vat_rate: loadedSettings.default_vat_rate ?? 25,
+          default_prices_include_vat: loadedSettings.default_prices_include_vat ?? true,
+          preferred_language: loadedSettings.preferred_language || activeLanguage,
+        });
         setBoardLengthsInput(loadedSettings.default_board_lengths.join(', '));
       } catch (err) {
         setError(t('settings.loadError', { message: err.message }));
@@ -122,6 +129,18 @@ const UserSettings = () => {
             <option value="EUR">EUR</option>
             <option value="USD">USD</option>
           </select>
+        </div>
+
+        <div className="space-y-2" style={{ marginBottom: '20px' }}>
+          <label className="form-label" htmlFor="vat-rate">{t('settings.vatRate')}</label>
+          <input id="vat-rate" type="number" min="0" max="100" step="0.1" className="form-input" value={settings.default_vat_rate}
+            onChange={(e) => setSettings((prev) => ({ ...prev, default_vat_rate: parseFloat(e.target.value) || 0 }))} disabled={saving} />
+          <label className="flex items-center gap-2" style={{ cursor: 'pointer' }}>
+            <input type="checkbox" checked={settings.default_prices_include_vat}
+              onChange={(e) => setSettings((prev) => ({ ...prev, default_prices_include_vat: e.target.checked }))} disabled={saving} />
+            <span>{t('settings.pricesIncludeVat')}</span>
+          </label>
+          <p className="synthetic">{t('settings.vatHelp')}</p>
         </div>
 
         <div className="space-y-2" style={{ marginBottom: '20px' }}>

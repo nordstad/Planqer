@@ -3,12 +3,13 @@ import { MemoryRouter } from 'react-router-dom';
 import { LanguageProvider } from '../contexts/LanguageContext';
 import TileOptimizer from './TileOptimizer';
 import i18n from '../i18n';
-import { optimizeTileLayout, getProjectGroups, getUserTileProjects } from '../utils/api';
+import { optimizeTileLayout, getProjectGroups, getUserTileProjects, getUserSettings } from '../utils/api';
 
 vi.mock('../utils/api', () => ({
   optimizeTileLayout: vi.fn(),
   getProjectGroups: vi.fn(),
   getUserTileProjects: vi.fn(),
+  getUserSettings: vi.fn(),
 }));
 
 vi.mock('../contexts/AuthContext', () => ({
@@ -40,6 +41,7 @@ const candidate = {
 beforeEach(() => {
   getProjectGroups.mockResolvedValue([]);
   getUserTileProjects.mockResolvedValue([]);
+  getUserSettings.mockResolvedValue({ default_currency: 'SEK', default_vat_rate: 25, default_prices_include_vat: true });
   optimizeTileLayout.mockResolvedValue({ candidates: [candidate], recommended_index: 0 });
 });
 
@@ -58,10 +60,11 @@ it('renders translated labels on the tile layout save step', async () => {
   fireEvent.click(await screen.findByRole('button', { name: 'Name it', exact: true }));
 
   await waitFor(() => expect(screen.getByRole('heading', { name: 'Save this layout' })).toBeInTheDocument());
-  expect(screen.getByText(/Name the plan, choose a project if needed/)).toBeInTheDocument();
-  expect(screen.getByLabelText('Save as')).toBeInTheDocument();
-  expect(screen.getByRole('option', { name: 'Create a new plan' })).toBeInTheDocument();
+  expect(screen.getByText(/Give the plan a name/)).toBeInTheDocument();
+  expect(screen.queryByLabelText('Save as')).not.toBeInTheDocument();
   expect(screen.getByLabelText('Plan name')).toBeInTheDocument();
+  expect(screen.getByLabelText('Project — optional')).toBeInTheDocument();
+  expect(screen.getByText(/Combine board, sheet, and tile plans/)).toBeInTheDocument();
   expect(screen.getByText(/The name appears on the saved diagram/)).toBeInTheDocument();
 });
 
@@ -93,6 +96,7 @@ it('restores a saved tile plan addressed by the edit query', async () => {
      tile_data: { width: 300, height: 600, allow_rotation: true, material_type: 'porcelain', thickness: 10 },
     bond_data: { pattern: 'stack', offset_fraction: 0.5, joint_width: 3, perimeter_gap: 0 },
     options_data: { min_edge_cut: null, reuse_offcuts: true, waste_percent: 10, candidate_count: 5 },
+    pricing: { price_per_unit: 42, currency: 'NOK', vat_rate: 15, prices_include_vat: false },
   }]);
   window.history.replaceState({}, '', '/tile-layout?edit=tile-1');
 
@@ -105,5 +109,17 @@ it('restores a saved tile plan addressed by the edit query', async () => {
   expect(await screen.findByDisplayValue('2400')).toBeInTheDocument();
   expect(screen.getByDisplayValue('1200')).toBeInTheDocument();
   expect(screen.getByDisplayValue('300')).toBeInTheDocument();
-   expect(screen.getByDisplayValue('600')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('600')).toBeInTheDocument();
+    expect(await screen.findByLabelText('Price per tile · NOK')).toHaveValue(42);
+});
+
+it('shows the tile material cost using the configured VAT basis', async () => {
+  window.history.replaceState({}, '', '/tile-layout');
+  render(<MemoryRouter><LanguageProvider><TileOptimizer /></LanguageProvider></MemoryRouter>);
+
+  fireEvent.change(await screen.findByLabelText('Thickness (mm)'), { target: { value: '10' } });
+  fireEvent.change(screen.getByLabelText('Price per tile · SEK'), { target: { value: '25' } });
+  fireEvent.click(screen.getByRole('button', { name: /Calculate layout/i }));
+
+  expect(await screen.findByText('250.00 SEK · including VAT (25%)')).toBeInTheDocument();
 });

@@ -60,6 +60,8 @@ def test_get_user_settings(client, authenticated_user_token):
     assert data["default_board_lengths"] == [3000, 3600, 5000]
     assert data["default_saw_blade_width"] == 3.0
     assert data["default_currency"] == "SEK"
+    assert data["default_vat_rate"] == 25.0
+    assert data["default_prices_include_vat"] is True
     assert data["preferred_algorithm"] == "auto"
     assert data["preferred_units"] == "mm"
     assert data["preferred_language"] is None
@@ -71,6 +73,8 @@ def test_update_user_settings(client, authenticated_user_token):
         "default_board_lengths": [400, 500, 600],
         "default_saw_blade_width": 2.5,
         "default_currency": "EUR",
+        "default_vat_rate": 20,
+        "default_prices_include_vat": False,
         "preferred_algorithm": "first_fit_decreasing",
         "preferred_units": "cm",
         "preferred_language": "sv-SE",
@@ -87,6 +91,8 @@ def test_update_user_settings(client, authenticated_user_token):
     assert data["default_board_lengths"] == [400, 500, 600]
     assert data["default_saw_blade_width"] == 2.5
     assert data["default_currency"] == "EUR"
+    assert data["default_vat_rate"] == 20.0
+    assert data["default_prices_include_vat"] is False
     assert data["preferred_algorithm"] == "first_fit_decreasing"
     assert data["preferred_units"] == "cm"
     assert data["preferred_language"] == "sv-SE"

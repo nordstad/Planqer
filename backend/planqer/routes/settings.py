@@ -19,6 +19,8 @@ class UserSettingsResponse(BaseModel):
     default_board_lengths: list[int]
     default_saw_blade_width: float
     default_currency: str
+    default_vat_rate: float
+    default_prices_include_vat: bool
     preferred_algorithm: str
     preferred_units: str
     preferred_language: Literal["en-GB", "sv-SE", "nb-NO"] | None
@@ -28,6 +30,8 @@ class UserSettingsUpdate(BaseModel):
     default_board_lengths: list[int] | None = None
     default_saw_blade_width: float | None = None
     default_currency: str | None = None
+    default_vat_rate: float | None = None
+    default_prices_include_vat: bool | None = None
     preferred_algorithm: str | None = None
     preferred_units: str | None = None
     preferred_language: Literal["en-GB", "sv-SE", "nb-NO"] | None = None
@@ -59,6 +63,8 @@ def settings_to_response(settings: UserSettings) -> UserSettingsResponse:
         default_board_lengths=board_lengths,
         default_saw_blade_width=settings.default_saw_blade_width,
         default_currency=settings.default_currency,
+        default_vat_rate=settings.default_vat_rate,
+        default_prices_include_vat=settings.default_prices_include_vat,
         preferred_algorithm=settings.preferred_algorithm,
         preferred_units=settings.preferred_units,
         preferred_language=settings.preferred_language,
@@ -103,6 +109,10 @@ async def update_user_settings(
         settings.default_saw_blade_width = updates.default_saw_blade_width
     if updates.default_currency is not None:
         settings.default_currency = updates.default_currency
+    if updates.default_vat_rate is not None:
+        settings.default_vat_rate = updates.default_vat_rate
+    if updates.default_prices_include_vat is not None:
+        settings.default_prices_include_vat = updates.default_prices_include_vat
     if updates.preferred_algorithm is not None:
         settings.preferred_algorithm = updates.preferred_algorithm
     if updates.preferred_units is not None:

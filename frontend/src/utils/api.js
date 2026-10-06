@@ -304,7 +304,7 @@ export const getUserSheetProjects = async () => {
 };
 
 export const saveSheetProject = async ({
-  id, name, projectGroupId, parts, sheetWidth, sheetHeight, sheetThickness = 0, kerfWidth, materialType, algorithm, allowRotation, result,
+  id, name, projectGroupId, parts, sheetWidth, sheetHeight, sheetThickness = 0, kerfWidth, materialType, algorithm, allowRotation, result, pricing,
 }) => {
   try {
     const payload = {
@@ -319,6 +319,7 @@ export const saveSheetProject = async ({
       algorithm: algorithm || null,
       allow_rotation: allowRotation !== false,
       optimization_result: result,
+      pricing: pricing || null,
     };
     const response = id
       ? await axios.put(`${API_URL}/api/sheet-projects/${id}`, payload)
@@ -364,7 +365,7 @@ export const getUserTileProjects = async () => {
    surface_data + layout_result, so no image is sent over the wire. */
 export const saveTileProject = async ({
   id, name, projectGroupId, surfaceWidth, surfaceHeight, cutouts, tile, joint, bond,
-  minEdgeCut, reuseOffcuts, wastePercent, candidateCount, candidate,
+  minEdgeCut, reuseOffcuts, wastePercent, candidateCount, candidate, pricing,
 }) => {
   try {
     const payload = {
@@ -401,6 +402,7 @@ export const saveTileProject = async ({
         candidate_count: parseInt(candidateCount, 10),
       },
       layout_result: candidate,
+      pricing: pricing || null,
     };
     const response = id
       ? await axios.put(`${API_URL}/api/tile-projects/${id}`, payload)

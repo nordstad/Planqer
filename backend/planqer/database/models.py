@@ -42,6 +42,8 @@ class UserSettings(SQLModel, table=True):
     default_board_lengths: str = Field(default="[3000, 3600, 5000]")
     default_saw_blade_width: float = Field(default=3.0)
     default_currency: str = Field(default="SEK")
+    default_vat_rate: float = Field(default=25.0)
+    default_prices_include_vat: bool = Field(default=True)
     preferred_algorithm: str = Field(default="auto")
     preferred_units: str = Field(default="mm")
     preferred_language: str | None = Field(default=None)
@@ -136,6 +138,7 @@ class UserSheetProject(SQLModel, table=True):
     sheet_thickness: float = Field(default=0)
     algorithm: str | None = None
     allow_rotation: bool = Field(default=True)
+    pricing: str | None = None
     optimization_result: str | None = None
     cutlist_image: str | None = None
     cutlist_image_svg: str | None = None
@@ -178,6 +181,7 @@ class UserTileProject(SQLModel, table=True):
     layout_result: str | None = (
         None  # JSON: the selected candidate, as returned by /api/tile-layout
     )
+    pricing: str | None = None
     cutlist_image: str | None = None
     cutlist_image_svg: str | None = None
 

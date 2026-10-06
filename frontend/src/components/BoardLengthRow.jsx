@@ -46,11 +46,11 @@ const BoardLengthRow = ({ board, index, handleBoardChange, handleBoardsPaste, re
       <td>
         <span className="stock-price-label">{currency} / m</span>
         <input
-          aria-label={`${currency} price per metre for board length ${board} mm`}
+          aria-label={text('ui.priceLengthAria', { currency, length: board })}
           type="number"
           min="0"
           step="0.1"
-          placeholder="Optional"
+          placeholder={text('ui.optional')}
           value={price || ''}
           onChange={(e) => handlePriceChange(board, e.target.value)}
           className="cell-input stock-price-input"

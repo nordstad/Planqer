@@ -33,6 +33,7 @@ class SheetProjectResponse(BaseModel):
     sheet_thickness: float
     algorithm: str | None = None
     allow_rotation: bool
+    pricing: dict | None = None
     optimization_result: dict | None = None
     cutlist_image: str | None = None
     has_svg_image: bool = False
@@ -55,6 +56,7 @@ class CreateSheetProjectRequest(BaseModel):
     algorithm: str | None = None
     allow_rotation: bool = True
     optimization_result: dict | None = None
+    pricing: dict | None = None
 
 
 class UpdateSheetProjectRequest(BaseModel):
@@ -69,6 +71,7 @@ class UpdateSheetProjectRequest(BaseModel):
     algorithm: str | None = None
     allow_rotation: bool | None = None
     optimization_result: dict | None = None
+    pricing: dict | None = None
 
 
 def _render_saved_layout(optimization_result: dict | None, name: str) -> str | None:
@@ -101,7 +104,11 @@ def sheet_project_to_response(project: UserSheetProject) -> SheetProjectResponse
         default=None,
         expected=dict,
     )
-    if optimization_result and optimization_result.get("sheets") and not optimization_result.get("sheet_visualizations"):
+    if (
+        optimization_result
+        and optimization_result.get("sheets")
+        and not optimization_result.get("sheet_visualizations")
+    ):
         optimization_result = {
             **optimization_result,
             "sheet_visualizations": [
@@ -122,6 +129,9 @@ def sheet_project_to_response(project: UserSheetProject) -> SheetProjectResponse
         sheet_thickness=project.sheet_thickness,
         algorithm=project.algorithm,
         allow_rotation=project.allow_rotation,
+        pricing=load_saved_json(
+            project.pricing, field="sheet pricing", default=None, expected=dict
+        ),
         optimization_result=optimization_result,
         cutlist_image=project.cutlist_image,
         has_svg_image=bool(project.cutlist_image_svg),
@@ -184,6 +194,7 @@ async def create_sheet_project(
         sheet_thickness=project_data.sheet_thickness,
         algorithm=project_data.algorithm,
         allow_rotation=project_data.allow_rotation,
+        pricing=json.dumps(project_data.pricing) if project_data.pricing else None,
         optimization_result=json.dumps(project_data.optimization_result)
         if project_data.optimization_result
         else None,
@@ -242,6 +253,10 @@ async def update_sheet_project(
         project.allow_rotation = project_data.allow_rotation
     if project_data.optimization_result is not None:
         project.optimization_result = json.dumps(project_data.optimization_result)
+    if "pricing" in project_data.model_fields_set:
+        project.pricing = (
+            json.dumps(project_data.pricing) if project_data.pricing else None
+        )
 
     svg_data_url = _render_saved_layout(
         project_data.optimization_result

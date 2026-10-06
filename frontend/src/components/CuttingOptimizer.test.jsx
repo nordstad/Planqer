@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import CuttingOptimizer from './CuttingOptimizer';
 import { AuthProvider } from '../contexts/AuthContext';
@@ -70,16 +70,28 @@ describe('CuttingOptimizer', () => {
     renderOptimizer();
     await screen.findByRole('heading', { name: /Required parts/i });
 
-    expect(screen.getByLabelText(/SEK price per metre for board length 2500 mm/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Price per metre in SEK for the 2500 mm length/i)).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: /Lowest cost/i })).toBeDisabled();
     expect(screen.getByText(/Add a price for every stock length/i)).toBeInTheDocument();
+  });
+
+  it('localizes each stock price field name and optional hint', async () => {
+    await act(() => i18n.changeLanguage('sv-SE'));
+    try {
+      renderOptimizer();
+      await screen.findByLabelText('Pris per meter i SEK för längden 2500 mm');
+
+      expect(screen.getByLabelText('Pris per meter i SEK för längden 2500 mm')).toHaveAttribute('placeholder', 'Valfritt');
+    } finally {
+      await act(() => i18n.changeLanguage('en-GB'));
+    }
   });
 
   it('sends a cost payload on the first run when every stock length is priced', async () => {
     renderOptimizer();
     await screen.findByRole('heading', { name: /Required parts/i });
     ['2500', '3600', '4200', '5100'].forEach((length) => {
-      fireEvent.change(screen.getByLabelText(new RegExp(`SEK price per metre for board length ${length} mm`)), {
+      fireEvent.change(screen.getByLabelText(new RegExp(`Price per metre in SEK for the ${length} mm length`)), {
         target: { value: '30' },
       });
     });

@@ -1,4 +1,4 @@
-import { buildMaterialListHtml, buildMaterialRows } from './materialList';
+import { buildMaterialListHtml, buildMaterialRows, summarizeMaterialPricing } from './materialList';
 
 const t = (key) => ({ 'ui.materialPine': 'pine' }[key] || key);
 
@@ -81,4 +81,40 @@ it('keeps stock and sheet dimensions distinct when display values are close', ()
 
   expect(rows).toHaveLength(4);
   expect(rows.map((row) => row.quantity)).toEqual([1, 1, 1, 1]);
+});
+
+it('builds a complete VAT-inclusive project total from all material types', () => {
+  const projects = [
+    { name: 'Boards', optimization_result: { board_lengths_used: [3000] }, board_costs: { currency: 'SEK', vat_rate: 25, prices_include_vat: true, board_costs: { 3000: { price_per_board: 100 } } } },
+    { name: 'Sheets', projectType: 'sheet', optimization_result: { sheets: [{ sheet_width: 1200, sheet_height: 2400 }] }, pricing: { price_per_unit: 500, currency: 'SEK', vat_rate: 25, prices_include_vat: true } },
+    { name: 'Tiles', projectType: 'tile', tile_data: { width: 300, height: 600 }, layout_result: { tiles_to_purchase: 2 }, pricing: { price_per_unit: 40, currency: 'SEK', vat_rate: 25, prices_include_vat: true } },
+  ];
+  expect(summarizeMaterialPricing(buildMaterialRows(projects))).toMatchObject({ complete: true, total: 680, currency: 'SEK', pricesIncludeVat: true });
+  const html = buildMaterialListHtml(projects, t);
+  expect(html).toContain('ui.projectMaterialTotal');
+  expect(html).toContain('ui.includingVat (25%)');
+});
+
+it('reports a subtotal when material remains unpriced', () => {
+  const rows = buildMaterialRows([
+    { name: 'Boards', optimization_result: { board_lengths_used: [3000] }, board_costs: { currency: 'SEK', board_costs: { 3000: { price_per_board: 100 } } } },
+    { name: 'Sheets', projectType: 'sheet', optimization_result: { sheets: [{ sheet_width: 1200, sheet_height: 2400 }] } },
+  ]);
+  expect(summarizeMaterialPricing(rows)).toMatchObject({ complete: false, compatible: true, unpricedCount: 1, total: 100 });
+});
+
+it('keeps legacy board prices that predate currency and VAT snapshots', () => {
+  const rows = buildMaterialRows([{
+    name: 'Legacy board',
+    optimization_result: { board_lengths_used: [4200] },
+    board_costs: { board_costs: { 4200: { price_per_board: 147 } } },
+  }]);
+
+  expect(rows[0]).toMatchObject({
+    pricePerUnit: 147,
+    currency: 'SEK',
+    pricesIncludeVat: true,
+    vatRate: 25,
+  });
+  expect(summarizeMaterialPricing(rows)).toMatchObject({ complete: true, total: 147 });
 });

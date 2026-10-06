@@ -128,6 +128,7 @@ const buildHtml = ({ title, meta, paper, plans, shoppingListHtml }) => {
   .shopping-table th { font-size: 8pt; text-transform: uppercase; letter-spacing: 0.04em; color: #6b6a60; border-bottom: 0.3mm solid #c9c7ba; }
   .shopping-table td { border-bottom: 0.2mm solid #e3e1d6; }
   .shopping-table td:last-child, .shopping-table th:last-child { text-align: right; padding-right: 0; }
+  .shopping-total { margin-top: 4mm; font-weight: 700; }
 </style>
 </head>
 <body>
