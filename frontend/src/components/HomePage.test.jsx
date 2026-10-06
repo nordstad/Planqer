@@ -4,10 +4,10 @@ import HomePage from './HomePage';
 import { AuthProvider } from '../contexts/AuthContext';
 import packageJson from '../../package.json';
 
-jest.mock('../utils/api', () => ({
-  ...jest.requireActual('../utils/api'),
-  getHealth: jest.fn().mockRejectedValue(new Error('API unavailable')),
-  getSetupStatus: jest.fn().mockResolvedValue({ needs_setup: false }),
+vi.mock('../utils/api', async () => ({
+  ...(await vi.importActual('../utils/api')),
+  getHealth: vi.fn().mockRejectedValue(new Error('API unavailable')),
+  getSetupStatus: vi.fn().mockResolvedValue({ needs_setup: false }),
 }));
 
 describe('HomePage', () => {

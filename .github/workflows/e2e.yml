@@ -11,12 +11,12 @@ on:
 jobs:
   e2e:
     runs-on: ubuntu-latest
+    env:
+      PLANQER_SETUP_SECRET: e2e-setup-secret
     steps:
       - uses: actions/checkout@v7
 
       - name: Start backend and frontend
-        env:
-          PLANQER_SETUP_SECRET: e2e-setup-secret
         run: docker compose up -d --build backend frontend
 
       - name: Wait for backend and frontend to be healthy

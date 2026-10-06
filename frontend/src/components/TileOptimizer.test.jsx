@@ -5,17 +5,17 @@ import TileOptimizer from './TileOptimizer';
 import i18n from '../i18n';
 import { optimizeTileLayout, getProjectGroups, getUserTileProjects } from '../utils/api';
 
-jest.mock('../utils/api', () => ({
-  optimizeTileLayout: jest.fn(),
-  getProjectGroups: jest.fn(),
-  getUserTileProjects: jest.fn(),
+vi.mock('../utils/api', () => ({
+  optimizeTileLayout: vi.fn(),
+  getProjectGroups: vi.fn(),
+  getUserTileProjects: vi.fn(),
 }));
 
-jest.mock('../contexts/AuthContext', () => ({
+vi.mock('../contexts/AuthContext', () => ({
   useAuth: () => ({
     user: { id: 'user-1', email: 'user@example.com' },
     isAuthenticated: true,
-    logout: jest.fn(),
+    logout: vi.fn(),
   }),
 }));
 
@@ -66,7 +66,7 @@ it('renders translated labels on the tile layout save step', async () => {
 });
 
 it('passes the configured sliver threshold to candidate warnings', async () => {
-  const translate = jest.spyOn(i18n, 't');
+  const translate = vi.spyOn(i18n, 't');
   optimizeTileLayout.mockResolvedValue({
     candidates: [{ ...candidate, sliver_count: 2 }],
     recommended_index: 0,
