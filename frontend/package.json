@@ -30,7 +30,7 @@
     "@vitejs/plugin-react": "^6.1.2",
     "autoprefixer": "^10.6.1",
     "esbuild": "^0.28.2",
-    "jsdom": "^27.4.0",
+    "jsdom": "^30.1.1",
     "playwright": "^1.55.0",
     "postcss": "^8.5.29",
     "source-map-js": "^1.2.2",
