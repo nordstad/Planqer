@@ -356,6 +356,7 @@ const TileOptimizer = () => {
   const savedGroupName = saved
     ? projectGroups.find(g => g.id === saved.project_group_id)?.name
     : null;
+  const selectedGroupName = projectGroups.find(g => g.id === selectedGroupId)?.name;
 
   /* ── the rail ──────────────────────────────────────────────────────────── */
   const steps = [
@@ -807,7 +808,30 @@ const TileOptimizer = () => {
           ) : (
             <>
               <div style={{ marginBottom: '24px' }}>
-                  <label className="form-label" htmlFor="tile-save-mode">{t('ui.saveAs')}</label>
+                <label className="form-label" htmlFor="tile-plan-name">{t('ui.planNamePlaceholder')}</label>
+                <input
+                  id="tile-plan-name"
+                  type="text"
+                  className={`form-input ${nameError ? 'form-input-error' : ''}`}
+                  placeholder={t('tileUi.planPlaceholder')}
+                  value={projectName}
+                  onChange={(e) => setProjectName(e.target.value)}
+                  aria-invalid={!!nameError}
+                  aria-describedby="tile-plan-name-hint"
+                  autoFocus
+                />
+                <p
+                  id="tile-plan-name-hint"
+                  className={nameError ? 'text-danger text-[12.5px] font-semibold' : 'synthetic'}
+                  style={{ marginTop: '7px' }}
+                  role={nameError ? 'alert' : undefined}
+                >
+                  {nameError || t('ui.savedNameHint')}
+                </p>
+              </div>
+              {editingProject && (
+                <div style={{ marginBottom: '24px' }}>
+                   <label className="form-label" htmlFor="tile-save-mode">{t('ui.saveAs')}</label>
                 <select
                   id="tile-save-mode"
                   className="form-select"
@@ -841,7 +865,8 @@ const TileOptimizer = () => {
                     {userProjects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                   </select>
                 )}
-              </div>
+                </div>
+              )}
               <div style={{ marginBottom: '24px' }}>
                 <ProjectPicker
                   groups={projectGroups}
@@ -851,27 +876,6 @@ const TileOptimizer = () => {
                 />
               </div>
 
-              <div>
-                  <label className="form-label" htmlFor="tile-plan-name">{t('ui.planNamePlaceholder')}</label>
-                <input
-                  id="tile-plan-name"
-                  type="text"
-                  className={`form-input ${nameError ? 'form-input-error' : ''}`}
-                   placeholder={t('tileUi.planPlaceholder')}
-                  value={projectName}
-                  onChange={(e) => setProjectName(e.target.value)}
-                  aria-invalid={!!nameError}
-                  aria-describedby="tile-plan-name-hint"
-                />
-                <p
-                  id="tile-plan-name-hint"
-                  className={nameError ? 'text-danger text-[12.5px] font-semibold' : 'synthetic'}
-                  style={{ marginTop: '7px' }}
-                  role={nameError ? 'alert' : undefined}
-                >
-                    {nameError || t('ui.savedNameHint')}
-                </p>
-              </div>
             </>
           )}
 
@@ -888,7 +892,7 @@ const TileOptimizer = () => {
             ) : (
               <div className="step-foot-act">
                 <button type="submit" className="btn-order" disabled={saving}>
-                   {saving ? <><Loader /> {t('workflow.saving')}</> : saveMode === 'update' ? t('workflow.updatePlan') : t('workflow.savePlan')}
+                    {saving ? <><Loader /> {t('workflow.saving')}</> : saveMode === 'update' ? t('workflow.updatePlan') : selectedGroupName ? t('ui.saveToProject', { project: selectedGroupName }) : t('workflow.savePlan')}
                 </button>
               </div>
             )}

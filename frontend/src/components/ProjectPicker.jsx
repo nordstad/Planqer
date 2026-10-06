@@ -14,7 +14,6 @@
 
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import InfoTip from './InfoTip';
 
 const NEW = '__new__';
 
@@ -35,12 +34,7 @@ const ProjectPicker = ({ groups, value, onChange, onCreate }) => {
 
   return (
     <div>
-      <div className="flex items-center gap-2" style={{ marginBottom: '6px' }}>
-        <label className="form-label" htmlFor="plan-project" style={{ marginBottom: 0 }}>{t('ui.project')}</label>
-        <InfoTip label={t('ui.projectInfoLabel')}>
-          {t('ui.projectInfo')}
-        </InfoTip>
-      </div>
+      <label className="form-label" htmlFor="plan-project">{t('ui.projectOptional')}</label>
 
       <select
         id="plan-project"
@@ -63,6 +57,10 @@ const ProjectPicker = ({ groups, value, onChange, onCreate }) => {
         ))}
         <option value={NEW}>{t('ui.newProject')}</option>
       </select>
+
+      <p className="synthetic" style={{ marginTop: '7px' }}>
+        {t('ui.projectSaveHint')}
+      </p>
 
       {creating && (
         <div className="flex gap-2" style={{ marginTop: '10px', flexWrap: 'wrap' }}>

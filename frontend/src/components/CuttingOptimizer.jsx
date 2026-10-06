@@ -68,6 +68,8 @@ const CuttingOptimizer = () => {
   const [boardThickness, setBoardThickness] = useState('');
   const [boardWidth, setBoardWidth] = useState('');
   const [currency, setCurrency] = useState(DEFAULT_CURRENCY);
+  const [vatRate, setVatRate] = useState(25);
+  const [pricesIncludeVat, setPricesIncludeVat] = useState(true);
 
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -144,6 +146,8 @@ const CuttingOptimizer = () => {
       } else {
         setCurrency(DEFAULT_CURRENCY);
       }
+      if (Number.isFinite(settings?.default_vat_rate)) setVatRate(settings.default_vat_rate);
+      if (typeof settings?.default_prices_include_vat === 'boolean') setPricesIncludeVat(settings.default_prices_include_vat);
     }).catch(() => {
       setCurrency(DEFAULT_CURRENCY);
     });
@@ -301,6 +305,8 @@ const CuttingOptimizer = () => {
     setSamePriceForAll(!!priced?.same_price_for_all);
     setUniformPrice(priced?.uniform_price != null ? String(priced.uniform_price) : '');
     setOptimizeFor(priced?.optimize_for || 'waste');
+    setVatRate(priced?.vat_rate ?? 25);
+    setPricesIncludeVat(priced?.prices_include_vat ?? true);
     setPricesApplied(!!priced);
     setCostOpen(!!priced);
 
@@ -507,8 +513,11 @@ const CuttingOptimizer = () => {
         // half-typed prices would be saved as if they had produced this plan.
         boardCosts: pricesApplied ? {
           same_price_for_all: samePriceForAll,
-          uniform_price: samePriceForAll ? parseFloat(uniformPrice) || null : null,
-          optimize_for: optimizeFor,
+           uniform_price: samePriceForAll ? parseFloat(uniformPrice) || null : null,
+           currency,
+           vat_rate: vatRate,
+           prices_include_vat: pricesIncludeVat,
+           optimize_for: optimizeFor,
           board_costs: boardCosts,
         } : null,
         result,
@@ -538,6 +547,7 @@ const CuttingOptimizer = () => {
   const savedGroupName = saved
     ? projectGroups.find(g => g.id === saved.project_group_id)?.name
     : null;
+  const selectedGroupName = projectGroups.find(g => g.id === selectedGroupId)?.name;
 
   /* ── the rail ──────────────────────────────────────────────────────────── */
   const steps = [
@@ -956,6 +966,29 @@ const CuttingOptimizer = () => {
           ) : (
             <>
               <div style={{ marginBottom: '24px' }}>
+                <label className="form-label" htmlFor="plan-name">{t('ui.name')}</label>
+                <input
+                  id="plan-name"
+                  type="text"
+                  className={`form-input ${nameError ? 'form-input-error' : ''}`}
+                  placeholder={t('ui.planNamePlaceholder')}
+                  value={projectName}
+                  onChange={(e) => setProjectName(e.target.value)}
+                  aria-invalid={!!nameError}
+                  aria-describedby="plan-name-hint"
+                  autoFocus
+                />
+                <p
+                  id="plan-name-hint"
+                  className={nameError ? 'text-danger text-[12.5px] font-semibold' : 'synthetic'}
+                  style={{ marginTop: '7px' }}
+                  role={nameError ? 'alert' : undefined}
+                >
+                  {nameError || t('ui.savedNameHint')}
+                </p>
+              </div>
+              {editingProject && (
+                <div style={{ marginBottom: '24px' }}>
                  <label className="form-label" htmlFor="board-save-mode">{t('ui.saveAs')}</label>
                 <select
                   id="board-save-mode"
@@ -990,7 +1023,8 @@ const CuttingOptimizer = () => {
                     {userProjects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                   </select>
                 )}
-              </div>
+                </div>
+              )}
               <div style={{ marginBottom: '24px' }}>
                 <ProjectPicker
                   groups={projectGroups}
@@ -1000,27 +1034,6 @@ const CuttingOptimizer = () => {
                 />
               </div>
 
-              <div>
-                <label className="form-label" htmlFor="plan-name">{t('ui.name')}</label>
-                <input
-                  id="plan-name"
-                  type="text"
-                  className={`form-input ${nameError ? 'form-input-error' : ''}`}
-                   placeholder={t('ui.planNamePlaceholder')}
-                  value={projectName}
-                  onChange={(e) => setProjectName(e.target.value)}
-                  aria-invalid={!!nameError}
-                  aria-describedby="plan-name-hint"
-                />
-                <p
-                  id="plan-name-hint"
-                  className={nameError ? 'text-danger text-[12.5px] font-semibold' : 'synthetic'}
-                  style={{ marginTop: '7px' }}
-                  role={nameError ? 'alert' : undefined}
-                >
-                   {nameError || t('ui.savedNameHint')}
-                </p>
-              </div>
             </>
           )}
 
@@ -1037,7 +1050,7 @@ const CuttingOptimizer = () => {
             ) : (
               <div className="step-foot-act">
                 <button type="submit" className="btn-order" disabled={saving}>
-                   {saving ? <><Loader /> {t('common.saving')}</> : saveMode === 'update' ? t('workflow.updatePlan') : t('workflow.savePlan')}
+                    {saving ? <><Loader /> {t('common.saving')}</> : saveMode === 'update' ? t('workflow.updatePlan') : selectedGroupName ? t('ui.saveToProject', { project: selectedGroupName }) : t('workflow.savePlan')}
                 </button>
               </div>
             )}

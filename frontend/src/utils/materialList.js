@@ -16,14 +16,25 @@ const boardRows = (project) => {
         ? new Map([[Number(result.optimal_board_length), result.cut_list.length]])
         : new Map();
 
-  return [...byLength].sort(([left], [right]) => left - right).map(([size, quantity]) => ({
-    plan: project.name,
-    material: project.material_type || 'board',
-    size: project.board_thickness && project.board_width
-      ? `${mm(project.board_thickness)} × ${mm(project.board_width)} × ${mm(parseFloat(size))} mm`
-      : `${mm(parseFloat(size))} mm`,
-    quantity,
-  }));
+  return [...byLength].sort(([left], [right]) => left - right).map(([size, quantity]) => {
+    const cost = project.board_costs?.board_costs?.[size];
+    const pricePerUnit = Number(cost?.price_per_board);
+    return {
+      plan: project.name,
+      material: project.material_type || 'board',
+      size: project.board_thickness && project.board_width
+        ? `${mm(project.board_thickness)} × ${mm(project.board_width)} × ${mm(parseFloat(size))} mm`
+        : `${mm(parseFloat(size))} mm`,
+      quantity,
+      ...(Number.isFinite(pricePerUnit) && pricePerUnit > 0 && project.board_costs?.currency
+        ? {
+          pricePerUnit,
+          currency: project.board_costs.currency,
+          pricesIncludeVat: project.board_costs.prices_include_vat ?? true,
+        }
+        : {}),
+    };
+  });
 };
 
 const sheetRows = (project) => {
