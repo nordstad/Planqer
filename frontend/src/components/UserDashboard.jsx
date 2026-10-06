@@ -6,11 +6,42 @@ import { useAuth } from '../contexts/AuthContext';
 import UserProjectsContent from './UserProjectsContent';
 import UserSettings from './UserSettings';
 import TileCutListTable from './TileCutListTable';
+import { ArrowLeft, ArrowRight } from './icons';
 
 const TABS = [
   { key: 'projects', label: 'common.myProjects' },
   { key: 'settings', label: 'common.defaults' },
 ];
+
+const SavedSheetPreview = ({ project }) => {
+  const { t } = useTranslation();
+  const [selectedSheetIndex, setSelectedSheetIndex] = useState(0);
+  const sheets = project.optimization_result.sheets;
+  const diagrams = project.optimization_result.sheet_visualizations;
+  const activeSheetIndex = Math.min(selectedSheetIndex, sheets.length - 1);
+
+  return (
+    <>
+      {sheets.length > 1 && (
+        <div className="sheet-navigator">
+          <button type="button" className="btn btn-sm" onClick={() => setSelectedSheetIndex(activeSheetIndex - 1)} disabled={activeSheetIndex === 0} aria-label={t('workflow.previousSheet')}><ArrowLeft /></button>
+          <label className="sheet-picker">
+            <span>{t('workflow.sheetPosition', { current: activeSheetIndex + 1, total: sheets.length })}</span>
+            <select value={activeSheetIndex} onChange={(event) => setSelectedSheetIndex(Number(event.target.value))} aria-label={t('workflow.sheetBySheet')}>
+              {sheets.map((sheet, sheetIndex) => <option key={sheetIndex} value={sheetIndex}>{t('workflow.sheetNumber', { number: sheetIndex + 1 })} · {t('workflow.percentUsed', { percent: sheet.efficiency.toFixed(1) })}</option>)}
+            </select>
+          </label>
+          <button type="button" className="btn btn-sm" onClick={() => setSelectedSheetIndex(activeSheetIndex + 1)} disabled={activeSheetIndex === sheets.length - 1} aria-label={t('workflow.nextSheet')}><ArrowRight /></button>
+        </div>
+      )}
+      <img
+        src={diagrams[activeSheetIndex]}
+        alt={`${t('ui.sheetLayoutDiagram')} ${t('workflow.sheetNumber', { number: activeSheetIndex + 1 })}`}
+        className="sheet-diagram-image"
+      />
+    </>
+  );
+};
 
 const UserDashboard = () => {
   const { t } = useTranslation();
@@ -81,7 +112,9 @@ const UserDashboard = () => {
                <button type="button" className="masthead-flash" onClick={() => setPreviewProject(null)}>{t('common.close')}</button>
             </div>
             <div style={{ padding: '14px 16px 18px' }}>
-              {previewProject.imageUrl ? (
+              {previewProject.projectType === 'sheet' && previewProject.optimization_result?.sheet_visualizations?.length ? (
+                <SavedSheetPreview key={previewProject.id} project={previewProject} />
+              ) : previewProject.imageUrl ? (
                 <img
                   src={previewProject.imageUrl}
                    alt={`${t('ui.boardDiagramAlt')} ${previewProject.name}`}

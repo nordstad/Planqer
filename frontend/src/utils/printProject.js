@@ -28,6 +28,10 @@ const MARGIN_MM = 12;
 // the project header that shares the first page.
 const PLAN_HEAD_MM = 26;
 const DOC_HEAD_MM = 22;
+// Browser print engines round SVG dimensions and page margins differently.
+// Leave room beyond the measured header so an image never moves to a new page
+// after its own title has already printed.
+const PRINT_FIT_SLACK_MM = 10;
 
 const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (c) => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
@@ -61,15 +65,20 @@ const buildHtml = ({ title, meta, paper, plans, shoppingListHtml }) => {
     const availLandscapeH = innerW - PLAN_HEAD_MM - (i === 0 ? DOC_HEAD_MM : 0);
     const landscape = fittedArea(plan.width, plan.height, innerH, availLandscapeH)
       > fittedArea(plan.width, plan.height, innerW, availPortraitH);
-    const maxH = landscape ? availLandscapeH : availPortraitH;
+    const maxH = (landscape ? availLandscapeH : availPortraitH) - PRINT_FIT_SLACK_MM;
 
     return `
       <section class="plan${landscape ? ' plan--landscape' : ''}">
+        ${i === 0 ? `
+          <header class="doc-head">
+            <h1>${escapeHtml(title)}</h1>
+            <p>${escapeHtml(meta)}</p>
+          </header>` : ''}
         <header class="plan-head">
           <h2>${escapeHtml(plan.name)}</h2>
           <p>${plan.facts.map(escapeHtml).join(' &nbsp;·&nbsp; ')}</p>
         </header>
-        <img src="${plan.url}" alt="" style="max-height:${maxH}mm" />
+        <img src="${plan.url}" alt="" style="height:${maxH}mm; max-height:${maxH}mm" />
         ${plan.extraHtml || ''}
       </section>`;
   }).join('\n');
@@ -87,13 +96,13 @@ const buildHtml = ({ title, meta, paper, plans, shoppingListHtml }) => {
   .doc-head { padding-bottom: 4mm; margin-bottom: 5mm; border-bottom: 0.6mm solid #1c1b16; }
   .doc-head h1 { font-size: 20pt; font-weight: 800; letter-spacing: -0.02em; }
   .doc-head p { font-size: 9pt; color: #6b6a60; margin-top: 1.5mm; }
-  .plan { break-after: page; page-break-after: always; }
+   .plan { break-after: page; page-break-after: always; break-inside: avoid; page-break-inside: avoid; }
   .plan:last-child { break-after: auto; page-break-after: auto; }
   .plan--landscape { page: landscape; }
-  .plan-head { padding-bottom: 2.5mm; margin-bottom: 4mm; border-bottom: 0.25mm solid #c9c7ba; }
+   .plan-head { padding-bottom: 2.5mm; margin-bottom: 4mm; border-bottom: 0.25mm solid #c9c7ba; break-after: avoid; page-break-after: avoid; }
   .plan-head h2 { font-size: 13pt; font-weight: 700; }
   .plan-head p { font-size: 9pt; color: #6b6a60; margin-top: 1mm; }
-  .plan img { display: block; max-width: 100%; width: auto; height: auto; margin: 0 auto; }
+   .plan img { display: block; max-width: 100%; width: auto; margin: 0 auto; break-before: avoid; page-break-before: avoid; }
   .cut-list { width: 100%; border-collapse: collapse; margin-top: 5mm; font-size: 9pt; }
   .cut-list th, .cut-list td { text-align: left; padding: 2.2mm 3mm 2.2mm 0; vertical-align: top; }
   .cut-list th {
@@ -122,10 +131,6 @@ const buildHtml = ({ title, meta, paper, plans, shoppingListHtml }) => {
 </style>
 </head>
 <body>
-<header class="doc-head">
-  <h1>${escapeHtml(title)}</h1>
-  <p>${escapeHtml(meta)}</p>
-</header>
 ${shoppingListHtml || ''}
 ${sections}
 </body>

@@ -14,7 +14,10 @@ from planqer.sheet_optimization import (
     get_sheet_algorithm_recommendation,
     optimize_sheet_cutting,
 )
-from planqer.sheet_visualization import generate_sheet_cutting_visualization
+from planqer.sheet_visualization import (
+    generate_sheet_cutting_visualization,
+    generate_single_sheet_visualization,
+)
 
 router = APIRouter(prefix="/sheet-optimization", tags=["Sheet Material Optimization"])
 from .common import limiter
@@ -87,6 +90,10 @@ async def create_sheet_optimization(
             },
             sheet_request.project_name,
         )
+        sheet_visualizations = [
+            generate_single_sheet_visualization(sheet.model_dump(), sheet_index)
+            for sheet_index, sheet in enumerate(sheets)
+        ]
         return SheetOptimizationResponse(
             total_sheets=result.total_sheets,
             total_waste_area=result.total_waste_area,
@@ -96,6 +103,7 @@ async def create_sheet_optimization(
             computation_time=time.time() - started,
             material_type=sheet_request.material_type,
             visualization=visualization,
+            sheet_visualizations=sheet_visualizations,
         )
     except TimeoutError as exc:
         raise HTTPException(

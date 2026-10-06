@@ -7,10 +7,10 @@
   twice — and every figure printed here is one the solver returned.
 */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Disclosure from './Disclosure';
-import { Download } from './icons';
+import { ArrowLeft, ArrowRight, Download } from './icons';
 
 const mm = (n) => (Number.isFinite(n) ? Math.round(n).toLocaleString('sv-SE') : '—');
 
@@ -20,10 +20,15 @@ const SheetResultDisplay = ({ result, projectName }) => {
   const { t } = useTranslation();
   const [diagramOpen, setDiagramOpen] = useState(false);
   const [placementsOpen, setPlacementsOpen] = useState(false);
+  const [selectedSheetIndex, setSelectedSheetIndex] = useState(0);
+  useEffect(() => setSelectedSheetIndex(0), [result]);
   if (!result) return null;
 
   const safeName = (projectName ? projectName : 'sheet_layout').replace(/[^a-zA-Z0-9_-]/g, '_');
-  const hasDiagram = result.visualization && result.visualization !== 'data:image/png;base64,';
+  const activeSheetIndex = Math.min(selectedSheetIndex, result.sheets.length - 1);
+  const selectedSheet = result.sheets[activeSheetIndex];
+  const selectedDiagram = result.sheet_visualizations?.[activeSheetIndex] || result.visualization;
+  const hasDiagram = selectedDiagram && selectedDiagram !== 'data:image/png;base64,';
 
   const downloadDiagram = () => {
     const extension = result.visualization.startsWith('data:image/png') ? 'png' : 'svg';
@@ -38,17 +43,61 @@ const SheetResultDisplay = ({ result, projectName }) => {
   return (
     <>
       <figure style={{ margin: 0, minWidth: 0 }}>
+        {result.sheets.length > 1 && (
+          <div className="sheet-navigator">
+            <button
+              type="button"
+              className="btn btn-sm"
+              onClick={() => setSelectedSheetIndex(activeSheetIndex - 1)}
+              disabled={activeSheetIndex === 0}
+              aria-label={t('workflow.previousSheet')}
+            ><ArrowLeft /></button>
+            <label className="sheet-picker">
+              <span>{t('workflow.sheetPosition', { current: activeSheetIndex + 1, total: result.sheets.length })}</span>
+              <select
+                value={activeSheetIndex}
+                onChange={(event) => setSelectedSheetIndex(Number(event.target.value))}
+                aria-label={t('workflow.sheetBySheet')}
+              >
+                {result.sheets.map((sheet, sheetIndex) => (
+                  <option key={sheetIndex} value={sheetIndex}>
+                    {t('workflow.sheetNumber', { number: sheetIndex + 1 })} · {t('workflow.percentUsed', { percent: sheet.efficiency.toFixed(1) })}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              className="btn btn-sm"
+              onClick={() => setSelectedSheetIndex(activeSheetIndex + 1)}
+              disabled={activeSheetIndex === result.sheets.length - 1}
+              aria-label={t('workflow.nextSheet')}
+            ><ArrowRight /></button>
+          </div>
+        )}
         {hasDiagram && (
           <button
             type="button"
             className="cut-list-visualization"
             style={{ width: '100%', cursor: 'zoom-in' }}
             onClick={() => setDiagramOpen(true)}
-            aria-label={t('ui.sheetDiagramAlt')}
+            aria-label={t('ui.sheetDiagramAria', {
+              number: activeSheetIndex + 1,
+              width: mm(selectedSheet.sheet_width),
+              height: mm(selectedSheet.sheet_height),
+              parts: selectedSheet.parts_count,
+              percent: selectedSheet.efficiency.toFixed(1),
+            })}
           >
             <img
-              src={result.visualization}
-              alt={t('ui.sheetDiagramAlt')}
+              src={selectedDiagram}
+              alt={t('ui.sheetDiagramAria', {
+                number: activeSheetIndex + 1,
+                width: mm(selectedSheet.sheet_width),
+                height: mm(selectedSheet.sheet_height),
+                parts: selectedSheet.parts_count,
+                percent: selectedSheet.efficiency.toFixed(1),
+              })}
               className="sheet-diagram-image"
             />
           </button>
@@ -105,7 +154,7 @@ const SheetResultDisplay = ({ result, projectName }) => {
               </button>
             </div>
             <div style={{ padding: '16px' }}>
-               <img src={result.visualization} alt={t('ui.sheetDiagramAlt')} style={{ display: 'block', width: '100%', height: 'auto' }} />
+                <img src={selectedDiagram} alt={t('ui.sheetDiagramAlt')} style={{ display: 'block', width: '100%', height: 'auto' }} />
             </div>
           </div>
         </div>

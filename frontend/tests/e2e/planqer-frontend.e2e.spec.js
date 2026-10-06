@@ -130,6 +130,87 @@ test.describe('Planqer Frontend E2E Tests', () => {
     await expect(page.getByRole('heading', { name: /plan saved/i })).toBeVisible();
   });
 
+  test('prints each saved sheet on its own non-splitting page', async ({ page }) => {
+    const email = `sheet-print-${Date.now()}@example.com`;
+    const password = ['Planqer', Date.now(), 'sheet'].join('-') + '!1';
+    await page.request.post('http://localhost:8002/api/auth/register', {
+      data: { email, password },
+    });
+    const loginResponse = await page.request.post('http://localhost:8002/api/auth/login', {
+      data: { email, password },
+    });
+    const { access_token: accessToken } = await loginResponse.json();
+    const sheets = [1, 2].map((number) => ({
+      sheet_width: 1200,
+      sheet_height: 2500,
+      used_area: 480000,
+      waste_area: 2520000,
+      efficiency: 16,
+      parts_count: 1,
+      parts: [{
+        part_id: `shelf_${number}`,
+        width: 600,
+        height: 800,
+        x: 0,
+        y: 0,
+        rotated: false,
+      }],
+    }));
+    const saveResponse = await page.request.post('http://localhost:8002/api/sheet-projects/', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      data: {
+        name: 'E2E printable sheets',
+        parts_data: [{ name: 'Shelf', width: 600, height: 800, quantity: 2 }],
+        sheet_width: 1200,
+        sheet_height: 2500,
+        kerf_width: 3,
+        material_type: 'plywood',
+        sheet_thickness: 18,
+        allow_rotation: true,
+        optimization_result: { sheets },
+      },
+    });
+    expect(saveResponse.ok()).toBeTruthy();
+
+    await page.addInitScript((token) => localStorage.setItem('auth_token', token), accessToken);
+    await page.goto('/dashboard/project/none');
+    const planName = page.getByText('E2E printable sheets');
+    await expect(planName).toBeVisible();
+    await page.getByRole('checkbox', { name: 'Select plan "E2E printable sheets"' }).check();
+    await page.getByRole('button', { name: 'Print', exact: true }).click();
+
+    const printDocument = page.locator('iframe[aria-hidden="true"]');
+    await expect(printDocument).toHaveCount(1);
+    await expect.poll(() => printDocument.evaluate((iframe) => iframe.contentDocument?.querySelectorAll('.plan').length || 0)).toBe(2);
+    const printLayout = await printDocument.evaluate((iframe) => ({
+      images: iframe.contentDocument?.querySelectorAll('.plan img').length,
+      styles: iframe.contentDocument?.querySelector('style')?.textContent,
+    }));
+    expect(printLayout.images).toBe(2);
+    expect(printLayout.styles).toContain('page-break-inside: avoid');
+
+    const printHtml = await printDocument.evaluate(async (iframe) => {
+      const document = iframe.contentDocument;
+      const toDataUrl = async (url) => {
+        const blob = await fetch(url).then((response) => response.blob());
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.readAsDataURL(blob);
+        });
+      };
+      await Promise.all(Array.from(document.images).map(async (image) => {
+        image.src = await toDataUrl(image.src);
+      }));
+      return document.documentElement.outerHTML;
+    });
+    const pdfPage = await page.context().newPage();
+    await pdfPage.setContent(printHtml, { waitUntil: 'load' });
+    const pdf = await pdfPage.pdf({ format: 'A4', preferCSSPageSize: true, printBackground: true });
+    await pdfPage.close();
+    expect((pdf.toString('latin1').match(/\/Type\s*\/Page\b/g) || []).length).toBe(2);
+  });
+
   test('switches between project overview, shopping list, and cut diagram views', async ({ page }) => {
     const email = `workspace-${Date.now()}@example.com`;
     const credential = ['Planqer', Date.now(), 'e2e'].join('-') + '!1';

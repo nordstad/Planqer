@@ -95,3 +95,4 @@ class SheetOptimizationResponse(BaseModel):
     computation_time: float | None = None
     material_type: str
     visualization: str
+    sheet_visualizations: list[str]

@@ -85,7 +85,7 @@ class SheetSVGVisualizer:
         sheet_y_pos = y_offset + 25  # Move sheet down to make room for info text
         svg_elements.append(f'''
         <rect x="{x_offset}" y="{sheet_y_pos}" width="{sheet_width}" height="{sheet_height}" 
-              fill="#ecebe4" stroke="#16150f" stroke-width="2"/>
+              fill="#e3e0d4" stroke="#16150f" stroke-width="2"/>
         ''')
 
         # Parts
@@ -164,7 +164,11 @@ class SheetSVGVisualizer:
         """
 
     def generate_sheet_visualization(
-        self, optimization_result, project_name: str | None = None
+        self,
+        optimization_result,
+        project_name: str | None = None,
+        single_sheet: bool = False,
+        sheet_index: int = 0,
     ) -> str:
         """Generate complete SVG visualization for sheet cutting results."""
         if not optimization_result or not optimization_result.get("sheets"):
@@ -191,20 +195,49 @@ class SheetSVGVisualizer:
         if max_sheet_width == 0 or max_sheet_height == 0:
             return self._create_empty_svg()
 
-        # Scale to fit nicely (target around 800px width)
-        scale = min(800 / max_sheet_width, 600 / max_sheet_height, 1.0)
+        # A single sheet is shown in the plan viewer. Give it a wide canvas so
+        # a portrait sheet reads as a deliberate diagram, rather than a narrow
+        # image centred inside a mostly empty frame.
+        scale = min(
+            (600 if single_sheet else 800) / max_sheet_width,
+            600 / max_sheet_height,
+            1.0,
+        )
 
         # Calculate SVG dimensions
         scaled_sheet_width = max_sheet_width * scale
         scaled_sheet_height = max_sheet_height * scale
 
-        # Layout sheets in a grid
+        if single_sheet:
+            total_width = 1100
+            total_height = int(scaled_sheet_height + 165)
+            svg_parts = [self._create_svg_header(total_width, total_height)]
+            part_colors = self._assign_colors_to_parts(sheets)
+            svg_parts.append(
+                self._create_sheet_layout(
+                    {
+                        "width": sheets[0].get("sheet_width", 0),
+                        "height": sheets[0].get("sheet_height", 0),
+                        "efficiency": sheets[0].get("efficiency", 0),
+                        "parts": sheets[0].get("parts", []),
+                    },
+                    sheet_index,
+                    int((total_width - scaled_sheet_width) / 2),
+                    70,
+                    scale,
+                    part_colors,
+                )
+            )
+            svg_parts.append("</svg>")
+            return "".join(svg_parts)
+
+        # Layout all sheets in a grid for the downloaded diagram.
         sheets_per_row = min(3, total_sheets)  # Max 3 sheets per row
         rows = (total_sheets + sheets_per_row - 1) // sheets_per_row
 
         margin = 50
         sheet_spacing = 40
-        header_height = 40 if project_name else 20
+        header_height = 60 if project_name else 50
 
         total_width = (scaled_sheet_width + sheet_spacing) * sheets_per_row + margin * 2
         total_height = (
@@ -281,6 +314,15 @@ def generate_sheet_cutting_visualization(
     visualizer = SheetSVGVisualizer()
     svg_content = visualizer.generate_sheet_visualization(
         optimization_result, project_name
+    )
+    return visualizer.svg_to_base64(svg_content)
+
+
+def generate_single_sheet_visualization(sheet, sheet_index: int = 0) -> str:
+    """Generate the readable, single-sheet SVG used by the plan viewer."""
+    visualizer = SheetSVGVisualizer()
+    svg_content = visualizer.generate_sheet_visualization(
+        {"sheets": [sheet]}, single_sheet=True, sheet_index=sheet_index
     )
     return visualizer.svg_to_base64(svg_content)
 
