@@ -7,8 +7,8 @@ database:
   echo: false
 
 auth:
-  # secret_key: set via SECRET_KEY env var. If unset, a random key is
-  # generated per process (existing sessions invalidate on restart).
+  # secret_key: set via SECRET_KEY env var. If unset, a key is generated and
+  # persisted in data/.secret_key (existing sessions survive restarts).
   algorithm: "HS256"
   # 30 days: a self-hosted single-tenant instance should feel like signing in
   # once, not re-authenticating every session (matches Gitea's 31-day and

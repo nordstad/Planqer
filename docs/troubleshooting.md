@@ -11,10 +11,14 @@ the frontend container. See [Configuration](reference/configuration.md).
 
 ## Signed out after every restart
 
-`SECRET_KEY` signs login sessions. If it isn't set, a random one is generated
-per process, so every restart invalidates every existing session.
+`SECRET_KEY` signs login sessions. If it isn't set, Planqer generates and
+persists one at `data/.secret_key` in the backend data volume. Sessions are
+invalidated if that volume is replaced, the key file is deleted/unreadable, or
+the backend cannot write the key during first startup.
 
-**Fix:** set `SECRET_KEY` to a fixed value in `.env` and keep it stable.
+**Fix:** keep the backend data volume and its write permissions intact. For
+multiple backend replicas or externally managed secrets, set `SECRET_KEY` to a
+shared fixed value in `.env` and keep it stable.
 
 ## I forgot my password
 

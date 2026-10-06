@@ -59,7 +59,7 @@ The easiest way to run Planqer is with Docker Compose. Two ways to do it:
   ```
 
   Works with no further setup for `localhost`. To customize anything (pin a
-  version, allow a LAN/DNS address, set a stable `SECRET_KEY`), fetch
+  version, allow a LAN/DNS address, or set an explicit `SECRET_KEY`), fetch
   [`.env.example`](.env.example) and rename it to `.env` in the same
   directory — Compose reads it automatically:
 

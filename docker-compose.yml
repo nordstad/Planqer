@@ -7,7 +7,7 @@ services:
     ports:
       - "${BACKEND_PORT:-8002}:8002"
     environment:
-      # Set to keep login sessions valid across container restarts.
+      # Optional override; otherwise the key is persisted in backend_data.
       - SECRET_KEY=${SECRET_KEY:-}
       - PLANQER_SETUP_SECRET=${PLANQER_SETUP_SECRET:-}
       - DATABASE_URL=${DATABASE_URL:-}

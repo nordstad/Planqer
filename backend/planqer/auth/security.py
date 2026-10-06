@@ -1,6 +1,3 @@
-import logging
-import os
-import secrets
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -10,24 +7,14 @@ import jwt
 from jwt.exceptions import InvalidTokenError
 
 from planqer.auth.password_policy import MAX_PASSWORD_BYTES, validate_password
+from planqer.auth.secret_key import resolve_secret_key
 from planqer.helpers import load_config
-
-logger = logging.getLogger("planqer.auth")
 
 CONFIG_PATH = Path(__file__).parent.parent.parent / "config.yaml"
 config = load_config(CONFIG_PATH)
 auth_config = config.get("auth", {})
 
-# No secret ships in config.yaml. A random one is generated per process if
-# SECRET_KEY isn't set, so existing sessions invalidate on restart rather
-# than trusting a known default.
-SECRET_KEY = os.environ.get("SECRET_KEY") or auth_config.get("secret_key")
-if not SECRET_KEY:
-    SECRET_KEY = secrets.token_hex(32)
-    logger.warning(
-        "No SECRET_KEY set — generated a random key for this process. "
-        "Set the SECRET_KEY environment variable to keep sessions valid across restarts."
-    )
+SECRET_KEY = resolve_secret_key(auth_config=auth_config)
 
 ALGORITHM = auth_config.get("algorithm", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = auth_config.get("access_token_expire_minutes", 30)

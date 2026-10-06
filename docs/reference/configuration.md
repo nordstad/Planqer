@@ -38,9 +38,15 @@ accounts and saved projects.
 - `PLANQER_VERSION`: defaults to `latest` in
   `docker-compose.release.yml`. Selects the release image tag to pull from
   GitHub Container Registry. Pin it (e.g. `0.2.0`) for reproducible installs.
-- `SECRET_KEY`: defaults to a random value per process. Signs login sessions.
-  Set it explicitly and keep it stable across restarts, or every restart
-  invalidates existing sessions.
+- `SECRET_KEY`: optional explicit signing key for login sessions. When omitted,
+  Planqer generates a cryptographically random key and persists it at
+  `data/.secret_key` inside the persistent backend data volume. The generated
+  key survives container recreation as long as that volume is retained. Set
+  `SECRET_KEY` explicitly for multiple backend replicas, externally managed
+  secrets, or deployments where replicas do not share a data volume. Explicit
+  values are never written to the generated key file. The application backup
+  archive contains the database only, not `data/.secret_key`; retain the data
+  volume or configure an explicit key when restoring elsewhere.
 - `PLANQER_SETUP_SECRET`: optional secret for claiming the first administrator
   through a non-local connection. Fresh-instance registration is local-only
   without it; set it before exposing the API through a LAN or reverse proxy.
@@ -85,6 +91,7 @@ docker compose --profile mcp up -d
 ```bash
 # Backend
 PLANQER_VERSION=0.4.1
+# Optional when using a single backend with the persistent data volume.
 SECRET_KEY=<random-32-byte-hex>
 PLANQER_SETUP_SECRET=<random-32-byte-hex>
 PLANQER_CORS_ORIGINS=https://planqer.example.com,https://cuts.example.com
@@ -94,7 +101,7 @@ PLANQER_HOST=planqer.example.com
 VITE_API_URL=https://planqer.example.com
 ```
 
-Generate a `SECRET_KEY` with:
+If you need an explicit `SECRET_KEY`, generate it with:
 
 ```bash
 openssl rand -hex 32
