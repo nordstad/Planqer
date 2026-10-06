@@ -186,6 +186,9 @@ RELEASE_NOTES.md
 # Local SQLite database
 *.db
 
+# Automatically generated authentication key
+backend/data/.secret_key
+
 # AI design-assistant working artifacts (local tooling, not project source)
 .impeccable/
 .claude/settings.local.json
