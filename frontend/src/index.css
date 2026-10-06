@@ -456,6 +456,39 @@
   .cat-table tr.is-sum td:first-child { color: var(--ink); }
   .cat-table tr.is-out td { color: var(--ink-3); }
   .cat-table.is-reference td:last-child { text-align: left; font-size: 13px; color: var(--ink-2); }
+  .stock-table-wrap { overflow-x: auto; }
+  .stock-price-label { display: none; }
+  @media (max-width: 640px) {
+    .stock-table-wrap { overflow-x: visible; }
+    .stock-table-wrap .cat-table { min-width: 0; }
+    .stock-table-wrap .cat-table thead { display: none; }
+    .stock-table-wrap .cat-table tbody,
+    .stock-table-wrap .cat-table tr { display: block; }
+    .stock-table-wrap .cat-table tr:not(.is-sum) {
+      display: grid; grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-areas: 'stock remove' 'length price';
+      column-gap: 12px; align-items: center; padding: 9px 0;
+    }
+    .stock-table-wrap .cat-table tr:not(.is-sum) td { border-bottom: 0; padding: 3px 0; }
+    .stock-table-wrap .cat-table tr:not(.is-sum) td:nth-child(1) { grid-area: stock; }
+    .stock-table-wrap .cat-table tr:not(.is-sum) td:nth-child(2) { grid-area: length; }
+    .stock-table-wrap .cat-table tr:not(.is-sum) td:nth-child(3) { display: none; }
+    .stock-table-wrap .cat-table tr:not(.is-sum) td:nth-child(4) {
+      grid-area: price; display: flex; align-items: center; gap: 6px; min-width: 132px;
+    }
+    .stock-table-wrap .cat-table tr:not(.is-sum) td:nth-child(5) { grid-area: remove; }
+    .stock-table-wrap .cat-table tr:not(.is-sum) td:nth-child(2) .cell-input { text-align: left; }
+    .stock-table-wrap .cat-table tr:not(.is-sum) td:nth-child(4) .cell-input { text-align: right; }
+    .stock-price-label { display: inline; font-size: 11px; color: var(--ink-3); white-space: nowrap; }
+    .stock-table-wrap .cell-strike { min-width: 40px; min-height: 40px; }
+    .stock-table-wrap .cat-table tr.is-sum {
+      display: grid; grid-template-columns: 1fr auto; padding: 8px 0;
+    }
+    .stock-table-wrap .cat-table tr.is-sum td { border-bottom: 0; padding: 0; }
+    .stock-table-wrap .cat-table tr.is-sum td:nth-child(1) { grid-column: 1; }
+    .stock-table-wrap .cat-table tr.is-sum td:nth-child(2) { grid-column: 2; }
+    .stock-table-wrap .cat-table tr.is-sum td:nth-child(n + 3) { display: none; }
+  }
   .cell-in-plan {
     background: var(--accent-bg); color: var(--accent); font-weight: 800; border-radius: 6px;
   }
@@ -582,6 +615,8 @@
     padding: 2px 4px; min-height: 30px; font-variant-numeric: tabular-nums; border-radius: 4px;
   }
   .cell-input:focus { outline: none; background: var(--accent-bg); color: var(--ink); }
+  .stock-table-wrap .stock-price-input { background: var(--card); border: 1px solid var(--rule-hair); border-radius: 6px; padding: 4px 6px; }
+  .stock-table-wrap .stock-price-input:focus { border-color: var(--accent); }
   .kerf-input { appearance: textfield; -moz-appearance: textfield; }
   .kerf-input::-webkit-outer-spin-button, .kerf-input::-webkit-inner-spin-button {
     -webkit-appearance: none; margin: 0;

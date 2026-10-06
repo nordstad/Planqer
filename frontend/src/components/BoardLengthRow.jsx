@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { translateWithFallback } from '../i18n/translate';
 import { MIN_BOARD_LENGTH, MAX_BOARD_LENGTH } from '../utils/validators';
 
-const BoardLengthRow = ({ board, index, handleBoardChange, handleBoardsPaste, removeBoard, error, canRemove, inPlan }) => {
+const BoardLengthRow = ({ board, index, handleBoardChange, handleBoardsPaste, removeBoard, error, canRemove, inPlan, currency = 'SEK', price = '', handlePriceChange = () => {} }) => {
   const mm = parseFloat(board);
   const { t } = useTranslation();
   const text = (key, vars) => translateWithFallback(t, key, vars);
@@ -43,6 +43,19 @@ const BoardLengthRow = ({ board, index, handleBoardChange, handleBoardsPaste, re
           {Number.isFinite(mm) && mm > 0 ? `${(mm / 1000).toFixed(1)} m` : '—'}
         </td>
       )}
+      <td>
+        <span className="stock-price-label">{currency} / m</span>
+        <input
+          aria-label={`${currency} price per metre for board length ${board} mm`}
+          type="number"
+          min="0"
+          step="0.1"
+          placeholder="Optional"
+          value={price || ''}
+          onChange={(e) => handlePriceChange(board, e.target.value)}
+          className="cell-input stock-price-input"
+        />
+      </td>
       <td style={{ width: '34px' }}>
         {canRemove && (
           <button
