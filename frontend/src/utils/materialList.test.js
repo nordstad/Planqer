@@ -102,3 +102,19 @@ it('reports a subtotal when material remains unpriced', () => {
   ]);
   expect(summarizeMaterialPricing(rows)).toMatchObject({ complete: false, compatible: true, unpricedCount: 1, total: 100 });
 });
+
+it('keeps legacy board prices that predate currency and VAT snapshots', () => {
+  const rows = buildMaterialRows([{
+    name: 'Legacy board',
+    optimization_result: { board_lengths_used: [4200] },
+    board_costs: { board_costs: { 4200: { price_per_board: 147 } } },
+  }]);
+
+  expect(rows[0]).toMatchObject({
+    pricePerUnit: 147,
+    currency: 'SEK',
+    pricesIncludeVat: true,
+    vatRate: 25,
+  });
+  expect(summarizeMaterialPricing(rows)).toMatchObject({ complete: true, total: 147 });
+});

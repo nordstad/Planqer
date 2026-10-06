@@ -1,6 +1,7 @@
 import { materialLabel } from './materialLabel';
 
 const mm = (value) => (Number.isFinite(value) ? Math.round(value).toLocaleString('sv-SE') : '—');
+const LEGACY_CURRENCY = 'SEK';
 
 const boardRows = (project) => {
   const result = project.optimization_result;
@@ -26,10 +27,12 @@ const boardRows = (project) => {
         ? `${mm(project.board_thickness)} × ${mm(project.board_width)} × ${mm(parseFloat(size))} mm`
         : `${mm(parseFloat(size))} mm`,
       quantity,
-      ...(Number.isFinite(pricePerUnit) && pricePerUnit > 0 && project.board_costs?.currency
+      // Older saved board plans predate the currency/VAT snapshot fields. Their
+      // prices used the app's original SEK, VAT-inclusive defaults.
+      ...(Number.isFinite(pricePerUnit) && pricePerUnit > 0
         ? {
           pricePerUnit,
-          currency: project.board_costs.currency,
+          currency: project.board_costs?.currency || LEGACY_CURRENCY,
           pricesIncludeVat: project.board_costs.prices_include_vat ?? true,
           vatRate: project.board_costs.vat_rate ?? 25,
         }
