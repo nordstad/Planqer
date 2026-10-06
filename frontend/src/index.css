@@ -894,6 +894,15 @@
   .project-shopping { margin: 0 0 24px; }
   .project-shopping-table { margin-top: 14px; max-width: 760px; }
   .project-shopping-table th:last-child, .project-shopping-table td:last-child { text-align: right; }
+  .shopping-pricing-total {
+    margin: 16px 0 0; max-width: 760px; padding: 12px 14px;
+    border-left: 3px solid var(--shop); background: var(--accent-bg);
+    color: var(--ink); font-size: 15px; line-height: 1.45; font-weight: 700;
+  }
+  .shopping-pricing-note {
+    margin: 8px 0 0; max-width: 760px; color: var(--ink-2);
+    font-size: 14px; line-height: 1.45;
+  }
   .project-shopping-empty { margin: 14px 0 0; padding: 18px; max-width: 760px; border: 1px dashed var(--ink-4); border-radius: 10px; }
   .project-diagram-note { margin: 22px 0 0; }
 

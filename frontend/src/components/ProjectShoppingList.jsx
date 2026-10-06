@@ -49,13 +49,13 @@ const ProjectShoppingList = ({ projects }) => {
             ))}
           </tbody>
           </table>
-          {pricing.total !== null && <p className="synthetic" style={{ marginTop: '12px' }}>
+          {pricing.total !== null && <p className="shopping-pricing-total">
             {pricing.complete
               ? t('ui.projectMaterialTotal', { total: pricing.total.toFixed(2), currency: pricing.currency, vat: basis })
               : t('ui.pricedSubtotal', { total: pricing.total.toFixed(2), currency: pricing.currency, vat: basis })}
           </p>}
-          {pricing.hasPrices && !pricing.compatible && <p className="synthetic" style={{ marginTop: '6px' }}>{t('ui.mixedPricing')}</p>}
-          {pricing.hasPrices && pricing.unpricedCount > 0 && <p className="synthetic" style={{ marginTop: '6px' }}>{t('ui.unpricedMaterialCount', { count: pricing.unpricedCount })}</p>}
+          {pricing.hasPrices && !pricing.compatible && <p className="shopping-pricing-note">{t('ui.mixedPricing')}</p>}
+          {pricing.hasPrices && pricing.unpricedCount > 0 && <p className="shopping-pricing-note">{t('ui.unpricedMaterialCount', { count: pricing.unpricedCount })}</p>}
         </>
       ) : (
         <p className="project-shopping-empty synthetic">{t('projectUi.shoppingListEmpty')}</p>
