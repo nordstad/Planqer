@@ -443,9 +443,7 @@ def test_running_bond_rejects_offset_fraction_out_of_range():
 def _clipped(bond, surface, tile, joint, offset_x=0.0, offset_y=0.0):
     return [
         p
-        for raw in bond.raw_positions(
-            surface, tile, joint, offset_x, offset_y
-        )
+        for raw in bond.raw_positions(surface, tile, joint, offset_x, offset_y)
         if (p := place_and_clip(raw.x, raw.y, raw.rotated, tile, surface, joint))
         is not None
     ]
@@ -523,9 +521,7 @@ def test_herringbone_bond_leaves_no_gap():
 def _diagonal_clipped(bond, surface, tile, joint, offset_x=0.0, offset_y=0.0):
     return [
         p
-        for raw in bond.raw_positions(
-            surface, tile, joint, offset_x, offset_y
-        )
+        for raw in bond.raw_positions(surface, tile, joint, offset_x, offset_y)
         if (p := place_and_clip_diagonal(raw.x, raw.y, tile, surface, joint))
         is not None
     ]

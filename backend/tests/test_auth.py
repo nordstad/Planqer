@@ -72,9 +72,9 @@ def test_concurrent_first_registration_has_one_admin(client):
             ):
                 await session.execute(delete(model))
             await session.execute(
-                update(InstanceBootstrap).values(claimed=False).where(
-                    InstanceBootstrap.id == 1
-                )
+                update(InstanceBootstrap)
+                .values(claimed=False)
+                .where(InstanceBootstrap.id == 1)
             )
             await session.commit()
 
@@ -101,9 +101,9 @@ def test_fresh_registration_rejects_missing_setup_secret(client, monkeypatch):
         async with AsyncSession(engine) as session:
             await session.execute(delete(User))
             await session.execute(
-                update(InstanceBootstrap).values(claimed=False).where(
-                    InstanceBootstrap.id == 1
-                )
+                update(InstanceBootstrap)
+                .values(claimed=False)
+                .where(InstanceBootstrap.id == 1)
             )
             await session.commit()
 

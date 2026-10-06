@@ -28,7 +28,10 @@ def test_step_policy_groups_matching_dimensions_and_preserves_material_seams():
 
 def test_step_policy_drops_noise_and_rounds_measured_dimensions():
     items = measured_bodies_to_cutlist(
-        [StepBody("noise", 0.4, 0.4, 0.4, 1, 0), StepBody("board", 520.04, 95.04, 45.04, 1, 1)],
+        [
+            StepBody("noise", 0.4, 0.4, 0.4, 1, 0),
+            StepBody("board", 520.04, 95.04, 45.04, 1, 1),
+        ],
         round_precision=1,
     )
 

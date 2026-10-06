@@ -36,9 +36,7 @@ def get_secure_password(
         try:
             validate_password(password)
         except ValueError as exc:
-            print(
-                f"{exc}. Please choose a different password."
-            )
+            print(f"{exc}. Please choose a different password.")
             continue
 
         if password != getpass.getpass("Confirm password: "):

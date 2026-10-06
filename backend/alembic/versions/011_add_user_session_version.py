@@ -13,7 +13,9 @@ depends_on = None
 def upgrade() -> None:
     with op.batch_alter_table("users") as batch_op:
         batch_op.add_column(
-            sa.Column("session_version", sa.Integer(), nullable=False, server_default="0")
+            sa.Column(
+                "session_version", sa.Integer(), nullable=False, server_default="0"
+            )
         )
 
 

@@ -201,12 +201,8 @@ def test_reset_password_revokes_existing_session_only_for_reset_user(
     )
     assert reset_response.status_code == 200
 
-    revoked_session = client.get(
-        "/api/auth/me", headers=other_user["headers"]
-    )
-    unrelated_session = client.get(
-        "/api/auth/me", headers=unrelated_user["headers"]
-    )
+    revoked_session = client.get("/api/auth/me", headers=other_user["headers"])
+    unrelated_session = client.get("/api/auth/me", headers=unrelated_user["headers"])
 
     assert revoked_session.status_code == 401
     assert unrelated_session.status_code == 200
@@ -317,7 +313,9 @@ def test_delete_user_removes_all_owned_data_but_not_another_users_data(
         json={
             "name": "Target sheet",
             "project_group_id": group_id,
-            "parts_data": [{"name": "panel", "width": 100, "height": 100, "quantity": 1}],
+            "parts_data": [
+                {"name": "panel", "width": 100, "height": 100, "quantity": 1}
+            ],
             "sheet_width": 500,
             "sheet_height": 500,
             "kerf_width": 3,
@@ -367,16 +365,65 @@ def test_delete_user_removes_all_owned_data_but_not_another_users_data(
     async def counts():
         async with AsyncSession(engine) as session:
             return {
-                "user": (await session.execute(select(User).where(User.id == other_user_id))).scalar_one_or_none(),
-                "settings": (await session.execute(select(UserSettings).where(UserSettings.user_id == other_user_id))).scalars().all(),
-                "groups": (await session.execute(select(ProjectGroup).where(ProjectGroup.user_id == other_user_id))).scalars().all(),
-                "boards": (await session.execute(select(UserProject).where(UserProject.user_id == other_user_id))).scalars().all(),
-                "sheets": (await session.execute(select(UserSheetProject).where(UserSheetProject.user_id == other_user_id))).scalars().all(),
-                "tiles": (await session.execute(select(UserTileProject).where(UserTileProject.user_id == other_user_id))).scalars().all(),
-                "admin_boards": (await session.execute(select(UserProject).where(UserProject.user_id == admin_id))).scalars().all(),
+                "user": (
+                    await session.execute(select(User).where(User.id == other_user_id))
+                ).scalar_one_or_none(),
+                "settings": (
+                    await session.execute(
+                        select(UserSettings).where(
+                            UserSettings.user_id == other_user_id
+                        )
+                    )
+                )
+                .scalars()
+                .all(),
+                "groups": (
+                    await session.execute(
+                        select(ProjectGroup).where(
+                            ProjectGroup.user_id == other_user_id
+                        )
+                    )
+                )
+                .scalars()
+                .all(),
+                "boards": (
+                    await session.execute(
+                        select(UserProject).where(UserProject.user_id == other_user_id)
+                    )
+                )
+                .scalars()
+                .all(),
+                "sheets": (
+                    await session.execute(
+                        select(UserSheetProject).where(
+                            UserSheetProject.user_id == other_user_id
+                        )
+                    )
+                )
+                .scalars()
+                .all(),
+                "tiles": (
+                    await session.execute(
+                        select(UserTileProject).where(
+                            UserTileProject.user_id == other_user_id
+                        )
+                    )
+                )
+                .scalars()
+                .all(),
+                "admin_boards": (
+                    await session.execute(
+                        select(UserProject).where(UserProject.user_id == admin_id)
+                    )
+                )
+                .scalars()
+                .all(),
             }
 
     remaining = asyncio.run(counts())
     assert remaining["user"] is None
-    assert all(not remaining[key] for key in ("settings", "groups", "boards", "sheets", "tiles"))
+    assert all(
+        not remaining[key]
+        for key in ("settings", "groups", "boards", "sheets", "tiles")
+    )
     assert len(remaining["admin_boards"]) == 1

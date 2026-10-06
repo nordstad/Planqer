@@ -273,7 +273,9 @@ def test_invalid_algorithm():
 
 
 def test_explicit_branch_and_bound_rejects_large_workloads():
-    with pytest.raises(ValueError, match="branch-and-bound algorithm supports at most 10"):
+    with pytest.raises(
+        ValueError, match="branch-and-bound algorithm supports at most 10"
+    ):
         optimize_cutting(
             {100.0: 11},
             200.0,

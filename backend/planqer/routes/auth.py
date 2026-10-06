@@ -142,7 +142,9 @@ async def login_user(
     user = result.scalar_one_or_none()
 
     password_matches = (
-        await asyncio.to_thread(verify_password, user_data.password, user.hashed_password)
+        await asyncio.to_thread(
+            verify_password, user_data.password, user.hashed_password
+        )
         if user
         else False
     )

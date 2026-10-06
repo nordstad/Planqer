@@ -266,9 +266,12 @@ def test_invalid_replacement_layout_clears_stale_diagram(client, solved_result):
 
     assert response.status_code == 200
     assert response.json()["has_svg_image"] is False
-    assert client.get(
-        f"/api/tile-projects/{saved['id']}/image", headers=headers
-    ).status_code == 404
+    assert (
+        client.get(
+            f"/api/tile-projects/{saved['id']}/image", headers=headers
+        ).status_code
+        == 404
+    )
 
 
 def test_saved_diagonal_project_redraws_the_true_polygon_shape(client):

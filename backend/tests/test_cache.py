@@ -20,9 +20,7 @@ def test_concurrent_cache_misses_compute_once():
 
     def request():
         barrier.wait()
-        return get_cached_optimization(
-            {100.0: 1}, [200.0], 3.0, optimize
-        )
+        return get_cached_optimization({100.0: 1}, [200.0], 3.0, optimize)
 
     first = threading.Thread(target=request)
     second = threading.Thread(target=request)

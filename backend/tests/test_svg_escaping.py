@@ -28,9 +28,7 @@ def test_board_live_and_saved_svgs_escape_project_names():
     live = generate_cut_list_image(
         [[100.0]], 300.0, "data:image/svg+xml;base64,", project_name=SPECIAL_TEXT
     )
-    saved = generate_saved_diagram(
-        [[100.0]], 300.0, project_name=SPECIAL_TEXT
-    )
+    saved = generate_saved_diagram([[100.0]], 300.0, project_name=SPECIAL_TEXT)
 
     for data_url in (live, saved):
         root = _parse(data_url)

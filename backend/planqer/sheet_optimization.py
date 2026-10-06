@@ -983,13 +983,12 @@ def _validate_sheet_result(
     allow_rotation: bool,
 ) -> None:
     """Reject layouts that do not preserve every requested part instance."""
-    expected = {
-        rectangle.part_id: rectangle
-        for rectangle in expand_sheet_parts(parts)
-    }
+    expected = {rectangle.part_id: rectangle for rectangle in expand_sheet_parts(parts)}
     placed = [part for sheet in result.sheets for part in sheet.parts]
 
-    if {part.part_id for part in placed} != set(expected) or len(placed) != len(expected):
+    if {part.part_id for part in placed} != set(expected) or len(placed) != len(
+        expected
+    ):
         raise ValueError("Sheet optimization produced an incomplete layout")
 
     for part in placed:
@@ -1003,7 +1002,9 @@ def _validate_sheet_result(
             requested.width,
         )
         if not (same_orientation or rotated_orientation):
-            raise ValueError(f"Sheet optimization changed dimensions for {part.part_id}")
+            raise ValueError(
+                f"Sheet optimization changed dimensions for {part.part_id}"
+            )
         if (
             part.x < 0
             or part.y < 0

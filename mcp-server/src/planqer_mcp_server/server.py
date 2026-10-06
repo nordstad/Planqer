@@ -36,7 +36,7 @@ MCP_API_RETRY_MAX_DELAY_MS = max(
     MCP_API_RETRY_BASE_DELAY_MS,
     int(os.getenv("MCP_API_RETRY_MAX_DELAY_MS", "2000")),
 )
-MCP_SERVER_VERSION = "0.6.0"
+MCP_SERVER_VERSION = "0.6.1"
 
 RETRYABLE_STATUS_CODES = {408, 425, 429, 500, 502, 503, 504}
 
@@ -253,7 +253,7 @@ async def handle_call_tool(
 
 server = Server(
     "planqer-mcp-server",
-    version="0.5.0",
+    version="0.6.1",
     on_list_tools=handle_list_tools,
     on_call_tool=handle_call_tool,
 )

@@ -91,8 +91,8 @@ async def create_cutting_plan(request: Request, planqer_request: PlanqerRequest)
     algorithm = None
     try:
         parts = planqer_request.parts
-        algorithm, costs, currency, enabled, optimize_for = normalize_optimization_options(
-            planqer_request
+        algorithm, costs, currency, enabled, optimize_for = (
+            normalize_optimization_options(planqer_request)
         )
         # A timed-out worker thread may finish in the background; input budgets
         # keep that bounded while preventing it from blocking this event loop.

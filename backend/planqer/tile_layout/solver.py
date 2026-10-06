@@ -120,7 +120,11 @@ def _clip_raw_placement(
 ) -> PlacedTile | None:
     """Normalize a bond placement at the single solver-to-geometry seam."""
     if raw.anchor == PlacementAnchor.TOP_LEFT:
-        if raw.width is not None or raw.height is not None or raw.angle_degrees is not None:
+        if (
+            raw.width is not None
+            or raw.height is not None
+            or raw.angle_degrees is not None
+        ):
             raise ValueError("top-left placements cannot define angled dimensions")
         return place_and_clip(raw.x, raw.y, raw.rotated, tile, surface, joint)
 

@@ -164,7 +164,9 @@ def _build_board_plans(
                 key=lambda length: board_costs[length]["price_per_board"],
             )
         else:
-            stock_length = min(suitable_lengths) if suitable_lengths else optimal_board_length
+            stock_length = (
+                min(suitable_lengths) if suitable_lengths else optimal_board_length
+            )
         plans.append(BoardPlan(stock_length, tuple(board_cuts)))
     return plans
 
@@ -186,19 +188,20 @@ def _calculate_plan_metrics(
     return total_waste, warning_count
 
 
-def _calculate_plan_cost(
-    board_plans: list[BoardPlan], board_costs: dict
-) -> float:
+def _calculate_plan_cost(board_plans: list[BoardPlan], board_costs: dict) -> float:
     quantities = Counter(board_plan.stock_length for board_plan in board_plans)
     total_cost = 0.0
     for stock_length, quantity in quantities.items():
         cost_data = board_costs.get(stock_length, {})
-        total_cost += apply_bulk_discount(
-            quantity,
-            cost_data.get("price_per_board", 0.0),
-            cost_data.get("bulk_discount", 0.0),
-            cost_data.get("minimum_quantity", 1),
-        ) * quantity
+        total_cost += (
+            apply_bulk_discount(
+                quantity,
+                cost_data.get("price_per_board", 0.0),
+                cost_data.get("bulk_discount", 0.0),
+                cost_data.get("minimum_quantity", 1),
+            )
+            * quantity
+        )
     return total_cost
 
 

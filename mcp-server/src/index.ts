@@ -37,7 +37,7 @@ const MCP_API_MAX_RETRIES = Math.max(0, parseIntEnv('MCP_API_MAX_RETRIES', 2));
 const MCP_API_RETRY_BASE_DELAY_MS = Math.max(0, parseIntEnv('MCP_API_RETRY_BASE_DELAY_MS', 200));
 const MCP_API_RETRY_MAX_DELAY_MS = Math.max(MCP_API_RETRY_BASE_DELAY_MS, parseIntEnv('MCP_API_RETRY_MAX_DELAY_MS', 2000));
 const RETRYABLE_STATUS_CODES = new Set([408, 425, 429, 500, 502, 503, 504]);
-const MCP_SERVER_VERSION = '0.6.0';
+const MCP_SERVER_VERSION = '0.6.1';
 
 const shouldLog = (level: LogLevel): boolean => LOG_LEVELS[level] >= LOG_LEVELS[currentLevel];
 const REDACT_FIELDS = new Set(['parts', 'project_name', 'cut_list', 'visualization', 'content', 'structuredContent']);

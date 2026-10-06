@@ -69,11 +69,12 @@ def update_saved_image(
 
     safe_name = _safe_filename(project_name)
     filename = f"{safe_name} - {diagram_label.title()}.{extension}"
-    ascii_name = unicodedata.normalize("NFKD", filename).encode(
-        "ascii", "ignore"
-    ).decode() or f"download.{extension}"
+    ascii_name = (
+        unicodedata.normalize("NFKD", filename).encode("ascii", "ignore").decode()
+        or f"download.{extension}"
+    )
     disposition = (
-        f'attachment; filename="{ascii_name}"; filename*=UTF-8\'\'{quote(filename)}'
+        f"attachment; filename=\"{ascii_name}\"; filename*=UTF-8''{quote(filename)}"
     )
     return Response(
         content=image_bytes,
