@@ -5,7 +5,7 @@
 
   The order list and the cut order both derive from board_lengths_used — the same
   list the diagram draws from. Deriving them anywhere else is how the order list
-  once said SPF-36 while the diagram drew a 4200 mm board.
+  once disagreed with the diagram about which board length was bought.
 */
 
 import { useState } from 'react';

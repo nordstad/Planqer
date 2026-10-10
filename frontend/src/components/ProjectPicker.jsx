@@ -17,14 +17,14 @@ import { useTranslation } from 'react-i18next';
 
 const NEW = '__new__';
 
-const ProjectPicker = ({ groups, value, onChange, onCreate }) => {
+const ProjectPicker = ({ groups, value, onChange, onCreate, defaultNewName = '' }) => {
   const { t } = useTranslation();
   const [creating, setCreating] = useState(false);
-  const [name, setName] = useState('');
+  const [name, setName] = useState(defaultNewName);
 
   const cancel = () => {
     setCreating(false);
-    setName('');
+    setName(defaultNewName);
   };
 
   const create = async () => {

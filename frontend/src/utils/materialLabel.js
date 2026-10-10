@@ -16,3 +16,7 @@ export const materialLabel = (material, t) => {
   if (material === 'tile') return t('workflow.tile');
   return MATERIAL_KEYS[material] ? t(MATERIAL_KEYS[material]) : material;
 };
+
+/* Older model imports saved the placeholder word 'unknown' as the material.
+   It means "not specified", so callers fall back to their neutral label. */
+export const cleanMaterial = (material) => (material && material !== 'unknown' ? material : '');

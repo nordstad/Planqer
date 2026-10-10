@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import BoardLengthRow from './BoardLengthRow';
 
 describe('BoardLengthRow', () => {
-  it('renders the board length input and derived stock code', () => {
+  it('renders the board length input without an invented stock code', () => {
     render(
       <table>
         <tbody>
@@ -19,7 +19,8 @@ describe('BoardLengthRow', () => {
       </table>
     );
     expect(screen.getByLabelText(/Board length in millimetres, row 1/i)).toHaveValue(300);
-    expect(screen.getByText('SPF-3')).toBeInTheDocument();
+    expect(screen.queryByText(/SPF-/)).not.toBeInTheDocument();
+    expect(screen.getByText('0.3 m')).toBeInTheDocument();
   });
 
   it('shows the error message when given one', () => {

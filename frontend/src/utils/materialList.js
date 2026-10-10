@@ -1,4 +1,4 @@
-import { materialLabel } from './materialLabel';
+import { materialLabel, cleanMaterial } from './materialLabel';
 
 const mm = (value) => (Number.isFinite(value) ? Math.round(value).toLocaleString('sv-SE') : '—');
 const LEGACY_CURRENCY = 'SEK';
@@ -22,7 +22,7 @@ const boardRows = (project) => {
     const pricePerUnit = Number(cost?.price_per_board);
     return {
       plan: project.name,
-      material: project.material_type || 'board',
+      material: cleanMaterial(project.material_type) || 'board',
       size: project.board_thickness && project.board_width
         ? `${mm(project.board_thickness)} × ${mm(project.board_width)} × ${mm(parseFloat(size))} mm`
         : `${mm(parseFloat(size))} mm`,
@@ -53,7 +53,7 @@ const sheetRows = (project) => {
   return [...bySize.values()].map(({ width, height, quantity }) => {
     return {
       plan: project.name,
-      material: project.material_type || 'sheet',
+      material: cleanMaterial(project.material_type) || 'sheet',
       size: project.sheet_thickness
         ? `${mm(project.sheet_thickness)} × ${mm(parseFloat(width))} × ${mm(parseFloat(height))} mm`
         : `${mm(parseFloat(width))} × ${mm(parseFloat(height))} mm`,

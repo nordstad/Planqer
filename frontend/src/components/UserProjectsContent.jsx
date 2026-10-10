@@ -27,7 +27,7 @@ import {
 import { svgBlobToPngBlob } from '../utils/svgToPng';
 import { printProjectPlans } from '../utils/printProject';
 import { buildMaterialListHtml } from '../utils/materialList';
-import { materialLabel } from '../utils/materialLabel';
+import { materialLabel, cleanMaterial } from '../utils/materialLabel';
 import { buildCutListHtml } from '../utils/tileCutList';
 import { useAuth } from '../contexts/AuthContext';
 import Loader from './Loader';
@@ -69,7 +69,7 @@ const planFacts = (project, t) => {
     return {
       type: t('common.sheetCutting'),
       count: t('ui.partCount', { count }),
-      stock: `${materialLabel(project.material_type || 'sheet', t)} · ${project.sheet_thickness || '—'}mm`,
+      stock: `${materialLabel(cleanMaterial(project.material_type) || 'sheet', t)} · ${project.sheet_thickness || '—'}mm`,
     };
   }
   if (project.projectType === 'tile') {
@@ -80,13 +80,19 @@ const planFacts = (project, t) => {
       stock: `${materialLabel(project.tile_data?.material_type || 'tile', t)} · ${project.tile_data?.thickness || '—'}×${project.tile_data.width}×${project.tile_data.height}mm`,
     };
   }
-  const count = project.parts_data && typeof project.parts_data === 'object'
-    ? Object.values(project.parts_data).reduce((sum, qty) => sum + qty, 0)
-    : 0;
+  const partEntries = project.parts_data && typeof project.parts_data === 'object'
+    ? Object.entries(project.parts_data)
+    : [];
+  const count = partEntries.reduce((sum, [, qty]) => sum + qty, 0);
+  const demand = partEntries.reduce((sum, [length, qty]) => sum + parseFloat(length) * qty, 0);
   return {
     type: t('common.boardCutting'),
-    count: t(count === 1 ? 'workflow.partsSummary_one' : 'workflow.partsSummary', { count, demand: '—', kerf: project.saw_blade_width }),
-    stock: `${materialLabel(project.material_type || 'board', t)} · ${project.board_thickness || '—'}×${project.board_width || '—'}mm`,
+    count: t(count === 1 ? 'workflow.partsSummary_one' : 'workflow.partsSummary', {
+      count,
+      demand: Number.isFinite(demand) && demand > 0 ? Math.round(demand).toLocaleString('sv-SE') : '—',
+      kerf: project.saw_blade_width,
+    }),
+    stock: `${materialLabel(cleanMaterial(project.material_type) || 'board', t)} · ${project.board_thickness || '—'}×${project.board_width || '—'}mm`,
   };
 };
 

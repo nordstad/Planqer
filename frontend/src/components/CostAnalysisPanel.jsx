@@ -89,7 +89,7 @@ const CostAnalysisPanel = ({ appliedCost, optimizeFor, previous, boardsUsed, off
                 const lineTotal = lineTotalFor(boardLength);
                 return (
                   <tr key={boardLength}>
-                    <td>SPF-{Math.round(parseFloat(boardLength) / 100)}</td>
+                    <td>{mm(parseFloat(boardLength))} mm</td>
                     <td>{quantity}</td>
                     <td>{quantity ? money(lineTotal / quantity) : '—'}</td>
                     <td>{money(lineTotal)}</td>

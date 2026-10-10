@@ -1,6 +1,6 @@
 /*
-  One stock line in the STOCK AVAILABLE table. Stock codes are derived from the
-  length the way a supplier's catalog does it: SPF-51 is a 5100 mm board.
+  One stock line in the STOCK AVAILABLE table: a length, what that is in metres,
+  and an optional price per metre.
 */
 import { Strike } from './icons';
 import { useTranslation } from 'react-i18next';
@@ -11,13 +11,11 @@ const BoardLengthRow = ({ board, index, handleBoardChange, handleBoardsPaste, re
   const mm = parseFloat(board);
   const { t } = useTranslation();
   const text = (key, vars) => translateWithFallback(t, key, vars);
-  const code = Number.isFinite(mm) && mm > 0 ? `SPF-${Math.round(mm / 100)}` : '—';
   // once a plan exists, the stock the plan actually buys is knocked out in signal
   const solved = inPlan !== null && inPlan !== undefined;
 
   return (
     <tr className={solved && !inPlan ? 'is-out' : undefined}>
-      <td>{code}</td>
       <td>
         <input
           aria-label={text('ui.boardLengthAria', { row: index + 1 })}
