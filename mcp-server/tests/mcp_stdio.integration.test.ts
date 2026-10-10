@@ -16,6 +16,8 @@ let backendCalls = 0;
 let backendAsyncCalls = 0;
 let backendRetryCalls = 0;
 let backendAsyncRetryCalls = 0;
+let lastCutBody: any = null;
+let catalogueQueries: URLSearchParams[] = [];
 let backendServer: ReturnType<typeof createServer> | null = null;
 let backendUrl = '';
 let client: Client | null = null;
@@ -68,9 +70,31 @@ describe('MCP stdio integration', () => {
         return;
       }
 
+      if (req.method === 'GET' && req.url?.startsWith('/api/catalogue/products')) {
+        const query = new URL(req.url, 'http://localhost').searchParams;
+        catalogueQueries.push(query);
+        const regel = {
+          name: 'Framing timber / studs 45 × 95 mm',
+          product: {
+            id: 'se:regel:45x95',
+            grades: ['C24'],
+            species: ['pine'],
+            lengths: [2400, 3000],
+            sources: ['https://www.traguiden.se/'],
+          },
+        };
+        if (query.get('id')) {
+          json(res, 200, query.get('id') === regel.product.id ? [regel] : []);
+        } else {
+          json(res, 200, query.get('q') === 'nothing-matches' ? [] : [regel]);
+        }
+        return;
+      }
+
       if (req.method === 'POST' && req.url === '/api/cutting-plans') {
         backendCalls += 1;
         const body = await readJsonBody(req);
+        lastCutBody = body;
 
         if (!body.parts || !body.available_board_lengths || body.saw_blade_width === undefined) {
           json(res, 400, { detail: 'Missing required payload fields' });
@@ -151,6 +175,7 @@ describe('MCP stdio integration', () => {
     const names = result.tools.map((tool) => tool.name);
 
     expect(names).toContain('optimize_cutting');
+    expect(names).toContain('search_products');
     expect(names).toContain('optimize_demo');
     expect(names).toContain('get_demo_payloads');
     expect(names).toContain('get_cutting_example');
@@ -174,6 +199,62 @@ describe('MCP stdio integration', () => {
     expect(textBlock!.text).toContain('Optimal board length:');
     expect(result.isError).not.toBe(true);
     expect(backendCalls).toBeGreaterThan(0);
+  });
+
+  it('searches the product catalogue through the API', async () => {
+    catalogueQueries = [];
+    const result = await client!.callTool({
+      name: 'search_products',
+      arguments: { query: 'regel 45x95', kind: 'board', language: 'sv' },
+    });
+
+    const text = (result.content as any[]).find((block) => block.type === 'text').text as string;
+    expect(result.isError).not.toBe(true);
+    expect(text).toContain('Products matching "regel 45x95"');
+    expect(text).toContain('`se:regel:45x95`');
+    expect(text).toContain('Standard lengths: 2400, 3000 mm');
+    expect(catalogueQueries[0].get('q')).toBe('regel 45x95');
+    expect(catalogueQueries[0].get('kind')).toBe('board');
+    expect(catalogueQueries[0].get('lang')).toBe('sv');
+    expect(catalogueQueries[0].get('limit')).toBe('10');
+  });
+
+  it('says so when no product matches and rejects bad search input', async () => {
+    const none = await client!.callTool({ name: 'search_products', arguments: { query: 'nothing-matches' } });
+    expect((none.content as any[])[0].text).toContain('No products found for "nothing-matches"');
+
+    const bad = await client!.callTool({ name: 'search_products', arguments: { query: '' } });
+    expect(bad.isError).toBe(true);
+    expect((bad.content as any[])[0].text).toContain('Validation error');
+  });
+
+  it('shows own-words and catalogue products with the result and does not send them to the planner', async () => {
+    const own = await client!.callTool({
+      name: 'optimize_cutting',
+      arguments: { parts: { '100': 1 }, available_board_lengths: [300], saw_blade_width: 3, product: 'Furu 45x95' },
+    });
+    expect((own.content as any[])[0].text).toContain('**Product:** Furu 45x95 (own words)');
+    expect(lastCutBody.product).toBeUndefined();
+
+    const resolved = await client!.callTool({
+      name: 'optimize_cutting',
+      arguments: { parts: { '100': 1 }, available_board_lengths: [300], saw_blade_width: 3, product: 'se:regel:45x95' },
+    });
+    const text = (resolved.content as any[])[0].text as string;
+    expect(text).toContain('Framing timber / studs 45 × 95 mm (`se:regel:45x95`)');
+    expect(text).toContain('Standard stock lengths for this product:** 2400, 3000 mm');
+    expect(lastCutBody.product).toBeUndefined();
+  });
+
+  it('refuses an unknown catalogue id without planning anything', async () => {
+    const before = backendCalls;
+    const result = await client!.callTool({
+      name: 'optimize_cutting',
+      arguments: { parts: { '100': 1 }, available_board_lengths: [300], saw_blade_width: 3, product: 'se:regel:1x1' },
+    });
+    expect(result.isError).toBe(true);
+    expect((result.content as any[])[0].text).toContain("Unknown catalogue product 'se:regel:1x1'");
+    expect(backendCalls).toBe(before);
   });
 
   it('executes optimize_cutting async mode via stdio against backend API', async () => {

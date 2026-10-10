@@ -9,6 +9,7 @@
 import {
   freeTextSelection, initialSelection, selectionLead, selectionName, crossSectionKey,
 } from './catalogue';
+import { canonicalMaterial, matchMaterial } from './materialMatch';
 import { validateBoards, SAW_KERF_MIN, SAW_KERF_MAX } from './validators';
 
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
@@ -26,15 +27,19 @@ const mergeBy = (entries, keyOf, make) => {
 
 /* Every distinct size Planqer found becomes one cutlist, whatever format it
    came from. Material joins the grouping key: two identical rectangles in
-   different materials are two different purchases, not one. */
-export const groupBoards = (items) => {
+   different materials are two different purchases, not one. With a catalogue,
+   names that mean the same ("C24", "c24", "Regel C24") are one material; the
+   group keeps the first spelling it saw. */
+const materialKey = (catalogue, kind, material) => (catalogue && material ? canonicalMaterial(catalogue, material, kind) : material);
+
+export const groupBoards = (items, catalogue = null) => {
   const grouped = new Map();
   items.forEach((item) => {
     const width = Math.round(item.width);
     const thickness = Math.round(item.thickness);
     if (width <= 0 || thickness <= 0) return;
     const material = item.material || null;
-    const id = `board|${material || ''}|${width}x${thickness}`;
+    const id = `board|${materialKey(catalogue, 'board', material) || ''}|${width}x${thickness}`;
     if (!grouped.has(id)) {
       grouped.set(id, { id, kind: 'board', material, width, thickness, quantity: 0, names: [], lengths: [] });
     }
@@ -50,13 +55,13 @@ export const groupBoards = (items) => {
   }));
 };
 
-export const groupSheets = (items) => {
+export const groupSheets = (items, catalogue = null) => {
   const grouped = new Map();
   items.forEach((item) => {
     const thickness = Math.round(item.thickness);
     if (thickness <= 0) return;
     const material = item.material || null;
-    const id = `sheet|${material || ''}|${thickness}`;
+    const id = `sheet|${materialKey(catalogue, 'sheet', material) || ''}|${thickness}`;
     if (!grouped.has(id)) {
       grouped.set(id, { id, kind: 'sheet', material, thickness, quantity: 0, names: [], sizes: [] });
     }
@@ -106,16 +111,19 @@ export const planNameFor = (modelName, group, config, t, language) => (
 export const BOARD_DEFAULTS = { boards: ['2500', '3600', '4200', '5100'], kerf: '3' };
 export const SHEET_DEFAULTS = { width: '1200', height: '2500', kerf: '3', allowRotation: true };
 
-/* A model-supplied material (a STEP part's name, say) starts as the group's own
-   words. Otherwise the product is what the user chose last time for this size,
-   or the common catalogue match marked as a suggestion, or nothing. */
+/* A model-supplied material (a STEP part's name, say) is read against the
+   catalogue: a confident match is "From model", a weak one a suggestion, and a
+   name the catalogue doesn't know stays the group's own words. Without one the
+   product is what the user chose last time for this size, or the common
+   catalogue match marked as a suggestion, or nothing. */
+export const initialProduct = (group, catalogue) => {
+  if (!group.material) return initialSelection(catalogue, group.kind, groupDimensions(group));
+  const match = matchMaterial(catalogue, group.kind, group.material, groupDimensions(group));
+  return match ? match.selection : freeTextSelection(group.kind, group.material);
+};
+
 export const initialConfig = (group, defaults = {}, catalogue = null) => {
-  const base = {
-    label: '',
-    product: group.material
-      ? freeTextSelection(group.kind, group.material)
-      : initialSelection(catalogue, group.kind, groupDimensions(group)),
-  };
+  const base = { label: '', product: initialProduct(group, catalogue) };
   if (group.kind === 'board') {
     const lengths = defaults.boards?.length ? defaults.boards : BOARD_DEFAULTS.boards;
     return {

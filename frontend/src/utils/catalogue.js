@@ -32,7 +32,7 @@ const MEMORY_LIMIT = 60;
 export const localeOf = (language = 'en') => language.slice(0, 2).toLowerCase();
 export const labelIn = (labels = {}, language) => labels[localeOf(language)] || labels.en || '';
 
-const fold = (text) => String(text).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+export const fold = (text) => String(text).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 const num = (value) => (Number.isFinite(value) ? String(Math.round(value * 100) / 100) : '');
 
 /* ── loading ─────────────────────────────────────────────────────────── */
@@ -197,7 +197,7 @@ export const matchCrossSection = (catalogue, kind, dims, tolerance = MATCH_TOLER
 
 export const emptySelection = () => ({
   type: null, labels: {}, product: null, text: '',
-  details: { species: '', treatment: '', grade: '', profile: '', text: '' }, suggested: false,
+  details: { species: '', treatment: '', grade: '', profile: '', text: '' }, suggested: false, fromModel: false,
 });
 
 export const isEmptySelection = (selection) => !selection || !selection.type;
@@ -278,6 +278,7 @@ export const buildSnapshot = (selection, language, dims) => {
       text: orNull(selection.details?.text),
     },
     suggested: !!selection.suggested,
+    from_model: !!selection.fromModel,
   };
 };
 
@@ -305,6 +306,7 @@ export const selectionFromSnapshot = (snapshot) => {
     } : null,
     details: { ...emptySelection().details, ...Object.fromEntries(Object.entries(snapshot.details || {}).map(([field, value]) => [field, value || ''])) },
     suggested: !!snapshot.suggested,
+    fromModel: !!snapshot.from_model,
   };
 };
 
@@ -329,7 +331,7 @@ const readMemory = () => {
 export const rememberChoice = (key, selection) => {
   const memory = readMemory();
   delete memory[key];
-  if (!isEmptySelection(selection)) memory[key] = { ...selection, suggested: false };
+  if (!isEmptySelection(selection)) memory[key] = { ...selection, suggested: false, fromModel: false };
   const kept = Object.entries(memory).slice(-MEMORY_LIMIT);
   try {
     localStorage.setItem(MEMORY_KEY, JSON.stringify(Object.fromEntries(kept)));
@@ -340,7 +342,7 @@ export const rememberChoice = (key, selection) => {
 
 export const recallChoice = (key) => {
   const saved = readMemory()[key];
-  return saved?.type ? { ...emptySelection(), ...saved, suggested: false } : null;
+  return saved?.type ? { ...emptySelection(), ...saved, suggested: false, fromModel: false } : null;
 };
 
 /* The starting selection for a cross-section: what the user chose last time,

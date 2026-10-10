@@ -41,6 +41,12 @@
                         "branch_bound"
                     ]
                 },
+                "product": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200,
+                    "description": "Optional: what the boards are. Either your own words (e.g. \"Furu 45x95\") or a catalogue product id from search_products (e.g. \"se:regel:45x95\"), which adds its standard stock lengths to the result. Shown with the result; it does not change the plan."
+                },
                 "use_async": {
                     "type": "boolean",
                     "description": "Use async processing for complex optimizations (default: false)"
@@ -50,6 +56,47 @@
                 "parts",
                 "available_board_lengths",
                 "saw_blade_width"
+            ]
+        }
+    },
+    {
+        "name": "search_products",
+        "description": "Search this Planqer instance's product catalogue of boards and building sheets (Swedish and Norwegian timber, plywood, OSB and more, plus the instance's own additions) by name, grade or size. Returns product ids, sizes, grades, species and standard stock lengths. Use an id as the product in optimize_cutting.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100,
+                    "description": "Name, grade or size, e.g. \"regel c24\", \"45x95\", \"plywood 15\", \"kryssfiner\""
+                },
+                "kind": {
+                    "type": "string",
+                    "enum": [
+                        "board",
+                        "sheet"
+                    ],
+                    "description": "Only boards (timber) or only sheets"
+                },
+                "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 20,
+                    "description": "Maximum results (default 10)"
+                },
+                "language": {
+                    "type": "string",
+                    "enum": [
+                        "en",
+                        "sv",
+                        "nb"
+                    ],
+                    "description": "Language for product names (default en)"
+                }
+            },
+            "required": [
+                "query"
             ]
         }
     },

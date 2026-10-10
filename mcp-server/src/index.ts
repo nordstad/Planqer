@@ -110,6 +110,7 @@ type DemoPayload = {
   available_board_lengths: number[];
   saw_blade_width: number;
   project_name: string;
+  product?: string;
 };
 
 type DemoPayloadMap = Record<string, DemoPayload>;
@@ -143,7 +144,70 @@ const OptimizeCuttingInputSchema = z.object({
   saw_blade_width: SawKerfSchema,
   project_name: ProjectNameSchema,
   algorithm: AlgorithmSchema,
+  product: z.string().trim().min(1).max(200).optional(),
 });
+
+const SearchProductsInputSchema = z.object({
+  query: z.string().trim().min(1).max(100),
+  kind: z.enum(['board', 'sheet']).optional(),
+  limit: z.number().int().min(1).max(20).optional(),
+  language: z.enum(['en', 'sv', 'nb']).optional(),
+});
+
+// Catalogue product ids look like "se:regel:45x95" or "local:plywood:21".
+const CATALOGUE_ID = /^[a-z]{2,}:[a-z0-9-]+:\d+(?:\.\d+)?(?:x\d+(?:\.\d+)?)?$/;
+const SEARCH_DEFAULT_LIMIT = 10;
+
+type CatalogueProduct = {
+  id: string;
+  grades?: string[];
+  species?: string[];
+  treatments?: string[];
+  lengths?: number[];
+  max_length?: number | null;
+  formats?: { width: number; height: number }[];
+  note?: string | null;
+  sources?: string[];
+};
+type CatalogueResult = { name: string; product: CatalogueProduct };
+
+const spaced = (values: unknown[]): string => values.map(String).join(', ');
+
+// One search result as a short block of text an assistant can quote.
+const describeProduct = ({ name, product }: CatalogueResult): string => {
+  const lines = [`**${name}** — \`${product.id}\``];
+  if (product.grades?.length) lines.push(`   - Grades: ${spaced(product.grades)}`);
+  if (product.species?.length) lines.push(`   - Species: ${spaced(product.species)}`);
+  if (product.treatments?.length) lines.push(`   - Treatments: ${spaced(product.treatments)}`);
+  if (product.lengths?.length) lines.push(`   - Standard lengths: ${spaced(product.lengths)} mm`);
+  if (product.max_length) lines.push(`   - Stocked up to: ${product.max_length} mm`);
+  if (product.formats?.length) {
+    lines.push(`   - Standard sheets: ${product.formats.map((f) => `${f.width} × ${f.height}`).join(', ')} mm`);
+  }
+  if (product.note) lines.push(`   - Note: ${product.note}`);
+  if (product.sources?.length) lines.push(`   - Source: ${product.sources[0]}`);
+  return lines.join('\n');
+};
+
+// The Product line of an optimization result: a catalogue product or the
+// caller's own words.
+const formatProductNote = (product: string | CatalogueResult): string => {
+  if (typeof product === 'string') {
+    return `**Product:** ${product} (own words)\\n`;
+  }
+  let note = `**Product:** ${product.name} (\`${product.product.id}\`)\\n`;
+  if (product.product.lengths?.length) {
+    note += `**Standard stock lengths for this product:** ${spaced(product.product.lengths)} mm\\n`;
+  }
+  return note;
+};
+
+// Local additions are included and hidden entries left out, because the API
+// serves the instance's catalogue.
+const fetchProducts = async (params: Record<string, string | number>): Promise<CatalogueResult[]> => {
+  const response = await axios.get(`${API_BASE_URL}/catalogue/products`, { params, timeout: 10000 });
+  return response.data;
+};
 
 const AsyncOptimizeCuttingInputSchema = OptimizeCuttingInputSchema.extend({
   use_async: z.boolean().optional(),
@@ -191,6 +255,8 @@ class PlanqerServer {
       switch (request.params.name) {
         case 'optimize_cutting':
           return await this.handleOptimizeCutting(request.params.arguments || {}, requestId);
+        case 'search_products':
+          return await this.handleSearchProducts(request.params.arguments || {}, requestId);
         case 'optimize_demo':
           return await this.handleOptimizeDemo(request.params.arguments || {}, requestId);
         case 'get_demo_payloads':
@@ -204,13 +270,17 @@ class PlanqerServer {
     });
   }
 
-  private formatOptimizationResult(result: any, requestPayload: any): string {
+  private formatOptimizationResult(result: any, requestPayload: any, product?: string | CatalogueResult): string {
     try {
       // Project information header
       let formatted = "🎯 **Cutting Optimization Results**\\n\\n";
       
       if (requestPayload.project_name) {
         formatted += `**Project:** ${requestPayload.project_name}\\n`;
+      }
+
+      if (product) {
+        formatted += formatProductNote(product);
       }
 
       // Input summary
@@ -284,7 +354,28 @@ class PlanqerServer {
       const useAsync = validatedInput.use_async || false;
       
       // Remove use_async from payload as it's not part of the API
-      const { use_async, ...apiPayload } = validatedInput;
+      const { use_async, product, ...apiPayload } = validatedInput;
+
+      let resolvedProduct: string | CatalogueResult | undefined;
+      if (product) {
+        if (CATALOGUE_ID.test(product)) {
+          const [found] = await fetchProducts({ id: product, limit: 1 });
+          if (!found) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: `❌ Unknown catalogue product '${product}'. Use search_products to find a valid id, or give the product in your own words.`,
+                },
+              ],
+              isError: true,
+            };
+          }
+          resolvedProduct = found;
+        } else {
+          resolvedProduct = product;
+        }
+      }
 
       // Make API request - choose sync or async endpoint
       const endpoint = useAsync ? '/cutting-plans/async' : '/cutting-plans';
@@ -382,7 +473,7 @@ class PlanqerServer {
         };
       } else {
         // Handle synchronous response
-        const formattedResponse = this.formatOptimizationResult(response.data, apiPayload);
+        const formattedResponse = this.formatOptimizationResult(response.data, apiPayload, resolvedProduct);
         log('INFO', 'mcp_call_end', { requestId: rid, tool: 'optimize_cutting', mode: 'sync' });
         return {
           content: [
@@ -424,6 +515,62 @@ class PlanqerServer {
         ],
         isError: true,
       };
+    }
+  }
+
+  private async handleSearchProducts(args: any, requestId?: string): Promise<CallToolResult> {
+    const rid = requestId || makeRequestId();
+    try {
+      const input = SearchProductsInputSchema.parse(args);
+      const params: Record<string, string | number> = {
+        q: input.query,
+        limit: input.limit ?? SEARCH_DEFAULT_LIMIT,
+        lang: input.language ?? 'en',
+      };
+      if (input.kind) {
+        params.kind = input.kind;
+      }
+      log('DEBUG', 'catalogue_search_start', { requestId: rid });
+      const results = await fetchProducts(params);
+      log('INFO', 'mcp_call_end', { requestId: rid, tool: 'search_products' });
+      if (results.length === 0) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `No products found for "${input.query}". Try fewer words, a size like 45x95, or use your own words as the product.`,
+            },
+          ],
+        };
+      }
+      const blocks = results.map((item, index) => `${index + 1}. ${describeProduct(item)}`);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `🔎 **Products matching "${input.query}"** (${results.length})\n\n${blocks.join('\n\n')}\n\nUse a product id as \`product\` in \`optimize_cutting\`.`,
+          },
+        ],
+      };
+    } catch (error) {
+      log('ERROR', 'catalogue_search_failed', { requestId: rid, error: String(error) });
+      let errorMessage: string;
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          errorMessage = `❌ API Error (${error.response.status}): ${
+            error.response.data?.detail || error.response.statusText
+          }`;
+        } else if (error.request) {
+          errorMessage = `❌ Network error: Could not reach the Planqer API at ${API_BASE_URL}. Please check if the service is running.`;
+        } else {
+          errorMessage = `❌ Request error: ${error.message}`;
+        }
+      } else if (error instanceof z.ZodError) {
+        errorMessage = `❌ Validation error: ${error.issues.map(issue => `${issue.path.join('.')}: ${issue.message}`).join(', ')}`;
+      } else {
+        errorMessage = `❌ Unexpected error: ${error instanceof Error ? error.message : String(error)}`;
+      }
+      return { content: [{ type: 'text', text: errorMessage }], isError: true };
     }
   }
 
@@ -541,6 +688,7 @@ class PlanqerServer {
                `- \`best_fit_decreasing\` - Combines sorting with best fit (recommended)\\n` +
                `- \`genetic\` - Near-optimal solutions for complex problems\\n` +
                `- \`branch_bound\` - Optimal solutions for small problems\\n\\n` +
+               `**Optional \`product\`:** your own words (e.g. "Framing timber 45x95") or a catalogue id found with \`search_products\` (e.g. "se:regel:45x95"), shown with the result.\\n\\n` +
                `**Usage:**\\n` +
                `\`\`\`\\noptimize_cutting(${JSON.stringify(example)})\\n\`\`\``,
         },
