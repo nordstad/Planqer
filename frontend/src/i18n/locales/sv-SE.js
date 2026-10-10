@@ -77,6 +77,7 @@ const locale = {
     pricesIncludeVat: 'Priser inkluderar moms',
     vatHelp: 'Används för nya prissatta planer. Sparade planer behåller sin egen momsgrund.',
     language: 'Standardspråk',
+    spareMargin: 'Standardmarginal, %', spareMarginHelp: 'Läggs till för varje köpt bräda eller skiva. Noll stänger av extra material.',
     loadError: 'Det gick inte att läsa inställningarna: {{message}}',
     saveError: 'Det gick inte att spara inställningarna: {{message}}',
   },
@@ -238,6 +239,7 @@ const locale = {
     deleteUserConfirm: 'Ta bort användaren "{{email}}"? Detta kan inte ångras.',
     cancel: 'Avbryt', delete: 'Ta bort', project: 'Projekt', notInProject: 'Inget projekt', newProject: 'Nytt projekt…', createProject: 'Skapa projekt', load: 'Ladda', close: 'Stäng', name: 'Namn', parts: 'Delar', actions: 'Åtgärder', board: 'bräda', boards: 'brädor', length: 'längd', lengths: 'längder', stock: 'Råmaterial', materialBought: 'Inköpt material', offcut: 'Restbit', efficiency: 'Utnyttjande', cost: 'Kostnad', saveAs: 'Spara som', createNewPlan: 'Skapa ny plan', updateExistingPlan: 'Uppdatera befintlig plan', openDashboard: 'Öppna din instrumentpanel', pricePlan: 'Prissätt den här planen', applyChangedPrices: 'Tillämpa ändrade priser', priceAgain: 'Prissätt planen igen', total: 'Totalt', before: 'Före', now: 'Nu', change: 'Ändring', users: 'Användare', active: 'Aktiva', admins: 'Administratörer', status: 'Status', role: 'Roll', created: 'Skapad', inactive: 'Inaktiv', user: 'Användare', resetPasscode: 'Återställ lösenord', noUsers: 'Inga användare ännu.', fullTiles: 'Hela plattor', cutTiles: 'Kapade plattor', used: 'Använt', cutList: 'Kaplista', straightCut: 'Rak kapning', noCutNeeded: 'Ingen kapning behövs', viewCut: 'Visa kapning {{label}}', howToCut: 'Så här kapar du:', noDiagramSaved: 'Inget diagram sparat', pieceMeta: 'Del {{label}} – {{width}}×{{height}} mm platta', finalSize: 'Slutlig storlek: {{width}}×{{height}} mm', edges: 'Kanter', kind: 'Typ', fromOffcut: 'Från restbit', sliver: 'smal bit', sliverCount: '{{count}} smala bitar', openingDiagram: 'Kapa runt en öppning – se diagrammet', cutListDescription: 'Storlekarna är delarna när de lämnar sågen, i millimeter – ingen fog eller kantspalt tillagd. Varje rads färg motsvarar plattorna i diagrammet.', notchedDescription: '"Kapa runt en öppning" visar bara delens yttre mått; själva urtaget är formen i diagrammet.', reusedDescription: 'Från restbit anger antalet delar som görs av en annan plattas restmaterial i stället för en ny platta.', diagonalDescription: 'Diagonala rader visar polygonens kantmått; Visa kapning visar hela plattan, spillet och sågspåret.' },
   projectUi: {
+    badgeQuick: 'Snabb', badgeSpecified: 'Specificerad', badgePriced: 'Prissatt', planStatus: 'Planens detaljnivå', whatMissing: 'Lägg till saknade detaljer eller priser', exportCsv: 'CSV',
     andPlansInIt_one: 'och {{count}} plan i det',
     andPlansInIt_other: 'och de {{count}} planerna i det',
     printPlans_one: 'Skriv ut {{count}} plan',
@@ -282,6 +284,7 @@ Object.assign(locale.projectUi, {
 });
 
 Object.assign(locale.ui, {
+  needed: 'Behövs', toBuy: 'Att köpa', conflictingPrices: 'Motstridiga sparade priser', conflictingPricesCount: '{{count}} sammanslagen rad har motstridiga sparade priser.',
   materialPine: 'Furu', materialSpruce: 'Gran', materialOak: 'Ek', materialBeech: 'Bok', materialBirch: 'Björk', materialPressureTreated: 'Tryckimpregnerat', materialCustom: 'Anpassat', customMaterialPlaceholder: 'Ange material', tilesToBuyWithSpare: 'Plattor att köpa inkl. extra',
   materialCeramic: 'Keramiska plattor', materialPorcelain: 'Granitkeramik', materialStone: 'Naturstensplattor', materialGlass: 'Glasplattor',
   boardLengthAria: 'Brädlängd i millimeter, rad {{row}}', removeBoardAria: 'Ta bort brädlängd, rad {{row}}', strikeLine: 'Ta bort den här raden',

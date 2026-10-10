@@ -20,6 +20,25 @@ grouped into projects — so a chair's rails and its seat can live together.
 - Each saved plan shows its type (board/sheet), part count, the stock/kerf it
   used, and when it was saved.
 - Download the diagram again as SVG or PNG, or delete the plan.
+- Each plan shows a **Quick**, **Specified** and/or **Priced** badge. They are
+  derived from what you saved and never block anything; the link beside them
+  opens the plan so you can add a product or prices.
+
+## Shopping list
+
+Inside a project, **Shopping list** merges identical products (same catalogue
+product, details, dimensions and stock size) across all its plans.
+
+- **Needed** is what the plans cut; **To buy** adds a spare margin.
+- The spare margin is **10%** by default, rounded up so every purchased board or
+  sheet size gets at least one spare. Change your default under **Defaults**, or
+  override it per project from the pencil beside the project name. `0` turns it
+  off. Tile plans keep their own waste setting and get no extra margin.
+- Prices come from the plans themselves. Totals show currency and VAT basis.
+  If two plans price the same item differently, the row is flagged and left out
+  of the total.
+- **Print shopping list**, **Print project** and **CSV** use the same list as
+  the screen.
 
 ## Admin panel
 

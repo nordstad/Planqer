@@ -472,7 +472,8 @@ export const createProjectGroup = async (name) => {
 
 export const renameProjectGroup = async (groupId, name) => {
   try {
-    const response = await axios.put(`${API_URL}/api/project-groups/${groupId}`, { name });
+    const payload = typeof name === 'string' ? { name } : name;
+    const response = await axios.put(`${API_URL}/api/project-groups/${groupId}`, payload);
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));

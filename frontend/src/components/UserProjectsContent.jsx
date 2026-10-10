@@ -22,11 +22,11 @@ import {
   getUserProjects, updateProject, deleteProject,
   getUserSheetProjects, updateSheetProject, deleteSheetProject,
   getUserTileProjects, updateTileProject, deleteTileProject,
-  downloadProjectImage, getProjectGroups, renameProjectGroup, deleteProjectGroup,
+  downloadProjectImage, getProjectGroups, renameProjectGroup, deleteProjectGroup, getUserSettings,
 } from '../utils/api';
 import { svgBlobToPngBlob } from '../utils/svgToPng';
 import { printProjectPlans } from '../utils/printProject';
-import { buildMaterialListHtml } from '../utils/materialList';
+import { buildMaterialListHtml, buildMaterialCsv, isPlanPriced } from '../utils/materialList';
 import { materialLabel, cleanMaterial } from '../utils/materialLabel';
 import { buildCutListHtml } from '../utils/tileCutList';
 import { useAuth } from '../contexts/AuthContext';
@@ -109,6 +109,18 @@ const triggerDownload = (blob, filename) => {
 
 const dataUrlToBlob = async (dataUrl) => (await fetch(dataUrl)).blob();
 
+// Tile plans carry no product, so only pricing says anything about their detail.
+const planStatus = (project, t) => {
+  const priced = isPlanPriced(project);
+  const specified = Boolean(project.product && !project.product.suggested);
+  const isTile = project.projectType === 'tile';
+  const badges = [
+    !isTile && (specified ? ['specified', 'projectUi.badgeSpecified'] : ['quick', 'projectUi.badgeQuick']),
+    priced && ['priced', 'projectUi.badgePriced'],
+  ].filter(Boolean).map(([key, label]) => ({ key, label: t(label) }));
+  return { badges, missing: !priced || (!isTile && !specified) };
+};
+
 const UserProjectsContent = ({ onPreview, groupId }) => {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
@@ -122,11 +134,13 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
   const [editingName, setEditingName] = useState('');
   const [editingGroup, setEditingGroup] = useState(false);
   const [editingGroupName, setEditingGroupName] = useState('');
+  const [editingSpareMargin, setEditingSpareMargin] = useState(10);
   const [pendingDelete, setPendingDelete] = useState(null);
   const [paperSize, setPaperSize] = useState('a4');
   const [printing, setPrinting] = useState(false);
   const [selectedPlanIds, setSelectedPlanIds] = useState(() => new Set());
   const [projectView, setProjectView] = useState('overview');
+  const [userSpareMargin, setUserSpareMargin] = useState(10);
 
   useEffect(() => {
     if (user) loadProjects();
@@ -142,12 +156,14 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
       setLoading(true);
       setError('');
 
-      const [boardProjects, sheetProjects, tileProjects, projectGroups] = await Promise.all([
+      const [boardProjects, sheetProjects, tileProjects, projectGroups, settings] = await Promise.all([
         getUserProjects(),
         getUserSheetProjects(),
         getUserTileProjects(),
         getProjectGroups(),
+        getUserSettings().catch(() => null),
       ]);
+      setUserSpareMargin(settings?.spare_margin_percent ?? 10);
 
       const combined = [
         ...boardProjects.map((p) => ({ ...p, projectType: 'board' })),
@@ -217,9 +233,9 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
   // One document, every plan on its own page, via the browser's print
   // dialog — which is also where "save as PDF" lives. See printProject.js
   // for how each diagram picks the page orientation that renders it largest.
-  const handlePrint = async (plans, title, mode = 'diagrams') => {
+  const handlePrint = async (plans, title, mode = 'diagrams', shoppingPlans = plans) => {
     const printable = plans.filter((p) => p.has_svg_image || p.cutlist_image);
-    if (printable.length === 0) return;
+    if (mode === 'shopping' ? shoppingPlans.length === 0 : printable.length === 0) return;
 
     try {
       setPrinting(true);
@@ -246,16 +262,30 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
        }))).flat();
        await printProjectPlans({
          title,
-            meta: `${t(printable.length === 1 ? 'projectUi.printPlan' : 'projectUi.printPlans', { count: printable.length })} · ${t('projectUi.printed', { date: formatDate(new Date()) })}`,
+            meta: `${t(shoppingPlans.length === 1 ? 'projectUi.printPlan' : 'projectUi.printPlans', { count: mode === 'shopping' ? shoppingPlans.length : printable.length })} · ${t('projectUi.printed', { date: formatDate(new Date()) })}`,
          paper: paperSize,
          plans: withDiagrams,
-         shoppingListHtml: mode === 'diagrams' ? undefined : buildMaterialListHtml(printable, t),
+          shoppingListHtml: mode === 'diagrams' ? undefined : buildMaterialListHtml(
+            shoppingPlans,
+            t,
+            groupId && groupId !== LOOSE
+              ? groups.find((g) => g.id === groupId)?.spare_margin_percent ?? userSpareMargin
+              : userSpareMargin,
+          ),
        });
     } catch (err) {
        setError(t('projectUi.printableFailed', { message: err.message }));
     } finally {
       setPrinting(false);
     }
+  };
+
+  const handleCsv = (plans, title) => {
+    const margin = groupId && groupId !== LOOSE
+      ? groups.find((g) => g.id === groupId)?.spare_margin_percent ?? userSpareMargin
+      : userSpareMargin;
+    const blob = new Blob([`\ufeff${buildMaterialCsv(plans, t, margin)}`], { type: 'text/csv;charset=utf-8' });
+    triggerDownload(blob, `${title} - shopping-list.csv`);
   };
 
   const togglePlanSelection = (project) => {
@@ -324,6 +354,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
   const startEditGroup = (group) => {
     setEditingGroup(true);
     setEditingGroupName(group.name);
+    setEditingSpareMargin(group.spare_margin_percent ?? userSpareMargin);
   };
 
   const cancelEditGroup = () => {
@@ -333,14 +364,17 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
 
   const saveEditGroup = async (group) => {
     const name = editingGroupName.trim();
-    if (!name || name === group.name) {
+    const spareMargin = Math.min(100, Math.max(0, Number(editingSpareMargin) || 0));
+    const marginChanged = spareMargin !== (group.spare_margin_percent ?? userSpareMargin);
+    if (!name || (name === group.name && !marginChanged)) {
       cancelEditGroup();
       return;
     }
 
     try {
-      await renameProjectGroup(group.id, name);
-      setGroups((prev) => prev.map((g) => (g.id === group.id ? { ...g, name } : g)));
+      const payload = marginChanged ? { name, spare_margin_percent: spareMargin } : { name };
+      await renameProjectGroup(group.id, payload);
+      setGroups((prev) => prev.map((g) => (g.id === group.id ? { ...g, ...payload } : g)));
     } catch (err) {
        setError(t('projectUi.renameProjectFailed', { message: err.message }));
     } finally {
@@ -402,6 +436,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
    const renderPlan = (project) => {
       const hasDiagram = Boolean(project.has_svg_image || project.cutlist_image);
        const facts = planFacts(project, t);
+       const status = planStatus(project, t);
       const printTitle = groupId === LOOSE
         ? t('projectUi.notInAnyProject')
         : groups.find((g) => g.id === groupId)?.name || project.name;
@@ -451,7 +486,13 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
                 <span className="plan-item-type">{facts.type}</span>
                 <span>{facts.count}</span>
               </p>
-              <p className="plan-item-material">{facts.stock}</p>
+               <p className="plan-item-material">{facts.stock}</p>
+               <p className="plan-item-status" aria-label={t('projectUi.planStatus')}>
+                 {status.badges.map((badge) => <span key={badge.key} className={`plan-badge plan-badge-${badge.key}`}>{badge.label}</span>)}
+                 {status.missing && (
+                   <button type="button" className="plan-status-link" onClick={() => handleModify(project)}>{t('projectUi.whatMissing')}</button>
+                 )}
+               </p>
               <p className="plan-item-date">{t('projectUi.saved', { date: formatDate(project.created_at) })}</p>
            </div>
 
@@ -544,10 +585,25 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
 
         <header className="proj-head">
           {group && editingGroup ? (
-            nameField(
-              editingGroupName, setEditingGroupName,
-               () => saveEditGroup(group), cancelEditGroup, t('projectUi.projectName'),
-            )
+            <form
+              className="project-group-edit"
+              onSubmit={(event) => { event.preventDefault(); saveEditGroup(group); }}
+              onKeyDown={(event) => { if (event.key === 'Escape') cancelEditGroup(); }}
+            >
+              <input
+                type="text"
+                className="form-input name-edit"
+                value={editingGroupName}
+                onChange={(event) => setEditingGroupName(event.target.value)}
+                aria-label={t('projectUi.projectName')}
+                autoFocus
+              />
+              <label className="synthetic" htmlFor="project-spare-margin">{t('settings.spareMargin')}</label>
+              <input id="project-spare-margin" type="number" min="0" max="100" step="1" className="form-input" value={editingSpareMargin}
+                onChange={(event) => setEditingSpareMargin(event.target.value)} />
+              <button type="submit" className="btn btn-sm btn-primary">{t('common.saveSettings')}</button>
+              <button type="button" className="btn btn-sm" onClick={cancelEditGroup}>{t('ui.cancel')}</button>
+            </form>
           ) : (
             <h2 className="proj-head-name">
               {title}
@@ -571,9 +627,9 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
                : `${t(plans.length === 1 ? 'projectUi.printPlan' : 'projectUi.printPlans', { count: plans.length })} ${t('projectUi.savedWithoutProject')}`}
           </p>
 
-          {(printableCount > 0 || group) && (
+          {(plans.length > 0 || group) && (
             <span className="proj-head-act">
-              {printableCount > 0 && (
+              {plans.length > 0 && (
                 <span className="print-set">
                   <select
                     className="form-select print-paper"
@@ -593,15 +649,22 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
                      {t('projectUi.printDiagrams', { count: selectedPlans.length })}
                    </button>
                    <button
-                     className="btn"
-                     onClick={() => handlePrint(selectedPlans, title, 'shopping')}
-                     disabled={printing || selectedPlans.length === 0}
+                      className="btn"
+                      onClick={() => handlePrint(selectedPlans, title, 'shopping', plans)}
+                      disabled={printing || plans.length === 0}
                    >
-                     {t('projectUi.printShoppingList')}
-                   </button>
+                      {t('projectUi.printShoppingList')}
+                    </button>
+                    <button
+                      className="btn"
+                      onClick={() => handleCsv(plans, title)}
+                      disabled={printing || plans.length === 0}
+                    >
+                      {t('projectUi.exportCsv')}
+                    </button>
                    <button
                      className="btn"
-                     onClick={() => handlePrint(selectedPlans, title, 'project')}
+                     onClick={() => handlePrint(selectedPlans, title, 'project', plans)}
                      disabled={printing || selectedPlans.length === 0}
                    >
                      {t('projectUi.printProject')}
@@ -653,8 +716,11 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
            ))}
          </nav>
 
-         {projectView !== 'diagrams' && (
-           <ProjectShoppingList projects={plans} />
+          {projectView !== 'diagrams' && (
+            <ProjectShoppingList
+              projects={plans}
+              spareMargin={group?.spare_margin_percent ?? userSpareMargin}
+            />
          )}
 
          {projectView !== 'shopping' && plans.length > 0 ? (

@@ -16,6 +16,7 @@ const UserSettings = () => {
     default_vat_rate: 25,
     default_prices_include_vat: true,
     preferred_language: activeLanguage,
+    spare_margin_percent: 10,
   });
   const [boardLengthsInput, setBoardLengthsInput] = useState('3000, 3600, 5000');
   const [loading, setLoading] = useState(true);
@@ -34,6 +35,7 @@ const UserSettings = () => {
           default_vat_rate: loadedSettings.default_vat_rate ?? 25,
           default_prices_include_vat: loadedSettings.default_prices_include_vat ?? true,
           preferred_language: loadedSettings.preferred_language || activeLanguage,
+          spare_margin_percent: loadedSettings.spare_margin_percent ?? 10,
         });
         setBoardLengthsInput(loadedSettings.default_board_lengths.join(', '));
       } catch (err) {
@@ -112,6 +114,13 @@ const UserSettings = () => {
             onChange={(e) => setSettings((prev) => ({ ...prev, default_saw_blade_width: parseFloat(e.target.value) || 0 }))}
             disabled={saving}
           />
+        </div>
+
+        <div className="space-y-2" style={{ marginBottom: '20px' }}>
+          <label className="form-label" htmlFor="spare-margin">{t('settings.spareMargin')}</label>
+          <input id="spare-margin" type="number" min="0" max="100" step="1" className="form-input" value={settings.spare_margin_percent}
+            onChange={(e) => setSettings((prev) => ({ ...prev, spare_margin_percent: parseFloat(e.target.value) || 0 }))} disabled={saving} />
+          <p className="synthetic">{t('settings.spareMarginHelp')}</p>
         </div>
 
         <div className="space-y-2" style={{ marginBottom: '20px' }}>

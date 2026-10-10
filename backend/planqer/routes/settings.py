@@ -3,7 +3,7 @@ from typing import Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
@@ -24,6 +24,7 @@ class UserSettingsResponse(BaseModel):
     preferred_algorithm: str
     preferred_units: str
     preferred_language: Literal["en-GB", "sv-SE", "nb-NO"] | None
+    spare_margin_percent: float
 
 
 class UserSettingsUpdate(BaseModel):
@@ -35,6 +36,7 @@ class UserSettingsUpdate(BaseModel):
     preferred_algorithm: str | None = None
     preferred_units: str | None = None
     preferred_language: Literal["en-GB", "sv-SE", "nb-NO"] | None = None
+    spare_margin_percent: float | None = Field(default=None, ge=0, le=100)
 
 
 LEGACY_DEFAULT_BOARD_LENGTHS = [300, 360, 500]
@@ -68,6 +70,7 @@ def settings_to_response(settings: UserSettings) -> UserSettingsResponse:
         preferred_algorithm=settings.preferred_algorithm,
         preferred_units=settings.preferred_units,
         preferred_language=settings.preferred_language,
+        spare_margin_percent=settings.spare_margin_percent,
     )
 
 
@@ -119,6 +122,8 @@ async def update_user_settings(
         settings.preferred_units = updates.preferred_units
     if updates.preferred_language is not None:
         settings.preferred_language = updates.preferred_language
+    if updates.spare_margin_percent is not None:
+        settings.spare_margin_percent = updates.spare_margin_percent
 
     await session.commit()
     await session.refresh(settings)

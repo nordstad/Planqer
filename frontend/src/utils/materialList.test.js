@@ -1,4 +1,4 @@
-import { buildMaterialListHtml, buildMaterialRows, summarizeMaterialPricing } from './materialList';
+import { applySpareMargin, buildMaterialCsv, buildMaterialListHtml, isPlanPriced, buildMaterialRows, materialRowsForPurchase, mergeMaterialRows, summarizeMaterialPricing } from './materialList';
 
 const t = (key) => ({ 'ui.materialPine': 'pine' }[key] || key);
 
@@ -83,6 +83,36 @@ it('keeps stock and sheet dimensions distinct when display values are close', ()
   expect(rows.map((row) => row.quantity)).toEqual([1, 1, 1, 1]);
 });
 
+it('merges the same catalogue product across plans but keeps different products apart', () => {
+  const product = { catalogue_id: 'se-regel-45x95', details: { grade: 'c24' } };
+  const rows = buildMaterialRows([
+    { name: 'A', material_type: 'Regel 45 × 95', product, optimization_result: { board_lengths_used: [3000] } },
+    { name: 'B', material_type: 'Regel 45 × 95', product, optimization_result: { board_lengths_used: [3000] } },
+    { name: 'C', material_type: 'Regel 45 × 95', product: { ...product, catalogue_id: 'se-trall-45x95' }, optimization_result: { board_lengths_used: [3000] } },
+  ]);
+
+  expect([...mergeMaterialRows(rows).values()].map((row) => row.quantity)).toEqual([2, 1]);
+});
+
+it('adds at least one spare per board or sheet size, while leaving tiles unchanged', () => {
+  const rows = buildMaterialRows([
+    { name: 'Boards', optimization_result: { board_lengths_used: [3000, 3000] } },
+    { name: 'Tiles', projectType: 'tile', tile_data: { width: 300, height: 600 }, layout_result: { tiles_to_purchase: 2 } },
+  ]);
+  expect(applySpareMargin(rows, 10).map((row) => row.quantityToBuy)).toEqual([3, 2]);
+  expect(materialRowsForPurchase([{ name: 'Board', optimization_result: { board_lengths_used: [3000] } }], 0)[0].quantityToBuy).toBe(1);
+});
+
+it('merges conflicting saved prices and marks the resulting row', () => {
+  const rows = buildMaterialRows([
+    { name: 'A', optimization_result: { board_lengths_used: [3000] }, board_costs: { currency: 'SEK', board_costs: { 3000: { price_per_board: 10 } } } },
+    { name: 'B', optimization_result: { board_lengths_used: [3000] }, board_costs: { currency: 'SEK', board_costs: { 3000: { price_per_board: 12 } } } },
+  ]);
+  const [merged] = [...mergeMaterialRows(rows).values()];
+  expect(merged.quantity).toBe(2);
+  expect(merged._priceConflict).toBe(true);
+});
+
 it('builds a complete VAT-inclusive project total from all material types', () => {
   const projects = [
     { name: 'Boards', optimization_result: { board_lengths_used: [3000] }, board_costs: { currency: 'SEK', vat_rate: 25, prices_include_vat: true, board_costs: { 3000: { price_per_board: 100 } } } },
@@ -117,4 +147,46 @@ it('keeps legacy board prices that predate currency and VAT snapshots', () => {
     vatRate: 25,
   });
   expect(summarizeMaterialPricing(rows)).toMatchObject({ complete: true, total: 147 });
+});
+
+it('lists every contributing plan on a merged row', () => {
+  const rows = buildMaterialRows([
+    { name: 'A', optimization_result: { board_lengths_used: [3000] } },
+    { name: 'B', optimization_result: { board_lengths_used: [3000] } },
+  ]);
+  expect([...mergeMaterialRows(rows).values()][0].plans).toEqual(['A', 'B']);
+  expect(buildMaterialListHtml([
+    { name: 'A', optimization_result: { board_lengths_used: [3000] } },
+    { name: 'B', optimization_result: { board_lengths_used: [3000] } },
+  ], t)).toContain('<td>A, B</td>');
+});
+
+it('treats a priced plan merged with an unpriced one as partly priced, not conflicting', () => {
+  const rows = buildMaterialRows([
+    { name: 'A', optimization_result: { board_lengths_used: [3000] }, board_costs: { currency: 'SEK', board_costs: { 3000: { price_per_board: 10 } } } },
+    { name: 'B', optimization_result: { board_lengths_used: [3000] } },
+  ]);
+  const [merged] = [...mergeMaterialRows(rows).values()];
+  expect(merged.pricePerUnit).toBeUndefined();
+  expect(merged._priceConflict).toBeUndefined();
+});
+
+it('only counts a plan as priced when every purchased line is priced', () => {
+  const costs = (prices) => ({ currency: 'SEK', board_costs: prices });
+  const result = { board_lengths_used: [3000, 2400] };
+  expect(isPlanPriced({ name: 'x', optimization_result: result, board_costs: costs({ 3000: { price_per_board: 10 } }) })).toBe(false);
+  expect(isPlanPriced({ name: 'x', optimization_result: result, board_costs: costs({ 3000: { price_per_board: 10 }, 2400: { price_per_board: 8 } }) })).toBe(true);
+  expect(isPlanPriced({ name: 'x', optimization_result: result, board_costs: costs({ 3000: { price_per_board: null } }) })).toBe(false);
+});
+
+it('exports a localized CSV matching the shopping list and neutralizing formulas', () => {
+  const csv = buildMaterialCsv([
+    { name: 'A', material_type: '=SUM(1)', board_thickness: 45, board_width: 95, optimization_result: { board_lengths_used: [3000, 3000] }, board_costs: { currency: 'SEK', vat_rate: 25, prices_include_vat: true, board_costs: { 3000: { price_per_board: 100 } } } },
+  ], t, 10);
+  const [header, line] = csv.split('\r\n');
+  expect(header).toContain('"workflow.planName"');
+  expect(line).toContain('"\'=SUM(1)"');
+  expect(line).toContain('"2","3"');
+  expect(line).toContain('"300.00 SEK"');
+  expect(line).toContain('ui.includingVat (25%)');
 });

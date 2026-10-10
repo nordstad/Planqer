@@ -3,7 +3,7 @@ from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
@@ -26,10 +26,12 @@ class ProjectGroupResponse(BaseModel):
     name: str
     created_at: str
     updated_at: str
+    spare_margin_percent: float | None = None
 
 
 class ProjectGroupRequest(BaseModel):
     name: str
+    spare_margin_percent: float | None = Field(default=None, ge=0, le=100)
 
 
 def group_to_response(group: ProjectGroup) -> ProjectGroupResponse:
@@ -38,6 +40,7 @@ def group_to_response(group: ProjectGroup) -> ProjectGroupResponse:
         name=group.name,
         created_at=group.created_at.isoformat(),
         updated_at=group.updated_at.isoformat(),
+        spare_margin_percent=group.spare_margin_percent,
     )
 
 
@@ -76,7 +79,11 @@ async def create_project_group(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    group = ProjectGroup(user_id=current_user.id, name=request.name)
+    group = ProjectGroup(
+        user_id=current_user.id,
+        name=request.name,
+        spare_margin_percent=request.spare_margin_percent,
+    )
     session.add(group)
     await session.commit()
     await session.refresh(group)
@@ -92,6 +99,8 @@ async def rename_project_group(
 ):
     group = await _get_owned_group(group_id, current_user, session)
     group.name = request.name
+    if "spare_margin_percent" in request.model_fields_set:
+        group.spare_margin_percent = request.spare_margin_percent
     group.updated_at = datetime.now()
     await session.commit()
     await session.refresh(group)
