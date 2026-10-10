@@ -194,7 +194,7 @@ const locale = {
     fixLines: 'Correct the highlighted rows before planning.', partsAgainstStock: 'Required parts: {{parts}} · stock: {{stock}} {{unit}}', stockUnit: 'length', stockUnits: 'lengths', checkStock: 'Check the available lengths with your supplier before planning. The lengths and any prices you enter are saved with the plan.',
     board: 'board', boards: 'boards', forAllParts: 'for all {{count}} parts', materialBought: 'Material bought', offcut: 'Offcut', bladeTakes: 'Material lost to cuts', efficiency: 'Efficiency', cost: 'Cost',
     changeParts: 'Change the parts', backToSave: 'Back to the save step', nameAndSave: 'Name and save', keptPlan: 'Saved on this instance under your account. Sign in to this instance to open it from another browser.', namePlan: 'Give the plan a name. Add it to a project when you want one shopping list and printable job pack.', savedAs: 'Saved as {{name}}', filedUnder: 'Filed under {{group}}. Open it any time from your dashboard.', unfiled: 'Not in a project. Open it any time from your dashboard.', saveAs: 'Save as', createNewPlan: 'Create a new plan', updateExistingPlan: 'Update existing plan', planToUpdate: 'Plan to update', planNamePlaceholder: 'Plan name', savedNameHint: 'The name appears on the saved diagram.', openDashboard: 'Open your dashboard',
-    sheetWidthAria: 'Sheet width in millimetres', sheetHeightAria: 'Sheet height in millimetres', materialType: 'Material type', materialPlywood: 'Plywood', materialMdf: 'MDF', materialMetal: 'Metal sheet', materialAcrylic: 'Acrylic', materialCardboard: 'Cardboard', materialOther: 'Other',
+    sheetWidthAria: 'Sheet width in millimetres', sheetHeightAria: 'Sheet height in millimetres', materialOther: 'Other',
     packingStrategy: 'Packing strategy', autoSelected: 'Auto-selected', rotationAllowed: 'allowed', rotationOff: 'off', algorithm: 'Algorithm', autoSelect: 'Auto-select — picks one from your parts', bottomLeft: 'Bottom-left fill — fastest', bestFit: 'Best fit — balanced', genetic: 'Genetic — slowest, usually tightest', guillotine: 'Guillotine — only full-width cuts, for a panel saw', allowRotation: 'Allow 90° rotation', rotationDescription: 'Turns parts to fit tighter. Switch it off when the grain or the face pattern has to run one way.',
     pickLayout: 'Pick a layout', pickLayoutIntro: 'Compare ranked alternatives by edge piece width, tile count, and symmetry. Choose the balance that suits this job.', tilesToBuy: 'tiles to buy', fullTiles: 'Full tiles', cutTiles: 'Cut tiles', used: 'Used', changeSurface: 'Change the surface', nameIt: 'Name it', layoutSaved: 'Layout saved', saveLayout: 'Save this layout', backToLayout: 'Back to the layout', saveLayoutButton: 'Save layout', updateLayout: 'Update layout',
     planProgress: 'Plan progress', working: 'Working',
@@ -265,10 +265,10 @@ Object.assign(locale.ui, {
 });
 
 Object.assign(locale.workflow, {
-  materialProfile: 'Material and profile', chooseMaterial: 'Choose material', thickness: 'Thickness', thicknessMm: 'Thickness (mm)', widthMm: 'Width (mm)', packSheets: 'Plan the sheet cuts', tilesToBuy: 'tiles to buy', fullTiles: 'Full tiles', cutTiles: 'Cut tiles', used: 'Used', changeSurface: 'Change the surface', nameIt: 'Name it',
+  materialProfile: 'Material and profile', thickness: 'Thickness', thicknessMm: 'Thickness (mm)', widthMm: 'Width (mm)', packSheets: 'Plan the sheet cuts', tilesToBuy: 'tiles to buy', fullTiles: 'Full tiles', cutTiles: 'Cut tiles', used: 'Used', changeSurface: 'Change the surface', nameIt: 'Name it',
 });
 
-Object.assign(locale.auditUi, { materialRequired: 'Choose a material and enter its dimensions before planning', sheetThicknessRequired: 'Enter the sheet thickness before planning', sheetMaterialRequired: 'Choose a sheet material before planning', tileMaterialRequired: 'Choose a tile material and enter its thickness before solving' });
+Object.assign(locale.auditUi, { sheetThicknessRequired: 'Enter the sheet thickness before planning', tileMaterialRequired: 'Choose a tile material and enter its thickness before solving' });
 Object.assign(locale.ui, { tileSummary: '{{count}} tiles to buy · narrowest cut {{cut}} · offcuts reused: {{offcuts}}', waste: 'Waste', strategy: 'Strategy' });
 Object.assign(locale.projectUi, {
   projectViews: 'Project views', overview: 'Overview', shoppingList: 'Shopping list', cutDiagrams: 'Cut diagrams',
@@ -278,9 +278,6 @@ Object.assign(locale.projectUi, {
 Object.assign(locale.modelUi, {
   boardWord: "Board",
   sheetWord: "Sheet",
-  materialUnspecified: "Not specified",
-  materialFor: "Material for {{name}}",
-  customMaterialFor: "Your own material for {{name}}",
   renameCutlist: "Name for {{name}}",
   showLengths: "Show lengths",
   hideLengths: "Hide lengths",
@@ -295,6 +292,39 @@ Object.assign(locale.modelUi, {
   appliedBoards: "Stock, cut width and prices copied to all board groups.",
   appliedSheets: "Sheet size, cut width and price copied to all sheet groups.",
   openProject: "Open project",
+});
+
+Object.assign(locale, {
+  productUi: {
+    product: "Product",
+    searchPlaceholder: "Search by name or size, e.g. “regel 45x95”",
+    results: "Matching products",
+    noResults: "No matching product. You can still use your own words.",
+    useAsOwn: "Use “{{text}}” as my own product",
+    anySize: "any size",
+    noneChosen: "No product chosen. You can plan without one.",
+    loadFailed: "The product catalogue could not be loaded. You can still type your own product.",
+    suggested: "Suggested",
+    confirm: "Looks right",
+    clear: "Clear",
+    source: "Source",
+    details: "Details",
+    detailsHint: "Species, treatment, grade, surface (optional)",
+    species: "Species",
+    treatment: "Treatment",
+    grade: "Grade",
+    profile: "Surface / profile",
+    note: "Note",
+    notePlaceholder: "Anything else worth knowing",
+    notSpecified: "Not specified",
+    useSize: "Use {{size}}",
+    standardLengths: "Standard lengths: {{lengths}} mm.",
+    useLengths: "Use these lengths",
+    stockedUpTo: "Normally stocked up to {{max}} mm.",
+    standardSheets: "Standard sheet sizes:",
+    dimensionsRequired: "Enter the board’s thickness and width before planning",
+    chooseProductFor: "Product for {{name}}",
+  },
 });
 
 export default locale;

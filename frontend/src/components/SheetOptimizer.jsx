@@ -20,6 +20,11 @@ import { useDebounce } from '../hooks/useDebounce';
 import { useAuth } from '../contexts/AuthContext';
 import Disclosure from './Disclosure';
 import ProjectPicker from './ProjectPicker';
+import ProductPicker from './ProductPicker';
+import { materialLabel } from '../utils/materialLabel';
+import {
+  emptySelection, selectionName, buildSnapshot, selectionFromSnapshot, selectionFromLegacyMaterial,
+} from '../utils/catalogue';
 import Loader from './Loader';
 import PlanSteps from './PlanSteps';
 import SheetPartRow from './SheetPartRow';
@@ -64,7 +69,7 @@ const validateSheetParts = (parts, t) => parts.map((part) => {
 });
 
 const SheetOptimizer = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const [step, setStep] = useState(STEP_PARTS);
 
@@ -77,8 +82,7 @@ const SheetOptimizer = () => {
   const [sheetWidth, setSheetWidth] = useState("1200");
   const [sheetHeight, setSheetHeight] = useState("2500");
   const [kerfWidth, setKerfWidth] = useState("3");
-  const [materialType, setMaterialType] = useState("plywood");
-  const [customMaterial, setCustomMaterial] = useState("");
+  const [productSel, setProductSel] = useState(emptySelection);
   const [sheetThickness, setSheetThickness] = useState("");
   const [algorithm, setAlgorithm] = useState("");
   const [allowRotation, setAllowRotation] = useState(true);
@@ -89,7 +93,7 @@ const SheetOptimizer = () => {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState("");
-   const [inputErrors, setInputErrors] = useState({ parts: [], sheetWidth: "", sheetHeight: "", kerfWidth: "", sheetThickness: "", material: "" });
+   const [inputErrors, setInputErrors] = useState({ parts: [], sheetWidth: "", sheetHeight: "", kerfWidth: "", sheetThickness: "" });
 
   const [strategyOpen, setStrategyOpen] = useState(false);
   const [limitsOpen, setLimitsOpen] = useState(false);
@@ -140,10 +144,8 @@ const SheetOptimizer = () => {
           : kerf > 50 ? t('modelUi.kerfWide') : "",
        sheetThickness: !sheetThickness || isNaN(parseFloat(sheetThickness)) || parseFloat(sheetThickness) <= 0
          ? t('auditUi.sheetThicknessRequired') : "",
-       material: !materialType || (materialType === 'custom' && !customMaterial.trim())
-         ? t('auditUi.sheetMaterialRequired') : "",
      });
-   }, [debouncedParts, debouncedSheetWidth, debouncedSheetHeight, debouncedKerfWidth, sheetThickness, materialType, customMaterial, t]);
+   }, [debouncedParts, debouncedSheetWidth, debouncedSheetHeight, debouncedKerfWidth, sheetThickness, t]);
 
   // This page requires sign-in, so project groups and saved plans are always available
   useEffect(() => {
@@ -170,12 +172,7 @@ const SheetOptimizer = () => {
           id: part.id || `sheet_${index + 1}`,
         })));
         setProjectName(data.projectName || '');
-        if (data.materialType === 'custom') {
-          setMaterialType('custom');
-          setCustomMaterial(data.customMaterial || '');
-        } else if (data.materialType) {
-          setMaterialType(data.materialType);
-        }
+        if (data.product?.type) setProductSel(data.product);
         if (data.sheetThickness != null) setSheetThickness(String(data.sheetThickness));
         localStorage.removeItem('planqer-3d-sheet-import');
         window.history.replaceState({}, document.title, '/sheet-cutting');
@@ -229,8 +226,9 @@ const SheetOptimizer = () => {
     setSheetWidth(project.sheet_width.toString());
     setSheetHeight(project.sheet_height.toString());
     setKerfWidth(project.kerf_width.toString());
-    setMaterialType(project.material_type || "plywood");
-    setCustomMaterial('');
+    setProductSel(project.product
+      ? selectionFromSnapshot(project.product)
+      : selectionFromLegacyMaterial('sheet', materialLabel(project.material_type || '', t)));
     setSheetThickness(project.sheet_thickness ? String(project.sheet_thickness) : '');
     setAlgorithm(project.algorithm || "");
     setAllowRotation(project.allow_rotation !== false);
@@ -260,8 +258,10 @@ const SheetOptimizer = () => {
   const partCount = parts.reduce((n, p) => n + (parseInt(p.quantity, 10) || 0), 0);
   const hasErrors = inputErrors.parts.some(Boolean)
     || !!inputErrors.sheetWidth || !!inputErrors.sheetHeight || !!inputErrors.kerfWidth
-    || !!inputErrors.sheetThickness || !!inputErrors.material;
-  const sheetError = inputErrors.sheetWidth || inputErrors.sheetHeight || inputErrors.sheetThickness || inputErrors.material;
+    || !!inputErrors.sheetThickness;
+  const sheetError = inputErrors.sheetWidth || inputErrors.sheetHeight || inputErrors.sheetThickness;
+  const sectionDims = { thickness: parseFloat(sheetThickness) };
+  const material = selectionName(productSel, i18n.language, sectionDims);
 
   /* ── running a layout ──────────────────────────────────────────────────── */
   const handleLayoutSubmit = async (e) => {
@@ -277,19 +277,17 @@ const SheetOptimizer = () => {
        sheetHeight: !sheetHeight || isNaN(currentHeight) || currentHeight < 100 || currentHeight > 10000 ? t('tileUi.positiveHeight') : '',
        kerfWidth: !kerfWidth || isNaN(currentKerf) || currentKerf < SAW_KERF_MIN || currentKerf > SAW_KERF_MAX ? t('modelUi.kerfZero') : '',
        sheetThickness: inputErrors.sheetThickness,
-       material: inputErrors.material,
      };
      setInputErrors(currentErrors);
-     if (currentParts.some(Boolean) || currentErrors.sheetWidth || currentErrors.sheetHeight || currentErrors.kerfWidth || currentErrors.sheetThickness || currentErrors.material) return;
+     if (currentParts.some(Boolean) || currentErrors.sheetWidth || currentErrors.sheetHeight || currentErrors.kerfWidth || currentErrors.sheetThickness) return;
 
     setLoading(true);
     setResult(null);
     setSaved(null);
     const requestRevision = ++inputRevision.current;
     try {
-      const effectiveMaterial = materialType === 'custom' ? customMaterial.trim() : materialType;
       const response = await optimizeSheetCutting(
-        parts, sheetWidth, sheetHeight, kerfWidth, effectiveMaterial, algorithm || undefined, allowRotation
+        parts, sheetWidth, sheetHeight, kerfWidth, material, algorithm || undefined, allowRotation
       );
       if (requestRevision !== inputRevision.current) return;
       setResult(response);
@@ -333,7 +331,8 @@ const SheetOptimizer = () => {
         sheetHeight,
         sheetThickness,
         kerfWidth,
-        materialType: materialType === 'custom' ? customMaterial.trim() : materialType,
+        materialType: material,
+        product: buildSnapshot(productSel, i18n.language, sectionDims),
         algorithm,
         allowRotation,
         result,
@@ -524,26 +523,22 @@ const SheetOptimizer = () => {
                   <td style={{ color: 'var(--ink-3)' }}>mm</td>
                 </tr>
                 <tr>
-                    <td style={{ textAlign: 'left' }}>{t('workflow.material')}</td>
-                  {/* Kept in the value column rather than spanning into the unit
-                      column, so the control lines up with the numbers above it */}
-                  <td>
-                    <select
-                      value={materialType}
-                      onChange={(e) => setSheetField(setMaterialType)(e.target.value)}
-                      className={`form-select ${inputErrors.material ? 'is-error' : ''}`}
-                  aria-label={t('ui.materialType')}
-                    >
-                      <option value="plywood">{t('ui.materialPlywood')}</option>
-                      <option value="mdf">{t('ui.materialMdf')}</option>
-                      <option value="metal">{t('ui.materialMetal')}</option>
-                      <option value="acrylic">{t('ui.materialAcrylic')}</option>
-                      <option value="cardboard">{t('ui.materialCardboard')}</option>
-                      <option value="custom">{t('ui.materialCustom')}</option>
-                    </select>
-                    {materialType === 'custom' && <input id="custom-sheet-material" className="form-input" style={{ marginTop: '8px' }} value={customMaterial} onChange={(e) => setSheetField(setCustomMaterial)(e.target.value)} placeholder={t('ui.customMaterialPlaceholder')} required />}
+                  <td style={{ textAlign: 'left', verticalAlign: 'top' }}>{t('productUi.product')}</td>
+                  <td colSpan={2} style={{ textAlign: 'left', minWidth: '280px' }}>
+                    <ProductPicker
+                      kind="sheet"
+                      value={productSel}
+                      onChange={(next) => setSheetField(setProductSel)(next)}
+                      dims={sectionDims}
+                      label={t('productUi.product')}
+                      onUseDimensions={(entry) => setSheetField(setSheetThickness)(String(entry.thickness))}
+                      onUseFormat={(format) => {
+                        retireLayout();
+                        setSheetWidth(String(format.width));
+                        setSheetHeight(String(format.height));
+                      }}
+                    />
                   </td>
-                  <td />
                 </tr>
                 <tr>
                   <td style={{ textAlign: 'left' }}>{t('ui.pricePerSheet', { currency: pricingDefaults.currency })}</td>

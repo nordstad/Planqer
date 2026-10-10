@@ -6,6 +6,9 @@ from html import escape
 # Representative runs: 500 FFD parts took 0.022s, 100 genetic parts 6.854s,
 # and 1000 bottom-left rectangles 0.7s on the development machine.
 MAX_CUTTING_PARTS = 5000
+# Board and part lengths reach 15 m (long glulam); sheet sides stay at 10 m.
+MAX_BOARD_LENGTH_MM = 15000.0
+MAX_PART_LENGTH_MM = 15000.0
 MAX_SHEET_RECTANGLES = 1000
 MAX_GENETIC_PARTS = 100
 MAX_BRANCH_AND_BOUND_PARTS = 10
@@ -38,7 +41,7 @@ def validate_numeric_input(
 
 
 def sanitize_parts_dict(
-    parts: dict, max_part_length: float = 10000.0
+    parts: dict, max_part_length: float = MAX_PART_LENGTH_MM
 ) -> dict[float, int]:
     if not isinstance(parts, dict):
         raise ValueError("Parts must be a dictionary")  # noqa: TRY004
@@ -56,7 +59,7 @@ def sanitize_parts_dict(
 
 
 def sanitize_board_lengths(
-    boards: list, max_board_length: float = 10000.0
+    boards: list, max_board_length: float = MAX_BOARD_LENGTH_MM
 ) -> list[float]:
     if not isinstance(boards, list):
         raise ValueError("Board lengths must be a list")  # noqa: TRY004

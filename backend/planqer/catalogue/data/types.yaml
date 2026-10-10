@@ -1,0 +1,131 @@
+# Product types shared by every country. `rank` orders suggestions when several
+# types share a cross-section: lower is the more common retail product.
+types:
+  # ── boards ────────────────────────────────────────────────────────────
+  - key: regel
+    kind: board
+    rank: 10
+    labels: {en: Framing timber / studs, sv: Träreglar, nb: Reisverk}
+    aliases: [reglar, regel, stud, studs, konstruktionsvirke, c14, c24]
+    details: [species, treatment, grade]
+  - key: trall
+    kind: board
+    rank: 20
+    labels: {en: Decking, sv: Trall, nb: Terrassebord}
+    aliases: [trall, terrass, altan, decking, staketlakt]
+    details: [species, treatment, grade, profile]
+  - key: lakt
+    kind: board
+    rank: 30
+    labels: {en: Battens, sv: Läkt, nb: Lekter}
+    aliases: [lakt, läkt, batten, strolakt, barlakt]
+    details: [species, grade]
+  - key: ytterpanel
+    kind: board
+    rank: 40
+    labels: {en: Exterior cladding, sv: Ytterpanel, nb: Utvendig kledning}
+    aliases: [ytterpanel, fasad, panel, cladding, lockpanel, locklakt]
+    details: [species, treatment, grade, profile]
+  - key: innerpanel
+    kind: board
+    rank: 50
+    labels: {en: Interior panelling, sv: Innerpanel, nb: Innvendig panel}
+    aliases: [innerpanel, invandig panel, parlspont, spontpanel, vaggpanel, takpanel]
+    details: [species, grade, profile]
+  - key: planhyvlat
+    kind: board
+    rank: 60
+    labels: {en: Planed timber, sv: Planhyvlat virke, nb: Planhøvlet virke}
+    aliases: [planhyvlat, dimensionshyvlat, hyvlat, planed]
+    details: [species, treatment, grade]
+  - key: sagat
+    kind: board
+    rank: 70
+    labels: {en: Sawn timber, sv: Sågat virke, nb: Sagd virke}
+    aliases: [sagat, rough sawn, sparre, sparrar]
+    details: [species, treatment, grade]
+  - key: tryckimpregnerat
+    kind: board
+    rank: 75
+    labels: {en: Pressure-treated timber, sv: Tryckimpregnerat virke, nb: Trykkimpregnert virke}
+    aliases: [tryckimpregnerat, impregnerat, ntr, ntr a, ntr ab, pressure treated, grön, brun]
+    details: [species, treatment, grade]
+  - key: raspont
+    kind: board
+    rank: 80
+    labels: {en: Tongue-and-groove sheathing, sv: Råspont, nb: Råspon}
+    aliases: [raspont, råspont, underlagsspont, spont, sheathing]
+    details: [species, grade, profile]
+  - key: list
+    kind: board
+    rank: 90
+    labels: {en: Mouldings & skirting, sv: List & sockel, nb: Lister og gulvlister}
+    aliases: [list, lister, sockel, sockellist, foderlist, taklist, skirting, moulding]
+    details: [species, profile]
+  - key: limtra
+    kind: board
+    rank: 100
+    labels: {en: Glulam beam, sv: Limträbalk, nb: Limtrebjelke}
+    aliases: [limtra, limträ, limtrabalk, limträbalk, limtrapelare, glulam, gl30c, gl30h]
+    details: [species, grade]
+  - key: rundstav
+    kind: board
+    rank: 110
+    labels: {en: Dowels & quarter-round, sv: Rundstav & kvartslist, nb: Rundstav og kvartstaver}
+    aliases: [rundstav, kvartslist, dowel, quarter round]
+    details: [species, profile]
+  - key: vangstycke
+    kind: board
+    rank: 120
+    labels: {en: Stair stringer, sv: Vangstycke, nb: Trappevange}
+    aliases: [vangstycke, vang, trappa, stringer]
+    details: [species, treatment, grade]
+  - key: custom
+    kind: board
+    rank: 999
+    labels: {en: Other, sv: Annat, nb: Annet}
+    aliases: [annat, other, custom]
+    details: [species, treatment, grade, profile]
+  # ── sheets ────────────────────────────────────────────────────────────
+  - key: plywood
+    kind: sheet
+    rank: 10
+    labels: {en: Plywood, sv: Plywood, nb: Kryssfiner}
+    aliases: [plywood, kryssfiner, fanér, björkplywood, birch plywood]
+    details: [species, grade]
+  - key: osb
+    kind: sheet
+    rank: 20
+    labels: {en: OSB, sv: OSB, nb: OSB}
+    aliases: [osb, osb 3, osb/3, strandboard]
+    details: [grade]
+  - key: spanskiva
+    kind: sheet
+    rank: 30
+    labels: {en: Particleboard, sv: Spånskiva, nb: Sponplate}
+    aliases: [spanskiva, spånskiva, golvspånskiva, particleboard, chipboard, p5]
+    details: [grade, profile]
+  - key: gipsskiva
+    kind: sheet
+    rank: 40
+    labels: {en: Plasterboard, sv: Gipsskiva, nb: Gipsplate}
+    aliases: [gips, gipsskiva, gyproc, plasterboard, drywall]
+    details: [grade]
+  - key: mdf
+    kind: sheet
+    rank: 50
+    labels: {en: MDF, sv: MDF, nb: MDF}
+    aliases: [mdf, fiberboard]
+    details: [grade]
+  - key: board
+    kind: sheet
+    rank: 60
+    labels: {en: Hardboard / masonite, sv: Board / masonit, nb: Hardboard / masonitt}
+    aliases: [board, masonit, masonite, hardboard, hdf, träfiberskiva]
+    details: [grade]
+  - key: sheet-custom
+    kind: sheet
+    rank: 999
+    labels: {en: Other sheet, sv: Annan skiva, nb: Annen plate}
+    aliases: [annat, other, custom]
+    details: [species, grade]

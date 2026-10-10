@@ -6,24 +6,10 @@
   page.
 */
 
-import { materialLabel } from './materialLabel';
+import {
+  freeTextSelection, initialSelection, selectionLead, selectionName, crossSectionKey,
+} from './catalogue';
 import { validateBoards, SAW_KERF_MIN, SAW_KERF_MAX } from './validators';
-
-export const BOARD_MATERIALS = ['pine', 'spruce', 'oak', 'beech', 'birch', 'pressure-treated'];
-export const SHEET_MATERIALS = ['plywood', 'mdf', 'metal', 'acrylic', 'cardboard'];
-export const MATERIAL_OPTION_KEYS = {
-  pine: 'ui.materialPine',
-  spruce: 'ui.materialSpruce',
-  oak: 'ui.materialOak',
-  beech: 'ui.materialBeech',
-  birch: 'ui.materialBirch',
-  'pressure-treated': 'ui.materialPressureTreated',
-  plywood: 'ui.materialPlywood',
-  mdf: 'ui.materialMdf',
-  metal: 'ui.materialMetal',
-  acrylic: 'ui.materialAcrylic',
-  cardboard: 'ui.materialCardboard',
-};
 
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
 export const naturalCompare = (a, b) => collator.compare(String(a), String(b));
@@ -91,33 +77,44 @@ export const groupDims = (group) => (group.kind === 'board'
   ? `${group.thickness} × ${group.width} mm`
   : `${group.thickness} mm`);
 
-/* The material the user settled on for a group: a preset key, or their own
-   words. Empty means "not specified", and is saved as such — never as a
-   placeholder word that would later be shown back to them. */
-export const resolveMaterial = (config) => (
-  config.material === 'custom' ? (config.customMaterial || '').trim() : (config.material || '')
+/* The size a group was measured at, as the catalogue matches and names it. */
+export const groupDimensions = (group) => (group.kind === 'board'
+  ? { thickness: group.thickness, width: group.width }
+  : { thickness: group.thickness });
+
+export const groupMemoryKey = (group) => crossSectionKey(group.kind, groupDimensions(group));
+
+/* The readable name of the product chosen for a group, kept as the plan's
+   material label. Empty means "not specified", and is saved as such — never as
+   a placeholder word that would later be shown back to them. */
+export const resolveMaterial = (config, language, group) => selectionName(
+  config?.product, language, group && groupDimensions(group),
 );
 
-export const groupLabel = (group, config, t) => {
+export const groupLabel = (group, config, t, language) => {
   const custom = (config?.label || '').trim();
   if (custom) return custom;
-  const material = materialLabel(resolveMaterial(config || {}), t);
-  const lead = material || t(group.kind === 'board' ? 'modelUi.boardWord' : 'modelUi.sheetWord');
+  const lead = selectionLead(config?.product, language)
+    || t(group.kind === 'board' ? 'modelUi.boardWord' : 'modelUi.sheetWord');
   return `${lead} ${groupDims(group)}`;
 };
 
-export const planNameFor = (modelName, group, config, t) => `${modelName} · ${groupLabel(group, config, t)}`;
+export const planNameFor = (modelName, group, config, t, language) => (
+  `${modelName} · ${groupLabel(group, config, t, language)}`
+);
 
 export const BOARD_DEFAULTS = { boards: ['2500', '3600', '4200', '5100'], kerf: '3' };
 export const SHEET_DEFAULTS = { width: '1200', height: '2500', kerf: '3', allowRotation: true };
 
 /* A model-supplied material (a STEP part's name, say) starts as the group's own
-   words; anything else starts unspecified. */
-export const initialConfig = (group, defaults = {}) => {
+   words. Otherwise the product is what the user chose last time for this size,
+   or the common catalogue match marked as a suggestion, or nothing. */
+export const initialConfig = (group, defaults = {}, catalogue = null) => {
   const base = {
     label: '',
-    material: group.material ? 'custom' : '',
-    customMaterial: group.material || '',
+    product: group.material
+      ? freeTextSelection(group.kind, group.material)
+      : initialSelection(catalogue, group.kind, groupDimensions(group)),
   };
   if (group.kind === 'board') {
     const lengths = defaults.boards?.length ? defaults.boards : BOARD_DEFAULTS.boards;
@@ -245,13 +242,10 @@ export const validateGroupConfig = (group, config, t) => {
   return { width, height, kerf: sheetKerf, hasErrors: !!(width || height || sheetKerf) };
 };
 
-/* What "Plan alone" hands to the board and sheet pages. */
+/* What "Plan alone" hands to the board and sheet pages. The whole selection
+   goes with it, so the product and its details arrive as they were chosen. */
 export const standaloneHandoff = (group, config, planName, sheetWord = 'Sheet') => {
-  const material = resolveMaterial(config);
-  const isPreset = (group.kind === 'board' ? BOARD_MATERIALS : SHEET_MATERIALS).includes(material);
-  const materialFields = material
-    ? (isPreset ? { materialType: material } : { materialType: 'custom', customMaterial: material })
-    : {};
+  const productFields = config.product?.type ? { product: config.product } : {};
   if (group.kind === 'board') {
     return {
       key: 'planqer-3d-import',
@@ -259,7 +253,7 @@ export const standaloneHandoff = (group, config, planName, sheetWord = 'Sheet') 
       data: {
         parts: Object.fromEntries(group.lengths.map((l) => [l.length, l.qty])),
         projectName: planName,
-        ...materialFields,
+        ...productFields,
         boardThickness: group.thickness,
         boardWidth: group.width,
         source: 'model-cutlist',
@@ -275,7 +269,7 @@ export const standaloneHandoff = (group, config, planName, sheetWord = 'Sheet') 
         name: `${group.names[0] || sheetWord}_${i + 1}`, id: `sheet_${i + 1}`,
       })),
       projectName: planName,
-      ...materialFields,
+      ...productFields,
       sheetThickness: group.thickness,
       source: 'model-cutlist-sheet',
     },

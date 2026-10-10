@@ -22,6 +22,10 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { optimizeCutting, saveProject, getProjectGroups, createProjectGroup, getUserProjects, getUserSettings } from '../utils/api';
 import { materialLabel } from '../utils/materialLabel';
+import ProductPicker from './ProductPicker';
+import {
+  emptySelection, selectionName, buildSnapshot, selectionFromSnapshot, selectionFromLegacyMaterial,
+} from '../utils/catalogue';
 import {
   SAW_KERF_MAX,
   SAW_KERF_MIN,
@@ -51,7 +55,7 @@ const STEP_SAVE = 2;
 const DEFAULT_CURRENCY = 'SEK';
 
 const CuttingOptimizer = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const [step, setStep] = useState(STEP_PARTS);
 
@@ -63,8 +67,7 @@ const CuttingOptimizer = () => {
   ]);
   const [boards, setBoards] = useState(["2500", "3600", "4200", "5100"]);
   const [sawKerf, setSawKerf] = useState("3"); // millimetres, whole numbers
-  const [materialType, setMaterialType] = useState('');
-  const [customMaterial, setCustomMaterial] = useState('');
+  const [productSel, setProductSel] = useState(emptySelection);
   const [boardThickness, setBoardThickness] = useState('');
   const [boardWidth, setBoardWidth] = useState('');
   const [currency, setCurrency] = useState(DEFAULT_CURRENCY);
@@ -170,12 +173,7 @@ const CuttingOptimizer = () => {
           quantity: quantity.toString(),
         })));
         setProjectName(data.projectName || '');
-        if (data.materialType === 'custom') {
-          setMaterialType('custom');
-          setCustomMaterial(data.customMaterial || '');
-        } else if (data.materialType) {
-          setMaterialType(data.materialType);
-        }
+        if (data.product?.type) setProductSel(data.product);
         if (data.boardThickness != null) setBoardThickness(String(data.boardThickness));
         if (data.boardWidth != null) setBoardWidth(String(data.boardWidth));
         localStorage.removeItem('planqer-3d-import');
@@ -290,8 +288,9 @@ const CuttingOptimizer = () => {
     })));
     setBoards(project.board_lengths.map(String));
     setSawKerf(project.saw_blade_width.toString());
-    setMaterialType(project.material_type || '');
-    setCustomMaterial('');
+    setProductSel(project.product
+      ? selectionFromSnapshot(project.product)
+      : selectionFromLegacyMaterial('board', materialLabel(project.material_type || '', t)));
     setBoardThickness(project.board_thickness ? String(project.board_thickness) : '');
     setBoardWidth(project.board_width ? String(project.board_width) : '');
     setSelectedGroupId(project.project_group_id || '');
@@ -329,9 +328,10 @@ const CuttingOptimizer = () => {
   const partCount = parts.reduce((n, p) => n + (parseInt(p.quantity, 10) || 0), 0);
   const demand = parts.reduce(
     (sum, p) => sum + (parseFloat(p.length) || 0) * (parseFloat(p.quantity) || 0), 0);
-  const material = materialType === 'custom' ? customMaterial.trim() : materialType;
+  const sectionDims = { thickness: parseFloat(boardThickness), width: parseFloat(boardWidth) };
+  const material = selectionName(productSel, i18n.language, sectionDims);
   const hasErrors = inputErrors.parts.some(Boolean) || inputErrors.boards.some(Boolean) || !!inputErrors.sawKerf
-    || !material || !parseFloat(boardThickness) || !parseFloat(boardWidth);
+    || !parseFloat(boardThickness) || !parseFloat(boardWidth);
   const validBoards = boards.filter(b => b && !isNaN(parseFloat(b)));
   const uniqueValidBoards = [...new Set(validBoards.map((board) => parseFloat(board)))];
   const pricedBoardCount = uniqueValidBoards.filter((board) => boardCosts[board]?.price_per_meter > 0).length;
@@ -509,6 +509,7 @@ const CuttingOptimizer = () => {
         boards,
         sawKerf,
         materialType: material,
+        product: buildSnapshot(productSel, i18n.language, sectionDims),
         boardThickness,
         boardWidth,
         // Only recorded when the plan on screen was actually costed — otherwise
@@ -663,21 +664,23 @@ const CuttingOptimizer = () => {
 
           <section style={{ marginTop: '26px', paddingTop: '22px', borderTop: '1px solid var(--rule-hair)' }}>
             <div className="section-rule"><h2 className="section-title">{t('workflow.materialProfile')}</h2></div>
-            <div className="grid gap-x-8 gap-y-5 md:grid-cols-3">
-              <div>
-                <label className="form-label" htmlFor="board-material">{t('workflow.material')}</label>
-                <select id="board-material" value={materialType} onChange={(e) => { retirePlan(); setMaterialType(e.target.value); }} className="form-select" required>
-                  <option value="">{t('workflow.chooseMaterial')}</option>
-                  <option value="pine">{t('ui.materialPine')}</option>
-                  <option value="spruce">{t('ui.materialSpruce')}</option>
-                  <option value="oak">{t('ui.materialOak')}</option>
-                  <option value="beech">{t('ui.materialBeech')}</option>
-                  <option value="birch">{t('ui.materialBirch')}</option>
-                  <option value="pressure-treated">{t('ui.materialPressureTreated')}</option>
-                  <option value="custom">{t('ui.materialCustom')}</option>
-                </select>
-                {materialType === 'custom' && <input id="custom-material" className="form-input" style={{ marginTop: '8px' }} value={customMaterial} onChange={(e) => { retirePlan(); setCustomMaterial(e.target.value); }} placeholder={t('ui.customMaterialPlaceholder')} required />}
-              </div>
+            <div style={{ marginBottom: '18px', maxWidth: '640px' }}>
+              <span className="form-label" style={{ display: 'block' }}>{t('productUi.product')}</span>
+              <ProductPicker
+                kind="board"
+                value={productSel}
+                onChange={(next) => { retirePlan(); setProductSel(next); }}
+                dims={sectionDims}
+                label={t('productUi.product')}
+                onUseDimensions={(entry) => {
+                  retirePlan();
+                  setBoardThickness(String(entry.thickness));
+                  setBoardWidth(String(entry.width));
+                }}
+                onUseLengths={(lengths) => { retirePlan(); setBoards(lengths.map(String)); }}
+              />
+            </div>
+            <div className="grid gap-x-8 gap-y-5 md:grid-cols-2">
               <div>
                 <label className="form-label" htmlFor="board-thickness">{t('workflow.thicknessMm')}</label>
                 <input id="board-thickness" type="number" min="0.1" step="0.1" value={boardThickness} onChange={(e) => { retirePlan(); setBoardThickness(e.target.value); }} className="form-input" required />
@@ -687,7 +690,7 @@ const CuttingOptimizer = () => {
                 <input id="board-width" type="number" min="0.1" step="0.1" value={boardWidth} onChange={(e) => { retirePlan(); setBoardWidth(e.target.value); }} className="form-input" required />
               </div>
             </div>
-            {(!material || !parseFloat(boardThickness) || !parseFloat(boardWidth)) && <p className="text-danger text-[12.5px] font-semibold" style={{ marginTop: '10px' }}>{t('auditUi.materialRequired')}</p>}
+            {(!parseFloat(boardThickness) || !parseFloat(boardWidth)) && <p className="text-danger text-[12.5px] font-semibold" style={{ marginTop: '10px' }}>{t('productUi.dimensionsRequired')}</p>}
           </section>
 
           {/* Stock stays in plain sight. It was folded away on the first pass on
@@ -859,7 +862,7 @@ const CuttingOptimizer = () => {
                 {t('workflow.cuttingPlanIntro')}
               </p>
               <p className="plan-material-summary" data-testid="plan-material-summary">
-                {materialLabel(material, t)} · {boardThickness} × {boardWidth} mm
+                {material ? `${material} · ` : ''}{boardThickness} × {boardWidth} mm
               </p>
             </div>
           </div>

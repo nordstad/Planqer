@@ -62,8 +62,27 @@ accounts and saved projects.
 - `DATABASE_URL`: defaults to a local SQLite file. Overrides the database
   location/engine.
 
-Other backend limits (max part/board length, rate limits, token expiry) live
-in `backend/config.yaml`, not environment variables.
+- `PLANQER_CATALOGUE_COUNTRY`: no default. Two-letter country code (for example
+  `SE`) selecting the built-in product catalogue. Unset, or a country without
+  built-in data, gives the generic catalogue: product types and details, no
+  sized entries. See [Product catalogue](#product-catalogue).
+
+Other backend limits (rate limits, token expiry) live in `backend/config.yaml`,
+not environment variables. Board and part lengths are limited to 15 000 mm and
+sheet sides to 10 000 mm in code.
+
+## Product catalogue
+
+The catalogue suggests products, sizes and standard stock lengths in the product
+picker. It holds no prices; those stay on your instance, per plan.
+
+Only `SE` (Sweden: boards and building sheets) ships today. Every Swedish entry
+cites its source (TräGuiden, Svenskt Trä's *Lathunden*, manufacturer data
+sheets). Standard lengths are suggestions: Svenskt Trä states that structural
+timber over 5 400 mm is usually finger-jointed and glulam is normally stocked to
+12 m, but publishes no length list, so the 1 800, 2 100 and 2 400–5 400 mm (300
+mm steps) set is a working assumption. Data files live in
+`backend/planqer/catalogue/data/`.
 
 ## Frontend
 
@@ -101,6 +120,7 @@ PLANQER_SETUP_SECRET=<random-32-byte-hex>
 PLANQER_BIND_ADDRESS=0.0.0.0
 PLANQER_TRUSTED_BOOTSTRAP=false
 PLANQER_CORS_ORIGINS=https://planqer.example.com,https://cuts.example.com
+PLANQER_CATALOGUE_COUNTRY=SE
 
 # Frontend
 PLANQER_HOST=planqer.example.com

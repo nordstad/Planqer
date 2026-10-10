@@ -4,13 +4,16 @@ import { LanguageProvider } from '../contexts/LanguageContext';
 import SheetOptimizer from './SheetOptimizer';
 import i18n from '../i18n';
 import {
+  getCatalogue,
   getProjectGroups,
   getUserSheetProjects,
   getUserSettings,
   optimizeSheetCutting,
 } from '../utils/api';
+import { resetCatalogueCache } from '../utils/catalogue';
 
 vi.mock('../utils/api', () => ({
+  getCatalogue: vi.fn(),
   getProjectGroups: vi.fn(),
   getUserSheetProjects: vi.fn(),
   getUserSettings: vi.fn(),
@@ -21,7 +24,24 @@ vi.mock('../contexts/AuthContext', () => ({
   useAuth: () => ({ user: { id: 'user-1' } }),
 }));
 
+const catalogue = {
+  country: 'SE',
+  country_name: 'Sweden',
+  types: [
+    { key: 'plywood', kind: 'sheet', rank: 10, labels: { en: 'Plywood', sv: 'Plywood', nb: 'Kryssfiner' }, aliases: [], details: ['grade'] },
+    { key: 'sheet-custom', kind: 'sheet', rank: 999, labels: { en: 'Other sheet' }, aliases: [], details: [] },
+  ],
+  details: { species: [], treatment: [], profile: [] },
+  products: [{
+    id: 'se:plywood:15', type: 'plywood', kind: 'sheet', country: 'SE', thickness: 15, width: null,
+    lengths: [], max_length: null, formats: [{ width: 1200, height: 2400 }], species: [], treatments: [],
+    grades: [], profiles: [], sources: ['https://www.metsagroup.com/'], note: null,
+  }],
+};
+
 beforeEach(() => {
+  resetCatalogueCache();
+  getCatalogue.mockRejectedValue(new Error('offline'));
   getProjectGroups.mockResolvedValue([]);
   getUserSheetProjects.mockResolvedValue([]);
   getUserSettings.mockResolvedValue({ default_currency: 'SEK', default_vat_rate: 25, default_prices_include_vat: true });
@@ -168,4 +188,70 @@ it.each([
   } finally {
     translate.mockRestore();
   }
+});
+
+it('plans without any product chosen and sends no placeholder material', async () => {
+  window.history.replaceState({}, '', '/sheet-cutting');
+  render(<MemoryRouter><LanguageProvider><SheetOptimizer /></LanguageProvider></MemoryRouter>);
+
+  expect(screen.queryByText(/choose a sheet material/i)).not.toBeInTheDocument();
+  fireEvent.change(document.getElementById('sheet-thickness'), { target: { value: '18' } });
+  const pack = screen.getByRole('button', { name: /plan the sheet cuts/i });
+  await waitFor(() => expect(pack).not.toBeDisabled());
+  fireEvent.click(pack);
+
+  await waitFor(() => expect(optimizeSheetCutting).toHaveBeenCalled());
+  expect(optimizeSheetCutting.mock.calls[0][4]).toBe('');
+});
+
+it('takes a product\'s thickness and standard sheet size when the user asks', async () => {
+  getCatalogue.mockResolvedValue({ data: catalogue, etag: '"x"' });
+  window.history.replaceState({}, '', '/sheet-cutting');
+  render(<MemoryRouter><LanguageProvider><SheetOptimizer /></LanguageProvider></MemoryRouter>);
+
+  const box = screen.getByRole('combobox', { name: 'Product' });
+  fireEvent.focus(box);
+  fireEvent.change(box, { target: { value: 'plywood 15' } });
+  fireEvent.mouseDown(await screen.findByRole('option', { name: /^Plywood 15 mm/ }));
+  fireEvent.click(screen.getByRole('button', { name: 'Use 15 mm' }));
+  fireEvent.click(screen.getByRole('button', { name: /1.200 × 2.400 mm/ }));
+
+  expect(document.getElementById('sheet-thickness')).toHaveValue(15);
+  expect(screen.getByDisplayValue('2400')).toBeInTheDocument();
+  const pack = screen.getByRole('button', { name: /plan the sheet cuts/i });
+  await waitFor(() => expect(pack).not.toBeDisabled());
+  fireEvent.click(pack);
+
+  await waitFor(() => expect(optimizeSheetCutting).toHaveBeenCalled());
+  expect(optimizeSheetCutting.mock.calls[0].slice(1, 5)).toEqual(['1200', '2400', '3', 'Plywood 15 mm']);
+});
+
+it('restores the product a sheet plan was saved with', async () => {
+  getUserSheetProjects.mockResolvedValue([{
+    id: 'sheet-1',
+    name: 'Saved sheet',
+    project_group_id: null,
+    parts_data: [{ name: 'Shelf', width: 400, height: 200, quantity: 2 }],
+    sheet_width: 1200,
+    sheet_height: 2400,
+    sheet_thickness: 15,
+    kerf_width: 3,
+    material_type: 'Plywood 15 mm',
+    allow_rotation: true,
+    product: {
+      type: 'plywood', name: 'Plywood 15 mm', catalogue_id: 'se:plywood:15', country: 'SE',
+      labels: { en: 'Plywood', sv: 'Plywood' }, thickness: 15, width: null, lengths: [],
+      formats: [{ width: 1200, height: 2400 }], sources: [], details: { grade: 'Birch' }, suggested: false,
+    },
+  }]);
+  window.history.replaceState({}, '', '/sheet-cutting?edit=sheet-1');
+
+  render(
+    <MemoryRouter initialEntries={['/sheet-cutting?edit=sheet-1']}>
+      <LanguageProvider><SheetOptimizer /></LanguageProvider>
+    </MemoryRouter>,
+  );
+
+  await screen.findByDisplayValue('400');
+  expect(screen.getByTestId('product-summary')).toHaveTextContent('Plywood 15 mm');
 });

@@ -1,6 +1,6 @@
 max_lengths:
-  part_length: 6000  # 6000mm = 6m
-  board_length: 6000  # 6000mm = 6m
+  part_length: 15000  # 15000mm = 15m
+  board_length: 15000  # 15000mm = 15m
 
 database:
   # url override via DATABASE_URL env var; defaults to a local SQLite file.

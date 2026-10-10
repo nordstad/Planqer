@@ -12,6 +12,7 @@ from planqer.auth import get_current_user
 from planqer.database import User, UserSheetProject, get_session
 from planqer.routes.project_groups import _get_owned_group
 from planqer.saved_project_adapters import load_saved_json, update_saved_image
+from planqer.schemas.product import ProductSnapshot
 from planqer.sheet_visualization import (
     generate_saved_sheet_diagram,
     generate_single_sheet_visualization,
@@ -34,6 +35,7 @@ class SheetProjectResponse(BaseModel):
     algorithm: str | None = None
     allow_rotation: bool
     pricing: dict | None = None
+    product: dict | None = None
     optimization_result: dict | None = None
     cutlist_image: str | None = None
     has_svg_image: bool = False
@@ -57,6 +59,7 @@ class CreateSheetProjectRequest(BaseModel):
     allow_rotation: bool = True
     optimization_result: dict | None = None
     pricing: dict | None = None
+    product: ProductSnapshot | None = None
 
 
 class UpdateSheetProjectRequest(BaseModel):
@@ -72,6 +75,7 @@ class UpdateSheetProjectRequest(BaseModel):
     allow_rotation: bool | None = None
     optimization_result: dict | None = None
     pricing: dict | None = None
+    product: ProductSnapshot | None = None
 
 
 def _render_saved_layout(optimization_result: dict | None, name: str) -> str | None:
@@ -131,6 +135,9 @@ def sheet_project_to_response(project: UserSheetProject) -> SheetProjectResponse
         allow_rotation=project.allow_rotation,
         pricing=load_saved_json(
             project.pricing, field="sheet pricing", default=None, expected=dict
+        ),
+        product=load_saved_json(
+            project.product, field="sheet product", default=None, expected=dict
         ),
         optimization_result=optimization_result,
         cutlist_image=project.cutlist_image,
@@ -195,6 +202,9 @@ async def create_sheet_project(
         algorithm=project_data.algorithm,
         allow_rotation=project_data.allow_rotation,
         pricing=json.dumps(project_data.pricing) if project_data.pricing else None,
+        product=project_data.product.model_dump_json()
+        if project_data.product
+        else None,
         optimization_result=json.dumps(project_data.optimization_result)
         if project_data.optimization_result
         else None,
@@ -256,6 +266,10 @@ async def update_sheet_project(
     if "pricing" in project_data.model_fields_set:
         project.pricing = (
             json.dumps(project_data.pricing) if project_data.pricing else None
+        )
+    if "product" in project_data.model_fields_set:
+        project.product = (
+            project_data.product.model_dump_json() if project_data.product else None
         )
 
     svg_data_url = _render_saved_layout(

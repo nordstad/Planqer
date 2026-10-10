@@ -28,3 +28,12 @@ test('rejects zero, fractional quantities, and values over API limits', () => {
     { length: String(MAX_PART_LENGTH + 0.1), quantity: '1' },
   ], t).every(Boolean)).toBe(true);
 });
+
+test('board and part lengths reach 15 m while the limits still reject beyond it', () => {
+  expect(MAX_PART_LENGTH).toBe(15000);
+  expect(MAX_BOARD_LENGTH).toBe(15000);
+  expect(validateParts([{ length: '15000', quantity: '1' }], t)).toEqual([null]);
+  expect(validateBoards(['15000'], t)).toEqual([null]);
+  expect(validateParts([{ length: '15000.1', quantity: '1' }], t)[0]).toBe('validation.maxLength:15000');
+  expect(validateBoards(['15001'], t)[0]).toBe('validation.maxLength:15000');
+});

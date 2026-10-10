@@ -1,0 +1,333 @@
+# Sweden — boards and building sheets.
+#
+# Sources (cited per product group; none are retailer sites, nothing here is
+# scraped):
+#   Lathunden  Svenskt Trä, "Lathunden" 2021, section Virkessortiment
+#              (sizes per Swedish standard and Svenskt Trä's product catalogue)
+#   TräGuiden  traguiden.se product pages, which list the standard products
+#
+# Stock lengths: neither source tabulates retail lengths. Lathunden states that
+# structural timber longer than 5 400 mm is usually finger-jointed, and that
+# glulam is normally stocked up to 12 m. The 1 800, 2 100 and 2 400-5 400 mm
+# (300 mm steps) set is the project's working assumption for board stock; it is
+# a suggestion that the user can always change, not a statement of availability.
+# Prices are never part of the catalogue.
+country: SE
+name: Sweden
+products:
+  - type: regel
+    sources:
+      - https://www.traguiden.se/produkter/konstruktionsvirke/konstruktionsvirke-obehandlat/konstruktionsvirke-hallfasthetsklass-c24/
+      - https://www.svenskttra.se/siteassets/5-publikationer/pdfer/st-lathunden-2021-med-utvik.pdf
+    sizes: [45x70, 45x95, 45x120, 45x145, 45x170, 45x195, 45x220, 45x245, 70x195, 70x220]
+    lengths: &short_stock [1800, 2100]
+    length_range: &stock_steps {from: 2400, to: 5400, step: 300}
+    species: [pine, spruce]
+    treatments: [untreated, ntr-a-green, ntr-ab-green]
+    grades: [C14, C18, C24, C30, C35]
+
+  - type: tryckimpregnerat
+    sources:
+      - https://www.traguiden.se/produkter/konstruktionsvirke/
+      - https://www.traguiden.se/produkter/ovriga-traprodukter/dimensionshyvlat/
+      - https://www.svenskttra.se/siteassets/5-publikationer/pdfer/st-lathunden-2021-med-utvik.pdf
+    sizes: [45x45, 45x70, 45x95, 45x120, 45x145, 45x170, 45x195, 45x220, 70x70, 95x95]
+    lengths: *short_stock
+    length_range: *stock_steps
+    species: [pine]
+    treatments: [ntr-a-green, ntr-ab-green, ntr-ab-brown]
+    grades: [C14, C24, G4-2, G4-3]
+
+  - type: trall
+    sources:
+      - https://www.traguiden.se/produkter/ovriga-traprodukter/trall/
+      - https://www.svenskttra.se/siteassets/5-publikationer/pdfer/st-lathunden-2021-med-utvik.pdf
+    sizes: [22x95, 28x95, 28x120, 28x145, 34x95, 34x120, 34x145]
+    lengths: *short_stock
+    length_range: *stock_steps
+    species: [pine, heartwood-pine]
+    treatments: [ntr-ab-green, ntr-ab-brown, untreated]
+    grades: [G4-2, G4-3]
+    profiles: [planed, grooved]
+
+  - type: lakt
+    sources:
+      - https://www.traguiden.se/produkter/ovriga-traprodukter/lakt/
+    sizes: [12x48, 25x23, 25x36, 25x38, 25x48]
+    lengths: *short_stock
+    length_range: *stock_steps
+    species: [pine, spruce]
+    grades: [G4-2]
+
+  - type: ytterpanel
+    sources:
+      - https://www.svenskttra.se/siteassets/5-publikationer/pdfer/st-lathunden-2021-med-utvik.pdf
+    sizes:
+      [22x45, 22x70, 22x95, 22x120, 22x145, 22x170, 22x195, 28x95, 28x120, 28x145, 28x170, 28x195]
+    lengths: *short_stock
+    length_range: *stock_steps
+    species: [spruce, pine]
+    treatments: [untreated, ntr-ab-green]
+    grades: [G4-2]
+    profiles: [fine-sawn-face, grooved, double-chamfer, tongue-and-groove]
+
+  - type: innerpanel
+    sources:
+      - https://www.svenskttra.se/siteassets/5-publikationer/pdfer/st-lathunden-2021-med-utvik.pdf
+      - https://www.traguiden.se/produkter/invandiga-panelbrader/
+    sizes: [9x70, 12x70, 12x95, 12x120, 15x70, 15x95, 15x120, 22x95, 22x120, 22x145]
+    lengths: *short_stock
+    length_range: *stock_steps
+    species: [spruce, pine]
+    treatments: [untreated, primed-white]
+    grades: [G4-2]
+    profiles: [tongue-and-groove, bead-board, planed]
+
+  - type: planhyvlat
+    sources:
+      - https://www.svenskttra.se/siteassets/5-publikationer/pdfer/st-lathunden-2021-med-utvik.pdf
+      - https://www.traguiden.se/produkter/ovriga-traprodukter/dimensionshyvlat/
+    sizes:
+      - 9x22
+      - 9x28
+      - 9x34
+      - 9x45
+      - 9x70
+      - 9x95
+      - 16x22
+      - 16x28
+      - 16x34
+      - 16x45
+      - 16x70
+      - 16x95
+      - 16x120
+      - 16x145
+      - 20x45
+      - 20x70
+      - 20x95
+      - 20x120
+      - 22x22
+      - 22x28
+      - 22x34
+      - 22x45
+      - 22x70
+      - 22x95
+      - 22x120
+      - 22x145
+      - 22x170
+      - 22x195
+      - 28x45
+      - 28x70
+      - 28x95
+      - 28x120
+      - 34x34
+      - 34x45
+      - 34x70
+      - 34x95
+      - 34x120
+      - 34x145
+      - 34x170
+      - 34x195
+      - 45x45
+      - 45x70
+      - 45x95
+      - 45x120
+      - 45x145
+      - 70x70
+      - 95x95
+    lengths: *short_stock
+    length_range: *stock_steps
+    species: [pine, spruce]
+    treatments: [untreated, ntr-a-green]
+    grades: [G4-2, G4-3]
+
+  - type: sagat
+    sources:
+      - https://www.traguiden.se/produkter/sagat-virke/
+      - https://www.traguiden.se/produkter/ovriga-traprodukter/sparrar/
+      - https://www.svenskttra.se/siteassets/5-publikationer/pdfer/st-lathunden-2021-med-utvik.pdf
+    sizes:
+      - 19x75
+      - 19x100
+      - 19x125
+      - 22x75
+      - 22x100
+      - 22x125
+      - 22x150
+      - 22x175
+      - 22x200
+      - 32x75
+      - 32x100
+      - 32x125
+      - 32x150
+      - 32x175
+      - 32x200
+      - 38x75
+      - 38x100
+      - 38x125
+      - 38x150
+      - 47x75
+      - 47x100
+      - 47x125
+      - 47x150
+      - 47x175
+      - 47x200
+      - 47x225
+      - 47x250
+      - 50x75
+      - 75x75
+      - 100x100
+      - 125x125
+      - 150x150
+    lengths: *short_stock
+    length_range: *stock_steps
+    species: [pine, spruce]
+    treatments: [untreated, ntr-a-green]
+    grades: [G4-2, G4-3]
+    profiles: [rough-sawn]
+
+  - type: raspont
+    sources:
+      - https://www.traguiden.se/produkter/ovriga-traprodukter/underlagsspont/
+      - https://www.svenskttra.se/siteassets/5-publikationer/pdfer/st-lathunden-2021-med-utvik.pdf
+    sizes: [17x95, 17x120, 17x145, 20x95, 20x120, 20x145, 23x95, 23x120, 23x145]
+    lengths: *short_stock
+    length_range: *stock_steps
+    species: [spruce]
+    grades: [G4-3]
+    profiles: [tongue-and-groove, grooved]
+
+  - type: list
+    sources:
+      - https://www.svenskttra.se/siteassets/5-publikationer/pdfer/st-lathunden-2021-med-utvik.pdf
+      - https://www.traguiden.se/produkter/tralister/
+    sizes:
+      - 6x21
+      - 8x15
+      - 8x21
+      - 8x27
+      - 8x33
+      - 8x43
+      - 9.5x43
+      - 9.5x56
+      - 12x27
+      - 12x43
+      - 12x56
+      - 12x69
+      - 15x15
+      - 15x43
+      - 15x56
+      - 15x69
+      - 15x95
+      - 21x21
+      - 21x33
+      - 21x43
+      - 21x56
+      - 21x69
+      - 21x95
+      - 21x120
+      - 27x27
+      - 33x33
+      - 33x43
+      - 43x43
+    species: [pine, spruce]
+    treatments: [untreated, primed-white]
+    profiles: [planed]
+    note: Includes sockellist, foderlist, hålkälslist, skugglist, foglist, smyglist, hörnlist and trekantslist.
+
+  - type: limtra
+    sources:
+      - https://www.traguiden.se/produkter/limtra/
+      - https://www.svenskttra.se/siteassets/5-publikationer/pdfer/st-lathunden-2021-med-utvik.pdf
+    sizes:
+      - 42x180
+      - 42x225
+      - 42x270
+      - 56x225
+      - 56x270
+      - 66x270
+      - 66x315
+      - 90x90
+      - 90x180
+      - 90x225
+      - 90x270
+      - 90x315
+      - 90x360
+      - 90x405
+      - 90x450
+      - 115x115
+      - 115x180
+      - 115x225
+      - 115x270
+      - 115x315
+      - 115x360
+      - 115x405
+      - 115x450
+      - 115x495
+      - 115x630
+      - 140x135
+      - 140x140
+      - 140x225
+      - 140x270
+      - 140x315
+      - 140x360
+      - 140x405
+      - 160x160
+      - 165x165
+    max_length: 12000
+    species: [spruce]
+    grades: [GL28cs, GL30c, GL30h]
+    note: Normally stocked in lengths up to 12 m; other lengths are made to order.
+
+  - type: rundstav
+    sources:
+      - https://www.svenskttra.se/siteassets/5-publikationer/pdfer/st-lathunden-2021-med-utvik.pdf
+    sizes: [8x8, 9x9, 12x12, 15x15, 21x21, 27x27, 33x33, 43x43]
+    species: [pine, spruce]
+    profiles: [round, quarter-round]
+    note: Rundstav is listed by diameter, kvartslist by side (9, 12, 15 and 21 mm).
+
+  # ── building sheets ───────────────────────────────────────────────────
+  - type: plywood
+    sources:
+      - https://www.metsagroup.com/globalassets/metsa-wood/archive/spruce-plywood-documents/metsa-wood-spruce/metsa-wood-spruce-product-datasheet-en.pdf
+      - https://www.traguiden.se/om-tra/materialet-tra/trabaserade-produkter/skivmaterial1/plywood/
+    thicknesses: [9, 12, 15, 18, 21, 24, 27, 30]
+    formats: [1200x2400, 1220x2440, 1250x2500]
+    species: [spruce, birch]
+    grades: [Structural]
+
+  - type: osb
+    sources:
+      - https://www.egger.com/get_download/8cc2a911-1b21-4559-a5d9-ab1507dfca0d/deliveryprogramme.pdf
+      - https://kronospan.com/en_LU/products/express_range_kronobuild/
+    thicknesses: [10, 11, 12, 15, 18, 22, 25, 30]
+    formats: [1250x2500, 1200x2400, 1220x2440]
+    grades: [OSB/3]
+    note: EGGER lists these thicknesses; not every thickness is made in every format.
+
+  - type: spanskiva
+    sources:
+      - https://kronospan.com/en_IS/products/view/kronobuild/particleboard/p5-fast-protect-t-g/p5-fast-protect-t-g-711/
+      - https://media-prod.beijerflow.com/media/medias/docus/117/2022.01%20-%20Spaandex%20K-gulv%2022MM%20-%20svensk.pdf
+    thicknesses: [22]
+    formats: [600x2400, 600x1800]
+    grades: [P5]
+    profiles: [tongue-and-groove]
+    note: Flooring particleboard (golvspånskiva), tongue-and-groove on four sides.
+
+  - type: gipsskiva
+    sources:
+      - https://byggkatalogen.byggtjanst.se/produkt/byggmaterial/skivor/gipsskivor/gyproc-gn-gne-13-normal-standardgipsskiva/17780
+      - https://www.norgips.se/kunskapsbank/tekniska-specifikationer/
+    thicknesses: [12.5]
+    formats: [1200x2200, 1200x2400, 1200x2500, 1200x2700, 1200x3000, 900x2400, 900x2500, 900x2700, 900x3000]
+    grades: [Normal 13]
+
+  - type: mdf
+    sources:
+      - https://kronospan.com/en_LU/products/express_range_kronobuild/
+    thicknesses: [6, 9, 10, 12, 15, 16, 18, 19, 22, 25]
+    formats: [1220x2440, 1220x3050]
+    grades: [Standard]
+    note: The source lists thicknesses and formats separately, so not every pairing is made.
