@@ -3,7 +3,7 @@ from typing import Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
@@ -36,7 +36,7 @@ class UserSettingsUpdate(BaseModel):
     preferred_algorithm: str | None = None
     preferred_units: str | None = None
     preferred_language: Literal["en-GB", "sv-SE", "nb-NO"] | None = None
-    spare_margin_percent: float | None = None
+    spare_margin_percent: float | None = Field(default=None, ge=0, le=100)
 
 
 LEGACY_DEFAULT_BOARD_LENGTHS = [300, 360, 500]

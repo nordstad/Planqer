@@ -150,6 +150,18 @@ def test_get_user_settings_normalizes_legacy_board_lengths():
     assert settings.default_board_lengths == "[3000, 3600, 5000]"
 
 
+def test_update_user_settings_rejects_out_of_range_spare_margin(
+    client, authenticated_user_token
+):
+    for value in (-1, 101):
+        response = client.put(
+            "/api/settings/",
+            headers={"Authorization": f"Bearer {authenticated_user_token}"},
+            json={"spare_margin_percent": value},
+        )
+        assert response.status_code == 422
+
+
 def test_settings_unauthorized(client):
     """Test settings endpoint without authentication"""
     response = client.get("/api/settings/")

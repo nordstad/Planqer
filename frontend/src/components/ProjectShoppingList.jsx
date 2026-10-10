@@ -35,7 +35,7 @@ const ProjectShoppingList = ({ projects, spareMargin = 10 }) => {
                 <td>{row.quantityToBuy}</td>
                 {pricing.hasPrices && <>
                   <td>{row.pricePerUnit ? `${row.pricePerUnit.toFixed(2)} ${row.currency} · ${row.pricesIncludeVat ? t('ui.includingVat') : t('ui.excludingVat')} (${row.vatRate}%)` : row._priceConflict ? t('ui.conflictingPrices') : t('ui.notPriced')}</td>
-                  <td>{row.pricePerUnit ? `${(row.pricePerUnit * row.quantity).toFixed(2)} ${row.currency}` : '—'}</td>
+                  <td>{row.pricePerUnit ? `${(row.pricePerUnit * row.quantityToBuy).toFixed(2)} ${row.currency}` : '—'}</td>
                 </>}
               </tr>
             ))}

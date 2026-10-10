@@ -159,6 +159,16 @@ def test_project_group_spare_margin_round_trips(client):
     assert response.json()["spare_margin_percent"] == 0.0
 
 
+def test_project_group_rejects_out_of_range_spare_margin(client):
+    headers = _register_and_login(client)
+    response = client.post(
+        "/api/project-groups/",
+        json={"name": "Chair", "spare_margin_percent": -5},
+        headers=headers,
+    )
+    assert response.status_code == 422
+
+
 def test_save_board_cutlist_into_project_group(client):
     headers = _register_and_login(client)
     group = client.post(

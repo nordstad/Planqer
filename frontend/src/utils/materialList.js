@@ -121,6 +121,8 @@ export const buildMaterialRows = (projects) => projects.flatMap((project) => {
   return boardRows(project);
 });
 
+const isPriced = (row) => row.pricePerUnit > 0 && Boolean(row.currency);
+
 const samePrice = (left, right) => left.pricePerUnit === right.pricePerUnit
   && left.currency === right.currency
   && left.pricesIncludeVat === right.pricesIncludeVat
@@ -130,23 +132,35 @@ const mergeKey = (row) => JSON.stringify(row._mergeData || {
   product: { material: row.material }, dimensions: [row.size], stock: null,
 });
 
+const stripPrice = (row) => {
+  delete row.pricePerUnit;
+  delete row.currency;
+  delete row.pricesIncludeVat;
+  delete row.vatRate;
+};
+
 /* Merge physical purchase rows without using displayed labels or prices as
    identity. Prices belong to plans, so equal products with different saved
-   prices are still one thing to buy. */
+   prices are still one thing to buy. Two different prices are a conflict; a
+   priced plan merged with an unpriced one is just partly priced, so no price
+   is guessed for the unpriced quantity. */
 export const mergeMaterialRows = (rows) => rows.reduce((summary, row) => {
   const key = mergeKey(row);
   const existing = summary.get(key);
   if (!existing) {
-    summary.set(key, withMergeData({ ...row }, row._mergeData));
+    summary.set(key, withMergeData({ ...row, plans: [row.plan] }, row._mergeData));
     return summary;
   }
   existing.quantity += row.quantity;
-  if (!samePrice(existing, row)) {
-    delete existing.pricePerUnit;
-    delete existing.currency;
-    delete existing.pricesIncludeVat;
-    delete existing.vatRate;
-    Object.defineProperty(existing, '_priceConflict', { value: true, enumerable: false, configurable: true });
+  if (!existing.plans.includes(row.plan)) existing.plans.push(row.plan);
+  if (existing._priceConflict) return summary;
+  if (isPriced(existing) && isPriced(row)) {
+    if (!samePrice(existing, row)) {
+      stripPrice(existing);
+      Object.defineProperty(existing, '_priceConflict', { value: true, enumerable: false });
+    }
+  } else if (isPriced(existing) || isPriced(row)) {
+    stripPrice(existing);
   }
   return summary;
 }, new Map());
@@ -162,6 +176,11 @@ export const applySpareMargin = (rows, marginPercent = 10) => {
     if (row._priceConflict) Object.defineProperty(purchaseRow, '_priceConflict', { value: true, enumerable: false });
     return purchaseRow;
   });
+};
+
+export const isPlanPriced = (project) => {
+  const rows = buildMaterialRows([project]);
+  return rows.length > 0 && rows.every(isPriced);
 };
 
 export const materialRowsForPurchase = (projects, spareMargin = 10) => applySpareMargin(
@@ -217,7 +236,7 @@ export const buildMaterialListHtml = (projects, t, spareMargin = 10) => {
       <h2>${escapeHtml(t('workflow.whatToBuy'))}</h2>
        <table class="shopping-table">
          <thead><tr><th>${escapeHtml(t('workflow.planName'))}</th><th>${escapeHtml(t('legacy.material'))}</th><th>${escapeHtml(t('workflow.sizeMm'))}</th><th>${escapeHtml(t('ui.needed'))}</th><th>${escapeHtml(t('ui.toBuy'))}</th>${priceHeadings}</tr></thead>
-        <tbody>${rows.map((row) => `<tr><td>${escapeHtml(row.plan)}</td><td>${escapeHtml(materialLabel(row.material, t))}</td><td>${escapeHtml(row.size)}</td><td>${row.neededQuantity}</td><td>${row.quantityToBuy}</td>${priceCells(row)}</tr>`).join('')}</tbody>
+        <tbody>${rows.map((row) => `<tr><td>${escapeHtml(row.plans.join(', '))}</td><td>${escapeHtml(materialLabel(row.material, t))}</td><td>${escapeHtml(row.size)}</td><td>${row.neededQuantity}</td><td>${row.quantityToBuy}</td>${priceCells(row)}</tr>`).join('')}</tbody>
       </table>
       ${summary ? `<p class="shopping-total">${escapeHtml(summary)}</p>` : ''}
       ${pricing.unpricedCount > 0 && pricing.hasPrices ? `<p>${escapeHtml(t('ui.unpricedMaterialCount', { count: pricing.unpricedCount }))}</p>` : ''}
@@ -225,20 +244,28 @@ export const buildMaterialListHtml = (projects, t, spareMargin = 10) => {
     </section>`;
 };
 
-const csvCell = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+// A leading = + - @ makes spreadsheets evaluate the cell as a formula.
+const csvCell = (value) => {
+  const text = String(value ?? '').replace(/\u00a0/g, ' ');
+  const safe = /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
+  return `"${safe.replace(/"/g, '""')}"`;
+};
 
-export const buildMaterialCsv = (projects, spareMargin = 10) => {
+export const buildMaterialCsv = (projects, t, spareMargin = 10) => {
   const rows = materialRowsForPurchase(projects, spareMargin);
-  const header = ['Material', 'Size', 'Needed', 'To buy', 'Price each', 'Currency', 'Cost', 'VAT rate'];
+  const header = [
+    t('workflow.planName'), t('legacy.material'), t('workflow.sizeMm'), t('ui.needed'), t('ui.toBuy'),
+    t('ui.priceEach'), t('ui.cost'), t('settings.vatRate'),
+  ];
   const lines = rows.map((row) => [
-    row.material,
-    row.size,
+    row.plans.join(', '),
+    materialLabel(row.material, t),
+    row.size.replace(' mm', ''),
     row.neededQuantity,
     row.quantityToBuy,
-    row.pricePerUnit ?? '',
-    row.currency ?? '',
-    row.pricePerUnit ? (row.pricePerUnit * row.quantityToBuy).toFixed(2) : '',
-    row.vatRate ?? '',
+    row.pricePerUnit ? `${row.pricePerUnit.toFixed(2)} ${row.currency}` : (row._priceConflict ? t('ui.conflictingPrices') : t('ui.notPriced')),
+    row.pricePerUnit ? `${(row.pricePerUnit * row.quantityToBuy).toFixed(2)} ${row.currency}` : '',
+    row.pricePerUnit ? `${row.pricesIncludeVat ? t('ui.includingVat') : t('ui.excludingVat')} (${row.vatRate}%)` : '',
   ].map(csvCell).join(','));
   return [header.map(csvCell).join(','), ...lines].join('\r\n');
 };

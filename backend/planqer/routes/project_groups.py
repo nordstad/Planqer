@@ -3,7 +3,7 @@ from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
@@ -31,7 +31,7 @@ class ProjectGroupResponse(BaseModel):
 
 class ProjectGroupRequest(BaseModel):
     name: str
-    spare_margin_percent: float | None = None
+    spare_margin_percent: float | None = Field(default=None, ge=0, le=100)
 
 
 def group_to_response(group: ProjectGroup) -> ProjectGroupResponse:

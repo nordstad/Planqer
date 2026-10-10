@@ -12,6 +12,7 @@ import {
   deleteProject,
   deleteProjectGroup,
   downloadProjectImage,
+  renameProjectGroup,
 } from '../utils/api';
 import { printProjectPlans } from '../utils/printProject';
 
@@ -283,4 +284,46 @@ it('falls back to a neutral label when a saved plan has the placeholder material
   await screen.findByText(plan.name);
   expect(screen.queryByText(/unknown/i)).not.toBeInTheDocument();
   expect(screen.getByText(/45×95mm/)).toBeInTheDocument();
+});
+
+it('edits the project spare margin without closing the editor, and saves only the changed margin', async () => {
+  renderDetail();
+
+  fireEvent.click(await screen.findByRole('button', { name: 'Rename Lab' }));
+  const margin = screen.getByLabelText('Default spare margin, %');
+  fireEvent.change(margin, { target: { value: '20' } });
+  expect(screen.getByLabelText('Default spare margin, %')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Save settings' }));
+
+  await waitFor(() => expect(renameProjectGroup).toHaveBeenCalledWith(group.id, { name: 'Lab', spare_margin_percent: 20 }));
+});
+
+it('renaming a project leaves its spare margin inheriting the user default', async () => {
+  renderDetail();
+
+  fireEvent.click(await screen.findByRole('button', { name: 'Rename Lab' }));
+  fireEvent.change(screen.getByRole('textbox', { name: 'Project name' }), { target: { value: 'Workshop' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Save settings' }));
+
+  await waitFor(() => expect(renameProjectGroup).toHaveBeenCalledWith(group.id, { name: 'Workshop' }));
+});
+
+it('exports and prints the whole project, not just plans with diagrams', async () => {
+  getUserProjects.mockResolvedValue([{ ...plan, has_svg_image: false }]);
+  renderDetail();
+
+  fireEvent.click(await screen.findByRole('button', { name: 'What to buy' }));
+  await waitFor(() => expect(printProjectPlans).toHaveBeenCalled());
+  expect(printProjectPlans.mock.calls.at(-1)[0].shoppingListHtml).toContain('300 mm');
+});
+
+it('does not offer a quick/specified badge or a details prompt for priced tile plans', async () => {
+  getUserProjects.mockResolvedValue([]);
+  getUserTileProjects.mockResolvedValue([{ ...tilePlan, pricing: { price_per_unit: 40, currency: 'SEK' } }]);
+  renderDetail();
+
+  await screen.findByText('Tile layout', { selector: 'h3' });
+  expect(screen.queryByText('Quick')).not.toBeInTheDocument();
+  expect(screen.getByText('Priced')).toBeInTheDocument();
+  expect(screen.queryByText('Add missing details or prices')).not.toBeInTheDocument();
 });

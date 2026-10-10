@@ -50,3 +50,11 @@ it('shows a project total when every material line is priced compatibly', () => 
 
   expect(screen.getByText(/Estimated project material cost: 1080.00 SEK including VAT \(25%\)/)).toBeInTheDocument();
 });
+
+it('costs each row from the quantity to buy', () => {
+  renderList([
+    { name: 'Sheet', projectType: 'sheet', material_type: 'plywood', optimization_result: { sheets: [{ sheet_width: 1200, sheet_height: 2400 }] }, pricing: { price_per_unit: 500, currency: 'SEK', vat_rate: 25, prices_include_vat: true } },
+  ]);
+
+  expect(screen.getByText('1000.00 SEK', { selector: 'td' })).toBeInTheDocument();
+});
