@@ -172,7 +172,9 @@ const SheetOptimizer = () => {
         setProjectName(data.projectName || '');
         if (data.materialType === 'custom') {
           setMaterialType('custom');
-          setCustomMaterial(data.customMaterial || 'unknown');
+          setCustomMaterial(data.customMaterial || '');
+        } else if (data.materialType) {
+          setMaterialType(data.materialType);
         }
         if (data.sheetThickness != null) setSheetThickness(String(data.sheetThickness));
         localStorage.removeItem('planqer-3d-sheet-import');

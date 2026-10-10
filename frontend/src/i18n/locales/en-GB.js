@@ -235,7 +235,7 @@ const locale = {
     planCutlist_other: 'Plan {{count}} cutlists',
     planCutlists_one: 'Plan {{count}} cutlist',
     planCutlists_other: 'Plan {{count}} cutlists',
-    kerfZero: 'A zero kerf means no material is lost when cutting', kerfWide: 'This cut width is unusually large. Check the value; 2 to 4 mm is typical.', sheetWidthPositive: 'Sheet width must be a positive number', sheetHeightPositive: 'Sheet height must be a positive number', sheetKerfAria: 'Sheet kerf in millimetres', acceptedModelFiles: 'STL, STEP or STP · up to 50 MB', planCutlist: 'Plan {{count}} cutlist', planCutlists: 'Plan {{count}} cutlists', savedCount: 'Saved {{saved}} of {{total}}', signInCutlist: 'Sign in or create a local account on this instance to plan and save cutlists.', cutlistsSaved: 'Cutlists saved', planAndSave: 'Plan and save', cutlistsSavedCount: '{{saved}} of {{total}} planned and kept on this instance.', batchPlanIntro: 'Set the stock and kerf once — every selected cutlist plans against it and lands in one project.', saved: 'Saved', willBeSaved: 'Will be planned and saved', backToCutlists: 'Back to cutlists' },
+    kerfZero: 'A zero kerf means no material is lost when cutting', kerfWide: 'This cut width is unusually large. Check the value; 2 to 4 mm is typical.', sheetWidthPositive: 'Sheet width must be a positive number', sheetHeightPositive: 'Sheet height must be a positive number', sheetKerfAria: 'Sheet kerf in millimetres', acceptedModelFiles: 'STL, STEP or STP · up to 50 MB', planCutlist: 'Plan {{count}} cutlist', planCutlists: 'Plan {{count}} cutlists', savedCount: 'Saved {{saved}} of {{total}}', signInCutlist: 'Sign in or create a local account on this instance to plan and save cutlists.', cutlistsSaved: 'Cutlists saved', planAndSave: 'Plan and save', cutlistsSavedCount: '{{saved}} of {{total}} planned and kept on this instance.', batchPlanIntro: 'Set the stock, cut width and optional prices for each cutlist. They are planned and saved together into one project.', saved: 'Saved', willBeSaved: 'Will be planned and saved', backToCutlists: 'Back to cutlists' },
   tileUi: {
     sliverSummary_one: 'Minimum edge width {{value}} · {{waste}}% breakage allowance · {{count}} candidate',
     sliverSummary_other: 'Minimum edge width {{value}} · {{waste}}% breakage allowance · {{count}} candidates',
@@ -273,6 +273,28 @@ Object.assign(locale.ui, { tileSummary: '{{count}} tiles to buy · narrowest cut
 Object.assign(locale.projectUi, {
   projectViews: 'Project views', overview: 'Overview', shoppingList: 'Shopping list', cutDiagrams: 'Cut diagrams',
   shoppingListIntro: 'Everything to buy for this project', shoppingListEmpty: 'There is nothing to buy for this project yet.', diagramViewIntro: 'Open a diagram to inspect it full size. Cut lists appear below tile plans.',
+});
+
+Object.assign(locale.modelUi, {
+  boardWord: "Board",
+  sheetWord: "Sheet",
+  materialUnspecified: "Not specified",
+  materialFor: "Material for {{name}}",
+  customMaterialFor: "Your own material for {{name}}",
+  renameCutlist: "Name for {{name}}",
+  showLengths: "Show lengths",
+  hideLengths: "Hide lengths",
+  showSizes: "Show sizes",
+  hideSizes: "Hide sizes",
+  pricingNone: "No prices entered. This is planned for the least waste. Prices are optional.",
+  pricingPartial: "Price every length to see a cost. Until then this is planned for the least waste.",
+  pricingComplete: "Every item is priced, so the saved plan includes its cost.",
+  sheetPricingNone: "No price entered. The sheets are planned without a cost. A price is optional.",
+  applyAllBoards: "Apply to all board groups",
+  applyAllSheets: "Apply to all sheet groups",
+  appliedBoards: "Stock, cut width and prices copied to all board groups.",
+  appliedSheets: "Sheet size, cut width and price copied to all sheet groups.",
+  openProject: "Open project",
 });
 
 export default locale;

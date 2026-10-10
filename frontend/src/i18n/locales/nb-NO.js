@@ -269,7 +269,7 @@ const locale = {
     planCutlist_other: 'Planlegg {{count}} kapplister',
     planCutlists_one: 'Planlegg {{count}} kappliste',
     planCutlists_other: 'Planlegg {{count}} kapplister',
-    kerfZero: 'Et sagspor på null betyr at ingen materialer går tapt ved kapping', kerfWide: 'Sagsporet er uvanlig bredt. Kontroller verdien; 2 til 4 mm er vanlig.', sheetWidthPositive: 'Platens bredde må være et positivt tall', sheetHeightPositive: 'Platens høyde må være et positivt tall', sheetKerfAria: 'Platens sagspor i millimeter', acceptedModelFiles: 'STL, STEP eller STP · opptil 50 MB', planCutlist: 'Planlegg {{count}} kappliste', planCutlists: 'Planlegg {{count}} kapplister', savedCount: 'Lagret {{saved}} av {{total}}', signInCutlist: 'Logg inn eller opprett en lokal konto for å planlegge og lagre kapplister.', cutlistsSaved: 'Kapplister lagret', planAndSave: 'Planlegg og lagre', cutlistsSavedCount: '{{saved}} av {{total}} planlagt og lagret på denne instansen.', batchPlanIntro: 'Angi råmateriale og sagspor én gang – hver valgte kappliste planlegges mot dem og legges i ett prosjekt.', saved: 'Lagret', willBeSaved: 'Blir planlagt og lagret', backToCutlists: 'Tilbake til kapplistene' },
+    kerfZero: 'Et sagspor på null betyr at ingen materialer går tapt ved kapping', kerfWide: 'Sagsporet er uvanlig bredt. Kontroller verdien; 2 til 4 mm er vanlig.', sheetWidthPositive: 'Platens bredde må være et positivt tall', sheetHeightPositive: 'Platens høyde må være et positivt tall', sheetKerfAria: 'Platens sagspor i millimeter', acceptedModelFiles: 'STL, STEP eller STP · opptil 50 MB', planCutlist: 'Planlegg {{count}} kappliste', planCutlists: 'Planlegg {{count}} kapplister', savedCount: 'Lagret {{saved}} av {{total}}', signInCutlist: 'Logg inn eller opprett en lokal konto for å planlegge og lagre kapplister.', cutlistsSaved: 'Kapplister lagret', planAndSave: 'Planlegg og lagre', cutlistsSavedCount: '{{saved}} av {{total}} planlagt og lagret på denne instansen.', batchPlanIntro: 'Angi råmateriale, sagspor og valfrie priser for hver kappliste. De planlegges og lagres sammen i ett prosjekt.', saved: 'Lagret', willBeSaved: 'Blir planlagt og lagret', backToCutlists: 'Tilbake til kapplistene' },
   auditUi: { kerfWide: 'Sagsporet er uvanlig bredt. Kontroller verdien; 2 til 4 mm er vanlig.', priceRequired: 'Skriv inn pris per meter før planen prises', stockPriceRequired: 'Hver lagerlengde trenger en pris før planen prises', unknownError: 'Ukjent feil', nameRequired: 'Gi planen et navn så du finner den igjen', createProjectFailed: 'Kunne ikke opprette prosjektet', saveFailed: 'Kunne ikke lagre planen', pricesChanged: 'Prisene er endret – planen er fortsatt beregnet med de gamle prisene', priceStock: 'Prislegg råmaterialet for å se hva planen koster', ungrouped: 'Uten prosjekt', fixLayout: 'Rett de markerte radene før du planlegger.', sheetKerfHint: 'Bredden på materialet som fjernes ved hvert kutt. Planen tar hensyn til dette tapet.', sheetStockHint: 'Kontroller platens mål før du planlegger. Plasseringen av delene avhenger av disse målene.' },
 };
 
@@ -357,6 +357,28 @@ Object.assign(locale.workflow, {
   sheetPartsSummary: '{{count}} deler · {{width}} × {{height}} mm plate', sheetsSummary: '{{count}} plater · {{efficiency}} % utnyttet',
   sheetSource: 'Platen du kapper fra', sheetSourceHint: 'Det du kapper ut av, ikke det du trenger', width: 'Bredde', height: 'Høyde', material: 'Materiale',
   positionMm: 'Posisjon mm', layout: 'Layout', planName: 'Plannavn', planSaved: 'Plan lagret', saveThisPlan: 'Lagre denne planen',
+});
+
+Object.assign(locale.modelUi, {
+  boardWord: "Bord",
+  sheetWord: "Plate",
+  materialUnspecified: "Ikke angitt",
+  materialFor: "Materiale for {{name}}",
+  customMaterialFor: "Eget materiale for {{name}}",
+  renameCutlist: "Navn på {{name}}",
+  showLengths: "Vis lengder",
+  hideLengths: "Skjul lengder",
+  showSizes: "Vis mål",
+  hideSizes: "Skjul mål",
+  pricingNone: "Ingen priser oppgitt. Planen lages for minst svinn. Priser er valgfrie.",
+  pricingPartial: "Oppgi pris for hver lengde for å se en kostnad. Frem til da planlegges det for minst svinn.",
+  pricingComplete: "Alle postene har pris, så den lagrede planen inneholder kostnaden.",
+  sheetPricingNone: "Ingen pris oppgitt. Platene planlegges uten kostnad. Pris er valgfritt.",
+  applyAllBoards: "Bruk på alle bordgrupper",
+  applyAllSheets: "Bruk på alle plategrupper",
+  appliedBoards: "Lager, sagspor og priser er kopiert til alle bordgrupper.",
+  appliedSheets: "Platemål, sagspor og pris er kopiert til alle plategrupper.",
+  openProject: "Åpne prosjektet",
 });
 
 export default locale;

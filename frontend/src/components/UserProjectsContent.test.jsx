@@ -266,3 +266,18 @@ it('switches between the project browser views', async () => {
   expect(screen.getByRole('button', { name: 'Cut diagrams' })).toHaveAttribute('aria-current', 'page');
   expect(screen.getByRole('checkbox', { name: 'Select plan "Cut list"' })).toBeInTheDocument();
 });
+
+it('shows the real total length of a board plan\'s parts on its card', async () => {
+  getUserProjects.mockResolvedValue([{ ...plan, parts_data: { 1800: 2, 500: 3 } }]);
+  renderDetail();
+  await screen.findByText(plan.name);
+  expect(screen.getByText(/5\s100 mm · 3 mm kerf/)).toBeInTheDocument();
+});
+
+it('falls back to a neutral label when a saved plan has the placeholder material "unknown"', async () => {
+  getUserProjects.mockResolvedValue([{ ...plan, material_type: 'unknown', board_thickness: 45, board_width: 95 }]);
+  renderDetail();
+  await screen.findByText(plan.name);
+  expect(screen.queryByText(/unknown/i)).not.toBeInTheDocument();
+  expect(screen.getByText(/45×95mm/)).toBeInTheDocument();
+});

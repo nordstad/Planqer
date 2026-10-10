@@ -12,7 +12,8 @@
   Three steps, matching the board and sheet pages' own rail:
     01 Model     — upload, and Planqer measures every part in it
     02 Cutlists  — the distinct sizes found, grouped, pick which to keep
-    03 Save      — stock and kerf once, planned and saved together
+    03 Save      — each cutlist's stock, kerf and optional prices, planned and
+                   saved together
 
   The reason there is a step 2 at all: one model is rarely one cutlist. A
   bench is boards of three different cross-sections and a plywood top — three
@@ -22,7 +23,7 @@
   doesn't need a project at all.
 */
 
-import { useState, useCallback, useEffect } from 'react';
+import { Fragment, useState, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import CatalogPage from './CatalogPage';
@@ -30,26 +31,30 @@ import Loader from './Loader';
 import Disclosure from './Disclosure';
 import ProjectPicker from './ProjectPicker';
 import PlanSteps from './PlanSteps';
-import BoardLengthRow from './BoardLengthRow';
+import ModelGroupSettings from './ModelGroupSettings';
 import AuthModal from './auth/AuthModal';
 import { useAuth } from '../contexts/AuthContext';
 import { useDebounce } from '../hooks/useDebounce';
-import { SAW_KERF_MIN, SAW_KERF_MAX, validateBoards } from '../utils/validators';
-import { ArrowLeft, ArrowRight, Plus, Tick, Strike, CubeIcon } from './icons';
+import { ArrowLeft, ArrowRight, Tick, Strike, CubeIcon } from './icons';
 import {
   process3DCutlist, processStepCutlist,
   optimizeCutting, saveProject,
   optimizeSheetCutting, saveSheetProject,
   getProjectGroups, createProjectGroup,
   getUserSettings,
-  serializeBoardParts,
 } from '../utils/api';
-
-const mm = (n) => (Number.isFinite(n) ? Math.round(n).toLocaleString('sv-SE') : '—');
+import {
+  BOARD_MATERIALS, SHEET_MATERIALS, MATERIAL_OPTION_KEYS,
+  groupBoards, groupSheets, groupLabel, planNameFor, resolveMaterial,
+  initialConfig, boardCostPayloads, sheetPricingPayload,
+  applySettingsToAll, validateGroupConfig, standaloneHandoff,
+} from '../utils/modelGroups';
 
 const STEP_MODEL = 0;
 const STEP_CUTLISTS = 1;
 const STEP_SAVE = 2;
+
+const DEFAULT_MONEY = { currency: 'SEK', vatRate: 25, pricesIncludeVat: true };
 
 const formatFileSize = (bytes) => {
   if (!bytes) return '0 Bytes';
@@ -61,63 +66,8 @@ const formatFileSize = (bytes) => {
 
 const extensionOf = (filename) => filename.toLowerCase().match(/\.[a-z0-9]+$/)?.[0] || '';
 const ACCEPTED = ['.stl', '.step', '.stp'];
-const UNKNOWN_MATERIAL = 'unknown';
 
-/* Every distinct size Planqer found becomes one cutlist, whatever format it
-   came from. Material joins the grouping key: two identical rectangles in
-   different materials are two different purchases, not one. */
-const groupBoards = (items) => {
-  const grouped = new Map();
-  items.forEach((item) => {
-    const width = Math.round(item.width);
-    const thickness = Math.round(item.thickness);
-    if (width <= 0 || thickness <= 0) return;
-    const material = item.material || null;
-    const id = `board|${material || ''}|${width}x${thickness}`;
-    if (!grouped.has(id)) {
-      grouped.set(id, { id, kind: 'board', material, width, thickness, quantity: 0, names: [], lengths: [] });
-    }
-    const g = grouped.get(id);
-    g.quantity += item.quantity;
-    g.names.push(item.name);
-    g.lengths.push({ length: Math.round(item.length), qty: item.quantity });
-  });
-  return [...grouped.values()];
-};
-
-const groupSheets = (items) => {
-  const grouped = new Map();
-  items.forEach((item) => {
-    const thickness = Math.round(item.thickness);
-    if (thickness <= 0) return;
-    const material = item.material || null;
-    const id = `sheet|${material || ''}|${thickness}`;
-    if (!grouped.has(id)) {
-      grouped.set(id, { id, kind: 'sheet', material, thickness, quantity: 0, names: [], sizes: [] });
-    }
-    const g = grouped.get(id);
-    g.quantity += item.quantity;
-    g.names.push(item.name);
-    g.sizes.push({ length: Math.round(item.length), width: Math.round(item.width), qty: item.quantity });
-  });
-  return [...grouped.values()];
-};
-
-const dimLabel = (group) => (group.kind === 'board'
-  ? `${group.width} × ${group.thickness} mm boards`
-  : `${group.thickness} mm sheet`);
-
-export const modelGroupMetadata = (group) => ({
-  materialType: group.material || UNKNOWN_MATERIAL,
-  ...(group.kind === 'board'
-    ? { boardThickness: group.thickness, boardWidth: group.width }
-    : { sheetThickness: group.thickness }),
-});
-
-const planNameFor = (modelName, group) => {
-  const label = dimLabel(group);
-  return group.material ? `${modelName} · ${group.material} ${label}` : `${modelName} · ${label}`;
-};
+const spaced = (n) => Math.round(n).toLocaleString('sv-SE');
 
 const ModelCutlistOptimizer = () => {
   const { t } = useTranslation();
@@ -134,64 +84,39 @@ const ModelCutlistOptimizer = () => {
   /* ── 02 · the cutlists found in it ─────────────────────────────────── */
   const [groups, setGroups] = useState([]);
   const [selectedIds, setSelectedIds] = useState(new Set());
+  const [expandedIds, setExpandedIds] = useState(new Set());
+  // id -> that cutlist's own name, material, stock, kerf and prices
+  const [configs, setConfigs] = useState({});
+  const [defaults, setDefaults] = useState({});
+  const [money, setMoney] = useState(DEFAULT_MONEY);
 
   const modelName = file ? file.name.replace(/\.[a-z0-9]+$/i, '') : t('workflow.model');
   const selectedGroups = groups.filter((g) => selectedIds.has(g.id));
-  const hasBoards = selectedGroups.some((g) => g.kind === 'board');
-  const hasSheets = selectedGroups.some((g) => g.kind === 'sheet');
+  const labelOf = (group) => groupLabel(group, configs[group.id] || {}, t);
+  const planNameOf = (group) => planNameFor(modelName, group, configs[group.id] || {}, t);
 
-  /* ── 03 · save: stock, kerf, project, and the batch itself ───────────── */
-  const [boards, setBoards] = useState(["2500", "3600", "4200", "5100"]);
-  const [boardKerf, setBoardKerf] = useState("3");
-  const [sheetWidth, setSheetWidth] = useState("1200");
-  const [sheetHeight, setSheetHeight] = useState("2500");
-  const [sheetKerf, setSheetKerf] = useState("3");
-  const [materialType, setMaterialType] = useState("plywood");
-  const [allowRotation, setAllowRotation] = useState(true);
+  /* ── 03 · save: the project and the batch itself ─────────────────────── */
   const [limitsOpen, setLimitsOpen] = useState(false);
-
   const [projectGroups, setProjectGroups] = useState([]);
   const [selectedGroupId, setSelectedGroupId] = useState('');
   const [apiError, setApiError] = useState('');
+  const [appliedNote, setAppliedNote] = useState('');
   const [statuses, setStatuses] = useState({}); // id -> 'pending' | 'running' | 'done' | 'error'
   const [statusMessages, setStatusMessages] = useState({});
   const [saving, setSaving] = useState(false);
 
-  const debouncedBoards = useDebounce(boards, 300);
-  const debouncedBoardKerf = useDebounce(boardKerf, 300);
-  const debouncedSheetWidth = useDebounce(sheetWidth, 300);
-  const debouncedSheetHeight = useDebounce(sheetHeight, 300);
-  const debouncedSheetKerf = useDebounce(sheetKerf, 300);
-
-  const boardErrors = hasBoards ? validateBoards(debouncedBoards, t) : [];
-  const validBoards = boards.filter((b) => b && !isNaN(parseFloat(b)));
-  const boardKerfError = hasBoards
-     ? (!debouncedBoardKerf || parseFloat(debouncedBoardKerf) < SAW_KERF_MIN
-       ? t('modelUi.kerfZero')
-       : parseFloat(debouncedBoardKerf) > SAW_KERF_MAX
-        ? t('modelUi.kerfWide')
-        : "")
-    : "";
-  const sheetWidthError = hasSheets
-     ? (!debouncedSheetWidth || isNaN(parseFloat(debouncedSheetWidth)) || parseFloat(debouncedSheetWidth) < 100 || parseFloat(debouncedSheetWidth) > 10000
-       ? t('modelUi.sheetWidthPositive') : "")
-    : "";
-  const sheetHeightError = hasSheets
-     ? (!debouncedSheetHeight || isNaN(parseFloat(debouncedSheetHeight)) || parseFloat(debouncedSheetHeight) < 100 || parseFloat(debouncedSheetHeight) > 10000
-       ? t('modelUi.sheetHeightPositive') : "")
-    : "";
-  const sheetKerfError = hasSheets
-     ? (!debouncedSheetKerf || isNaN(parseFloat(debouncedSheetKerf)) || parseFloat(debouncedSheetKerf) < SAW_KERF_MIN || parseFloat(debouncedSheetKerf) > 50
-       ? t('modelUi.kerfZero') : "")
-    : "";
-  const stockHasErrors = boardErrors.some(Boolean) || !!boardKerfError
-    || !!sheetWidthError || !!sheetHeightError || !!sheetKerfError;
+  const debouncedConfigs = useDebounce(configs, 300);
+  // Validation follows the debounced values so errors don't flash while typing; a
+  // cutlist too new to be in them yet is checked as it stands.
+  const errorsOf = (group, source) => validateGroupConfig(group, source[group.id] || configs[group.id], t);
+  const stockHasErrors = selectedGroups.some((g) => errorsOf(g, debouncedConfigs).hasErrors);
 
   const allDone = selectedGroups.length > 0 && selectedGroups.every((g) => statuses[g.id] === 'done');
   const savedCount = selectedGroups.filter((g) => statuses[g.id] === 'done').length;
 
   // Loaded lazily, only once the save step is actually reached. The saved
-  // user defaults also populate the stock list if the user is signed in.
+  // user defaults seed each cutlist's stock, kerf and currency if the user is
+  // signed in; cutlists already read keep what they were given.
   useEffect(() => {
     if (!user) return;
 
@@ -200,12 +125,21 @@ const ModelCutlistOptimizer = () => {
     }
 
     getUserSettings().then((settings) => {
+      const next = {};
       if (Array.isArray(settings?.default_board_lengths) && settings.default_board_lengths.length > 0) {
-        setBoards(settings.default_board_lengths.map(String));
+        next.boards = settings.default_board_lengths.map(String);
       }
       if (Number.isFinite(settings?.default_saw_blade_width) && settings.default_saw_blade_width > 0) {
-        setBoardKerf(String(settings.default_saw_blade_width));
+        next.boardKerf = String(settings.default_saw_blade_width);
       }
+      setDefaults(next);
+      setMoney({
+        currency: settings?.default_currency || DEFAULT_MONEY.currency,
+        vatRate: Number.isFinite(settings?.default_vat_rate) ? settings.default_vat_rate : DEFAULT_MONEY.vatRate,
+        pricesIncludeVat: typeof settings?.default_prices_include_vat === 'boolean'
+          ? settings.default_prices_include_vat
+          : DEFAULT_MONEY.pricesIncludeVat,
+      });
     }).catch(() => {});
   }, [user, step]);
 
@@ -213,9 +147,12 @@ const ModelCutlistOptimizer = () => {
   const retireAll = () => {
     setGroups([]);
     setSelectedIds(new Set());
+    setExpandedIds(new Set());
+    setConfigs({});
     setStatuses({});
     setStatusMessages({});
     setApiError('');
+    setAppliedNote('');
   };
 
   const acceptFile = (candidate) => {
@@ -266,7 +203,9 @@ const ModelCutlistOptimizer = () => {
         return;
       }
       setGroups(found);
+      setConfigs(Object.fromEntries(found.map((g) => [g.id, initialConfig(g, defaults)])));
       setSelectedIds(new Set(found.map((g) => g.id)));
+      setExpandedIds(new Set());
       setStep(STEP_CUTLISTS);
     } catch (err) {
        setError(err.message || t('ui.modelReadFailed'));
@@ -275,65 +214,36 @@ const ModelCutlistOptimizer = () => {
   };
 
   /* ── the cutlists step ─────────────────────────────────────────────── */
-  const toggleGroup = (id) => {
-    setSelectedIds((prev) => {
+  const toggleIn = (setter) => (id) => {
+    setter((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
   };
+  const toggleGroup = toggleIn(setSelectedIds);
+  const toggleExpanded = toggleIn(setExpandedIds);
+
+  const updateConfig = (id, patch) => {
+    setConfigs((prev) => ({ ...prev, [id]: { ...prev[id], ...patch } }));
+    setAppliedNote('');
+  };
+
+  const applyToAll = (sourceId) => {
+    const source = groups.find((g) => g.id === sourceId);
+    setConfigs((prev) => applySettingsToAll(prev, groups, sourceId));
+    setAppliedNote(t(source.kind === 'board' ? 'modelUi.appliedBoards' : 'modelUi.appliedSheets'));
+  };
 
   const planGroupAlone = (group) => {
-    if (group.kind === 'board') {
-      const metadata = modelGroupMetadata(group);
-      const parts = serializeBoardParts(
-        group.lengths.map((l) => ({ length: l.length, quantity: l.qty })),
-      );
-      localStorage.setItem('planqer-3d-import', JSON.stringify({
-        parts,
-        projectName: planNameFor(modelName, group),
-        materialType: 'custom',
-        customMaterial: metadata.materialType,
-        boardThickness: metadata.boardThickness,
-        boardWidth: metadata.boardWidth,
-        source: 'model-cutlist',
-      }));
-      window.location.href = '/cutting?import=3d';
-    } else {
-      const metadata = modelGroupMetadata(group);
-      const parts = group.sizes.map((s, i) => ({
-        width: s.width, height: s.length, quantity: s.qty,
-         name: `${group.names[0] || t('ui.sheet')}_${i + 1}`, id: `sheet_${i + 1}`,
-      }));
-      localStorage.setItem('planqer-3d-sheet-import', JSON.stringify({
-        parts,
-        projectName: planNameFor(modelName, group),
-        materialType: 'custom',
-        customMaterial: metadata.materialType,
-        sheetThickness: metadata.sheetThickness,
-        source: 'model-cutlist-sheet',
-      }));
-      window.location.href = '/sheet-cutting?import=3d';
-    }
+    const { key, path, data } = standaloneHandoff(group, configs[group.id], planNameOf(group), t('ui.sheet'));
+    localStorage.setItem(key, JSON.stringify(data));
+    window.location.href = path;
   };
 
   const totalComponents = groups.reduce((n, g) => n + g.quantity, 0);
 
   /* ── the save step ─────────────────────────────────────────────────── */
-  const addBoard = () => setBoards([...boards, ""]);
-  const removeBoard = (index) => { if (boards.length > 1) setBoards(boards.filter((_, i) => i !== index)); };
-  const handleBoardChange = (index, value) => setBoards(boards.map((b, i) => (i === index ? value : b)));
-  const handleBoardsPaste = (index, e) => {
-    const text = e.clipboardData.getData('text');
-    if (!text.includes('\n')) return;
-    e.preventDefault();
-    const rows = text.split('\n').map((l) => l.trim()).filter(Boolean).map((l) => l.split(/[,\t]|\s+/)[0]);
-    if (!rows.length) return;
-    const next = [...boards];
-    next.splice(index, 1, ...rows);
-    setBoards(next);
-  };
-
   const createGroup = async (name) => {
     try {
       const group = await createProjectGroup(name);
@@ -348,22 +258,25 @@ const ModelCutlistOptimizer = () => {
   };
 
   const runOne = async (group) => {
+    const config = configs[group.id];
+    const material = resolveMaterial(config);
     setStatuses((prev) => ({ ...prev, [group.id]: 'running' }));
     try {
       if (group.kind === 'board') {
-        const metadata = modelGroupMetadata(group);
         const parts = group.lengths.map((l) => ({ length: String(l.length), quantity: String(l.qty) }));
-        const result = await optimizeCutting(parts, boards, boardKerf, null);
+        const stock = config.boards.map((row) => row.length);
+        const { costData, saved } = boardCostPayloads(config, money);
+        const result = await optimizeCutting(parts, stock, config.kerf, costData);
         await saveProject({
-          name: planNameFor(modelName, group),
+          name: planNameOf(group),
           projectGroupId: selectedGroupId,
           parts,
-          boards,
-          sawKerf: boardKerf,
-          materialType: metadata.materialType,
-          boardThickness: metadata.boardThickness,
-          boardWidth: metadata.boardWidth,
-          boardCosts: null,
+          boards: stock,
+          sawKerf: config.kerf,
+          materialType: material,
+          boardThickness: group.thickness,
+          boardWidth: group.width,
+          boardCosts: saved,
           result,
         });
       } else {
@@ -371,20 +284,20 @@ const ModelCutlistOptimizer = () => {
           width: String(s.width), height: String(s.length), quantity: String(s.qty),
            name: `${group.names[0] || t('ui.sheet')}_${i + 1}`, id: `sheet_${i + 1}`,
         }));
-        const metadata = modelGroupMetadata(group);
-        const result = await optimizeSheetCutting(parts, sheetWidth, sheetHeight, sheetKerf, metadata.materialType, undefined, allowRotation);
+        const result = await optimizeSheetCutting(parts, config.sheetWidth, config.sheetHeight, config.kerf, material, undefined, config.allowRotation);
         await saveSheetProject({
-          name: planNameFor(modelName, group),
+          name: planNameOf(group),
           projectGroupId: selectedGroupId,
           parts,
-          sheetWidth,
-          sheetHeight,
-          sheetThickness: metadata.sheetThickness,
-          kerfWidth: sheetKerf,
-          materialType: metadata.materialType,
+          sheetWidth: config.sheetWidth,
+          sheetHeight: config.sheetHeight,
+          sheetThickness: group.thickness,
+          kerfWidth: config.kerf,
+          materialType: material,
           algorithm: '',
-          allowRotation,
+          allowRotation: config.allowRotation,
           result,
+          pricing: sheetPricingPayload(config, money),
         });
       }
       setStatuses((prev) => ({ ...prev, [group.id]: 'done' }));
@@ -396,17 +309,7 @@ const ModelCutlistOptimizer = () => {
 
   const planAndSaveAll = async () => {
     setApiError('');
-    const currentBoardErrors = hasBoards ? validateBoards(boards, t) : [];
-    const currentBoardKerf = parseFloat(boardKerf);
-    const currentSheetWidth = parseFloat(sheetWidth);
-    const currentSheetHeight = parseFloat(sheetHeight);
-    const currentSheetKerf = parseFloat(sheetKerf);
-    const currentHasErrors = currentBoardErrors.some(Boolean)
-      || (hasBoards && (!boardKerf || !Number.isFinite(currentBoardKerf) || currentBoardKerf < SAW_KERF_MIN || currentBoardKerf > SAW_KERF_MAX))
-      || (hasSheets && (!sheetWidth || !Number.isFinite(currentSheetWidth) || currentSheetWidth < 100 || currentSheetWidth > 10000))
-      || (hasSheets && (!sheetHeight || !Number.isFinite(currentSheetHeight) || currentSheetHeight < 100 || currentSheetHeight > 10000))
-      || (hasSheets && (!sheetKerf || !Number.isFinite(currentSheetKerf) || currentSheetKerf < SAW_KERF_MIN || currentSheetKerf > 50));
-    if (stockHasErrors || currentHasErrors) return;
+    if (selectedGroups.some((g) => errorsOf(g, configs).hasErrors)) return;
     setSaving(true);
     // One at a time: /cutting-plans and /sheet-optimization are both rate
     // limited to 10 requests a minute, and this keeps the per-row status
@@ -419,6 +322,9 @@ const ModelCutlistOptimizer = () => {
   };
 
   const savedGroupName = allDone ? projectGroups.find((g) => g.id === selectedGroupId)?.name : null;
+  const savedProjectPath = allDone && selectedGroupId ? `/dashboard/project/${selectedGroupId}` : '/dashboard';
+  const boardGroupCount = selectedGroups.filter((g) => g.kind === 'board').length;
+  const sheetGroupCount = selectedGroups.filter((g) => g.kind === 'sheet').length;
 
   /* ── the rail ──────────────────────────────────────────────────────── */
   const steps = [
@@ -478,7 +384,7 @@ const ModelCutlistOptimizer = () => {
             {file ? (
               <div>
                 <p style={{ fontSize: '15px', fontWeight: 700, marginBottom: '4px' }}>{file.name}</p>
-                <p className="synthetic" style={{ marginBottom: '16px' }}>{formatFileSize(file.size)}</p>
+                <p className="synthetic" style={{ margin: '0 auto 16px' }}>{formatFileSize(file.size)}</p>
                 <button type="button" onClick={removeFile} className="btn" style={{ color: 'var(--revision)', borderColor: 'var(--revision)' }}>
                   {t('workflow.removeFile')}
                 </button>
@@ -497,7 +403,7 @@ const ModelCutlistOptimizer = () => {
                   <CubeIcon size={22} />
                 </div>
                 <p style={{ fontSize: '15px', fontWeight: 700, marginBottom: '4px' }}>{t('workflow.dropModel')}</p>
-                <p className="synthetic" style={{ marginBottom: '16px' }}>
+                <p className="synthetic" style={{ margin: '0 auto 16px' }}>
                    {t('modelUi.acceptedModelFiles')}
                 </p>
                 <label className="btn-primary" style={{ cursor: 'pointer' }}>
@@ -534,7 +440,6 @@ const ModelCutlistOptimizer = () => {
                   <tbody>
                     <tr><td>{t('legacy.fileSize', { format: 'STL' })}</td><td>50 MB</td></tr>
                     <tr><td>{t('legacy.fileSize', { format: 'STEP' })}</td><td>50 MB</td></tr>
-                    <tr><td>{t('common.units')}</td><td>{t('legacy.unitsDeclared')}</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -566,42 +471,107 @@ const ModelCutlistOptimizer = () => {
             </div>
           </div>
 
-          <table className="cat-table">
+          <table className="cat-table model-cutlists">
             <thead>
               <tr>
                  <th aria-label={t('ui.include')} style={{ width: '30px' }} />
                  <th style={{ textAlign: 'left' }}>{t('ui.cutlist')}</th>
+                 <th style={{ textAlign: 'left' }}>{t('legacy.material')}</th>
                  <th>{t('workflow.qty')}</th>
                  <th aria-label={t('ui.planAlone')} />
               </tr>
             </thead>
             <tbody>
-              {groups.map((group) => (
-                <tr key={group.id}>
-                  <td>
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.has(group.id)}
-                      onChange={() => toggleGroup(group.id)}
-                       aria-label={`${t('ui.include')} ${dimLabel(group)}`}
-                    />
-                  </td>
-                  <td style={{ textAlign: 'left' }}>
-                    <b style={{ fontSize: '13.5px' }}>
-                      {group.material ? `${group.material} · ` : ''}{dimLabel(group)}
-                    </b>
-                    <p className="synthetic" style={{ marginTop: '2px', whiteSpace: 'normal' }}>
-                      {group.names.join(', ')}
-                    </p>
-                  </td>
-                  <td>{group.quantity}×</td>
-                  <td style={{ width: '110px' }}>
-                    <button type="button" className="btn btn-sm" onClick={() => planGroupAlone(group)}>
-                       {t('ui.planAlone')}
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {groups.map((group) => {
+                const config = configs[group.id];
+                const label = labelOf(group);
+                const expanded = expandedIds.has(group.id);
+                const presets = group.kind === 'board' ? BOARD_MATERIALS : SHEET_MATERIALS;
+                return (
+                  <Fragment key={group.id}>
+                    <tr>
+                      <td>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(group.id)}
+                          onChange={() => toggleGroup(group.id)}
+                          aria-label={`${t('ui.include')} ${label}`}
+                        />
+                      </td>
+                      <td style={{ textAlign: 'left' }}>
+                        <input
+                          type="text"
+                          className="form-input"
+                          style={{ fontWeight: 700, fontSize: '13.5px', maxWidth: '260px' }}
+                          value={config.label}
+                          placeholder={groupLabel(group, { ...config, label: '' }, t)}
+                          onChange={(e) => updateConfig(group.id, { label: e.target.value })}
+                          aria-label={t('modelUi.renameCutlist', { name: groupLabel(group, { ...config, label: '' }, t) })}
+                        />
+                        <p className="synthetic" style={{ marginTop: '4px', whiteSpace: 'normal' }}>
+                          {group.names.join(', ')}
+                        </p>
+                        <button
+                          type="button"
+                          className="btn btn-sm"
+                          style={{ marginTop: '6px' }}
+                          aria-expanded={expanded}
+                          onClick={() => toggleExpanded(group.id)}
+                        >
+                          {t(expanded
+                            ? (group.kind === 'board' ? 'modelUi.hideLengths' : 'modelUi.hideSizes')
+                            : (group.kind === 'board' ? 'modelUi.showLengths' : 'modelUi.showSizes'))}
+                        </button>
+                      </td>
+                      <td style={{ textAlign: 'left' }}>
+                        <select
+                          className="form-select"
+                          value={config.material}
+                          onChange={(e) => updateConfig(group.id, { material: e.target.value })}
+                          aria-label={t('modelUi.materialFor', { name: label })}
+                        >
+                          <option value="">{t('modelUi.materialUnspecified')}</option>
+                          {presets.map((key) => <option key={key} value={key}>{t(MATERIAL_OPTION_KEYS[key])}</option>)}
+                          <option value="custom">{t('ui.materialCustom')}</option>
+                        </select>
+                        {config.material === 'custom' && (
+                          <input
+                            type="text"
+                            className="form-input"
+                            style={{ marginTop: '6px' }}
+                            value={config.customMaterial}
+                            placeholder={t('ui.customMaterialPlaceholder')}
+                            onChange={(e) => updateConfig(group.id, { customMaterial: e.target.value })}
+                            aria-label={t('modelUi.customMaterialFor', { name: label })}
+                          />
+                        )}
+                      </td>
+                      <td>{group.quantity}×</td>
+                      <td style={{ width: '110px' }}>
+                        <button type="button" className="btn btn-sm" onClick={() => planGroupAlone(group)}>
+                           {t('ui.planAlone')}
+                        </button>
+                      </td>
+                    </tr>
+                    {expanded && (
+                      <tr data-testid={`breakdown-${group.id}`}>
+                        <td />
+                        <td colSpan={4} style={{ textAlign: 'left' }}>
+                          <ul className="synthetic" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+                            {group.kind === 'board'
+                              ? group.lengths.map((l) => (
+                                <li key={l.length}>{spaced(l.length)} mm × {l.qty}</li>
+                              ))
+                              : group.sizes.map((sz) => (
+                                <li key={`${sz.length}x${sz.width}`}>{spaced(sz.length)} × {spaced(sz.width)} mm × {sz.qty}</li>
+                              ))}
+                          </ul>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              })}
             </tbody>
           </table>
 
@@ -647,130 +617,21 @@ const ModelCutlistOptimizer = () => {
 
               {!allDone && (
                 <>
-                  {hasBoards && (
-                    <section style={{ marginBottom: '30px' }}>
-                      <div className="section-rule">
-                        <h2 className="section-title">{t('legacy.stockAvailable')}</h2>
-                        <span className="folio">{t('legacy.boardCutlists')}</span>
-                      </div>
-                      <table className="cat-table">
-                        <thead>
-                          <tr><th>{t('legacy.stock')}</th><th>{t('workflow.lengthMm')}</th><th>{t('legacy.metres')}</th><th aria-label={t('common.remove')} /></tr>
-                        </thead>
-                        <tbody>
-                          {boards.map((board, index) => (
-                            <BoardLengthRow
-                              key={index}
-                              board={board}
-                              index={index}
-                              handleBoardChange={handleBoardChange}
-                              handleBoardsPaste={handleBoardsPaste}
-                              removeBoard={removeBoard}
-                              error={boardErrors[index]}
-                              canRemove={boards.length > 1}
-                              inPlan={null}
-                            />
-                          ))}
-                        </tbody>
-                      </table>
-                      <button type="button" className="btn" style={{ marginTop: '12px' }} onClick={addBoard}>
-                         <Plus /> {t('workflow.addStockLength')}
-                      </button>
-
-                      <div className="flex items-center gap-2" style={{ marginTop: '18px' }}>
-                        <label className="form-label" htmlFor="model-board-kerf" style={{ marginBottom: 0 }}>{t('legacy.sawBlade')}</label>
-                        <input
-                          id="model-board-kerf"
-                          type="number"
-                           min={SAW_KERF_MIN}
-                           max={SAW_KERF_MAX}
-                           step="0.1"
-                           value={boardKerf}
-                           onChange={(e) => setBoardKerf(e.target.value)}
-                          className={`form-input kerf-input ${boardKerfError ? 'form-input-error' : ''}`}
-                          style={{ width: '78px' }}
-                        />
-                        <span style={{ fontSize: '13.5px', color: 'var(--ink-3)', fontWeight: 600 }}>mm</span>
-                      </div>
-                      {boardKerfError && <p className="text-danger text-[12.5px] font-semibold" style={{ marginTop: '5px' }}>{boardKerfError}</p>}
-                    </section>
-                  )}
-
-                  {hasSheets && (
-                    <section style={{ marginBottom: '30px' }}>
-                      <div className="section-rule">
-                        <h2 className="section-title">{t('legacy.sheetFrom')}</h2>
-                        <span className="folio">{t('legacy.sheetCutlists')}</span>
-                      </div>
-                      <table className="cat-table">
-                        <tbody>
-                          <tr>
-                            <td style={{ textAlign: 'left' }}>{t('legacy.width')}</td>
-                            <td>
-                              <input
-                                 type="number" step="0.1" min="100" max="10000"
-                                value={sheetWidth}
-                                onChange={(e) => setSheetWidth(e.target.value)}
-                                className={`cell-input ${sheetWidthError ? 'is-error' : ''}`}
-                                 aria-label={t('ui.sheetWidthAria')}
-                              />
-                            </td>
-                            <td style={{ width: '40px', color: 'var(--ink-3)' }}>mm</td>
-                          </tr>
-                          <tr>
-                            <td style={{ textAlign: 'left' }}>{t('legacy.height')}</td>
-                            <td>
-                              <input
-                                 type="number" step="0.1" min="100" max="10000"
-                                value={sheetHeight}
-                                onChange={(e) => setSheetHeight(e.target.value)}
-                                className={`cell-input ${sheetHeightError ? 'is-error' : ''}`}
-                                 aria-label={t('ui.sheetHeightAria')}
-                              />
-                            </td>
-                            <td style={{ color: 'var(--ink-3)' }}>mm</td>
-                          </tr>
-                          <tr>
-                            <td style={{ textAlign: 'left' }}>{t('legacy.kerf')}</td>
-                            <td>
-                              <input
-                                 type="number" step="0.1" min={SAW_KERF_MIN} max="50"
-                                value={sheetKerf}
-                                onChange={(e) => setSheetKerf(e.target.value)}
-                                className={`cell-input ${sheetKerfError ? 'is-error' : ''}`}
-                                 aria-label={t('modelUi.sheetKerfAria')}
-                              />
-                            </td>
-                            <td style={{ color: 'var(--ink-3)' }}>mm</td>
-                          </tr>
-                          <tr>
-                            <td style={{ textAlign: 'left' }}>{t('legacy.material')}</td>
-                            <td>
-                              <select
-                                value={materialType}
-                                onChange={(e) => setMaterialType(e.target.value)}
-                                className="form-select"
-                                 aria-label={t('ui.materialType')}
-                              >
-                                <option value="plywood">{t('ui.materialPlywood')}</option>
-                                <option value="mdf">{t('ui.materialMdf')}</option>
-                                <option value="metal">{t('ui.materialMetal')}</option>
-                                <option value="acrylic">{t('ui.materialAcrylic')}</option>
-                                <option value="cardboard">{t('ui.materialCardboard')}</option>
-                                <option value="other">{t('ui.materialOther')}</option>
-                              </select>
-                            </td>
-                            <td />
-                          </tr>
-                        </tbody>
-                      </table>
-                      {(sheetWidthError || sheetHeightError || sheetKerfError) && (
-                        <p className="text-danger text-[12.5px] font-semibold" style={{ marginTop: '10px' }}>
-                          {sheetWidthError || sheetHeightError || sheetKerfError}
-                        </p>
-                      )}
-                    </section>
-                  )}
+                  {selectedGroups.map((group) => (
+                    <ModelGroupSettings
+                      key={group.id}
+                      group={group}
+                      config={configs[group.id]}
+                      errors={errorsOf(group, debouncedConfigs)}
+                      label={labelOf(group)}
+                      currency={money.currency}
+                      onChange={(patch) => updateConfig(group.id, patch)}
+                      onApplyAll={(group.kind === 'board' ? boardGroupCount : sheetGroupCount) > 1
+                        ? () => applyToAll(group.id)
+                        : null}
+                    />
+                  ))}
+                  {appliedNote && <p className="synthetic" role="status" style={{ marginBottom: '20px' }}>{appliedNote}</p>}
 
                   <section style={{ marginBottom: '26px' }}>
                     <ProjectPicker
@@ -778,6 +639,7 @@ const ModelCutlistOptimizer = () => {
                       value={selectedGroupId}
                       onChange={setSelectedGroupId}
                       onCreate={createGroup}
+                      defaultNewName={modelName}
                     />
                   </section>
                 </>
@@ -793,7 +655,7 @@ const ModelCutlistOptimizer = () => {
                       const status = statuses[group.id];
                       return (
                         <tr key={group.id}>
-                          <td style={{ textAlign: 'left' }}>{planNameFor(modelName, group)}</td>
+                          <td style={{ textAlign: 'left' }}>{planNameOf(group)}</td>
                           <td style={{ width: '140px' }}>
                             {status === 'done' && <span style={{ color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', gap: '5px' }}><Tick size={14} /> {t('legacy.saved')}</span>}
                             {status === 'running' && <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Loader /> {t('legacy.planning')}</span>}
@@ -808,7 +670,7 @@ const ModelCutlistOptimizer = () => {
                 {Object.entries(statusMessages).map(([id, message]) => (
                   statuses[id] === 'error' && (
                     <p key={id} className="text-danger text-[12.5px] font-semibold" style={{ marginTop: '8px' }}>
-                      {planNameFor(modelName, groups.find((g) => g.id === id))}: {message}
+                      {planNameOf(groups.find((g) => g.id === id))}: {message}
                     </p>
                   )
                 ))}
@@ -820,8 +682,8 @@ const ModelCutlistOptimizer = () => {
                 </button>
                 <div className="step-foot-act">
                   {allDone ? (
-                    <Link to="/dashboard" className="btn-order">
-                       {t('ui.openDashboard')} <ArrowRight size={15} />
+                    <Link to={savedProjectPath} className="btn-order">
+                       {selectedGroupId ? t('modelUi.openProject') : t('ui.openDashboard')} <ArrowRight size={15} />
                     </Link>
                   ) : (
                     <button type="button" className="btn-order" disabled={saving || stockHasErrors} onClick={planAndSaveAll}>

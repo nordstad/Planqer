@@ -438,8 +438,9 @@
   .cat-table.is-reference td:last-child { text-align: left; font-size: 13px; color: var(--ink-2); }
   .stock-table-wrap { overflow-x: auto; }
   .stock-price-label { display: none; }
-  .stock-table-wrap .cat-table th:nth-child(4),
-  .stock-table-wrap .cat-table td:nth-child(4) { width: 124px; }
+  .stock-table-wrap .cat-table td:nth-child(1) .cell-input { text-align: left; max-width: 150px; }
+  .stock-table-wrap .cat-table th:nth-child(3),
+  .stock-table-wrap .cat-table td:nth-child(3) { width: 124px; }
   @media (max-width: 640px) {
     .stock-table-wrap { overflow-x: visible; }
     .stock-table-wrap .cat-table { min-width: 0; }
@@ -448,19 +449,18 @@
     .stock-table-wrap .cat-table tr { display: block; }
     .stock-table-wrap .cat-table tr:not(.is-sum) {
       display: grid; grid-template-columns: minmax(0, 1fr) auto;
-      grid-template-areas: 'stock remove' 'length price';
+      grid-template-areas: 'length remove' 'price price';
       column-gap: 12px; align-items: center; padding: 9px 0;
     }
     .stock-table-wrap .cat-table tr:not(.is-sum) td { border-bottom: 0; padding: 3px 0; }
-    .stock-table-wrap .cat-table tr:not(.is-sum) td:nth-child(1) { grid-area: stock; }
-    .stock-table-wrap .cat-table tr:not(.is-sum) td:nth-child(2) { grid-area: length; }
-    .stock-table-wrap .cat-table tr:not(.is-sum) td:nth-child(3) { display: none; }
-    .stock-table-wrap .cat-table tr:not(.is-sum) td:nth-child(4) {
+    .stock-table-wrap .cat-table tr:not(.is-sum) td:nth-child(1) { grid-area: length; }
+    .stock-table-wrap .cat-table tr:not(.is-sum) td:nth-child(2) { display: none; }
+    .stock-table-wrap .cat-table tr:not(.is-sum) td:nth-child(3) {
       grid-area: price; display: flex; align-items: center; gap: 6px; min-width: 132px;
     }
-    .stock-table-wrap .cat-table tr:not(.is-sum) td:nth-child(5) { grid-area: remove; }
-    .stock-table-wrap .cat-table tr:not(.is-sum) td:nth-child(2) .cell-input { text-align: left; }
-    .stock-table-wrap .cat-table tr:not(.is-sum) td:nth-child(4) .cell-input { text-align: right; }
+    .stock-table-wrap .cat-table tr:not(.is-sum) td:nth-child(4) { grid-area: remove; }
+    .stock-table-wrap .cat-table tr:not(.is-sum) td:nth-child(1) .cell-input { text-align: left; }
+    .stock-table-wrap .cat-table tr:not(.is-sum) td:nth-child(3) .cell-input { text-align: right; }
     .stock-price-label { display: inline; font-size: 11px; color: var(--ink-3); white-space: nowrap; }
     .stock-table-wrap .cell-strike { min-width: 40px; min-height: 40px; }
     .stock-table-wrap .cat-table tr.is-sum {

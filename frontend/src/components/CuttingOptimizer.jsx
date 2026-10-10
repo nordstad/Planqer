@@ -172,7 +172,9 @@ const CuttingOptimizer = () => {
         setProjectName(data.projectName || '');
         if (data.materialType === 'custom') {
           setMaterialType('custom');
-          setCustomMaterial(data.customMaterial || 'unknown');
+          setCustomMaterial(data.customMaterial || '');
+        } else if (data.materialType) {
+          setMaterialType(data.materialType);
         }
         if (data.boardThickness != null) setBoardThickness(String(data.boardThickness));
         if (data.boardWidth != null) setBoardWidth(String(data.boardWidth));
@@ -702,7 +704,7 @@ const CuttingOptimizer = () => {
             <div className="stock-table-wrap">
               <table className="cat-table">
                 <thead>
-                  <tr><th>{t('workflow.stock')}</th><th>{t('workflow.lengthMm')}</th><th>{t('workflow.metres')}</th><th>{t('ui.stockPrice')}</th><th aria-label={t('common.remove')} /></tr>
+                  <tr><th>{t('workflow.lengthMm')}</th><th>{t('workflow.metres')}</th><th>{t('ui.stockPrice')}</th><th aria-label={t('common.remove')} /></tr>
                 </thead>
                 <tbody>
                   {boards.map((board, index) => (
@@ -724,7 +726,6 @@ const CuttingOptimizer = () => {
                   <tr className="is-sum">
                     <td>{t('workflow.offered')}</td>
                     <td>{t('workflow.lengthCount', { count: validBoards.length })}</td>
-                    <td>—</td>
                     <td />
                     <td />
                   </tr>

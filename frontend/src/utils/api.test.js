@@ -8,7 +8,6 @@ import {
   saveSheetProject,
   serializeBoardParts,
 } from './api';
-import { modelGroupMetadata } from '../components/ModelCutlistOptimizer';
 
 vi.mock('axios', () => {
   const mockAxios = {
@@ -161,16 +160,4 @@ it('does not replace an explicitly unknown sheet material with plywood', async (
   });
 
   expect(axios.post.mock.calls[0][1].material_type).toBe('unknown');
-});
-
-it('keeps model board and sheet material profiles for batch saves', () => {
-  expect(modelGroupMetadata({ kind: 'board', material: 'oak', thickness: 45, width: 70 })).toEqual({
-    materialType: 'oak',
-    boardThickness: 45,
-    boardWidth: 70,
-  });
-  expect(modelGroupMetadata({ kind: 'sheet', material: null, thickness: 12 })).toEqual({
-    materialType: 'unknown',
-    sheetThickness: 12,
-  });
 });

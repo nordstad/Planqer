@@ -271,7 +271,7 @@ const locale = {
     planCutlist_other: 'Planera {{count}} kaplistor',
     planCutlists_one: 'Planera {{count}} kaplista',
     planCutlists_other: 'Planera {{count}} kaplistor',
-    kerfZero: 'Ett sågspår på noll innebär att inget material försvinner vid kapning', kerfWide: 'Sågspåret är ovanligt brett. Kontrollera värdet; 2 till 4 mm är vanligt.', sheetWidthPositive: 'Skivans bredd måste vara ett positivt tal', sheetHeightPositive: 'Skivans höjd måste vara ett positivt tal', sheetKerfAria: 'Skivans sågspår i millimeter', acceptedModelFiles: 'STL, STEP eller STP · upp till 50 MB', planCutlist: 'Planera {{count}} kaplista', planCutlists: 'Planera {{count}} kaplistor', savedCount: 'Sparade {{saved}} av {{total}}', signInCutlist: 'Logga in eller skapa ett lokalt konto för att planera och spara kaplistor.', cutlistsSaved: 'Kaplistor sparade', planAndSave: 'Planera och spara', cutlistsSavedCount: '{{saved}} av {{total}} planerade och sparade på denna instans.', batchPlanIntro: 'Ange råmaterial och sågspår en gång – varje vald kaplista planeras mot dem och hamnar i ett projekt.', saved: 'Sparad', willBeSaved: 'Kommer att planeras och sparas', backToCutlists: 'Tillbaka till kaplistorna' },
+    kerfZero: 'Ett sågspår på noll innebär att inget material försvinner vid kapning', kerfWide: 'Sågspåret är ovanligt brett. Kontrollera värdet; 2 till 4 mm är vanligt.', sheetWidthPositive: 'Skivans bredd måste vara ett positivt tal', sheetHeightPositive: 'Skivans höjd måste vara ett positivt tal', sheetKerfAria: 'Skivans sågspår i millimeter', acceptedModelFiles: 'STL, STEP eller STP · upp till 50 MB', planCutlist: 'Planera {{count}} kaplista', planCutlists: 'Planera {{count}} kaplistor', savedCount: 'Sparade {{saved}} av {{total}}', signInCutlist: 'Logga in eller skapa ett lokalt konto för att planera och spara kaplistor.', cutlistsSaved: 'Kaplistor sparade', planAndSave: 'Planera och spara', cutlistsSavedCount: '{{saved}} av {{total}} planerade och sparade på denna instans.', batchPlanIntro: 'Ange råmaterial, sågspår och valfria priser för varje kaplista. De planeras och sparas tillsammans i ett projekt.', saved: 'Sparad', willBeSaved: 'Kommer att planeras och sparas', backToCutlists: 'Tillbaka till kaplistorna' },
   auditUi: { kerfWide: 'Sågspåret är ovanligt brett. Kontrollera värdet; 2 till 4 mm är vanligt.', priceRequired: 'Ange ett pris per meter innan planen prissätts', stockPriceRequired: 'Varje lagerlängd behöver ett pris innan planen prissätts', unknownError: 'Okänt fel', nameRequired: 'Ge planen ett namn så att du hittar den igen', createProjectFailed: 'Det gick inte att skapa projektet', saveFailed: 'Det gick inte att spara planen', pricesChanged: 'Priserna ändrades – planen är fortfarande beräknad med de gamla priserna', priceStock: 'Prissätt råmaterialet för att se vad planen kostar', ungrouped: 'Inget projekt', fixLayout: 'Rätta de markerade raderna innan du planerar.', sheetKerfHint: 'Bredden på materialet som försvinner vid varje kapning. Planen räknar med denna förlust.', sheetStockHint: 'Kontrollera skivans mått innan du planerar. Delarnas placering beror på dessa mått.' },
 };
 
@@ -359,6 +359,28 @@ Object.assign(locale.workflow, {
   sheetPartsSummary: '{{count}} delar · {{width}} × {{height}} mm skiva', sheetsSummary: '{{count}} skivor · {{efficiency}} % utnyttjade',
   sheetSource: 'Skivan du kapar från', sheetSourceHint: 'Det du kapar ur, inte det du behöver', width: 'Bredd', height: 'Höjd', material: 'Material',
   positionMm: 'Position mm', layout: 'Layout', planName: 'Plannamn', planSaved: 'Plan sparad', saveThisPlan: 'Spara den här planen',
+});
+
+Object.assign(locale.modelUi, {
+  boardWord: "Bräda",
+  sheetWord: "Skiva",
+  materialUnspecified: "Ej angivet",
+  materialFor: "Material för {{name}}",
+  customMaterialFor: "Eget material för {{name}}",
+  renameCutlist: "Namn på {{name}}",
+  showLengths: "Visa längder",
+  hideLengths: "Dölj längder",
+  showSizes: "Visa mått",
+  hideSizes: "Dölj mått",
+  pricingNone: "Inga priser angivna. Planen görs för minst spill. Priser är valfria.",
+  pricingPartial: "Ange pris för varje längd för att se en kostnad. Tills dess planeras det för minst spill.",
+  pricingComplete: "Alla poster har pris, så den sparade planen innehåller kostnaden.",
+  sheetPricingNone: "Inget pris angivet. Skivorna planeras utan kostnad. Pris är valfritt.",
+  applyAllBoards: "Använd för alla brädgrupper",
+  applyAllSheets: "Använd för alla skivgrupper",
+  appliedBoards: "Lager, sågspår och priser har kopierats till alla brädgrupper.",
+  appliedSheets: "Skivmått, sågspår och pris har kopierats till alla skivgrupper.",
+  openProject: "Öppna projektet",
 });
 
 export default locale;
