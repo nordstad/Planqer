@@ -89,6 +89,32 @@ stocked to 12 m, but publishes no length list, so the 1 800, 2 100 and
 from Moelven's stated fixed lengths. Data files live in
 `backend/planqer/catalogue/data/`.
 
+### Changing the catalogue for your instance
+
+Admins can adjust the catalogue without touching those files: **Admin →
+Catalogue** lists every product the picker offers, built-in and local, with a
+search and filters. From there an admin can
+
+- **add** a product that is missing (type, size, stock lengths, details and an
+  optional source);
+- **edit** the lengths, sheet formats, details and sources of any entry. Editing
+  a built-in stores an override; **Revert** returns it to the shipped data;
+- **hide** an entry that doesn't apply to you and **restore** it later.
+
+A product someone typed in their own words in the product picker can be kept
+with **Save to local catalogue** (admins only): pick the type and size and the
+words become the entry's note.
+
+These changes live in your instance's database, so they are included in
+[backups](../guide/backup-and-restore.md) and survive upgrades. Saved plans keep
+their own copy of the product, so changing or hiding an entry never alters an
+old plan. Local entries are checked by the same rules as the built-in data
+(known types and details, https sources, 15 000 mm board length limit, 10 000 mm
+sheet limit).
+
+To share a product with every Planqer user, see
+[Contributing catalogue data](../contributing.md#contributing-catalogue-data).
+
 ## Frontend
 
 - `PLANQER_HOST`: no default. The hostname you serve Planqer on. Vite's dev

@@ -515,6 +515,75 @@ export const downloadProjectImage = async (projectId, projectType) => {
   return response.blob();
 };
 
+/* ── admin: this instance's own product catalogue ─────────────────── */
+
+const catalogueEntryUrl = (productId, suffix = '') => `${API_URL}/api/admin/catalogue/${encodeURIComponent(productId)}${suffix}`;
+
+export const getAdminCatalogue = async () => {
+  try {
+    const response = await axios.get(`${API_URL}/api/admin/catalogue`);
+    return response.data;
+  } catch (error) {
+    throw new Error(extractErrorMessage(error));
+  }
+};
+
+export const createCatalogueEntry = async (entry) => {
+  try {
+    const response = await axios.post(`${API_URL}/api/admin/catalogue`, entry);
+    return response.data;
+  } catch (error) {
+    throw new Error(extractErrorMessage(error));
+  }
+};
+
+export const updateCatalogueEntry = async (productId, details) => {
+  try {
+    const response = await axios.put(catalogueEntryUrl(productId), details);
+    return response.data;
+  } catch (error) {
+    throw new Error(extractErrorMessage(error));
+  }
+};
+
+export const hideCatalogueEntry = async (productId) => {
+  try {
+    const response = await axios.post(catalogueEntryUrl(productId, '/hide'));
+    return response.data;
+  } catch (error) {
+    throw new Error(extractErrorMessage(error));
+  }
+};
+
+export const restoreCatalogueEntry = async (productId) => {
+  try {
+    const response = await axios.post(catalogueEntryUrl(productId, '/restore'));
+    return response.data;
+  } catch (error) {
+    throw new Error(extractErrorMessage(error));
+  }
+};
+
+export const resetCatalogueEntry = async (productId) => {
+  try {
+    await axios.delete(catalogueEntryUrl(productId));
+  } catch (error) {
+    throw new Error(extractErrorMessage(error));
+  }
+};
+
+/* Only builds the pre-filled GitHub issue link; nothing is sent anywhere. */
+export const getCatalogueSuggestion = async (productId, { source, country } = {}) => {
+  try {
+    const response = await axios.get(catalogueEntryUrl(productId, '/suggestion'), {
+      params: { ...(source ? { source } : {}), ...(country ? { country } : {}) },
+    });
+    return response.data;
+  } catch (error) {
+    throw new Error(extractErrorMessage(error));
+  }
+};
+
 /* ── admin: managing this instance's own local users ──────────────── */
 
 export const getAdminStats = async () => {

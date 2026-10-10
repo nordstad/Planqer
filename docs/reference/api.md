@@ -119,6 +119,20 @@ entries for the instance's country (generic, with no entries, when
 optional `product` snapshot on create and update; it is stored and returned
 as given, and `material_type` stays a readable label for older clients.
 
+The catalogue returned already includes this instance's local additions,
+overrides and hidden entries. Admins manage them under `/admin/catalogue`:
+
+| Request | Purpose |
+| --- | --- |
+| `GET /admin/catalogue` | Every product with its `origin` (`builtin`, `modified`, `local`) and `hidden` state. |
+| `POST /admin/catalogue` | Add a local product (type, thickness, width for boards, plus optional details). `409` if it already exists. |
+| `PUT /admin/catalogue/{id}` | Change lengths, formats, details and sources. On a built-in this stores an override. |
+| `POST /admin/catalogue/{id}/hide` and `/restore` | Hide a product from, or show it again in, the catalogue. |
+| `DELETE /admin/catalogue/{id}` | Delete a local addition, or revert a built-in to its shipped data. |
+| `GET /admin/catalogue/{id}/suggestion?source=&country=` | Builds a pre-filled GitHub issue URL and YAML snippet. Nothing is sent. |
+
+Submissions are validated like the built-in data and rejected with `422`.
+
 ## Accounts and projects
 
 Registration, login, saved projects, project groups, user settings, and admin

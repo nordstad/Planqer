@@ -12,6 +12,31 @@ class InstanceBootstrap(SQLModel, table=True):
     claimed: bool = Field(default=False)
 
 
+class CatalogueEntry(SQLModel, table=True):
+    """An instance's own change to the product catalogue.
+
+    One row per catalogue product id. `data` holds a whole product (JSON) when
+    the instance added it or replaced a built-in; `hidden` takes the product out
+    of the catalogue the picker serves. Built-in files are never touched.
+    """
+
+    __tablename__ = "catalogue_entries"
+
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    product_id: str = Field(unique=True, index=True)
+    hidden: bool = Field(default=False)
+    data: str | None = Field(default=None)
+
+    created_at: datetime | None = Field(
+        default_factory=lambda: datetime.now(),
+        sa_column=Column(DateTime(timezone=False), nullable=False),
+    )
+    updated_at: datetime | None = Field(
+        default_factory=lambda: datetime.now(),
+        sa_column=Column(DateTime(timezone=False), nullable=False),
+    )
+
+
 class User(SQLModel, table=True):
     __tablename__ = "users"
 

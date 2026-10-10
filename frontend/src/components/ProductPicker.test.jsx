@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import '../i18n';
 import ProductPicker, { StockSuggestions } from './ProductPicker';
-import { getCatalogue } from '../utils/api';
+import { createCatalogueEntry, getCatalogue } from '../utils/api';
+import { AuthContext } from '../contexts/authState';
 import {
   emptySelection, freeTextSelection, resetCatalogueCache, suggestSelection, typeSelection,
 } from '../utils/catalogue';
 
-vi.mock('../utils/api', () => ({ getCatalogue: vi.fn() }));
+vi.mock('../utils/api', () => ({ getCatalogue: vi.fn(), createCatalogueEntry: vi.fn() }));
 
 const entry = (id, type, thickness, width, extra = {}) => ({
   id, type, kind: 'board', country: 'SE', thickness, width, lengths: [2400, 3000], max_length: null,
@@ -304,5 +305,50 @@ describe('StockSuggestions', () => {
       />,
     );
     expect(container).toBeEmptyDOMElement();
+  });
+});
+
+describe('ProductPicker: saving your own product to the local catalogue (admins)', () => {
+  const renderAs = (user) => {
+    resetCatalogueCache();
+    localStorage.clear();
+    getCatalogue.mockResolvedValue({ data: catalogue, etag: '"a"' });
+    return render(
+      <AuthContext.Provider value={{ user }}>
+        <Harness kind="board" initial={freeTextSelection('board', 'Kärnfuru 48x98')} dims={{ thickness: 48, width: 98 }} />
+      </AuthContext.Provider>,
+    );
+  };
+
+  it('is offered to admins only', async () => {
+    const { unmount } = renderAs({ is_admin: false });
+    await screen.findByTestId('product-summary');
+    expect(screen.queryByRole('button', { name: 'Save to local catalogue' })).not.toBeInTheDocument();
+    unmount();
+    renderAs({ is_admin: true });
+    expect(await screen.findByRole('button', { name: 'Save to local catalogue' })).toBeInTheDocument();
+  });
+
+  it('is not offered without an auth context', async () => {
+    resetCatalogueCache();
+    getCatalogue.mockResolvedValue({ data: catalogue, etag: '"a"' });
+    render(<Harness kind="board" initial={freeTextSelection('board', 'x')} />);
+    await screen.findByTestId('product-summary');
+    expect(screen.queryByRole('button', { name: 'Save to local catalogue' })).not.toBeInTheDocument();
+  });
+
+  it('saves the typed words with the form size and selects the new product', async () => {
+    createCatalogueEntry.mockResolvedValue({ product: entry('local:regel:48x98', 'regel', 48, 98, { country: 'SE' }), origin: 'local', hidden: false });
+    renderAs({ is_admin: true });
+    fireEvent.click(await screen.findByRole('button', { name: 'Save to local catalogue' }));
+    const group = screen.getByRole('group', { name: 'Save to local catalogue' });
+    expect(within(group).getByLabelText('Thickness (mm)')).toHaveValue('48');
+    expect(within(group).getByLabelText('Width (mm)')).toHaveValue('98');
+    fireEvent.click(within(group).getByRole('button', { name: 'Save' }));
+    expect(await within(group).findByRole('alert')).toHaveTextContent('Choose a type');
+    fireEvent.change(within(group).getByLabelText('Product type'), { target: { value: 'regel' } });
+    await act(async () => { fireEvent.click(within(group).getByRole('button', { name: 'Save' })); });
+    expect(createCatalogueEntry).toHaveBeenCalledWith({ type: 'regel', thickness: 48, width: 98, note: 'Kärnfuru 48x98' });
+    expect(await screen.findByText(/Framing timber 48 × 98 mm/)).toBeInTheDocument();
   });
 });

@@ -5,6 +5,7 @@ import { getAdminStats, getAdminUsers, toggleUserAdmin, toggleUserActive, delete
 import { useAuth } from '../contexts/AuthContext';
 import Loader from './Loader';
 import ConfirmDialog from './ConfirmDialog';
+import AdminCatalogue from './AdminCatalogue';
 
 const AdminDashboard = () => {
   const { t } = useTranslation();
@@ -15,6 +16,7 @@ const AdminDashboard = () => {
   const [error, setError] = useState(null);
   const [busyId, setBusyId] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
+  const [tab, setTab] = useState('users');
 
   useEffect(() => {
     loadData();
@@ -59,9 +61,41 @@ const AdminDashboard = () => {
     withBusy(u.id, () => resetUserPassword(u.id, password));
   };
 
+  const tabs = (
+    <div role="tablist" aria-label={t('common.admin')} style={{ display: 'flex', gap: '18px', borderBottom: '1px solid var(--rule)', marginBottom: '18px' }}>
+      {['users', 'catalogue'].map((key) => (
+        <button
+          key={key}
+          type="button"
+          role="tab"
+          id={`admin-tab-${key}`}
+          aria-selected={tab === key}
+          onClick={() => setTab(key)}
+          style={{
+            background: 'none', border: 0, borderBottom: `2px solid ${tab === key ? 'var(--accent)' : 'transparent'}`,
+            padding: '8px 2px', font: 'inherit', fontWeight: 700, cursor: 'pointer',
+            color: tab === key ? 'var(--ink)' : 'var(--ink-3)',
+          }}
+        >
+          {t(`catalogueAdmin.tab.${key}`)}
+        </button>
+      ))}
+    </div>
+  );
+
+  if (tab === 'catalogue') {
+    return (
+      <CatalogPage>
+        {tabs}
+        <div role="tabpanel" id="admin-panel" aria-labelledby="admin-tab-catalogue"><AdminCatalogue /></div>
+      </CatalogPage>
+    );
+  }
+
   if (loading) {
     return (
       <CatalogPage>
+        {tabs}
         <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
           <Loader />
         </div>
@@ -71,6 +105,7 @@ const AdminDashboard = () => {
 
   return (
     <CatalogPage>
+      {tabs}
       {error && <div className="alert-danger" role="alert" style={{ marginBottom: '16px' }}>{error}</div>}
 
       {stats && (
