@@ -10,6 +10,8 @@ treatment:
   - {key: ntr-a-green, labels: {en: "NTR A, green", sv: "NTR A, grön", nb: "NTR A, grønn"}}
   - {key: ntr-ab-green, labels: {en: "NTR AB, green", sv: "NTR AB, grön", nb: "NTR AB, grønn"}}
   - {key: ntr-ab-brown, labels: {en: "NTR AB, brown", sv: "NTR AB, brun", nb: "NTR AB, brun"}}
+  - {key: cu-a, labels: {en: "Cu-impregnated, class A", sv: "Cu-impregnerad, klass A", nb: "Cu-impregnert, klasse A"}}
+  - {key: cu-ab, labels: {en: "Cu-impregnated, class AB", sv: "Cu-impregnerad, klass AB", nb: "Cu-impregnert, klasse AB"}}
   - {key: primed-white, labels: {en: Primed white, sv: Grundmålad vit, nb: Grunnet hvit}}
 profile:
   - {key: planed, labels: {en: Planed, sv: Hyvlad, nb: Høvlet}}

@@ -63,7 +63,7 @@ accounts and saved projects.
   location/engine.
 
 - `PLANQER_CATALOGUE_COUNTRY`: no default. Two-letter country code (for example
-  `SE`) selecting the built-in product catalogue. Unset, or a country without
+  `SE`) selecting the built-in product catalogue (`SE` or `NO`). Unset, or a country without
   built-in data, gives the generic catalogue: product types and details, no
   sized entries. See [Product catalogue](#product-catalogue).
 
@@ -76,12 +76,17 @@ sheet sides to 10 000 mm in code.
 The catalogue suggests products, sizes and standard stock lengths in the product
 picker. It holds no prices; those stay on your instance, per plan.
 
-Only `SE` (Sweden: boards and building sheets) ships today. Every Swedish entry
-cites its source (TräGuiden, Svenskt Trä's *Lathunden*, manufacturer data
-sheets). Standard lengths are suggestions: Svenskt Trä states that structural
-timber over 5 400 mm is usually finger-jointed and glulam is normally stocked to
-12 m, but publishes no length list, so the 1 800, 2 100 and 2 400–5 400 mm (300
-mm steps) set is a working assumption. Data files live in
+`SE` (Sweden) and `NO` (Norway) ship today, each with boards and building
+sheets. Every entry cites its source: for Sweden TräGuiden, Svenskt Trä's
+*Lathunden* and manufacturer data sheets; for Norway Skogmo Bruk, Moelven and
+Norgips product data. Norwegian timber is dimensioned 48 × 98 mm and so on, so a
+model measured at 45 × 95 mm is not matched to a Norwegian entry. Hardboard,
+round dowels and stair stringers have no verified Norwegian entries. Standard
+lengths are suggestions: In Sweden Svenskt Trä states that
+structural timber over 5 400 mm is usually finger-jointed and glulam is normally
+stocked to 12 m, but publishes no length list, so the 1 800, 2 100 and
+2 400–5 400 mm (300 mm steps) set is a working assumption. Norwegian lengths come
+from Moelven's stated fixed lengths. Data files live in
 `backend/planqer/catalogue/data/`.
 
 ## Frontend

@@ -40,11 +40,14 @@ ALLOWED_SOURCE_HOSTS = {
     "media-prod.beijerflow.com",
     "byggkatalogen.byggtjanst.se",
     "www.norgips.se",
+    "www.moelven.com",
+    "www.skogmobruk.no",
+    "norgips.no",
 }
 
 
 def test_every_country_file_loads_and_validates():
-    assert available_countries() == ["SE"]
+    assert available_countries() == ["NO", "SE"]
     for country in available_countries():
         assert get_catalogue(country).products
 
@@ -75,8 +78,9 @@ def test_every_label_has_all_three_locales():
         assert set(item.labels) == {"en", "sv", "nb"}, item
 
 
-def test_every_swedish_entry_cites_an_allowed_source():
-    for product in get_catalogue("SE").products:
+@pytest.mark.parametrize("country", ["SE", "NO"])
+def test_every_entry_cites_an_allowed_source(country):
+    for product in get_catalogue(country).products:
         assert product.sources, product.id
         for url in product.sources:
             parsed = urlparse(url)
@@ -109,10 +113,37 @@ def test_glulam_is_stocked_to_12m_and_within_the_15m_limit():
     assert all(p.max_length == 12000 for p in glulam)
 
 
-def test_board_lengths_never_exceed_15000_and_sheets_never_exceed_10000():
-    for product in get_catalogue("SE").products:
+@pytest.mark.parametrize("country", ["SE", "NO"])
+def test_board_lengths_never_exceed_15000_and_sheets_never_exceed_10000(country):
+    for product in get_catalogue(country).products:
         assert all(length <= 15000 for length in product.lengths)
         assert all(max(f.width, f.height) <= 10000 for f in product.formats)
+
+
+def test_norwegian_catalogue_uses_norwegian_dimensions_and_cited_lengths():
+    catalogue = get_catalogue("NO")
+    assert catalogue.country_name == "Norway"
+    by_id = {p.id: p for p in catalogue.products}
+    regel = by_id["no:regel:48x98"]
+    assert regel.lengths == [2400, 3000, 3300, 3600, 3900, 4200, 4500, 4800, 5100, 5400]
+    assert "no:regel:45x95" not in by_id
+    assert {"cu-a", "cu-ab"} <= set(by_id["no:tryckimpregnerat:48x98"].treatments)
+
+
+def test_norwegian_glulam_is_gl30c_to_15m():
+    glulam = [p for p in get_catalogue("NO").products if p.type == "limtra"]
+    assert glulam
+    assert all(p.max_length == 15000 and p.grades == ["GL30c"] for p in glulam)
+    assert {p.thickness for p in glulam} == {90, 115, 140}
+
+
+def test_norwegian_sheets_have_their_published_formats():
+    sheets = {p.id: p for p in get_catalogue("NO").products if p.kind == "sheet"}
+    assert {"no:plywood:12", "no:osb:9", "no:gipsskiva:12.5", "no:mdf:16"} <= set(
+        sheets
+    )
+    gips = {(f.width, f.height) for f in sheets["no:gipsskiva:12.5"].formats}
+    assert (1200, 2400) in gips and (900, 3200) in gips
 
 
 def test_bench_cross_sections_exist_in_the_swedish_catalogue():
@@ -121,8 +152,9 @@ def test_bench_cross_sections_exist_in_the_swedish_catalogue():
     assert "se:planhyvlat:95x95" in ids
 
 
-def test_sheet_entries_carry_formats_and_board_entries_carry_width():
-    for product in get_catalogue("SE").products:
+@pytest.mark.parametrize("country", ["SE", "NO"])
+def test_sheet_entries_carry_formats_and_board_entries_carry_width(country):
+    for product in get_catalogue(country).products:
         if product.kind == "sheet":
             assert product.formats and product.width is None
         else:
@@ -300,6 +332,15 @@ def test_catalogue_endpoint_is_public_and_generic_by_default(client, monkeypatch
     assert body["country"] is None
     assert body["products"] == []
     assert any(t["key"] == "regel" for t in body["types"])
+
+
+@pytest.mark.api
+def test_catalogue_endpoint_serves_norway_too(client, monkeypatch):
+    monkeypatch.setenv("PLANQER_CATALOGUE_COUNTRY", "no")
+    body = client.get("/api/catalogue/").json()
+    assert body["country"] == "NO"
+    assert any(p["id"] == "no:regel:48x98" for p in body["products"])
+    assert not any(p["id"].startswith("se:") for p in body["products"])
 
 
 @pytest.mark.api

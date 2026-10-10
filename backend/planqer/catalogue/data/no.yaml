@@ -1,0 +1,215 @@
+# Norway - boards and building sheets.
+#
+# Sources (cited per product group; none are retailer sites, nothing is
+# scraped):
+#   Skogmo Bruk   Norwegian sawmill and pressure-treater, product brochure 2026
+#                 (sizes of its justert/dimension-planed and sawn ranges)
+#   Moelven       Moelven product pages (timber, glulam, panel, mouldings, sheets)
+#   Norgips       Norgips Norge product pages (plasterboard)
+#
+# Norwegian planed timber is "justert" to 48 x 98 mm and so on, not the Swedish
+# 45 x 95 mm, so a model measured at 45 x 95 mm will not match a Norwegian
+# framing entry within the 1 mm tolerance and starts unspecified.
+#
+# Stock lengths are only given where a source states them. Moelven lists fixed
+# lengths per size (48 x 98: 2 400 and 3 600-5 400 mm; 48 x 248: 3 000-5 400 mm
+# in 300 mm steps), so the 2 400 and 3 000-5 400 mm set is the union, not what
+# every size is stocked in. Prices are never part of the catalogue.
+country: "NO"
+name: Norway
+products:
+  - type: regel
+    sources:
+      - https://www.moelven.com/no/no/byggtre-og-konstruksjonsvirke/barende-konstruksjon/c24-48mm-faste-lengder/
+      - https://www.skogmobruk.no/wp-content/uploads/2026/02/Skogmo%20Bruk%20Brosjyre%202026.pdf
+    sizes:
+      [36x98, 36x123, 36x148, 36x198, 48x98, 48x123, 48x148, 48x173, 48x198, 48x223, 48x248, 73x198, 73x223, 98x98]
+    lengths: [2400]
+    length_range: {from: 3000, to: 5400, step: 300}
+    species: [spruce]
+    treatments: [untreated]
+    grades: [C24]
+
+  - type: tryckimpregnerat
+    sources:
+      - https://www.skogmobruk.no/wp-content/uploads/2026/02/Skogmo%20Bruk%20Brosjyre%202026.pdf
+    sizes:
+      [36x98, 36x123, 36x148, 36x173, 36x198, 48x98, 48x123, 48x148, 48x173, 48x198, 48x223, 61x148, 61x198, 73x73, 73x98, 73x148, 73x173, 73x198, 98x98, 98x148, 98x198]
+    species: [pine]
+    treatments: [cu-a, cu-ab]
+    grades: [C24]
+    note: Cu-impregnated construction timber; class A is made in a smaller range than class AB.
+
+  - type: trall
+    sources:
+      - https://www.skogmobruk.no/wp-content/uploads/2026/02/Skogmo%20Bruk%20Brosjyre%202026.pdf
+    sizes: [21x95, 22x95, 28x95, 21x120, 28x120, 28x145]
+    species: [pine]
+    treatments: [cu-a, cu-ab]
+    profiles: [planed, grooved]
+
+  - type: lakt
+    sources:
+      - https://www.moelven.com/no/no/byggtre-og-konstruksjonsvirke/ikke-barende-trelast/lekter/
+      - https://www.skogmobruk.no/wp-content/uploads/2026/02/Skogmo%20Bruk%20Brosjyre%202026.pdf
+    sizes: [11x36, 11x48, 16x48, 19x48, 23x48, 23x73, 28x70, 30x48, 30x73, 30x98, 36x48, 36x68, 36x73, 48x48, 48x68, 48x73]
+    lengths: [2400, 3600, 3900, 4200, 4800]
+    species: [spruce]
+    treatments: [untreated, cu-ab]
+    note: Lengths are those Moelven lists for its lekter; not every size comes in all of them.
+
+  - type: ytterpanel
+    sources:
+      - https://www.skogmobruk.no/wp-content/uploads/2026/02/Skogmo%20Bruk%20Brosjyre%202026.pdf
+    sizes:
+      [16x73, 16x98, 16x123, 16x148, 19x73, 19x98, 19x123, 19x148, 19x173, 19x198, 22x98, 22x123, 22x148, 22x173, 22x198, 29x148, 29x173, 29x198]
+    species: [spruce, pine]
+    treatments: [untreated, cu-ab]
+    note: Rectangular cladding (rektangulær kledning).
+
+  - type: innerpanel
+    sources:
+      - https://www.moelven.com/no/no/interiorprodukter-i-tre/panel/glatt/
+      - https://www.moelven.com/no/no/interiorprodukter-i-tre/panel/skygge-skra-ubehandlet-furu/
+      - https://www.moelven.com/no/no/interiorprodukter-i-tre/panel/sprekk-ubehandlet-furu/
+    sizes: [12x120, 13x95, 13x120, 13x145, 13x170]
+    species: [pine]
+    treatments: [untreated]
+
+  - type: sagat
+    sources:
+      - https://www.skogmobruk.no/wp-content/uploads/2026/02/Skogmo%20Bruk%20Brosjyre%202026.pdf
+    sizes:
+      - 25x100
+      - 25x125
+      - 25x150
+      - 32x125
+      - 32x150
+      - 38x100
+      - 38x125
+      - 38x150
+      - 50x100
+      - 50x125
+      - 50x150
+      - 50x175
+      - 50x200
+      - 50x225
+      - 63x100
+      - 63x125
+      - 63x150
+      - 63x175
+      - 63x200
+      - 75x75
+      - 75x100
+      - 75x125
+      - 75x150
+      - 75x175
+      - 75x200
+      - 75x225
+      - 100x100
+      - 100x125
+      - 100x150
+      - 100x200
+      - 125x125
+      - 125x150
+      - 125x200
+      - 150x150
+      - 150x200
+      - 175x175
+      - 175x200
+      - 200x200
+    species: [pine]
+    treatments: [untreated, cu-a]
+    profiles: [rough-sawn]
+    note: The Cu class A range is listed in full; the untreated range is a subset.
+
+  - type: list
+    sources:
+      - https://www.moelven.com/no/no/interiorprodukter-i-tre/lister/
+    sizes: [10x58, 10x70, 12x45, 12x58, 12x70, 12x95, 15x58, 15x70, 15x95, 18x45, 21x34, 21x45, 21x70, 21x95]
+    lengths: [4400]
+    species: [pine]
+    treatments: [untreated]
+    note: Includes fotlist, karmlist, kombilist and taklist; Moelven gives 4 400 mm as the length.
+
+  - type: limtra
+    sources:
+      - https://www.moelven.com/globalassets/moelven-limtre/dimensjoner-ny-profil.pdf
+      - https://www.moelven.com/no/no/limtre/standard-limtre/
+    sizes:
+      - 90x90
+      - 90x115
+      - 90x135
+      - 90x180
+      - 90x225
+      - 90x270
+      - 90x315
+      - 90x360
+      - 90x405
+      - 90x450
+      - 90x495
+      - 90x540
+      - 90x585
+      - 90x630
+      - 115x115
+      - 115x135
+      - 115x180
+      - 115x225
+      - 115x270
+      - 115x315
+      - 115x360
+      - 115x405
+      - 115x450
+      - 115x495
+      - 115x540
+      - 115x585
+      - 115x630
+      - 140x140
+      - 140x180
+      - 140x225
+      - 140x270
+      - 140x315
+      - 140x360
+      - 140x405
+      - 140x450
+      - 140x495
+      - 140x540
+      - 140x585
+      - 140x630
+    max_length: 15000
+    species: [spruce]
+    grades: [GL30c]
+    note: Moelven stocks standard glulam in 15 m lengths and cuts to order. Its data sheet lists widths and heights separately and marks the stocked sizes, so not every combination here is stocked.
+
+  # ── building sheets ───────────────────────────────────────────────────
+  - type: plywood
+    sources:
+      - https://www.moelven.com/no/no/plater/kryssfiner2/kryssfiner-bjork-852f728e/
+      - https://www.moelven.com/no/no/plater/kryssfiner2/kryssfiner-furu/
+      - https://www.moelven.com/no/no/plater/kryssfiner2/konstruksjonsfiner-gran-k2070---helformat-til-vegg-og-tak/
+    thicknesses: [4, 6, 9, 12, 15, 18, 21]
+    formats: [1220x2440, 1220x2400, 600x1200]
+    species: [birch, pine, spruce]
+    note: Birch 6-18 mm and pine 4-18 mm in 1 220 x 2 440 mm (pine 4, 9 and 15 mm also 600 x 1 200 mm); structural spruce 12-21 mm in 1 220 x 2 400 mm.
+
+  - type: osb
+    sources:
+      - https://www.moelven.com/no/no/plater/osb/osb/
+    thicknesses: [9, 12, 15, 18, 22]
+    formats: [1220x2440, 1220x2400, 600x2397]
+    grades: [OSB/3]
+    note: 9 mm in 1 220 x 2 440 mm; 12, 15 and 18 mm in 1 220 x 2 400 mm; 12-22 mm tongue-and-groove in 600 x 2 397 mm.
+
+  - type: gipsskiva
+    sources:
+      - https://norgips.no/produkter/gipsplater/gipsplate-standard-13
+    thicknesses: [12.5]
+    formats:
+      [1200x2200, 1200x2400, 1200x2500, 1200x2600, 1200x2700, 1200x2800, 1200x3000, 1200x3600, 900x2400, 900x2500, 900x2600, 900x2700, 900x2800, 900x3000, 900x3200]
+    grades: [Standard 13]
+
+  - type: mdf
+    sources:
+      - https://www.moelven.com/no/no/plater/mdf2/mdf/
+    thicknesses: [6, 10, 12, 16, 19, 22]
+    formats: [1220x2440]
