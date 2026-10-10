@@ -12,6 +12,7 @@ from planqer.auth import get_current_user
 from planqer.database import User, UserProject, get_session
 from planqer.routes.project_groups import _get_owned_group
 from planqer.saved_project_adapters import load_saved_json, update_saved_image
+from planqer.schemas.product import ProductSnapshot
 from planqer.svg_visualization import generate_saved_diagram
 
 router = APIRouter(prefix="/projects", tags=["user-projects"])
@@ -29,6 +30,7 @@ class ProjectResponse(BaseModel):
     board_thickness: float
     board_width: float
     board_costs: dict | None = None
+    product: dict | None = None
     optimization_result: dict | None = None
     cutlist_image: str | None = None
     has_svg_image: bool = False
@@ -52,6 +54,9 @@ class ProjectCreateRequest(BaseModel):
     # loading the plan restores the pricing panel — supplier prices and stocked
     # lengths differ per job, so they belong to the plan, not to the app.
     board_costs: dict | None = None
+    # The catalogue product (or free text) the plan is for, snapshotted so later
+    # catalogue changes never alter it. material_type stays the readable label.
+    product: ProductSnapshot | None = None
     optimization_result: dict
 
 
@@ -65,6 +70,7 @@ class ProjectUpdateRequest(BaseModel):
     board_thickness: float | None = None
     board_width: float | None = None
     board_costs: dict | None = None
+    product: ProductSnapshot | None = None
     optimization_result: dict | None = None
 
 
@@ -118,6 +124,10 @@ def project_to_response(project: UserProject) -> ProjectResponse:
         project.board_costs, field="board costs", default=None, expected=dict
     )
 
+    product = load_saved_json(
+        project.product, field="board product", default=None, expected=dict
+    )
+
     return ProjectResponse(
         id=project.id,
         project_group_id=project.project_group_id,
@@ -129,6 +139,7 @@ def project_to_response(project: UserProject) -> ProjectResponse:
         board_thickness=project.board_thickness,
         board_width=project.board_width,
         board_costs=board_costs,
+        product=product,
         optimization_result=optimization_result,
         cutlist_image=project.cutlist_image,
         has_svg_image=bool(project.cutlist_image_svg),
@@ -188,11 +199,15 @@ async def create_project(
         parts_data=json.dumps(project_data.parts_data),
         board_lengths=json.dumps(project_data.board_lengths),
         saw_blade_width=project_data.saw_blade_width,
-        material_type=project_data.material_type,
+        material_type=project_data.material_type
+        or (project_data.product.name if project_data.product else ""),
         board_thickness=project_data.board_thickness,
         board_width=project_data.board_width,
         board_costs=json.dumps(project_data.board_costs)
         if project_data.board_costs
+        else None,
+        product=project_data.product.model_dump_json()
+        if project_data.product
         else None,
         optimization_result=json.dumps(project_data.optimization_result),
         cutlist_image=svg_data_url,
@@ -246,6 +261,10 @@ async def update_project(
     if "board_costs" in update_data.model_fields_set:
         project.board_costs = (
             json.dumps(update_data.board_costs) if update_data.board_costs else None
+        )
+    if "product" in update_data.model_fields_set:
+        project.product = (
+            update_data.product.model_dump_json() if update_data.product else None
         )
     if update_data.optimization_result is not None:
         project.optimization_result = json.dumps(update_data.optimization_result)

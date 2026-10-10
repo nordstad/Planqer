@@ -20,13 +20,17 @@ is used if it has one.
 1. Drop or browse to your file and click **Read the model**.
 2. Planqer measures every solid, classifies each as a board-shaped or
    sheet-shaped part, and groups them into cutlists by size.
-3. Review the cutlists. For each one you can rename it, choose a material
-   (or leave it as *Not specified*), and expand the list of lengths or sizes
-   it contains. Untick any you don't want.
+3. Review the cutlists. For each one you can rename it, choose a product
+   (or leave it empty), and expand the list of lengths or sizes it contains.
+   Untick any you don't want. Planqer matches each measured cross-section to the
+   catalogue (within 1 mm) and pre-selects the common match, marked
+   **Suggested** until you press **Looks right** or change it. A product you
+   choose is remembered for that cross-section next time.
 4. Either hand one cutlist off on its own with **Plan alone** — the parts and
-   the chosen material arrive pre-filled on the [board](board-cutting.md) or
+   the chosen product arrive pre-filled on the [board](board-cutting.md) or
    [sheet](sheet-cutting.md) page — or plan the selected cutlists together.
-5. On the save step every cutlist has its own stock lengths (or sheet size),
+5. On the save step every cutlist has its own stock lengths (or sheet size) —
+   the chosen product can offer its standard lengths or sheet sizes —
    cut width and optional prices. **Apply to all board groups** and **Apply to
    all sheet groups** copy one cutlist's stock, cut width and prices to the
    others. Prices are never required: without them a cutlist is planned for

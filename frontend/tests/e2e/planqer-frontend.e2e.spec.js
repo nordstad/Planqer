@@ -1,5 +1,13 @@
 import { test, expect } from '@playwright/test';
 
+const API = process.env.PLAYWRIGHT_API_URL || 'http://localhost:8002';
+
+// Keep the user's own words as the product: no catalogue needed.
+const ownProduct = async (page, label, text) => {
+  await page.getByRole('combobox', { name: label }).fill(text);
+  await page.getByRole('option', { name: `Use “${text}” as my own product` }).click();
+};
+
 test.describe('Planqer Frontend E2E Tests', () => {
   test('homepage loads successfully', async ({ page }) => {
     await page.goto('/');
@@ -78,17 +86,17 @@ test.describe('Planqer Frontend E2E Tests', () => {
     const email = `modify-${Date.now()}@example.com`;
     const credential = ['Planqer', Date.now(), 'e2e'].join('-') + '!1';
 
-    await page.request.post('http://localhost:8002/api/auth/register', {
+    await page.request.post(`${API}/api/auth/register`, {
       data: { email, password: credential },
     });
-    const loginResponse = await page.request.post('http://localhost:8002/api/auth/login', {
+    const loginResponse = await page.request.post(`${API}/api/auth/login`, {
       data: { email, password: credential },
     });
     const { access_token: accessToken } = await loginResponse.json();
     await page.addInitScript((token) => localStorage.setItem('auth_token', token), accessToken);
 
     await page.goto('/cutting');
-    await page.getByLabel('Material').selectOption('oak');
+    await ownProduct(page, 'Product', 'Oak');
     await page.getByLabel('Thickness (mm)').fill('45');
     await page.getByLabel('Width (mm)').fill('45');
     await page.getByRole('button', { name: /plan the cuts/i }).click();
@@ -103,7 +111,10 @@ test.describe('Planqer Frontend E2E Tests', () => {
     });
     await page.getByRole('button', { name: /^save plan$/i }).click();
     await expect(page.getByRole('heading', { name: /plan saved/i })).toBeVisible();
-    expect(savedPayload).toMatchObject({ material_type: 'oak', board_thickness: 45, board_width: 45 });
+    expect(savedPayload).toMatchObject({
+      material_type: 'Oak', board_thickness: 45, board_width: 45,
+      product: { type: 'custom', name: 'Oak', catalogue_id: null },
+    });
 
     await page.goto('/dashboard/project/none');
     await expect(page.getByText('E2E modify plan')).toBeVisible();
@@ -133,10 +144,10 @@ test.describe('Planqer Frontend E2E Tests', () => {
   test('prints each saved sheet on its own non-splitting page', async ({ page }) => {
     const email = `sheet-print-${Date.now()}@example.com`;
     const password = ['Planqer', Date.now(), 'sheet'].join('-') + '!1';
-    await page.request.post('http://localhost:8002/api/auth/register', {
+    await page.request.post(`${API}/api/auth/register`, {
       data: { email, password },
     });
-    const loginResponse = await page.request.post('http://localhost:8002/api/auth/login', {
+    const loginResponse = await page.request.post(`${API}/api/auth/login`, {
       data: { email, password },
     });
     const { access_token: accessToken } = await loginResponse.json();
@@ -156,7 +167,7 @@ test.describe('Planqer Frontend E2E Tests', () => {
         rotated: false,
       }],
     }));
-    const saveResponse = await page.request.post('http://localhost:8002/api/sheet-projects/', {
+    const saveResponse = await page.request.post(`${API}/api/sheet-projects/`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       data: {
         name: 'E2E printable sheets',
@@ -214,17 +225,17 @@ test.describe('Planqer Frontend E2E Tests', () => {
   test('switches between project overview, shopping list, and cut diagram views', async ({ page }) => {
     const email = `workspace-${Date.now()}@example.com`;
     const credential = ['Planqer', Date.now(), 'e2e'].join('-') + '!1';
-    await page.request.post('http://localhost:8002/api/auth/register', {
+    await page.request.post(`${API}/api/auth/register`, {
       data: { email, password: credential },
     });
-    const loginResponse = await page.request.post('http://localhost:8002/api/auth/login', {
+    const loginResponse = await page.request.post(`${API}/api/auth/login`, {
       data: { email, password: credential },
     });
     const { access_token: accessToken } = await loginResponse.json();
     await page.addInitScript((token) => localStorage.setItem('auth_token', token), accessToken);
 
     await page.goto('/cutting');
-    await page.getByLabel('Material').selectOption('oak');
+    await ownProduct(page, 'Product', 'Oak');
     await page.getByLabel('Thickness (mm)').fill('45');
     await page.getByLabel('Width (mm)').fill('45');
     await page.getByRole('button', { name: /plan the cuts/i }).click();
@@ -263,37 +274,38 @@ test.describe('Planqer Frontend E2E Tests', () => {
     }
   });
 
-  test('requires and accepts custom board material metadata', async ({ page }) => {
+  test('plans a board from its dimensions alone and accepts a product of your own', async ({ page }) => {
     const email = `material-${Date.now()}@example.com`;
     const credential = ['Planqer', Date.now(), 'e2e'].join('-') + '!1';
-    await page.request.post('http://localhost:8002/api/auth/register', { data: { email, password: credential } });
-    const loginResponse = await page.request.post('http://localhost:8002/api/auth/login', { data: { email, password: credential } });
+    await page.request.post(`${API}/api/auth/register`, { data: { email, password: credential } });
+    const loginResponse = await page.request.post(`${API}/api/auth/login`, { data: { email, password: credential } });
     const { access_token: accessToken } = await loginResponse.json();
     await page.addInitScript((token) => localStorage.setItem('auth_token', token), accessToken);
 
     await page.goto('/cutting');
     const planButton = page.getByRole('button', { name: /plan the cuts/i });
     await expect(planButton).toBeDisabled();
-    await page.getByLabel('Material').selectOption('custom');
-    await page.getByPlaceholder('Enter material').fill('Ash');
+    await expect(page.getByText(/thickness and width before planning/i)).toBeVisible();
     await page.getByLabel('Thickness (mm)').fill('30');
     await page.getByLabel('Width (mm)').fill('80');
     await expect(planButton).toBeEnabled();
+    await ownProduct(page, 'Product', 'Ash');
+    await expect(page.getByTestId('product-summary')).toContainText('Ash');
+    await expect(planButton).toBeEnabled();
   });
 
-  test('requires sheet thickness and supports custom sheet material', async ({ page }) => {
+  test('requires sheet thickness and accepts a sheet product of your own', async ({ page }) => {
     const email = `sheet-material-${Date.now()}@example.com`;
     const credential = ['Planqer', Date.now(), 'e2e'].join('-') + '!1';
-    await page.request.post('http://localhost:8002/api/auth/register', { data: { email, password: credential } });
-    const loginResponse = await page.request.post('http://localhost:8002/api/auth/login', { data: { email, password: credential } });
+    await page.request.post(`${API}/api/auth/register`, { data: { email, password: credential } });
+    const loginResponse = await page.request.post(`${API}/api/auth/login`, { data: { email, password: credential } });
     const { access_token: accessToken } = await loginResponse.json();
     await page.addInitScript((token) => localStorage.setItem('auth_token', token), accessToken);
 
     await page.goto('/sheet-cutting');
     const packButton = page.getByRole('button', { name: /plan the sheet cuts/i });
     await expect(packButton).toBeDisabled();
-    await page.getByLabel('Material type').selectOption('custom');
-    await page.getByPlaceholder('Enter material').fill('Birch plywood');
+    await ownProduct(page, 'Product', 'Birch plywood');
     await page.locator('#sheet-thickness').fill('12');
     await expect(packButton).toBeEnabled();
     let optimizationPayload;
@@ -308,8 +320,8 @@ test.describe('Planqer Frontend E2E Tests', () => {
   test('requires tile material details before solving a layout', async ({ page }) => {
     const email = `tile-material-${Date.now()}@example.com`;
     const credential = ['Planqer', Date.now(), 'e2e'].join('-') + '!1';
-    await page.request.post('http://localhost:8002/api/auth/register', { data: { email, password: credential } });
-    const loginResponse = await page.request.post('http://localhost:8002/api/auth/login', { data: { email, password: credential } });
+    await page.request.post(`${API}/api/auth/register`, { data: { email, password: credential } });
+    const loginResponse = await page.request.post(`${API}/api/auth/login`, { data: { email, password: credential } });
     const { access_token: accessToken } = await loginResponse.json();
     await page.addInitScript((token) => localStorage.setItem('auth_token', token), accessToken);
 

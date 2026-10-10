@@ -3,7 +3,8 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const BENCH = fileURLToPath(new URL('../../../example/bench.stl', import.meta.url));
-const API = 'http://localhost:8002';
+// The catalogue tests need a backend run with PLANQER_CATALOGUE_COUNTRY=SE.
+const API = process.env.PLAYWRIGHT_API_URL || 'http://localhost:8002';
 
 /* /api/3d-cutlist is rate limited to 5 a minute, so the bench is measured by the
    real backend once per run and replayed to each test's own upload. */
@@ -41,15 +42,16 @@ test.describe('Model cutlist flow with example/bench.stl', () => {
   // One worker, so the shared account and measurement are made once.
   test.describe.configure({ mode: 'serial' });
 
-  test('groups the bench without placeholder labels and lets each group be refined', async ({ page }) => {
+  test('groups the bench and suggests a catalogue product for each cross-section', async ({ page }) => {
     await signIn(page);
     await readBench(page);
 
     await expect(page.locator('body')).not.toContainText(/unknown/i);
     await expect(page.locator('body')).not.toContainText('SPF-');
-    await expect(page.getByLabel('Name for Board 45 × 95 mm')).toHaveAttribute('placeholder', 'Board 45 × 95 mm');
-    await expect(page.getByLabel('Name for Board 95 × 95 mm')).toBeVisible();
-    await expect(page.getByLabel('Name for Sheet 15 mm')).toBeVisible();
+    await expect(page.getByLabel('Name for Framing timber / studs 45 × 95 mm')).toHaveAttribute('placeholder', 'Framing timber / studs 45 × 95 mm');
+    await expect(page.getByLabel('Name for Planed timber 95 × 95 mm')).toBeVisible();
+    await expect(page.getByLabel('Name for Plywood 15 mm')).toBeVisible();
+    await expect(page.getByTestId('product-summary').filter({ hasText: 'Suggested' })).toHaveCount(3);
     await expect(page.getByText('board_3, board_4, board_5, board_6, board_7')).toBeVisible();
 
     await page.getByRole('button', { name: 'Show lengths' }).first().click();
@@ -59,18 +61,45 @@ test.describe('Model cutlist flow with example/bench.stl', () => {
     await page.getByRole('button', { name: 'Show sizes' }).click();
     await expect(page.getByTestId(/^breakdown-sheet/)).toContainText('1 800 × 800 mm × 1');
 
-    await page.getByLabel('Name for Board 45 × 95 mm').fill('Frame');
-    await page.getByLabel('Material for Frame').selectOption('pine');
-    await expect(page.getByLabel('Material for Board 95 × 95 mm')).toHaveValue('');
+    await page.getByLabel('Name for Framing timber / studs 45 × 95 mm').fill('Frame');
+    // A suggestion is accepted with one click, no details needed.
+    const frame = page.getByTestId('product-summary').first();
+    await expect(frame).toContainText('Suggested');
+    await page.getByRole('button', { name: 'Looks right' }).first().click();
+    await expect(frame).not.toContainText('Suggested');
+    await expect(page.getByTestId('product-summary').filter({ hasText: 'Suggested' })).toHaveCount(2);
   });
 
-  test('hands the chosen material to the board page when planning one group alone', async ({ page }) => {
+  test('searches the catalogue from the keyboard and remembers the choice for that size', async ({ page }) => {
     await signIn(page);
     await readBench(page);
-    await page.getByLabel('Material for Board 45 × 95 mm').selectOption('pine');
+
+    const search = page.getByRole('combobox', { name: 'Product for Planed timber 95 × 95 mm' });
+    await search.fill('trall');
+    await expect(page.getByRole('option', { name: /^Decking/ }).first()).toBeVisible();
+    await search.press('Enter');
+    await expect(page.getByTestId('product-summary').nth(1)).toContainText('Decking');
+    await expect(page.getByTestId('product-summary').nth(1)).not.toContainText('Suggested');
+
+    const own = page.getByRole('combobox', { name: 'Product for Framing timber / studs 45 × 95 mm' });
+    await own.fill('Larch');
+    await page.getByRole('option', { name: 'Use “Larch” as my own product' }).click();
+    await expect(page.getByTestId('product-summary').first()).toContainText('Larch');
+
+    await page.unroute('**/api/3d-cutlist');
+    await readBench(page);
+    await expect(page.getByTestId('product-summary').first()).toContainText('Larch');
+    await expect(page.getByTestId('product-summary').first()).not.toContainText('Suggested');
+    await expect(page.getByTestId('product-summary').nth(1)).toContainText('Decking');
+  });
+
+  test('hands the suggested product to the board page when planning one group alone', async ({ page }) => {
+    await signIn(page);
+    await readBench(page);
     await page.getByRole('button', { name: 'Plan alone' }).first().click();
     await expect(page).toHaveURL(/\/cutting/);
-    await expect(page.getByLabel('Material', { exact: true })).toHaveValue('pine');
+    await expect(page.getByTestId('product-summary')).toContainText('Framing timber / studs 45 × 95 mm');
+    await expect(page.getByTestId('product-summary')).toContainText('Suggested');
     await expect(page.getByLabel('Thickness (mm)')).toHaveValue('45');
     await expect(page.getByLabel('Width (mm)')).toHaveValue('95');
   });
@@ -78,14 +107,21 @@ test.describe('Model cutlist flow with example/bench.stl', () => {
   test('plans without prices, prices per group, saves into a one-click project link', async ({ page }) => {
     await signIn(page);
     await readBench(page);
-    await page.getByLabel('Material for Board 45 × 95 mm').selectOption('pine');
+    // Specify details on the first group; leave the others as suggested.
+    await page.getByRole('button', { name: 'Details' }).first().click();
+    await page.getByLabel(/^Species — /).first().selectOption('spruce');
+    await page.getByLabel(/^Grade — /).first().fill('C24');
     await page.getByRole('button', { name: 'Plan 3 cutlists', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Plan and save' })).toBeVisible();
     await expect(page.locator('body')).not.toContainText('SPF-');
 
-    const legs = page.getByRole('region', { name: 'Pine 45 × 95 mm' });
-    const posts = page.getByRole('region', { name: 'Board 95 × 95 mm' });
-    const plywood = page.getByRole('region', { name: 'Sheet 15 mm' });
+    const legs = page.getByRole('region', { name: 'Framing timber / studs 45 × 95 mm' });
+    const posts = page.getByRole('region', { name: 'Planed timber 95 × 95 mm' });
+    const plywood = page.getByRole('region', { name: 'Plywood 15 mm' });
+
+    // The product's own stock is offered, never forced.
+    await expect(legs.getByRole('button', { name: 'Use these lengths' })).toBeVisible();
+    await expect(legs.getByLabel(/Board length in millimetres, row 1/)).not.toHaveValue('1800');
 
     // Prices are optional: nothing here blocks the plan button.
     await expect(page.getByRole('button', { name: 'Plan 3 cutlists', exact: true })).toBeEnabled();
@@ -118,29 +154,49 @@ test.describe('Model cutlist flow with example/bench.stl', () => {
     await expect(projectLink).toBeVisible({ timeout: 30000 });
 
     expect(boardPosts).toHaveLength(2);
-    const framePlan = boardPosts.find((p) => p.name === 'bench · Pine 45 × 95 mm');
-    const postPlan = boardPosts.find((p) => p.name === 'bench · Board 95 × 95 mm');
-    expect(framePlan).toMatchObject({ material_type: 'pine', saw_blade_width: 2, board_thickness: 45, board_width: 95 });
+    const framePlan = boardPosts.find((p) => p.name === 'bench · Framing timber / studs 45 × 95 mm');
+    const postPlan = boardPosts.find((p) => p.name === 'bench · Planed timber 95 × 95 mm');
+    expect(framePlan).toMatchObject({
+      material_type: 'Framing timber / studs 45 × 95 mm', saw_blade_width: 2, board_thickness: 45, board_width: 95,
+      product: {
+        type: 'regel', catalogue_id: 'se:regel:45x95', country: 'SE', thickness: 45, width: 95,
+        details: { species: 'spruce', grade: 'C24' },
+        sources: expect.arrayContaining([expect.stringContaining('traguiden.se')]),
+      },
+    });
+    expect(framePlan.product.lengths).toContain(2400);
     expect(framePlan.board_costs).toMatchObject({ currency: expect.any(String), board_costs: expect.any(Object) });
-    // "Apply to all" copied the stock, kerf and prices; the material stays unspecified.
-    expect(postPlan).toMatchObject({ material_type: '', saw_blade_width: 2 });
+    // "Apply to all" copied the stock, kerf and prices; each plan keeps its own product.
+    expect(postPlan).toMatchObject({ material_type: 'Planed timber 95 × 95 mm', saw_blade_width: 2, product: { type: 'planhyvlat', catalogue_id: 'se:planhyvlat:95x95', suggested: true } });
     expect(postPlan.board_costs).toEqual(framePlan.board_costs);
-    expect(sheetPosts[0]).toMatchObject({ material_type: '', pricing: { price_per_unit: 350 } });
+    expect(sheetPosts[0]).toMatchObject({
+      material_type: 'Plywood 15 mm', pricing: { price_per_unit: 350 },
+      product: { type: 'plywood', catalogue_id: 'se:plywood:15', formats: expect.arrayContaining([{ width: 1200, height: 2400 }]) },
+    });
     expect(JSON.stringify([...boardPosts, ...sheetPosts])).not.toMatch(/unknown/i);
 
     await projectLink.click();
     await expect(page).toHaveURL(/\/dashboard\/project\/[^/]+$/);
-    await expect(page.getByText('bench · Pine 45 × 95 mm')).toBeVisible();
+    await expect(page.getByText('bench · Framing timber / studs 45 × 95 mm')).toBeVisible();
     await expect(page.locator('body')).not.toContainText(/unknown/i);
     await expect(page.locator('body')).not.toContainText('SPF-');
     // Real part length on the card: 1 800×2 + 1 530×5 + 710×6 + 620×3 + 520×2 = 18 410 mm for the 45 × 95 group
-    await expect(page.locator('.plan-item').filter({ hasText: 'bench · Pine 45 × 95 mm' })).toContainText(/18.410 mm/);
-    await expect(page.locator('.plan-item').filter({ hasText: 'bench · Board 95 × 95 mm' })).toContainText(/Board|board/);
+    await expect(page.locator('.plan-item').filter({ hasText: 'bench · Framing timber / studs 45 × 95 mm' })).toContainText(/18.410 mm/);
+    await expect(page.locator('.plan-item').filter({ hasText: 'bench · Planed timber 95 × 95 mm' })).toContainText(/Planed timber/);
   });
 
-  test('plans and saves with no prices and no project', async ({ page }) => {
+  test('plans and saves with no prices, no project and no product', async ({ page }) => {
+    // A catalogue with no sized entries (the generic default): nothing to suggest.
+    const real = await (await page.request.get(`${API}/api/catalogue/`)).json();
+    await page.route('**/api/catalogue/', (route) => route.fulfill({
+      json: { ...real, country: null, country_name: null, products: [] },
+      headers: { etag: '"generic"' },
+    }));
+    await page.addInitScript(() => localStorage.removeItem('planqer-product-choice-v1'));
     await signIn(page);
     await readBench(page);
+    await expect(page.getByLabel('Name for Board 45 × 95 mm')).toBeVisible();
+    await expect(page.getByTestId('product-summary').filter({ hasText: 'You can plan without one' })).toHaveCount(3);
     await page.getByRole('button', { name: 'Plan 3 cutlists', exact: true }).click();
     const posts = [];
     page.on('request', (request) => {
@@ -152,8 +208,28 @@ test.describe('Model cutlist flow with example/bench.stl', () => {
     expect(posts).toHaveLength(3);
     for (const post of posts) {
       expect(post.material_type).toBe('');
+      expect(post.product ?? null).toBeNull();
       expect(post.board_costs ?? null).toBeNull();
       expect(post.pricing ?? null).toBeNull();
     }
+  });
+
+  test('plans a 14.5 m part on a 15 m glulam beam from the board page', async ({ page }) => {
+    await signIn(page);
+    await page.goto('/cutting');
+    await page.getByLabel('Thickness (mm)').fill('90');
+    await page.getByLabel('Width (mm)').fill('90');
+    const search = page.getByRole('combobox', { name: 'Product' });
+    await search.fill('limtra 90x90');
+    await page.getByRole('option', { name: /^Glulam beam 90 × 90 mm/ }).click();
+    await expect(page.getByTestId('stock-suggestions')).toContainText(/12.000 mm/);
+
+    await page.getByLabel(/Part length.*1/).first().fill('14500');
+    await page.getByLabel(/Part quantity.*1|Quantity.*1/).first().fill('1');
+    await page.getByLabel(/Board length in millimetres, row 1/).fill('15000');
+    await page.getByRole('button', { name: /Plan the cuts/i }).click();
+
+    await expect(page.getByRole('heading', { name: /Your cutting plan/i })).toBeVisible({ timeout: 30000 });
+    await expect(page.getByTestId('plan-material-summary')).toContainText('Glulam beam 90 × 90 mm');
   });
 });

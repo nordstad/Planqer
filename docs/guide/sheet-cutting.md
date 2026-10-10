@@ -9,7 +9,7 @@ stock. Route: `/sheet-cutting`.
 | --- | --- |
 | **Parts to cut** | Every rectangle you need, its width × height in millimetres, and how many. Name each one if it helps you tell them apart later. |
 | **Saw blade (kerf)** | Subtracted between every part, the same as board cutting. |
-| **The sheet you're cutting from** | Width, height, and material — what you're cutting *out of*, not what you need. Standard plywood is 1220 × 2440 mm or 1200 × 2500 mm; measure yours. |
+| **The sheet you're cutting from** | Width, height, and thickness — what you're cutting *out of*, not what you need. Optionally choose a **Product** (plywood, OSB, …) from the catalogue to fill in thickness and a standard sheet size. Standard plywood is 1220 × 2440 mm or 1200 × 2500 mm; measure yours. |
 | **Packing strategy** | Auto-selected by default, with 90° rotation allowed. You can pick a specific strategy (Bottom-Left Fill, Best Fit, Genetic, Guillotine) if you want to compare. |
 
 ## Running the plan

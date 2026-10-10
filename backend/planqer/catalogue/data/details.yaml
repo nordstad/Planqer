@@ -1,0 +1,25 @@
+# Controlled vocabularies for the optional product details. Grade is free text
+# per product (C24, G4-2, GL30c ...), so it has no list here.
+species:
+  - {key: pine, labels: {en: Pine, sv: Furu, nb: Furu}}
+  - {key: spruce, labels: {en: Spruce, sv: Gran, nb: Gran}}
+  - {key: heartwood-pine, labels: {en: Heartwood pine, sv: Kärnfuru, nb: Kjernefuru}}
+  - {key: birch, labels: {en: Birch, sv: Björk, nb: Bjørk}}
+treatment:
+  - {key: untreated, labels: {en: Untreated, sv: Obehandlad, nb: Ubehandlet}}
+  - {key: ntr-a-green, labels: {en: "NTR A, green", sv: "NTR A, grön", nb: "NTR A, grønn"}}
+  - {key: ntr-ab-green, labels: {en: "NTR AB, green", sv: "NTR AB, grön", nb: "NTR AB, grønn"}}
+  - {key: ntr-ab-brown, labels: {en: "NTR AB, brown", sv: "NTR AB, brun", nb: "NTR AB, brun"}}
+  - {key: cu-a, labels: {en: "Cu-impregnated, class A", sv: "Cu-impregnerad, klass A", nb: "Cu-impregnert, klasse A"}}
+  - {key: cu-ab, labels: {en: "Cu-impregnated, class AB", sv: "Cu-impregnerad, klass AB", nb: "Cu-impregnert, klasse AB"}}
+  - {key: primed-white, labels: {en: Primed white, sv: Grundmålad vit, nb: Grunnet hvit}}
+profile:
+  - {key: planed, labels: {en: Planed, sv: Hyvlad, nb: Høvlet}}
+  - {key: rough-sawn, labels: {en: Rough-sawn, sv: Sågad, nb: Sagd}}
+  - {key: fine-sawn-face, labels: {en: Fine-sawn face, sv: Finsågad framsida, nb: Finsagd framside}}
+  - {key: grooved, labels: {en: Grooved, sv: Rillad, nb: Rillet}}
+  - {key: tongue-and-groove, labels: {en: Tongue-and-groove, sv: Spontad, nb: Not og fjær}}
+  - {key: double-chamfer, labels: {en: Double chamfer, sv: Dubbelfasspont, nb: Dobbel fas}}
+  - {key: bead-board, labels: {en: Bead board, sv: Pärlspont, nb: Perlespon}}
+  - {key: round, labels: {en: Round, sv: Rund, nb: Rund}}
+  - {key: quarter-round, labels: {en: Quarter-round, sv: Kvartsrund, nb: Kvartrund}}

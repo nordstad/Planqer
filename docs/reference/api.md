@@ -103,12 +103,21 @@ Longer 1D board cutting requests can use the async endpoint:
 | `/projects` | Saved 1D board cutting projects and generated images. |
 | `/sheet-projects` | Saved 2D sheet projects and generated images. |
 | `/project-groups` | User-defined project grouping. |
+| `/catalogue` | The instance's product catalogue (public, read-only, served with an `ETag`). |
 | `/settings` | User preferences such as units and defaults. |
 | `/admin` | User management and instance statistics for admins. |
 
 The exact request and response schemas are easiest to inspect in Swagger UI
 because they are generated from the Pydantic models used by the running
 backend.
+
+## Products
+
+`GET /catalogue/` returns the product types, the detail vocabularies and the
+entries for the instance's country (generic, with no entries, when
+`PLANQER_CATALOGUE_COUNTRY` is unset). Saved board and sheet plans accept an
+optional `product` snapshot on create and update; it is stored and returned
+as given, and `material_type` stays a readable label for older clients.
 
 ## Accounts and projects
 
@@ -130,6 +139,6 @@ not needed for normal self-hosted use.
 
 ## Limits
 
-- Part/board length: up to 6000 mm (see `backend/config.yaml`).
+- Part/board length: up to 15 000 mm. Sheet width and height: up to 10 000 mm.
 - Up to 1000 parts per request, 1000 quantity per part.
 - Rate limits are per-endpoint (noted above) and apply per client IP.

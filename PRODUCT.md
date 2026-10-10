@@ -46,7 +46,7 @@ Two claims a neighboring cutting optimizer could not truthfully copy:
 
 - Users arrive with either a part list in their head/on paper, or a model file
   exported from their CAD tool (STL, STEP/STP).
-- Materials are metric, in millimeters: boards up to 6000 mm, sheet stock in
+- Materials are metric, in millimeters: boards up to 15 000 mm, sheet stock in
   standard panel sizes (e.g. 1220 × 2440 mm).
 - Kerf (saw blade width, typically ~3 mm) is a real physical loss the plan must
   account for; a plan that ignores it is wrong at the saw.
@@ -83,7 +83,7 @@ an admin panel for managing the instance's own users, a day/night mode switch
 Constraints:
 
 - Metric only; millimeters throughout. No imperial support.
-- Limits from `backend/config.yaml`: part and board length max 6000 mm. API
+- Limits: part and board length max 15 000 mm (sheet sides 10 000 mm). API
   limits: 1000 parts, 1000 per part quantity. Rate limit 10 req/min.
 - Optimization is heuristic, not proven-optimal; results are good plans, not
   guaranteed minima.

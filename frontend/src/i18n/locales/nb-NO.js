@@ -179,12 +179,6 @@ const locale = {
     savedAs: 'Lagret som {{name}}',
     sheetWidthAria: 'Platens bredde i millimeter',
     sheetHeightAria: 'Platens høyde i millimeter',
-    materialType: 'Materialtype',
-    materialPlywood: 'Kryssfiner',
-    materialMdf: 'MDF',
-    materialMetal: 'Metallplate',
-    materialAcrylic: 'Akryl',
-    materialCardboard: 'Papp',
     materialOther: 'Annet',
     packingStrategy: 'Plasseringsmetode',
     autoSelected: 'Automatisk valgt',
@@ -320,10 +314,10 @@ Object.assign(locale.ui, {
 });
 
 Object.assign(locale.workflow, {
-  materialProfile: 'Materiale og profil', chooseMaterial: 'Velg materiale', thickness: 'Tykkelse', thicknessMm: 'Tykkelse (mm)', widthMm: 'Bredde (mm)', packSheets: 'Planlegg platekappingen', tilesToBuy: 'fliser å kjøpe', fullTiles: 'Hele fliser', cutTiles: 'Kappede fliser', used: 'Brukt', changeSurface: 'Endre overflaten', nameIt: 'Gi den et navn',
+  materialProfile: 'Materiale og profil', thickness: 'Tykkelse', thicknessMm: 'Tykkelse (mm)', widthMm: 'Bredde (mm)', packSheets: 'Planlegg platekappingen', tilesToBuy: 'fliser å kjøpe', fullTiles: 'Hele fliser', cutTiles: 'Kappede fliser', used: 'Brukt', changeSurface: 'Endre overflaten', nameIt: 'Gi den et navn',
 });
 
-Object.assign(locale.auditUi, { materialRequired: 'Velg materiale og skriv inn målene før du planlegger', sheetThicknessRequired: 'Skriv inn platetykkelsen før du planlegger', sheetMaterialRequired: 'Velg platemateriale før du planlegger', tileMaterialRequired: 'Velg flismateriale og skriv inn tykkelsen før du løser layouten' });
+Object.assign(locale.auditUi, { sheetThicknessRequired: 'Skriv inn platetykkelsen før du planlegger', tileMaterialRequired: 'Velg flismateriale og skriv inn tykkelsen før du løser layouten' });
 Object.assign(locale.ui, { waste: 'Svinn', strategy: 'Strategi' });
 Object.assign(locale.ui, {
   updatePlanTitle: 'Oppdater lagret plan',
@@ -362,9 +356,6 @@ Object.assign(locale.workflow, {
 Object.assign(locale.modelUi, {
   boardWord: "Bord",
   sheetWord: "Plate",
-  materialUnspecified: "Ikke angitt",
-  materialFor: "Materiale for {{name}}",
-  customMaterialFor: "Eget materiale for {{name}}",
   renameCutlist: "Navn på {{name}}",
   showLengths: "Vis lengder",
   hideLengths: "Skjul lengder",
@@ -379,6 +370,39 @@ Object.assign(locale.modelUi, {
   appliedBoards: "Lager, sagspor og priser er kopiert til alle bordgrupper.",
   appliedSheets: "Platemål, sagspor og pris er kopiert til alle plategrupper.",
   openProject: "Åpne prosjektet",
+});
+
+Object.assign(locale, {
+  productUi: {
+    product: "Produkt",
+    searchPlaceholder: "Søk på navn eller mål, f.eks. «regel 45x95»",
+    results: "Matchende produkter",
+    noResults: "Ingen matchende produkt. Du kan likevel bruke egne ord.",
+    useAsOwn: "Bruk «{{text}}» som eget produkt",
+    anySize: "valgfritt mål",
+    noneChosen: "Ingen produkt valgt. Du kan planlegge uten.",
+    loadFailed: "Produktkatalogen kunne ikke lastes. Du kan likevel skrive et eget produkt.",
+    suggested: "Forslag",
+    confirm: "Stemmer",
+    clear: "Fjern",
+    source: "Kilde",
+    details: "Detaljer",
+    detailsHint: "Treslag, behandling, sortering, overflate (valgfritt)",
+    species: "Treslag",
+    treatment: "Behandling",
+    grade: "Sortering",
+    profile: "Overflate / profil",
+    note: "Merknad",
+    notePlaceholder: "Noe annet som er greit å vite",
+    notSpecified: "Ikke oppgitt",
+    useSize: "Bruk {{size}}",
+    standardLengths: "Standardlengder: {{lengths}} mm.",
+    useLengths: "Bruk disse lengdene",
+    stockedUpTo: "Lagerføres normalt opp til {{max}} mm.",
+    standardSheets: "Standardformat:",
+    dimensionsRequired: "Oppgi tykkelse og bredde på bordet før du planlegger",
+    chooseProductFor: "Produkt for {{name}}",
+  },
 });
 
 export default locale;

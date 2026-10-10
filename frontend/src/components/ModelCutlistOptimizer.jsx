@@ -32,6 +32,7 @@ import Disclosure from './Disclosure';
 import ProjectPicker from './ProjectPicker';
 import PlanSteps from './PlanSteps';
 import ModelGroupSettings from './ModelGroupSettings';
+import ProductPicker from './ProductPicker';
 import AuthModal from './auth/AuthModal';
 import { useAuth } from '../contexts/AuthContext';
 import { useDebounce } from '../hooks/useDebounce';
@@ -44,11 +45,12 @@ import {
   getUserSettings,
 } from '../utils/api';
 import {
-  BOARD_MATERIALS, SHEET_MATERIALS, MATERIAL_OPTION_KEYS,
   groupBoards, groupSheets, groupLabel, planNameFor, resolveMaterial,
+  groupDimensions, groupMemoryKey,
   initialConfig, boardCostPayloads, sheetPricingPayload,
   applySettingsToAll, validateGroupConfig, standaloneHandoff,
 } from '../utils/modelGroups';
+import { loadCatalogue, buildSnapshot } from '../utils/catalogue';
 
 const STEP_MODEL = 0;
 const STEP_CUTLISTS = 1;
@@ -70,7 +72,7 @@ const ACCEPTED = ['.stl', '.step', '.stp'];
 const spaced = (n) => Math.round(n).toLocaleString('sv-SE');
 
 const ModelCutlistOptimizer = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user, isAuthenticated } = useAuth();
 
   const [step, setStep] = useState(STEP_MODEL);
@@ -92,8 +94,8 @@ const ModelCutlistOptimizer = () => {
 
   const modelName = file ? file.name.replace(/\.[a-z0-9]+$/i, '') : t('workflow.model');
   const selectedGroups = groups.filter((g) => selectedIds.has(g.id));
-  const labelOf = (group) => groupLabel(group, configs[group.id] || {}, t);
-  const planNameOf = (group) => planNameFor(modelName, group, configs[group.id] || {}, t);
+  const labelOf = (group) => groupLabel(group, configs[group.id] || {}, t, i18n.language);
+  const planNameOf = (group) => planNameFor(modelName, group, configs[group.id] || {}, t, i18n.language);
 
   /* ── 03 · save: the project and the batch itself ─────────────────────── */
   const [limitsOpen, setLimitsOpen] = useState(false);
@@ -202,8 +204,11 @@ const ModelCutlistOptimizer = () => {
         setReading(false);
         return;
       }
+      // A catalogue that can't be loaded only costs the suggestions: every
+      // cutlist still starts unspecified and can be planned without a product.
+      const catalogue = await loadCatalogue().catch(() => null);
       setGroups(found);
-      setConfigs(Object.fromEntries(found.map((g) => [g.id, initialConfig(g, defaults)])));
+      setConfigs(Object.fromEntries(found.map((g) => [g.id, initialConfig(g, defaults, catalogue)])));
       setSelectedIds(new Set(found.map((g) => g.id)));
       setExpandedIds(new Set());
       setStep(STEP_CUTLISTS);
@@ -259,7 +264,8 @@ const ModelCutlistOptimizer = () => {
 
   const runOne = async (group) => {
     const config = configs[group.id];
-    const material = resolveMaterial(config);
+    const material = resolveMaterial(config, i18n.language, group);
+    const product = buildSnapshot(config.product, i18n.language, groupDimensions(group));
     setStatuses((prev) => ({ ...prev, [group.id]: 'running' }));
     try {
       if (group.kind === 'board') {
@@ -274,6 +280,7 @@ const ModelCutlistOptimizer = () => {
           boards: stock,
           sawKerf: config.kerf,
           materialType: material,
+          product,
           boardThickness: group.thickness,
           boardWidth: group.width,
           boardCosts: saved,
@@ -294,6 +301,7 @@ const ModelCutlistOptimizer = () => {
           sheetThickness: group.thickness,
           kerfWidth: config.kerf,
           materialType: material,
+          product,
           algorithm: '',
           allowRotation: config.allowRotation,
           result,
@@ -476,7 +484,7 @@ const ModelCutlistOptimizer = () => {
               <tr>
                  <th aria-label={t('ui.include')} style={{ width: '30px' }} />
                  <th style={{ textAlign: 'left' }}>{t('ui.cutlist')}</th>
-                 <th style={{ textAlign: 'left' }}>{t('legacy.material')}</th>
+                 <th style={{ textAlign: 'left' }}>{t('productUi.product')}</th>
                  <th>{t('workflow.qty')}</th>
                  <th aria-label={t('ui.planAlone')} />
               </tr>
@@ -486,7 +494,6 @@ const ModelCutlistOptimizer = () => {
                 const config = configs[group.id];
                 const label = labelOf(group);
                 const expanded = expandedIds.has(group.id);
-                const presets = group.kind === 'board' ? BOARD_MATERIALS : SHEET_MATERIALS;
                 return (
                   <Fragment key={group.id}>
                     <tr>
@@ -523,28 +530,15 @@ const ModelCutlistOptimizer = () => {
                             : (group.kind === 'board' ? 'modelUi.showLengths' : 'modelUi.showSizes'))}
                         </button>
                       </td>
-                      <td style={{ textAlign: 'left' }}>
-                        <select
-                          className="form-select"
-                          value={config.material}
-                          onChange={(e) => updateConfig(group.id, { material: e.target.value })}
-                          aria-label={t('modelUi.materialFor', { name: label })}
-                        >
-                          <option value="">{t('modelUi.materialUnspecified')}</option>
-                          {presets.map((key) => <option key={key} value={key}>{t(MATERIAL_OPTION_KEYS[key])}</option>)}
-                          <option value="custom">{t('ui.materialCustom')}</option>
-                        </select>
-                        {config.material === 'custom' && (
-                          <input
-                            type="text"
-                            className="form-input"
-                            style={{ marginTop: '6px' }}
-                            value={config.customMaterial}
-                            placeholder={t('ui.customMaterialPlaceholder')}
-                            onChange={(e) => updateConfig(group.id, { customMaterial: e.target.value })}
-                            aria-label={t('modelUi.customMaterialFor', { name: label })}
-                          />
-                        )}
+                      <td style={{ textAlign: 'left', minWidth: '260px' }}>
+                        <ProductPicker
+                          kind={group.kind}
+                          value={config.product}
+                          onChange={(product) => updateConfig(group.id, { product })}
+                          dims={groupDimensions(group)}
+                          memoryKey={groupMemoryKey(group)}
+                          label={t('productUi.chooseProductFor', { name: label })}
+                        />
                       </td>
                       <td>{group.quantity}×</td>
                       <td style={{ width: '110px' }}>

@@ -31,6 +31,28 @@ def test_planqer_success():
     assert "visualization" in data
 
 
+def test_planqer_plans_a_15_metre_glulam_beam():
+    payload = {
+        "parts": {"14500": 1, "500": 2},
+        "available_board_lengths": [15000],
+        "saw_blade_width": 3.0,
+    }
+    response = client.post("/api/cutting-plans", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["optimal_board_length"] == 15000
+    assert sorted(data["cut_list"][0], reverse=True) == [14500]
+
+
+def test_planqer_rejects_boards_longer_than_15_metres():
+    payload = {
+        "parts": {"1000": 1},
+        "available_board_lengths": [15001],
+        "saw_blade_width": 3.0,
+    }
+    assert client.post("/api/cutting-plans", json=payload).status_code == 422
+
+
 def test_planqer_invalid_board():
     payload = {
         "parts": {"300": 1},

@@ -102,6 +102,10 @@ class UserProject(SQLModel, table=True):
     #  "optimize_for": "waste"|"cost", "board_costs": {length: {price_per_meter, price_per_board}}}
     # Null for a plan that was never priced.
     board_costs: str | None = None
+    # JSON ProductSnapshot: the catalogue product (or free text) this plan was
+    # made for, copied at save time. Null for plans saved without one;
+    # material_type still carries a readable label for those and for old rows.
+    product: str | None = None
     optimization_result: str | None = None
     cutlist_image: str | None = None  # Legacy base64 field, kept for compatibility
     cutlist_image_svg: str | None = None
@@ -139,6 +143,7 @@ class UserSheetProject(SQLModel, table=True):
     algorithm: str | None = None
     allow_rotation: bool = Field(default=True)
     pricing: str | None = None
+    product: str | None = None  # JSON ProductSnapshot, see UserProject
     optimization_result: str | None = None
     cutlist_image: str | None = None
     cutlist_image_svg: str | None = None

@@ -249,7 +249,7 @@ export const serializeSheetParts = (parts) => Object.fromEntries(
 /* Keeping a plan is its own step: running one on /cutting-plans computes and
    returns, and nothing is stored until the user has named it here. The diagram
    is redrawn server-side from optimization_result, so none is sent. */
-export const saveProject = async ({ id, name, projectGroupId, parts, boards, sawKerf, materialType = '', boardThickness = 0, boardWidth = 0, boardCosts, result }) => {
+export const saveProject = async ({ id, name, projectGroupId, parts, boards, sawKerf, materialType = '', product = null, boardThickness = 0, boardWidth = 0, boardCosts, result }) => {
   try {
     const payload = {
       name,
@@ -258,6 +258,7 @@ export const saveProject = async ({ id, name, projectGroupId, parts, boards, saw
       board_lengths: serializeBoardLengths(boards),
       saw_blade_width: parseFloat(sawKerf),
       material_type: materialType,
+      product: product || null,
       board_thickness: parseFloat(boardThickness),
       board_width: parseFloat(boardWidth),
       // Null when the plan was never priced, so an unpriced plan doesn't store
@@ -292,6 +293,23 @@ export const deleteProject = async (projectId) => {
   }
 };
 
+/* ── product catalogue ────────────────────────────────────────────── */
+
+/* Revalidates a stored copy with its ETag. A 304 carries no body, so it is
+   reported as notModified for the caller to keep what it has. */
+export const getCatalogue = async (etag) => {
+  try {
+    const response = await axios.get(`${API_URL}/api/catalogue/`, {
+      headers: etag ? { 'If-None-Match': etag } : {},
+      validateStatus: (status) => status === 200 || status === 304,
+    });
+    if (response.status === 304) return { notModified: true, etag };
+    return { data: response.data, etag: response.headers?.etag };
+  } catch (error) {
+    throw new Error(extractErrorMessage(error));
+  }
+};
+
 /* ── saved projects (sheet cutting) ───────────────────────────────── */
 
 export const getUserSheetProjects = async () => {
@@ -304,7 +322,7 @@ export const getUserSheetProjects = async () => {
 };
 
 export const saveSheetProject = async ({
-  id, name, projectGroupId, parts, sheetWidth, sheetHeight, sheetThickness = 0, kerfWidth, materialType, algorithm, allowRotation, result, pricing,
+  id, name, projectGroupId, parts, sheetWidth, sheetHeight, sheetThickness = 0, kerfWidth, materialType, product = null, algorithm, allowRotation, result, pricing,
 }) => {
   try {
     const payload = {
@@ -316,6 +334,7 @@ export const saveSheetProject = async ({
       sheet_thickness: parseFloat(sheetThickness),
       kerf_width: parseFloat(kerfWidth),
       material_type: materialType,
+      product: product || null,
       algorithm: algorithm || null,
       allow_rotation: allowRotation !== false,
       optimization_result: result,

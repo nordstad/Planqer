@@ -1,9 +1,10 @@
 // These limits mirror the numeric contracts in backend/planqer/validation.py
-// and backend/planqer/schemas/*.py. All dimensions are millimetres.
+// and backend/planqer/schemas/*.py. All dimensions are millimetres. Board and
+// part lengths reach 15 m (long glulam); sheet sides stay at 10 m.
 export const MIN_PART_LENGTH = 0.1;
-export const MAX_PART_LENGTH = 10000;
+export const MAX_PART_LENGTH = 15000;
 export const MIN_BOARD_LENGTH = 1;
-export const MAX_BOARD_LENGTH = 10000;
+export const MAX_BOARD_LENGTH = 15000;
 export const MAX_PART_QUANTITY = 10000;
 export const SAW_KERF_MIN = 0.1;
 export const SAW_KERF_MAX = 100;

@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import BoardLengthRow from './BoardLengthRow';
 import { Plus } from './icons';
 import { SAW_KERF_MIN, SAW_KERF_MAX } from '../utils/validators';
+import { StockSuggestions } from './ProductPicker';
 import { pricingState } from '../utils/modelGroups';
 
 const PRICING_MESSAGE = {
@@ -91,6 +92,10 @@ const ModelGroupSettings = ({ group, config, errors, label, currency, onChange, 
           <button type="button" className="btn" style={{ marginTop: '12px' }} onClick={addBoard}>
             <Plus /> {t('workflow.addStockLength')}
           </button>
+          <StockSuggestions
+            selection={config.product}
+            onUseLengths={(lengths) => onChange({ boards: lengths.map((length) => ({ length: String(length), price: '' })) })}
+          />
 
           <div className="flex items-center gap-2" style={{ marginTop: '18px' }}>
             <label className="form-label" htmlFor={`${idBase}-kerf`} style={{ marginBottom: 0 }}>{t('legacy.sawBlade')}</label>
@@ -167,6 +172,12 @@ const ModelGroupSettings = ({ group, config, errors, label, currency, onChange, 
             </tr>
           </tbody>
         </table>
+      )}
+      {group.kind === 'sheet' && (
+        <StockSuggestions
+          selection={config.product}
+          onUseFormat={(format) => onChange({ sheetWidth: String(format.width), sheetHeight: String(format.height) })}
+        />
       )}
       {group.kind === 'sheet' && (errors.width || errors.height || errors.kerf) && (
         <p className="text-danger text-[12.5px] font-semibold" style={{ marginTop: '10px' }}>

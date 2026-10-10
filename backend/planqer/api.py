@@ -25,6 +25,7 @@ from planqer.routes import (
     sheet_projects_router,
     tile_projects_router,
 )
+from planqer.routes.catalogue import router as catalogue_router
 from planqer.routes.common import limiter
 from planqer.routes.cutlists import router as cutlists_router
 from planqer.routes.cutting import router as cutting_router
@@ -176,6 +177,7 @@ for route in (
     tile_projects_router,
     project_groups_router,
     admin_router,
+    catalogue_router,
     cutting_router,
     sheet_router,
     cutlists_router,

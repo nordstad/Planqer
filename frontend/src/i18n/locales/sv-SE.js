@@ -181,12 +181,6 @@ const locale = {
     savedAs: 'Sparad som {{name}}',
     sheetWidthAria: 'Skivans bredd i millimeter',
     sheetHeightAria: 'Skivans höjd i millimeter',
-    materialType: 'Materialtyp',
-    materialPlywood: 'Plywood',
-    materialMdf: 'MDF',
-    materialMetal: 'Metallskiva',
-    materialAcrylic: 'Akryl',
-    materialCardboard: 'Kartong',
     materialOther: 'Annat',
     packingStrategy: 'Placeringsmetod',
     autoSelected: 'Automatiskt vald',
@@ -322,10 +316,10 @@ Object.assign(locale.ui, {
 });
 
 Object.assign(locale.workflow, {
-  materialProfile: 'Material och profil', chooseMaterial: 'Välj material', thickness: 'Tjocklek', thicknessMm: 'Tjocklek (mm)', widthMm: 'Bredd (mm)', packSheets: 'Planera skivkapningen', tilesToBuy: 'plattor att köpa', fullTiles: 'Hela plattor', cutTiles: 'Kapade plattor', used: 'Använt', changeSurface: 'Ändra ytan', nameIt: 'Ge den ett namn',
+  materialProfile: 'Material och profil', thickness: 'Tjocklek', thicknessMm: 'Tjocklek (mm)', widthMm: 'Bredd (mm)', packSheets: 'Planera skivkapningen', tilesToBuy: 'plattor att köpa', fullTiles: 'Hela plattor', cutTiles: 'Kapade plattor', used: 'Använt', changeSurface: 'Ändra ytan', nameIt: 'Ge den ett namn',
 });
 
-Object.assign(locale.auditUi, { materialRequired: 'Välj material och ange måtten innan du planerar', sheetThicknessRequired: 'Ange skivans tjocklek innan du planerar', sheetMaterialRequired: 'Välj skivmaterial innan du planerar', tileMaterialRequired: 'Välj plattmaterial och ange tjockleken innan du löser layouten' });
+Object.assign(locale.auditUi, { sheetThicknessRequired: 'Ange skivans tjocklek innan du planerar', tileMaterialRequired: 'Välj plattmaterial och ange tjockleken innan du löser layouten' });
 Object.assign(locale.ui, { waste: 'Spill', strategy: 'Strategi' });
 
 Object.assign(locale.ui, {
@@ -364,9 +358,6 @@ Object.assign(locale.workflow, {
 Object.assign(locale.modelUi, {
   boardWord: "Bräda",
   sheetWord: "Skiva",
-  materialUnspecified: "Ej angivet",
-  materialFor: "Material för {{name}}",
-  customMaterialFor: "Eget material för {{name}}",
   renameCutlist: "Namn på {{name}}",
   showLengths: "Visa längder",
   hideLengths: "Dölj längder",
@@ -381,6 +372,39 @@ Object.assign(locale.modelUi, {
   appliedBoards: "Lager, sågspår och priser har kopierats till alla brädgrupper.",
   appliedSheets: "Skivmått, sågspår och pris har kopierats till alla skivgrupper.",
   openProject: "Öppna projektet",
+});
+
+Object.assign(locale, {
+  productUi: {
+    product: "Produkt",
+    searchPlaceholder: "Sök på namn eller mått, t.ex. ”regel 45x95”",
+    results: "Matchande produkter",
+    noResults: "Ingen matchande produkt. Du kan ändå skriva egna ord.",
+    useAsOwn: "Använd ”{{text}}” som egen produkt",
+    anySize: "valfritt mått",
+    noneChosen: "Ingen produkt vald. Du kan planera utan.",
+    loadFailed: "Produktkatalogen kunde inte läsas in. Du kan ändå skriva en egen produkt.",
+    suggested: "Förslag",
+    confirm: "Stämmer",
+    clear: "Rensa",
+    source: "Källa",
+    details: "Detaljer",
+    detailsHint: "Träslag, behandling, sortering, yta (valfritt)",
+    species: "Träslag",
+    treatment: "Behandling",
+    grade: "Sortering",
+    profile: "Yta / profil",
+    note: "Anteckning",
+    notePlaceholder: "Annat som är bra att veta",
+    notSpecified: "Ej angivet",
+    useSize: "Använd {{size}}",
+    standardLengths: "Standardlängder: {{lengths}} mm.",
+    useLengths: "Använd dessa längder",
+    stockedUpTo: "Lagerförs normalt upp till {{max}} mm.",
+    standardSheets: "Standardformat:",
+    dimensionsRequired: "Ange brädans tjocklek och bredd innan du planerar",
+    chooseProductFor: "Produkt för {{name}}",
+  },
 });
 
 export default locale;

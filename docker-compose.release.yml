@@ -18,6 +18,8 @@ services:
       # browser silently loses the ability to log in or register - the
       # request is just CORS-blocked.
       - PLANQER_CORS_ORIGINS=${PLANQER_CORS_ORIGINS:-}
+      # Country of the built-in product catalogue (SE or NO). Empty: generic.
+      - PLANQER_CATALOGUE_COUNTRY=${PLANQER_CATALOGUE_COUNTRY:-}
     volumes:
       # Local accounts + saved projects, on your own instance.
       - backend_data:/app/backend/data
