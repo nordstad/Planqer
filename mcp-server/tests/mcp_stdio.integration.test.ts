@@ -201,6 +201,25 @@ describe('MCP stdio integration', () => {
     expect(backendCalls).toBeGreaterThan(0);
   });
 
+  it('breaks result text into real lines, never literal backslash-n', async () => {
+    const texts: string[] = [];
+    for (const [name, args] of [
+      ['optimize_cutting', { parts: { '100': 1 }, available_board_lengths: [300], saw_blade_width: 3, project_name: 'Lines', product: 'Furu' }],
+      ['optimize_cutting', { parts: { '100': 1 }, available_board_lengths: [300], saw_blade_width: 3, use_async: true }],
+      ['get_cutting_example', {}],
+      ['get_demo_payloads', {}],
+      ['optimize_demo', { example: 'furniture_project' }],
+    ] as const) {
+      const result = await client!.callTool({ name, arguments: args });
+      texts.push((result.content as any[])[0].text);
+    }
+    for (const text of texts) {
+      expect(text).not.toContain('\\n');
+      expect(text.split('\n').length).toBeGreaterThan(3);
+    }
+    expect(texts[0]).toContain('**Project:** Lines\n**Product:** Furu (own words)\n');
+  });
+
   it('searches the product catalogue through the API', async () => {
     catalogueQueries = [];
     const result = await client!.callTool({

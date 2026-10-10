@@ -193,11 +193,11 @@ const describeProduct = ({ name, product }: CatalogueResult): string => {
 // caller's own words.
 const formatProductNote = (product: string | CatalogueResult): string => {
   if (typeof product === 'string') {
-    return `**Product:** ${product} (own words)\\n`;
+    return `**Product:** ${product} (own words)\n`;
   }
-  let note = `**Product:** ${product.name} (\`${product.product.id}\`)\\n`;
+  let note = `**Product:** ${product.name} (\`${product.product.id}\`)\n`;
   if (product.product.lengths?.length) {
-    note += `**Standard stock lengths for this product:** ${spaced(product.product.lengths)} mm\\n`;
+    note += `**Standard stock lengths for this product:** ${spaced(product.product.lengths)} mm\n`;
   }
   return note;
 };
@@ -273,10 +273,10 @@ class PlanqerServer {
   private formatOptimizationResult(result: any, requestPayload: any, product?: string | CatalogueResult): string {
     try {
       // Project information header
-      let formatted = "🎯 **Cutting Optimization Results**\\n\\n";
+      let formatted = "🎯 **Cutting Optimization Results**\n\n";
       
       if (requestPayload.project_name) {
-        formatted += `**Project:** ${requestPayload.project_name}\\n`;
+        formatted += `**Project:** ${requestPayload.project_name}\n`;
       }
 
       if (product) {
@@ -287,62 +287,62 @@ class PlanqerServer {
       const partsCount = Object.values(requestPayload.parts).reduce((sum: number, qty: any) => sum + qty, 0);
       const partsTypes = Object.keys(requestPayload.parts).length;
       
-      formatted += `**Input:** ${partsCount} total pieces of ${partsTypes} different lengths\\n`;
-      formatted += `**Available boards:** ${requestPayload.available_board_lengths.length} different sizes\\n`;
-      formatted += `**Saw kerf:** ${requestPayload.saw_blade_width} units\\n`;
+      formatted += `**Input:** ${partsCount} total pieces of ${partsTypes} different lengths\n`;
+      formatted += `**Available boards:** ${requestPayload.available_board_lengths.length} different sizes\n`;
+      formatted += `**Saw kerf:** ${requestPayload.saw_blade_width} units\n`;
       
       if (requestPayload.algorithm) {
-        formatted += `**Algorithm:** ${requestPayload.algorithm}\\n`;
+        formatted += `**Algorithm:** ${requestPayload.algorithm}\n`;
       }
       
-      formatted += "\\n";
+      formatted += "\n";
 
       // Results summary
       if (result.optimal_board_length) {
-        formatted += `📊 **Optimization Summary:**\\n`;
-        formatted += `- **Optimal board length:** ${result.optimal_board_length}\\n`;
-        formatted += `- **Total cost:** ${result.cost} boards\\n`;
-        formatted += `- **Total waste:** ${result.total_waste} units\\n`;
-        formatted += `- **Algorithm used:** ${result.algorithm_used}\\n`;
+        formatted += `📊 **Optimization Summary:**\n`;
+        formatted += `- **Optimal board length:** ${result.optimal_board_length}\n`;
+        formatted += `- **Total cost:** ${result.cost} boards\n`;
+        formatted += `- **Total waste:** ${result.total_waste} units\n`;
+        formatted += `- **Algorithm used:** ${result.algorithm_used}\n`;
         
         if (result.computation_time) {
-          formatted += `- **Computation time:** ${result.computation_time.toFixed(3)}s\\n`;
+          formatted += `- **Computation time:** ${result.computation_time.toFixed(3)}s\n`;
         }
         
-        formatted += "\\n";
+        formatted += "\n";
       }
 
       // Cutting plan
       if (result.cut_list && Array.isArray(result.cut_list)) {
-        formatted += `📋 **Cutting Plan (${result.cut_list.length} boards):**\\n`;
+        formatted += `📋 **Cutting Plan (${result.cut_list.length} boards):**\n`;
         result.cut_list.forEach((board: number[], index: number) => {
           const boardTotal = board.reduce((sum, part) => sum + part, 0);
-          formatted += `- **Board ${index + 1}:** [${board.join(', ')}] = ${boardTotal} units\\n`;
+          formatted += `- **Board ${index + 1}:** [${board.join(', ')}] = ${boardTotal} units\n`;
         });
-        formatted += "\\n";
+        formatted += "\n";
       }
 
       // Visualization note
       if (result.visualization) {
-        formatted += "📊 **Visualization:** Available as base64 encoded image\\n\\n";
+        formatted += "📊 **Visualization:** Available as base64 encoded image\n\n";
       }
 
       // Raw data for detailed analysis
-      formatted += "📄 **Complete API Response:**\\n";
-      formatted += "```json\\n";
+      formatted += "📄 **Complete API Response:**\n";
+      formatted += "```json\n";
       formatted += JSON.stringify(result, null, 2);
-      formatted += "\\n```\\n\\n";
+      formatted += "\n```\n\n";
 
       // AI interpretation helper
-      formatted += "💡 **For AI Assistants:**\\n";
-      formatted += "- Parse the cut_list to provide specific cutting instructions\\n";
-      formatted += "- Use total_waste to calculate material efficiency\\n";
-      formatted += "- The visualization field contains a base64 image showing the cutting plan\\n";
-      formatted += "- Cost represents the number of boards needed\\n";
+      formatted += "💡 **For AI Assistants:**\n";
+      formatted += "- Parse the cut_list to provide specific cutting instructions\n";
+      formatted += "- Use total_waste to calculate material efficiency\n";
+      formatted += "- The visualization field contains a base64 image showing the cutting plan\n";
+      formatted += "- Cost represents the number of boards needed\n";
 
       return formatted;
     } catch (error) {
-      return `⚠️ Error formatting response: ${error}\\n\\nRaw response:\\n\`\`\`json\\n${JSON.stringify(result, null, 2)}\\n\`\`\``;
+      return `⚠️ Error formatting response: ${error}\n\nRaw response:\n\`\`\`json\n${JSON.stringify(result, null, 2)}\n\`\`\``;
     }
   }
 
@@ -460,13 +460,13 @@ class PlanqerServer {
           content: [
             {
               type: 'text',
-              text: `🚀 **Async Optimization Started**\\n\\n` +
-                   `**Task ID:** ${asyncResult.task_id}\\n` +
-                   `**Status:** ${asyncResult.status}\\n` +
-                   `**Message:** ${asyncResult.message}\\n\\n` +
-                   `**Next Steps:**\\n` +
-                   `- Check progress at: ${asyncResult.progress_url}\\n` +
-                   `- WebSocket updates available at: ${asyncResult.websocket_url}\\n\\n` +
+              text: `🚀 **Async Optimization Started**\n\n` +
+                   `**Task ID:** ${asyncResult.task_id}\n` +
+                   `**Status:** ${asyncResult.status}\n` +
+                   `**Message:** ${asyncResult.message}\n\n` +
+                   `**Next Steps:**\n` +
+                   `- Check progress at: ${asyncResult.progress_url}\n` +
+                   `- WebSocket updates available at: ${asyncResult.websocket_url}\n\n` +
                    `The optimization is running in the background. For complex problems, this can provide better results than the synchronous endpoint.`,
             },
           ],
@@ -604,7 +604,7 @@ class PlanqerServer {
 
     // Prepend demo information
     if (result.content && result.content[0] && 'text' in result.content[0]) {
-      const demoInfo = `🎯 **Optimizing with "${example.replace('_', ' ')}" demo payload:**\\n\\n`;
+      const demoInfo = `🎯 **Optimizing with "${example.replace('_', ' ')}" demo payload:**\n\n`;
       result.content[0].text = demoInfo + result.content[0].text;
     }
 
@@ -617,20 +617,20 @@ class PlanqerServer {
     if (example === 'all') {
       // Return all demo payloads
       const formattedPayloads = Object.entries(DEMO_PAYLOADS).map(([name, payload]) => 
-        `**${name.replace('_', ' ').charAt(0).toUpperCase() + name.replace('_', ' ').slice(1)}:**\\n\`\`\`json\\n${JSON.stringify(payload, null, 2)}\\n\`\`\``
+        `**${name.replace('_', ' ').charAt(0).toUpperCase() + name.replace('_', ' ').slice(1)}:**\n\`\`\`json\n${JSON.stringify(payload, null, 2)}\n\`\`\``
       );
 
       return {
         content: [
           {
             type: 'text',
-            text: `🎯 **Demo Payloads for Planqer API Testing**\\n\\n` +
-                 `Here are pre-configured demo payloads you can use to test the cutting optimization API:\\n\\n` +
-                 `${formattedPayloads.join('\\n\\n')}\\n\\n` +
-                 `**How to use:**\\n` +
-                 `1. Copy any of the JSON payloads above\\n` +
-                 `2. Use the \`optimize_cutting\` tool with the copied payload\\n` +
-                 `3. Or call \`optimize_demo\` with a specific example name\\n\\n` +
+            text: `🎯 **Demo Payloads for Planqer API Testing**\n\n` +
+                 `Here are pre-configured demo payloads you can use to test the cutting optimization API:\n\n` +
+                 `${formattedPayloads.join('\n\n')}\n\n` +
+                 `**How to use:**\n` +
+                 `1. Copy any of the JSON payloads above\n` +
+                 `2. Use the \`optimize_cutting\` tool with the copied payload\n` +
+                 `3. Or call \`optimize_demo\` with a specific example name\n\n` +
                  `**Available examples:** ${Object.keys(DEMO_PAYLOADS).join(', ')}`,
           },
         ],
@@ -642,14 +642,14 @@ class PlanqerServer {
         content: [
           {
             type: 'text',
-            text: `📋 **${example.replace('_', ' ').charAt(0).toUpperCase() + example.replace('_', ' ').slice(1)} Demo Payload:**\\n\\n` +
-                 `\`\`\`json\\n${JSON.stringify(payload, null, 2)}\\n\`\`\`\\n\\n` +
-                 `**Ready to use with optimize_cutting tool!**\\n\\n` +
-                 `This payload includes:\\n` +
-                 `- **Parts:** ${Object.keys(payload.parts).length} different lengths\\n` +
-                 `- **Board sizes:** ${payload.available_board_lengths.length} available lengths\\n` +
-                 `- **Saw kerf:** ${payload.saw_blade_width} units\\n` +
-                 `- **Project:** ${payload.project_name}\\n\\n` +
+            text: `📋 **${example.replace('_', ' ').charAt(0).toUpperCase() + example.replace('_', ' ').slice(1)} Demo Payload:**\n\n` +
+                 `\`\`\`json\n${JSON.stringify(payload, null, 2)}\n\`\`\`\n\n` +
+                 `**Ready to use with optimize_cutting tool!**\n\n` +
+                 `This payload includes:\n` +
+                 `- **Parts:** ${Object.keys(payload.parts).length} different lengths\n` +
+                 `- **Board sizes:** ${payload.available_board_lengths.length} available lengths\n` +
+                 `- **Saw kerf:** ${payload.saw_blade_width} units\n` +
+                 `- **Project:** ${payload.project_name}\n\n` +
                  `Copy the JSON above and use it with the \`optimize_cutting\` tool to get an optimized cutting plan.`,
           },
         ],
@@ -674,23 +674,23 @@ class PlanqerServer {
       content: [
         {
           type: 'text',
-          text: `📋 **Example cutting optimization request:**\\n\\n` +
-               `\`\`\`json\\n${JSON.stringify(example, null, 2)}\\n\`\`\`\\n\\n` +
-               `**This example shows:**\\n` +
-               `- **Parts needed:** 4 pieces of 12.5", 2 pieces of 8.25", 3 pieces of 6.0", and 1 piece of 4.75"\\n` +
-               `- **Available board lengths:** 96", 120", and 144"\\n` +
-               `- **Saw blade kerf:** 0.125" (1/8 inch)\\n` +
-               `- **Project name:** "Kitchen Cabinet Shelves"\\n\\n` +
-               `You can use the \`optimize_cutting\` tool with similar data to get an optimized cutting plan that minimizes waste.\\n\\n` +
-               `**Available algorithms:**\\n` +
-               `- \`first_fit_decreasing\` - Fast algorithm for large problems\\n` +
-               `- \`best_fit\` - Better space utilization\\n` +
-               `- \`best_fit_decreasing\` - Combines sorting with best fit (recommended)\\n` +
-               `- \`genetic\` - Near-optimal solutions for complex problems\\n` +
-               `- \`branch_bound\` - Optimal solutions for small problems\\n\\n` +
-               `**Optional \`product\`:** your own words (e.g. "Framing timber 45x95") or a catalogue id found with \`search_products\` (e.g. "se:regel:45x95"), shown with the result.\\n\\n` +
-               `**Usage:**\\n` +
-               `\`\`\`\\noptimize_cutting(${JSON.stringify(example)})\\n\`\`\``,
+          text: `📋 **Example cutting optimization request:**\n\n` +
+               `\`\`\`json\n${JSON.stringify(example, null, 2)}\n\`\`\`\n\n` +
+               `**This example shows:**\n` +
+               `- **Parts needed:** 4 pieces of 12.5", 2 pieces of 8.25", 3 pieces of 6.0", and 1 piece of 4.75"\n` +
+               `- **Available board lengths:** 96", 120", and 144"\n` +
+               `- **Saw blade kerf:** 0.125" (1/8 inch)\n` +
+               `- **Project name:** "Kitchen Cabinet Shelves"\n\n` +
+               `You can use the \`optimize_cutting\` tool with similar data to get an optimized cutting plan that minimizes waste.\n\n` +
+               `**Available algorithms:**\n` +
+               `- \`first_fit_decreasing\` - Fast algorithm for large problems\n` +
+               `- \`best_fit\` - Better space utilization\n` +
+               `- \`best_fit_decreasing\` - Combines sorting with best fit (recommended)\n` +
+               `- \`genetic\` - Near-optimal solutions for complex problems\n` +
+               `- \`branch_bound\` - Optimal solutions for small problems\n\n` +
+               `**Optional \`product\`:** your own words (e.g. "Framing timber 45x95") or a catalogue id found with \`search_products\` (e.g. "se:regel:45x95"), shown with the result.\n\n` +
+               `**Usage:**\n` +
+               `\`\`\`\noptimize_cutting(${JSON.stringify(example)})\n\`\`\``,
         },
       ],
     };
