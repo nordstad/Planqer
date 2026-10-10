@@ -57,6 +57,28 @@ Update the release version consistently in:
 - `mcp-server/src/planqer_mcp_server/server.py`
 - `mcp-server/uv.lock`
 
+The same version is also written in the documentation's examples, which users
+copy to pin a release. Update these too:
+
+- `docs/getting-started.md` (`PLANQER_VERSION` and the image tag)
+- `docs/reference/configuration.md` (the example `.env`)
+- `docs/guide/mcp-server.md` (the MCP runtimes' version)
+- `README.md` (`PLANQER_VERSION` in the upgrade instructions)
+- `.env.example` (the example version in the comment)
+
+Then check that nothing was missed. The script reads the version from
+`backend/planqer/__init__.py` and reports every place that disagrees, with its
+line:
+
+```bash
+python3 scripts/check-versions.py --tag vX.Y.Z
+```
+
+It also runs in the backend tests, and the `Publish images` workflow runs it
+against the pushed tag first, so a tag that doesn't match the files publishes
+nothing. If you add a new place that states the version, add it to
+`scripts/check-versions.py` and to the list above.
+
 Then commit and push the tag:
 
 ```bash
