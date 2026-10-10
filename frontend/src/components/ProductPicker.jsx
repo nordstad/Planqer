@@ -11,12 +11,14 @@
   The selection shape and everything that decides it live in utils/catalogue.js.
 */
 
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useContext, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Disclosure from './Disclosure';
+import SaveToCatalogue from './SaveToCatalogue';
+import { AuthContext } from '../contexts/authState';
 import {
   DETAIL_FIELDS, browseTypes, detailLabel, detailOptions, emptySelection, findType,
-  freeTextSelection, isEmptySelection, labelIn, loadCatalogue, rememberChoice, searchProducts,
+  freeTextSelection, isEmptySelection, labelIn, loadCatalogue, rememberChoice, resetCatalogueCache, searchProducts,
   selectionSummary, sizeLabel, typeSelection,
 } from '../utils/catalogue';
 
@@ -30,14 +32,19 @@ const DETAIL_LABEL_KEYS = {
 
 export const useCatalogue = () => {
   const [state, setState] = useState({ catalogue: null, failed: false });
+  const [version, setVersion] = useState(0);
   useEffect(() => {
     let live = true;
     loadCatalogue()
       .then((catalogue) => live && setState({ catalogue, failed: false }))
       .catch(() => live && setState({ catalogue: null, failed: true }));
     return () => { live = false; };
-  }, []);
-  return state;
+  }, [version]);
+  const reload = () => {
+    resetCatalogueCache();
+    setVersion((v) => v + 1);
+  };
+  return { ...state, reload };
 };
 
 /* The product's own sizes and stock, offered but never forced. */
@@ -158,7 +165,8 @@ const ProductPicker = ({
   onUseDimensions, onUseLengths, onUseFormat,
 }) => {
   const { t, i18n } = useTranslation();
-  const { catalogue, failed } = useCatalogue();
+  const { catalogue, failed, reload } = useCatalogue();
+  const isAdmin = !!useContext(AuthContext)?.user?.is_admin;
   const idBase = useId().replace(/:/g, '');
   const listId = `${idBase}-list`;
   const [query, setQuery] = useState('');
@@ -302,6 +310,19 @@ const ProductPicker = ({
           )}
           <button type="button" className="btn btn-sm" onClick={() => commit(emptySelection())}>{t('productUi.clear')}</button>
         </div>
+      )}
+
+      {isAdmin && free && catalogue && (
+        <SaveToCatalogue
+          catalogue={catalogue}
+          kind={kind}
+          dims={dims}
+          text={selection.text}
+          onSaved={(product) => {
+            commit(typeSelection(findType(catalogue, product.type), product));
+            reload();
+          }}
+        />
       )}
 
       <StockSuggestions

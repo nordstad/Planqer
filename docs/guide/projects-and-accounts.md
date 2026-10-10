@@ -47,7 +47,11 @@ every user on the instance, with per-user actions.
 
 ![Admin panel](../assets/screenshots/admin.png)
 
-From there an admin can, per user:
+The **Catalogue** tab next to **Users** manages this instance's product
+catalogue; see
+[Changing the catalogue for your instance](../reference/configuration.md#changing-the-catalogue-for-your-instance).
+
+From the Users tab an admin can, per user:
 
 - Promote/demote admin status
 - Activate/deactivate the account

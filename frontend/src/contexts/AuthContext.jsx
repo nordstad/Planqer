@@ -1,8 +1,9 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { useContext, useState, useEffect } from 'react';
 import { getCurrentUser, logoutUser, getAuthToken, getSetupStatus, getUserSettings, updateUserSettings } from '../utils/api';
 import { useLanguage } from './LanguageContext';
+import { AuthContext } from './authState';
 
-const AuthContext = createContext();
+export { AuthContext };
 
 export const useAuth = () => {
   const context = useContext(AuthContext);

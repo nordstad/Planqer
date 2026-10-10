@@ -68,7 +68,7 @@ def _lengths(group: ProductGroup) -> list[float]:
     return sorted(float(v) for v in values)
 
 
-def _check_group(group: ProductGroup, kind: str, vocabulary: DetailVocabulary) -> None:
+def check_group(group: ProductGroup, kind: str, vocabulary: DetailVocabulary) -> None:
     known = {
         "species": {o.key for o in vocabulary.species},
         "treatments": {o.key for o in vocabulary.treatment},
@@ -87,7 +87,7 @@ def _check_group(group: ProductGroup, kind: str, vocabulary: DetailVocabulary) -
         raise ValueError(f"{group.type}: sheets use thicknesses and formats")
 
 
-def _expand(group: ProductGroup, kind: str, country: str) -> list[Product]:
+def expand_group(group: ProductGroup, kind: str, country: str) -> list[Product]:
     shared = {
         "type": group.type,
         "kind": kind,
@@ -143,8 +143,8 @@ def _load_country(code: str) -> tuple[CountryFile, list[Product]]:
     for group in country.products:
         if group.type not in kinds:
             raise ValueError(f"unknown product type '{group.type}'")
-        _check_group(group, kinds[group.type], vocabulary)
-        products.extend(_expand(group, kinds[group.type], code))
+        check_group(group, kinds[group.type], vocabulary)
+        products.extend(expand_group(group, kinds[group.type], code))
     ids = [p.id for p in products]
     duplicates = sorted({i for i in ids if ids.count(i) > 1})
     if duplicates:

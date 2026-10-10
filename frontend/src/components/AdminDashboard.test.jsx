@@ -21,6 +21,8 @@ vi.mock('../utils/api', async () => ({
     { id: 'other', email: 'someone@example.com', is_active: true, is_admin: false, project_count: 1, sheet_project_count: 1, created_at: '2026-01-02T00:00:00Z' },
   ]),
   deleteUser: vi.fn().mockResolvedValue({}),
+  getAdminCatalogue: vi.fn().mockResolvedValue([]),
+  getCatalogue: vi.fn().mockResolvedValue({ data: { country: null, country_name: null, types: [], details: { species: [], treatment: [], profile: [] }, products: [] }, etag: '"x"' }),
 }));
 
 const { getAdminUsers, deleteUser } = api;
@@ -35,6 +37,17 @@ const renderDashboard = () =>
   );
 
 describe('AdminDashboard', () => {
+  it('switches between the users and catalogue tabs', async () => {
+    renderDashboard();
+    await screen.findByText('someone@example.com');
+    expect(screen.getByRole('tab', { name: 'Users' })).toHaveAttribute('aria-selected', 'true');
+    fireEvent.click(screen.getByRole('tab', { name: 'Catalogue' }));
+    expect(await screen.findByLabelText('Search products')).toBeInTheDocument();
+    expect(screen.queryByText('someone@example.com')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: 'Users' }));
+    expect(await screen.findByText('someone@example.com')).toBeInTheDocument();
+  });
+
   it('shows instance stats and the user table', async () => {
     renderDashboard();
     expect(await screen.findByText('someone@example.com')).toBeInTheDocument();

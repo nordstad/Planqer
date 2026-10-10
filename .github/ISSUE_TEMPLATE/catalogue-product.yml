@@ -1,0 +1,53 @@
+name: Catalogue product
+description: Suggest a board or sheet product for a country's built-in catalogue
+title: "Catalogue: "
+labels: ["catalogue"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping the catalogue grow. The easiest way to fill this in is
+        **Admin → Catalogue → Suggest to Planqer** in your own instance, which
+        pre-fills every field below from a product you have already added. Nothing
+        is sent until you submit this issue.
+
+        Please cite a manufacturer, standards or industry source (for example
+        TräGuiden, Svenskt Trä or a manufacturer data sheet). Retailer pages and
+        prices are not accepted: the catalogue holds no prices.
+  - type: input
+    id: country
+    attributes:
+      label: Country
+      description: Two-letter ISO 3166-1 code, e.g. SE or NO.
+      placeholder: SE
+    validations:
+      required: true
+  - type: input
+    id: product
+    attributes:
+      label: Product
+      description: Product type and size.
+      placeholder: regel 45x95
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Source URL
+      description: An https link to where the product, its sizes and stock lengths are published.
+      placeholder: https://
+    validations:
+      required: true
+  - type: textarea
+    id: snippet
+    attributes:
+      label: Catalogue entry (YAML)
+      description: A product group in the format of the files in `backend/planqer/catalogue/data/`.
+      render: yaml
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else
+      description: Where the lengths came from, products that are sold only regionally, and so on.

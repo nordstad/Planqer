@@ -37,6 +37,29 @@ npm run build
 uv run planqer-mcp-server
 ```
 
+## Contributing catalogue data
+
+The built-in product catalogue (`backend/planqer/catalogue/data/<country>.yaml`)
+grows through suggestions. If your instance is missing a product:
+
+1. Add it for your own instance first: **Admin → Catalogue → Add product**.
+2. Choose **Suggest to Planqer** on that row, enter a source URL and the
+   two-letter country code, and press **Prepare issue**. This builds a
+   pre-filled issue from the *Catalogue product* template with the country, the
+   product, the source and a YAML snippet.
+3. Review the snippet, then open the issue on GitHub and submit it.
+
+No catalogue data is sent to the Planqer project automatically; the issue only
+exists if you open and submit it. The snippet is one product group, in exactly
+the shape of the data files (`ProductGroup` in
+`backend/planqer/catalogue/schema.py`), so a maintainer can paste it into the
+country file.
+
+Entries must cite a manufacturer, standards or industry source (for example
+TräGuiden, Svenskt Trä or a manufacturer data sheet), never a retailer page, and
+carry no prices. Detail keys must exist in `details.yaml` and every label needs
+English, Swedish and Norwegian text.
+
 ## Docs (this site)
 
 ```bash
