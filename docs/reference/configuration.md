@@ -62,8 +62,8 @@ accounts and saved projects.
 - `DATABASE_URL`: defaults to a local SQLite file. Overrides the database
   location/engine.
 
-- `PLANQER_CATALOGUE_COUNTRY`: no default. Two-letter country code (for example
-  `SE`) selecting the built-in product catalogue (`SE` or `NO`). Unset, or a country without
+- `PLANQER_CATALOGUE_COUNTRY`: no default. `SE` (Sweden) or `NO` (Norway),
+  selecting the built-in product catalogue. Unset, or a country without
   built-in data, gives the generic catalogue: product types and details, no
   sized entries. See [Product catalogue](#product-catalogue).
 
