@@ -352,3 +352,18 @@ describe('ProductPicker: saving your own product to the local catalogue (admins)
     expect(await screen.findByText(/Framing timber 48 × 98 mm/)).toBeInTheDocument();
   });
 });
+
+describe('ProductPicker: a product read from the model', () => {
+  it('says From model, and stops saying it once a detail is changed', async () => {
+    resetCatalogueCache();
+    getCatalogue.mockResolvedValue({ data: catalogue, etag: '"a"' });
+    const initial = { ...typeSelection(catalogue.types[0], catalogue.products[0]), fromModel: true };
+    await show(<Harness initial={initial} />);
+    const summary = screen.getByTestId('product-summary');
+    expect(summary).toHaveTextContent('From model');
+    expect(summary).not.toHaveTextContent('Suggested');
+    fireEvent.click(screen.getByRole('button', { name: /Details/ }));
+    fireEvent.change(screen.getByLabelText(/^Species/), { target: { value: 'pine' } });
+    expect(screen.getByTestId('product-summary')).not.toHaveTextContent('From model');
+  });
+});

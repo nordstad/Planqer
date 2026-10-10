@@ -28,7 +28,8 @@
             3600
         ],
         "saw_blade_width": 3,
-        "project_name": "Furniture Project"
+        "project_name": "Furniture Project",
+        "product": "Framing timber 45x95"
     },
     "custom_project": {
         "parts": {

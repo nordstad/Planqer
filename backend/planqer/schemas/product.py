@@ -37,3 +37,4 @@ class ProductSnapshot(BaseModel):
     sources: list[str] = Field(default_factory=list, max_length=10)
     details: ProductDetails = Field(default_factory=ProductDetails)
     suggested: bool = False
+    from_model: bool = False

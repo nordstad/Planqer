@@ -229,3 +229,23 @@ def test_malformed_snapshots_are_rejected(client, bad):
     assert (
         client.post("/api/projects/", json=payload, headers=headers).status_code == 422
     )
+
+
+def test_snapshot_remembers_that_the_product_was_read_from_the_model(client):
+    headers = _register_and_login(client)
+    payload = {
+        **_save_payload(SOLVED_PLAN),
+        "product": {**BOARD_PRODUCT, "suggested": False, "from_model": True},
+    }
+
+    saved = client.post("/api/projects/", json=payload, headers=headers).json()
+
+    assert saved["product"]["from_model"] is True
+    assert saved["product"]["suggested"] is False
+    old = {**_save_payload(SOLVED_PLAN), "product": BOARD_PRODUCT}
+    assert (
+        client.post("/api/projects/", json=old, headers=headers).json()["product"][
+            "from_model"
+        ]
+        is False
+    )

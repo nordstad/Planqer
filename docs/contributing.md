@@ -58,7 +58,9 @@ country file.
 Entries must cite a manufacturer, standards or industry source (for example
 TräGuiden, Svenskt Trä or a manufacturer data sheet), never a retailer page, and
 carry no prices. Detail keys must exist in `details.yaml` and every label needs
-English, Swedish and Norwegian text.
+English, Swedish and Norwegian text. Species, treatment and profile options may
+list `aliases` (other names as they appear in CAD material fields); an alias must
+not name two different options, and the tests check that.
 
 ## Docs (this site)
 

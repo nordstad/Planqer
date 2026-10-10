@@ -198,15 +198,15 @@ const ModelCutlistOptimizer = () => {
     try {
       const isStep = ['.step', '.stp'].includes(extensionOf(file.name));
       const data = isStep ? await processStepCutlist(file) : await process3DCutlist(file);
-      const found = [...groupBoards(data.boards || []), ...groupSheets(data.sheets || [])];
+      // A catalogue that can't be loaded only costs the suggestions: every
+      // cutlist still starts unspecified and can be planned without a product.
+      const catalogue = await loadCatalogue().catch(() => null);
+      const found = [...groupBoards(data.boards || [], catalogue), ...groupSheets(data.sheets || [], catalogue)];
       if (found.length === 0) {
          setError(t('ui.noModelComponents'));
         setReading(false);
         return;
       }
-      // A catalogue that can't be loaded only costs the suggestions: every
-      // cutlist still starts unspecified and can be planned without a product.
-      const catalogue = await loadCatalogue().catch(() => null);
       setGroups(found);
       setConfigs(Object.fromEntries(found.map((g) => [g.id, initialConfig(g, defaults, catalogue)])));
       setSelectedIds(new Set(found.map((g) => g.id)));

@@ -36,11 +36,12 @@
 
 ### MCP Server Features
 
-**Four Powerful Tools:**
+**Five Powerful Tools:**
 
 | Tool | Purpose | Example Usage |
 |------|---------|---------------|
 | `optimize_cutting` | Custom optimization with your data | *"Optimize cutting for my kitchen cabinet project"* |
+| `search_products` | Find a board or sheet product in the instance's catalogue | *"What 45×95 framing timber can I buy?"* |
 | `optimize_demo` | Quick test with furniture project | *"Run the demo optimization"* |
 | `get_demo_payloads` | View all available examples | *"Show me example cutting scenarios"* |
 | `get_cutting_example` | Learn the API format | *"How do I format a cutting request?"* |

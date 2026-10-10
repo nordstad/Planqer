@@ -62,6 +62,7 @@ class ProductType(Strict):
 class DetailOption(Strict):
     key: str
     labels: dict[str, str]
+    aliases: list[str] = []
 
     _labels = field_validator("labels")(_check_labels)
     _key = field_validator("key")(_check_key)
