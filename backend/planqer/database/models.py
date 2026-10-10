@@ -47,6 +47,7 @@ class UserSettings(SQLModel, table=True):
     preferred_algorithm: str = Field(default="auto")
     preferred_units: str = Field(default="mm")
     preferred_language: str | None = Field(default=None)
+    spare_margin_percent: float = Field(default=10.0)
 
     created_at: datetime | None = Field(
         default_factory=lambda: datetime.now(),
@@ -71,6 +72,7 @@ class ProjectGroup(SQLModel, table=True):
     user_id: UUID = Field(foreign_key="users.id")
 
     name: str
+    spare_margin_percent: float | None = Field(default=None)
 
     created_at: datetime | None = Field(
         default_factory=lambda: datetime.now(),

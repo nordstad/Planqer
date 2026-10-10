@@ -22,11 +22,11 @@ import {
   getUserProjects, updateProject, deleteProject,
   getUserSheetProjects, updateSheetProject, deleteSheetProject,
   getUserTileProjects, updateTileProject, deleteTileProject,
-  downloadProjectImage, getProjectGroups, renameProjectGroup, deleteProjectGroup,
+  downloadProjectImage, getProjectGroups, renameProjectGroup, deleteProjectGroup, getUserSettings,
 } from '../utils/api';
 import { svgBlobToPngBlob } from '../utils/svgToPng';
 import { printProjectPlans } from '../utils/printProject';
-import { buildMaterialListHtml } from '../utils/materialList';
+import { buildMaterialListHtml, buildMaterialCsv } from '../utils/materialList';
 import { materialLabel, cleanMaterial } from '../utils/materialLabel';
 import { buildCutListHtml } from '../utils/tileCutList';
 import { useAuth } from '../contexts/AuthContext';
@@ -109,6 +109,17 @@ const triggerDownload = (blob, filename) => {
 
 const dataUrlToBlob = async (dataUrl) => (await fetch(dataUrl)).blob();
 
+const planStatus = (project, t) => {
+  const specified = Boolean(project.product && !project.product.suggested);
+  const priced = project.projectType === 'sheet' || project.projectType === 'tile'
+    ? Number(project.pricing?.price_per_unit) > 0
+    : Boolean(project.board_costs?.board_costs && Object.keys(project.board_costs.board_costs).length);
+  return [
+    [specified ? 'projectUi.badgeSpecified' : 'projectUi.badgeQuick', specified ? 'specified' : 'quick'],
+    [priced ? 'projectUi.badgePriced' : null, 'priced'],
+  ].filter(([label]) => label).map(([label, key]) => ({ label: t(label), key }));
+};
+
 const UserProjectsContent = ({ onPreview, groupId }) => {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
@@ -122,11 +133,13 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
   const [editingName, setEditingName] = useState('');
   const [editingGroup, setEditingGroup] = useState(false);
   const [editingGroupName, setEditingGroupName] = useState('');
+  const [editingSpareMargin, setEditingSpareMargin] = useState(10);
   const [pendingDelete, setPendingDelete] = useState(null);
   const [paperSize, setPaperSize] = useState('a4');
   const [printing, setPrinting] = useState(false);
   const [selectedPlanIds, setSelectedPlanIds] = useState(() => new Set());
   const [projectView, setProjectView] = useState('overview');
+  const [userSpareMargin, setUserSpareMargin] = useState(10);
 
   useEffect(() => {
     if (user) loadProjects();
@@ -142,12 +155,14 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
       setLoading(true);
       setError('');
 
-      const [boardProjects, sheetProjects, tileProjects, projectGroups] = await Promise.all([
+      const [boardProjects, sheetProjects, tileProjects, projectGroups, settings] = await Promise.all([
         getUserProjects(),
         getUserSheetProjects(),
         getUserTileProjects(),
         getProjectGroups(),
+        typeof getUserSettings === 'function' ? getUserSettings() : Promise.resolve(null),
       ]);
+      setUserSpareMargin(settings?.spare_margin_percent ?? 10);
 
       const combined = [
         ...boardProjects.map((p) => ({ ...p, projectType: 'board' })),
@@ -249,13 +264,27 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
             meta: `${t(printable.length === 1 ? 'projectUi.printPlan' : 'projectUi.printPlans', { count: printable.length })} · ${t('projectUi.printed', { date: formatDate(new Date()) })}`,
          paper: paperSize,
          plans: withDiagrams,
-         shoppingListHtml: mode === 'diagrams' ? undefined : buildMaterialListHtml(printable, t),
+          shoppingListHtml: mode === 'diagrams' ? undefined : buildMaterialListHtml(
+            printable,
+            t,
+            groupId && groupId !== LOOSE
+              ? groups.find((g) => g.id === groupId)?.spare_margin_percent ?? userSpareMargin
+              : userSpareMargin,
+          ),
        });
     } catch (err) {
        setError(t('projectUi.printableFailed', { message: err.message }));
     } finally {
       setPrinting(false);
     }
+  };
+
+  const handleCsv = (plans, title) => {
+    const margin = groupId && groupId !== LOOSE
+      ? groups.find((g) => g.id === groupId)?.spare_margin_percent ?? userSpareMargin
+      : userSpareMargin;
+    const blob = new Blob([`\ufeff${buildMaterialCsv(plans, margin)}`], { type: 'text/csv;charset=utf-8' });
+    triggerDownload(blob, `${title} - shopping-list.csv`);
   };
 
   const togglePlanSelection = (project) => {
@@ -324,6 +353,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
   const startEditGroup = (group) => {
     setEditingGroup(true);
     setEditingGroupName(group.name);
+    setEditingSpareMargin(group.spare_margin_percent ?? userSpareMargin);
   };
 
   const cancelEditGroup = () => {
@@ -333,14 +363,15 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
 
   const saveEditGroup = async (group) => {
     const name = editingGroupName.trim();
-    if (!name || name === group.name) {
+    if (!name || (name === group.name && Number(editingSpareMargin) === (group.spare_margin_percent ?? userSpareMargin))) {
       cancelEditGroup();
       return;
     }
 
     try {
-      await renameProjectGroup(group.id, name);
-      setGroups((prev) => prev.map((g) => (g.id === group.id ? { ...g, name } : g)));
+      const spareMargin = Math.max(0, Number(editingSpareMargin) || 0);
+      await renameProjectGroup(group.id, { name, spare_margin_percent: spareMargin });
+      setGroups((prev) => prev.map((g) => (g.id === group.id ? { ...g, name, spare_margin_percent: spareMargin } : g)));
     } catch (err) {
        setError(t('projectUi.renameProjectFailed', { message: err.message }));
     } finally {
@@ -451,7 +482,13 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
                 <span className="plan-item-type">{facts.type}</span>
                 <span>{facts.count}</span>
               </p>
-              <p className="plan-item-material">{facts.stock}</p>
+               <p className="plan-item-material">{facts.stock}</p>
+               <p className="plan-item-status" aria-label={t('projectUi.planStatus')}>
+                 {planStatus(project, t).map((badge) => <span key={badge.key} className={`plan-badge plan-badge-${badge.key}`}>{badge.label}</span>)}
+                 {planStatus(project, t).some((badge) => badge.key === 'quick') || !planStatus(project, t).some((badge) => badge.key === 'priced') ? (
+                   <button type="button" className="plan-status-link" onClick={() => handleModify(project)}>{t('projectUi.whatMissing')}</button>
+                 ) : null}
+               </p>
               <p className="plan-item-date">{t('projectUi.saved', { date: formatDate(project.created_at) })}</p>
            </div>
 
@@ -544,10 +581,15 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
 
         <header className="proj-head">
           {group && editingGroup ? (
-            nameField(
-              editingGroupName, setEditingGroupName,
-               () => saveEditGroup(group), cancelEditGroup, t('projectUi.projectName'),
-            )
+            <div className="project-group-edit">
+              {nameField(
+                editingGroupName, setEditingGroupName,
+                () => saveEditGroup(group), cancelEditGroup, t('projectUi.projectName'),
+              )}
+              <label className="synthetic" htmlFor="project-spare-margin">{t('settings.spareMargin')}</label>
+              <input id="project-spare-margin" type="number" min="0" max="100" step="1" className="form-input" value={editingSpareMargin}
+                onChange={(event) => setEditingSpareMargin(event.target.value)} onBlur={() => saveEditGroup(group)} />
+            </div>
           ) : (
             <h2 className="proj-head-name">
               {title}
@@ -593,12 +635,19 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
                      {t('projectUi.printDiagrams', { count: selectedPlans.length })}
                    </button>
                    <button
-                     className="btn"
-                     onClick={() => handlePrint(selectedPlans, title, 'shopping')}
+                      className="btn"
+                      onClick={() => handlePrint(selectedPlans, title, 'shopping')}
                      disabled={printing || selectedPlans.length === 0}
                    >
-                     {t('projectUi.printShoppingList')}
-                   </button>
+                      {t('projectUi.printShoppingList')}
+                    </button>
+                    <button
+                      className="btn"
+                      onClick={() => handleCsv(selectedPlans, title)}
+                      disabled={printing || selectedPlans.length === 0}
+                    >
+                      {t('projectUi.exportCsv')}
+                    </button>
                    <button
                      className="btn"
                      onClick={() => handlePrint(selectedPlans, title, 'project')}
@@ -653,8 +702,11 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
            ))}
          </nav>
 
-         {projectView !== 'diagrams' && (
-           <ProjectShoppingList projects={plans} />
+          {projectView !== 'diagrams' && (
+            <ProjectShoppingList
+              projects={plans}
+              spareMargin={group?.spare_margin_percent ?? userSpareMargin}
+            />
          )}
 
          {projectView !== 'shopping' && plans.length > 0 ? (

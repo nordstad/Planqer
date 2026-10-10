@@ -144,6 +144,21 @@ def test_rename_project_group(client):
     assert response.json()["name"] == "Dining Chair"
 
 
+def test_project_group_spare_margin_round_trips(client):
+    headers = _register_and_login(client)
+    group = client.post(
+        "/api/project-groups/", json={"name": "Chair", "spare_margin_percent": 5}, headers=headers
+    ).json()
+    assert group["spare_margin_percent"] == 5.0
+
+    response = client.put(
+        f"/api/project-groups/{group['id']}",
+        json={"name": "Chair", "spare_margin_percent": 0},
+        headers=headers,
+    )
+    assert response.json()["spare_margin_percent"] == 0.0
+
+
 def test_save_board_cutlist_into_project_group(client):
     headers = _register_and_login(client)
     group = client.post(

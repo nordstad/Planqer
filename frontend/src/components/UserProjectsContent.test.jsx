@@ -8,6 +8,7 @@ import {
   getUserSheetProjects,
   getUserTileProjects,
   getProjectGroups,
+  getUserSettings,
   deleteProject,
   deleteProjectGroup,
   downloadProjectImage,
@@ -19,6 +20,7 @@ vi.mock('../utils/api', () => ({
   getUserSheetProjects: vi.fn(),
   getUserTileProjects: vi.fn(),
   getProjectGroups: vi.fn(),
+  getUserSettings: vi.fn(),
   deleteProject: vi.fn(),
   deleteProjectGroup: vi.fn(),
   updateProject: vi.fn(),
@@ -112,6 +114,7 @@ beforeEach(() => {
   getUserSheetProjects.mockResolvedValue([]);
   getUserTileProjects.mockResolvedValue([]);
   getProjectGroups.mockResolvedValue([group]);
+  getUserSettings.mockResolvedValue({ spare_margin_percent: 10 });
   deleteProject.mockResolvedValue({});
   deleteProjectGroup.mockResolvedValue({});
   downloadProjectImage.mockResolvedValue(new Blob());
@@ -249,7 +252,7 @@ it('shows a tile shopping list and keeps the tile cutlist', async () => {
 
   expect(await screen.findByRole('heading', { name: 'What to buy', level: 2 })).toBeInTheDocument();
   expect(screen.getByText(/300\s*×\s*600/, { selector: 'td' })).toBeInTheDocument();
-  expect(screen.getByText('10', { selector: 'td' })).toBeInTheDocument();
+  expect(screen.getAllByText('10', { selector: 'td' })).toHaveLength(2);
   fireEvent.click(screen.getByRole('button', { name: 'Cut diagrams' }));
   expect(screen.getByRole('heading', { name: 'Cut list', level: 2 })).toBeInTheDocument();
 });

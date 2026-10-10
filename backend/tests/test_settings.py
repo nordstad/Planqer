@@ -65,6 +65,7 @@ def test_get_user_settings(client, authenticated_user_token):
     assert data["preferred_algorithm"] == "auto"
     assert data["preferred_units"] == "mm"
     assert data["preferred_language"] is None
+    assert data["spare_margin_percent"] == 10.0
 
 
 def test_update_user_settings(client, authenticated_user_token):
@@ -78,6 +79,7 @@ def test_update_user_settings(client, authenticated_user_token):
         "preferred_algorithm": "first_fit_decreasing",
         "preferred_units": "cm",
         "preferred_language": "sv-SE",
+        "spare_margin_percent": 15,
     }
 
     response = client.put(
@@ -96,6 +98,7 @@ def test_update_user_settings(client, authenticated_user_token):
     assert data["preferred_algorithm"] == "first_fit_decreasing"
     assert data["preferred_units"] == "cm"
     assert data["preferred_language"] == "sv-SE"
+    assert data["spare_margin_percent"] == 15.0
 
 
 def test_partial_update_user_settings(client, authenticated_user_token):

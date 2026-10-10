@@ -1,4 +1,4 @@
-import { buildMaterialListHtml, buildMaterialRows, summarizeMaterialPricing } from './materialList';
+import { applySpareMargin, buildMaterialListHtml, buildMaterialRows, materialRowsForPurchase, mergeMaterialRows, summarizeMaterialPricing } from './materialList';
 
 const t = (key) => ({ 'ui.materialPine': 'pine' }[key] || key);
 
@@ -81,6 +81,36 @@ it('keeps stock and sheet dimensions distinct when display values are close', ()
 
   expect(rows).toHaveLength(4);
   expect(rows.map((row) => row.quantity)).toEqual([1, 1, 1, 1]);
+});
+
+it('merges the same catalogue product across plans but keeps different products apart', () => {
+  const product = { catalogue_id: 'se-regel-45x95', details: { grade: 'c24' } };
+  const rows = buildMaterialRows([
+    { name: 'A', material_type: 'Regel 45 × 95', product, optimization_result: { board_lengths_used: [3000] } },
+    { name: 'B', material_type: 'Regel 45 × 95', product, optimization_result: { board_lengths_used: [3000] } },
+    { name: 'C', material_type: 'Regel 45 × 95', product: { ...product, catalogue_id: 'se-trall-45x95' }, optimization_result: { board_lengths_used: [3000] } },
+  ]);
+
+  expect([...mergeMaterialRows(rows).values()].map((row) => row.quantity)).toEqual([2, 1]);
+});
+
+it('adds at least one spare per board or sheet size, while leaving tiles unchanged', () => {
+  const rows = buildMaterialRows([
+    { name: 'Boards', optimization_result: { board_lengths_used: [3000, 3000] } },
+    { name: 'Tiles', projectType: 'tile', tile_data: { width: 300, height: 600 }, layout_result: { tiles_to_purchase: 2 } },
+  ]);
+  expect(applySpareMargin(rows, 10).map((row) => row.quantityToBuy)).toEqual([3, 2]);
+  expect(materialRowsForPurchase([{ name: 'Board', optimization_result: { board_lengths_used: [3000] } }], 0)[0].quantityToBuy).toBe(1);
+});
+
+it('merges conflicting saved prices and marks the resulting row', () => {
+  const rows = buildMaterialRows([
+    { name: 'A', optimization_result: { board_lengths_used: [3000] }, board_costs: { currency: 'SEK', board_costs: { 3000: { price_per_board: 10 } } } },
+    { name: 'B', optimization_result: { board_lengths_used: [3000] }, board_costs: { currency: 'SEK', board_costs: { 3000: { price_per_board: 12 } } } },
+  ]);
+  const [merged] = [...mergeMaterialRows(rows).values()];
+  expect(merged.quantity).toBe(2);
+  expect(merged._priceConflict).toBe(true);
 });
 
 it('builds a complete VAT-inclusive project total from all material types', () => {

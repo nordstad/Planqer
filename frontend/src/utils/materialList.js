@@ -3,6 +3,21 @@ import { materialLabel, cleanMaterial } from './materialLabel';
 const mm = (value) => (Number.isFinite(value) ? Math.round(value).toLocaleString('sv-SE') : '—');
 const LEGACY_CURRENCY = 'SEK';
 
+const withMergeData = (row, data) => {
+  Object.defineProperty(row, '_mergeData', { value: data, enumerable: false });
+  return row;
+};
+
+const productMergeIdentity = (project) => {
+  const product = project.product;
+  if (!product) return { material: cleanMaterial(project.material_type) || '' };
+  return {
+    catalogueId: product.catalogue_id || null,
+    name: product.catalogue_id ? null : product.name || cleanMaterial(project.material_type) || '',
+    details: product.details || {},
+  };
+};
+
 const boardRows = (project) => {
   const result = project.optimization_result;
   const byLength = Array.isArray(result?.board_lengths_used)
@@ -20,7 +35,7 @@ const boardRows = (project) => {
   return [...byLength].sort(([left], [right]) => left - right).map(([size, quantity]) => {
     const cost = project.board_costs?.board_costs?.[size];
     const pricePerUnit = Number(cost?.price_per_board);
-    return {
+    return withMergeData({
       plan: project.name,
       material: cleanMaterial(project.material_type) || 'board',
       size: project.board_thickness && project.board_width
@@ -37,7 +52,12 @@ const boardRows = (project) => {
           vatRate: project.board_costs.vat_rate ?? 25,
         }
         : {}),
-    };
+    }, {
+      product: productMergeIdentity(project),
+      kind: 'board',
+      dimensions: [project.board_thickness || 0, project.board_width || 0],
+      stock: Number(size),
+    });
   });
 };
 
@@ -51,7 +71,7 @@ const sheetRows = (project) => {
   }, new Map());
 
   return [...bySize.values()].map(({ width, height, quantity }) => {
-    return {
+    return withMergeData({
       plan: project.name,
       material: cleanMaterial(project.material_type) || 'sheet',
       size: project.sheet_thickness
@@ -61,7 +81,12 @@ const sheetRows = (project) => {
       ...(Number(project.pricing?.price_per_unit) > 0 && project.pricing?.currency
         ? { pricePerUnit: Number(project.pricing.price_per_unit), currency: project.pricing.currency, pricesIncludeVat: project.pricing.prices_include_vat ?? true, vatRate: project.pricing.vat_rate ?? 25 }
         : {}),
-    };
+    }, {
+      product: productMergeIdentity(project),
+      kind: 'sheet',
+      dimensions: [project.sheet_thickness || 0, width, height],
+      stock: [width, height],
+    });
   });
 };
 
@@ -72,7 +97,7 @@ const tileRows = (project) => {
   const height = project.tile_data?.height;
   if (!Number.isFinite(quantity) || !Number.isFinite(width) || !Number.isFinite(height)) return [];
 
-  return [{
+  return [withMergeData({
     plan: project.name,
     material: project.tile_data?.material_type || 'tile',
     size: project.tile_data?.thickness
@@ -82,7 +107,12 @@ const tileRows = (project) => {
     ...(Number(project.pricing?.price_per_unit) > 0 && project.pricing?.currency
       ? { pricePerUnit: Number(project.pricing.price_per_unit), currency: project.pricing.currency, pricesIncludeVat: project.pricing.prices_include_vat ?? true, vatRate: project.pricing.vat_rate ?? 25 }
       : {}),
-  }];
+  }, {
+    product: { material: project.tile_data?.material_type || 'tile' },
+    kind: 'tile',
+    dimensions: [project.tile_data?.width, project.tile_data?.height],
+    stock: null,
+  })];
 };
 
 export const buildMaterialRows = (projects) => projects.flatMap((project) => {
@@ -90,6 +120,54 @@ export const buildMaterialRows = (projects) => projects.flatMap((project) => {
   if (project.projectType === 'tile') return tileRows(project);
   return boardRows(project);
 });
+
+const samePrice = (left, right) => left.pricePerUnit === right.pricePerUnit
+  && left.currency === right.currency
+  && left.pricesIncludeVat === right.pricesIncludeVat
+  && left.vatRate === right.vatRate;
+
+const mergeKey = (row) => JSON.stringify(row._mergeData || {
+  product: { material: row.material }, dimensions: [row.size], stock: null,
+});
+
+/* Merge physical purchase rows without using displayed labels or prices as
+   identity. Prices belong to plans, so equal products with different saved
+   prices are still one thing to buy. */
+export const mergeMaterialRows = (rows) => rows.reduce((summary, row) => {
+  const key = mergeKey(row);
+  const existing = summary.get(key);
+  if (!existing) {
+    summary.set(key, withMergeData({ ...row }, row._mergeData));
+    return summary;
+  }
+  existing.quantity += row.quantity;
+  if (!samePrice(existing, row)) {
+    delete existing.pricePerUnit;
+    delete existing.currency;
+    delete existing.pricesIncludeVat;
+    delete existing.vatRate;
+    Object.defineProperty(existing, '_priceConflict', { value: true, enumerable: false, configurable: true });
+  }
+  return summary;
+}, new Map());
+
+export const applySpareMargin = (rows, marginPercent = 10) => {
+  const margin = Number(marginPercent);
+  return rows.map((row) => {
+    const neededQuantity = Number(row.quantity) || 0;
+    const spare = row._mergeData?.kind === 'tile'
+      ? 0
+      : margin > 0 ? Math.max(1, Math.ceil(neededQuantity * margin / 100)) : 0;
+    const purchaseRow = withMergeData({ ...row, neededQuantity, quantityToBuy: neededQuantity + spare }, row._mergeData);
+    if (row._priceConflict) Object.defineProperty(purchaseRow, '_priceConflict', { value: true, enumerable: false });
+    return purchaseRow;
+  });
+};
+
+export const materialRowsForPurchase = (projects, spareMargin = 10) => applySpareMargin(
+  [...mergeMaterialRows(buildMaterialRows(projects)).values()],
+  spareMargin,
+);
 
 export const summarizeMaterialPricing = (rows) => {
   const priced = rows.filter((row) => row.pricePerUnit > 0 && row.currency);
@@ -102,7 +180,8 @@ export const summarizeMaterialPricing = (rows) => {
     complete,
     compatible,
     unpricedCount: rows.length - priced.length,
-    total: compatible ? priced.reduce((sum, row) => sum + row.pricePerUnit * row.quantity, 0) : null,
+    conflictCount: rows.filter((row) => row._priceConflict).length,
+    total: compatible ? priced.reduce((sum, row) => sum + row.pricePerUnit * (row.quantityToBuy ?? row.quantity), 0) : null,
     currency: compatible ? first.currency : null,
     pricesIncludeVat: compatible ? first.pricesIncludeVat : null,
     vatRate: compatible ? first.vatRate : null,
@@ -113,8 +192,8 @@ const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (c) => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
 }[c]));
 
-export const buildMaterialListHtml = (projects, t) => {
-  const rows = buildMaterialRows(projects);
+export const buildMaterialListHtml = (projects, t, spareMargin = 10) => {
+  const rows = materialRowsForPurchase(projects, spareMargin);
   if (!rows.length) return '';
   const pricing = summarizeMaterialPricing(rows);
   const priceHeadings = pricing.hasPrices
@@ -122,7 +201,9 @@ export const buildMaterialListHtml = (projects, t) => {
     : '';
   const priceCells = (row) => pricing.hasPrices
     ? row.pricePerUnit
-      ? `<td>${row.pricePerUnit.toFixed(2)} ${escapeHtml(row.currency)} · ${escapeHtml(row.pricesIncludeVat ? t('ui.includingVat') : t('ui.excludingVat'))} (${escapeHtml(row.vatRate)}%)</td><td>${(row.pricePerUnit * row.quantity).toFixed(2)} ${escapeHtml(row.currency)}</td>`
+      ? `<td>${row.pricePerUnit.toFixed(2)} ${escapeHtml(row.currency)} · ${escapeHtml(row.pricesIncludeVat ? t('ui.includingVat') : t('ui.excludingVat'))} (${escapeHtml(row.vatRate)}%)</td><td>${(row.pricePerUnit * row.quantityToBuy).toFixed(2)} ${escapeHtml(row.currency)}</td>`
+      : row._priceConflict
+        ? `<td>${escapeHtml(t('ui.conflictingPrices'))}</td><td>—</td>`
       : `<td>${escapeHtml(t('ui.notPriced'))}</td><td>—</td>`
     : '';
   const basis = `${pricing.pricesIncludeVat ? t('ui.includingVat') : t('ui.excludingVat')} (${pricing.vatRate}%)`;
@@ -134,11 +215,30 @@ export const buildMaterialListHtml = (projects, t) => {
   return `
     <section class="shopping-list">
       <h2>${escapeHtml(t('workflow.whatToBuy'))}</h2>
-      <table class="shopping-table">
-        <thead><tr><th>${escapeHtml(t('workflow.planName'))}</th><th>${escapeHtml(t('legacy.material'))}</th><th>${escapeHtml(t('workflow.sizeMm'))}</th><th>${escapeHtml(t('ui.qty'))}</th>${priceHeadings}</tr></thead>
-       <tbody>${rows.map((row) => `<tr><td>${escapeHtml(row.plan)}</td><td>${escapeHtml(materialLabel(row.material, t))}</td><td>${escapeHtml(row.size)}</td><td>${row.quantity}</td>${priceCells(row)}</tr>`).join('')}</tbody>
+       <table class="shopping-table">
+         <thead><tr><th>${escapeHtml(t('workflow.planName'))}</th><th>${escapeHtml(t('legacy.material'))}</th><th>${escapeHtml(t('workflow.sizeMm'))}</th><th>${escapeHtml(t('ui.needed'))}</th><th>${escapeHtml(t('ui.toBuy'))}</th>${priceHeadings}</tr></thead>
+        <tbody>${rows.map((row) => `<tr><td>${escapeHtml(row.plan)}</td><td>${escapeHtml(materialLabel(row.material, t))}</td><td>${escapeHtml(row.size)}</td><td>${row.neededQuantity}</td><td>${row.quantityToBuy}</td>${priceCells(row)}</tr>`).join('')}</tbody>
       </table>
       ${summary ? `<p class="shopping-total">${escapeHtml(summary)}</p>` : ''}
       ${pricing.unpricedCount > 0 && pricing.hasPrices ? `<p>${escapeHtml(t('ui.unpricedMaterialCount', { count: pricing.unpricedCount }))}</p>` : ''}
+      ${pricing.conflictCount > 0 ? `<p>${escapeHtml(t('ui.conflictingPricesCount', { count: pricing.conflictCount }))}</p>` : ''}
     </section>`;
+};
+
+const csvCell = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+
+export const buildMaterialCsv = (projects, spareMargin = 10) => {
+  const rows = materialRowsForPurchase(projects, spareMargin);
+  const header = ['Material', 'Size', 'Needed', 'To buy', 'Price each', 'Currency', 'Cost', 'VAT rate'];
+  const lines = rows.map((row) => [
+    row.material,
+    row.size,
+    row.neededQuantity,
+    row.quantityToBuy,
+    row.pricePerUnit ?? '',
+    row.currency ?? '',
+    row.pricePerUnit ? (row.pricePerUnit * row.quantityToBuy).toFixed(2) : '',
+    row.vatRate ?? '',
+  ].map(csvCell).join(','));
+  return [header.map(csvCell).join(','), ...lines].join('\r\n');
 };

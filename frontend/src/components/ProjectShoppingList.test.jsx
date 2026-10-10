@@ -48,5 +48,5 @@ it('shows a project total when every material line is priced compatibly', () => 
     { name: 'Tile', projectType: 'tile', tile_data: { width: 300, height: 600 }, layout_result: { tiles_to_purchase: 2 }, pricing: { price_per_unit: 40, currency: 'SEK', vat_rate: 25, prices_include_vat: true } },
   ]);
 
-  expect(screen.getByText(/Estimated project material cost: 580.00 SEK including VAT \(25%\)/)).toBeInTheDocument();
+  expect(screen.getByText(/Estimated project material cost: 1080.00 SEK including VAT \(25%\)/)).toBeInTheDocument();
 });

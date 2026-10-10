@@ -77,6 +77,7 @@ const locale = {
     pricesIncludeVat: 'Prisene inkluderer MVA',
     vatHelp: 'Brukes for nye prisede planer. Lagrede planer beholder sitt eget MVA-grunnlag.',
     language: 'Standardspråk',
+    spareMargin: 'Standard tilleggsmargin, %', spareMarginHelp: 'Legges til for hver kjøpte lengde eller plate. Null slår av ekstra materialer.',
     loadError: 'Kunne ikke laste inn innstillingene: {{message}}',
     saveError: 'Kunne ikke lagre innstillingene: {{message}}',
   },
@@ -236,6 +237,7 @@ const locale = {
     deleteUserConfirm: 'Slett brukeren "{{email}}"? Dette kan ikke angres.',
     cancel: 'Avbryt', delete: 'Slett', project: 'Prosjekt', notInProject: 'Uten prosjekt', newProject: 'Nytt prosjekt…', createProject: 'Opprett prosjekt', load: 'Last inn', close: 'Lukk', name: 'Navn', parts: 'Deler', actions: 'Handlinger', board: 'bord', boards: 'bord', length: 'lengde', lengths: 'lengder', stock: 'Råmateriale', materialBought: 'Innkjøpt materiale', offcut: 'Restbit', efficiency: 'Utnyttelse', cost: 'Kostnad', saveAs: 'Lagre som', createNewPlan: 'Opprett ny plan', updateExistingPlan: 'Oppdater eksisterende plan', openDashboard: 'Åpne dashbordet ditt', pricePlan: 'Prislegg planen', applyChangedPrices: 'Bruk endrede priser', priceAgain: 'Prislegg planen på nytt', total: 'Totalt', before: 'Før', now: 'Nå', change: 'Endring', users: 'Brukere', active: 'Aktive', admins: 'Administratorer', status: 'Status', role: 'Rolle', created: 'Opprettet', inactive: 'Inaktiv', user: 'Bruker', resetPasscode: 'Tilbakestill passord', noUsers: 'Ingen brukere ennå.', fullTiles: 'Hele fliser', cutTiles: 'Kappede fliser', used: 'Brukt', cutList: 'Kappliste', straightCut: 'Rett kutt', noCutNeeded: 'Ingen kapping nødvendig', viewCut: 'Vis kutt {{label}}', howToCut: 'Slik kapper du:', noDiagramSaved: 'Ikke noe lagret diagram', pieceMeta: 'Del {{label}} – {{width}}×{{height}} mm flis', finalSize: 'Ferdig størrelse: {{width}}×{{height}} mm', edges: 'Kanter', kind: 'Type', fromOffcut: 'Fra restbit', sliver: 'smal bit', sliverCount: '{{count}} smale biter', openingDiagram: 'Kapp rundt en åpning – se diagrammet', cutListDescription: 'Størrelsene er delene når de forlater sagen, i millimeter – uten fuge eller kantavstand. Fargen på hver rad samsvarer med flisene i diagrammet.', notchedDescription: '«Kapp rundt en åpning» viser bare delens ytre mål; selve hakket er formen i diagrammet.', reusedDescription: 'Fra restbit angir antallet deler som lages av restmaterialet fra en annen flis i stedet for en ny flis.', diagonalDescription: 'Diagonale rader viser polygonens kantmål; Vis kutt viser hele flisen, svinnet og saglinjen.' },
   projectUi: {
+    badgeQuick: 'Rask', badgeSpecified: 'Spesifisert', badgePriced: 'Prissatt', planStatus: 'Detaljnivå for plan', whatMissing: 'Legg til manglende detaljer eller priser', exportCsv: 'CSV',
     andPlansInIt_one: 'og {{count}} plan i det',
     andPlansInIt_other: 'og de {{count}} planene i det',
     printPlans_one: 'Skriv ut {{count}} plan',
@@ -280,6 +282,7 @@ Object.assign(locale.projectUi, {
 });
 
 Object.assign(locale.ui, {
+  needed: 'Behøves', toBuy: 'Å kjøpe', conflictingPrices: 'Motstridende lagrede priser', conflictingPricesCount: '{{count}} sammenslåtte linje(r) har motstridende lagrede priser.',
   materialPine: 'Furu', materialSpruce: 'Gran', materialOak: 'Eik', materialBeech: 'Bøk', materialBirch: 'Bjørk', materialPressureTreated: 'Trykkimpregnert', materialCustom: 'Egendefinert', customMaterialPlaceholder: 'Skriv inn materiale', tilesToBuyWithSpare: 'Fliser å kjøpe inkl. ekstra',
   materialCeramic: 'Keramiske fliser', materialPorcelain: 'Porselensfliser', materialStone: 'Natursteinfliser', materialGlass: 'Glassfliser',
   boardLengthAria: 'Bordlengde i millimeter, rad {{row}}', removeBoardAria: 'Fjern bordlengde, rad {{row}}', strikeLine: 'Fjern denne raden',
