@@ -177,6 +177,39 @@ describe('AdminCatalogue', () => {
     await waitFor(() => expect(api.resetCatalogueEntry).toHaveBeenCalledWith('local:regel:48x98'));
   });
 
+  it('opens the edit and suggest forms directly under the row they belong to', async () => {
+    render(<AdminCatalogue />);
+    await screen.findByText('Framing timber 45 × 95 mm');
+    fireEvent.click(within(rowOf('Framing timber 48 × 98 mm')).getByRole('button', { name: 'Suggest to Planqer' }));
+    const suggest = screen.getByRole('form', { name: 'Suggest to Planqer' });
+    expect(rowOf('Framing timber 48 × 98 mm').nextElementSibling).toContainElement(suggest);
+
+    fireEvent.click(within(rowOf('Framing timber 45 × 70 mm')).getByRole('button', { name: 'Edit' }));
+    const edit = screen.getByRole('form', { name: 'Edit product' });
+    expect(rowOf('Framing timber 45 × 70 mm').nextElementSibling).toContainElement(edit);
+    expect(screen.queryByRole('form', { name: 'Suggest to Planqer' })).not.toBeInTheDocument();
+  });
+
+  it('needs an https source before an issue can be prepared', async () => {
+    api.getAdminCatalogue.mockResolvedValue([
+      { product: product('local:regel:50x150', 'regel', 50, 150, { sources: [] }), origin: 'local', hidden: false },
+    ]);
+    render(<AdminCatalogue />);
+    await screen.findByText('Framing timber 50 × 150 mm');
+    fireEvent.click(within(rowOf('Framing timber 50 × 150 mm')).getByRole('button', { name: 'Suggest to Planqer' }));
+    const form = screen.getByRole('form', { name: 'Suggest to Planqer' });
+    const prepare = within(form).getByRole('button', { name: 'Prepare issue' });
+    const source = within(form).getByLabelText('Source URL');
+
+    expect(prepare).toBeDisabled();
+    expect(within(form).getByText(/add an https:\/\/ link/i)).toBeInTheDocument();
+    fireEvent.change(source, { target: { value: 'http://example.com/trall' } });
+    expect(prepare).toBeDisabled();
+    fireEvent.change(source, { target: { value: 'https://example.com/trall' } });
+    expect(prepare).toBeEnabled();
+    expect(within(form).queryByText(/add an https:\/\/ link/i)).not.toBeInTheDocument();
+  });
+
   it('prepares a GitHub issue and only links to it', async () => {
     api.getCatalogueSuggestion.mockResolvedValue({
       snippet: 'country: SE\nproducts:\n- type: regel\n', url: 'https://github.com/nordstad/Planqer/issues/new?template=x',

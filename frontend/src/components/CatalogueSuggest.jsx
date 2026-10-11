@@ -16,6 +16,8 @@ const CatalogueSuggest = ({ product, onClose }) => {
   const [suggestion, setSuggestion] = useState(null);
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
+  // The issue is checked against its source, so there's nothing to prepare without one.
+  const sourceOk = /^https:\/\/\S+$/.test(source.trim());
 
   const prepare = async (event) => {
     event.preventDefault();
@@ -37,7 +39,8 @@ const CatalogueSuggest = ({ product, onClose }) => {
       <div style={{ display: 'grid', gap: '10px', gridTemplateColumns: '3fr 1fr' }}>
         <div>
           <label className="form-label" htmlFor={`${idBase}-source`}>{t('catalogueAdmin.sourceUrl')}</label>
-          <input id={`${idBase}-source`} className="form-input" value={source} placeholder="https://" onChange={(e) => { setSource(e.target.value); setSuggestion(null); }} />
+          <input id={`${idBase}-source`} className="form-input" value={source} placeholder="https://" required aria-describedby={sourceOk ? undefined : `${idBase}-source-hint`} onChange={(e) => { setSource(e.target.value); setSuggestion(null); }} />
+          {!sourceOk && <p id={`${idBase}-source-hint`} style={{ marginTop: '6px' }}>{t('catalogueAdmin.sourceRequired')}</p>}
         </div>
         <div>
           <label className="form-label" htmlFor={`${idBase}-country`}>{t('catalogueAdmin.country')}</label>
@@ -55,7 +58,7 @@ const CatalogueSuggest = ({ product, onClose }) => {
         </>
       )}
       <div style={{ display: 'flex', gap: '8px' }}>
-        <button type="submit" className="btn" disabled={busy}>{t('catalogueAdmin.prepareIssue')}</button>
+        <button type="submit" className="btn" disabled={busy || !sourceOk}>{t('catalogueAdmin.prepareIssue')}</button>
         <button type="button" className="btn" onClick={onClose}>{t('ui.close')}</button>
       </div>
     </form>
