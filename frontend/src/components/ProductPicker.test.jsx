@@ -378,11 +378,16 @@ describe('ProductPicker: choosing the catalogue country', () => {
     updateUserSettings.mockReset();
   });
 
+  it('does not add a second control named like the product search', async () => {
+    await show(<Harness />);
+    expect(screen.getAllByRole('combobox', { name: /product/i })).toHaveLength(1);
+  });
+
   it('asks for the country the user has chosen', async () => {
     localStorage.setItem('planqer-catalogue-country-v1', 'NO');
     await show(<Harness />);
     expect(getCatalogue).toHaveBeenCalledWith(undefined, 'NO');
-    expect(screen.getByLabelText('Product catalogue')).toHaveValue('NO');
+    expect(screen.getByLabelText('Catalogue')).toHaveValue('NO');
   });
 
   it('prompts for a country while the generic catalogue is showing, and reloads on a choice', async () => {
@@ -392,7 +397,7 @@ describe('ProductPicker: choosing the catalogue country', () => {
 
     getCatalogue.mockResolvedValue({ data: catalogue, etag: '"se"' });
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Product catalogue'), { target: { value: 'SE' } });
+      fireEvent.change(screen.getByLabelText('Catalogue'), { target: { value: 'SE' } });
     });
 
     expect(getCatalogue).toHaveBeenLastCalledWith(undefined, 'SE');
@@ -406,12 +411,12 @@ describe('ProductPicker: choosing the catalogue country', () => {
     updateUserSettings.mockResolvedValue({});
     await show(<Harness />);
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Product catalogue'), { target: { value: 'generic' } });
+      fireEvent.change(screen.getByLabelText('Catalogue'), { target: { value: 'generic' } });
     });
     expect(updateUserSettings).toHaveBeenCalledWith({ catalogue_country: 'generic' });
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Product catalogue'), { target: { value: 'auto' } });
+      fireEvent.change(screen.getByLabelText('Catalogue'), { target: { value: 'auto' } });
     });
     expect(updateUserSettings).toHaveBeenLastCalledWith({ catalogue_country: 'auto' });
     expect(localStorage.getItem('planqer-catalogue-country-v1')).toBeNull();

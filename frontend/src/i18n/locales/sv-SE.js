@@ -412,7 +412,7 @@ Object.assign(locale, {
     chooseProductFor: "Produkt för {{name}}",
   },
   catalogueCountry: {
-    label: "Produktkatalog",
+    label: "Katalog",
     automatic: "Automatiskt",
     automaticWith: "Automatiskt ({{country}})",
     generic: "Generisk (inget land)",
