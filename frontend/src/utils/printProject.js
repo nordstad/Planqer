@@ -55,7 +55,7 @@ const fittedArea = (imgW, imgH, boxW, boxH) => {
   return imgW * scale * imgH * scale;
 };
 
-const buildHtml = ({ title, meta, paper, plans, shoppingListHtml }) => {
+export const buildHtml = ({ title, meta, paper, plans, shoppingListHtml }) => {
   const spec = PAPERS[paper] ?? PAPERS.a4;
   const innerW = spec.width - 2 * MARGIN_MM;
   const innerH = spec.height - 2 * MARGIN_MM;
