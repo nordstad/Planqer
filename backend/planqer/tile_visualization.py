@@ -445,6 +445,37 @@ class TileSVGVisualizer:
         </svg>'''
 
 
+def generate_piece_diagram(tile, fill: str) -> str:
+    """Render a cut tile with its kept area and the material to remove."""
+    if tile.vertices is None:
+        return generate_rectangular_piece_diagram(tile, fill)
+    return generate_diagonal_piece_diagram(tile, fill)
+
+
+def generate_rectangular_piece_diagram(tile, fill: str) -> str:
+    """Render the template for an axis-aligned cut tile."""
+    width, height = tile.nominal_width, tile.nominal_height
+    padding = 120
+    scale = min(360 / width, 280 / height, 1.0)
+    svg_width = width * scale + padding * 2
+    svg_height = height * scale + padding * 2
+    ox, oy = padding, padding
+    kept_width, kept_height = tile.width * scale, tile.height * scale
+    kept_x, kept_y = ox, oy + (height - tile.height) * scale
+
+    elements = [
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{svg_width:.0f}" height="{svg_height:.0f}" viewBox="0 0 {svg_width:.0f} {svg_height:.0f}">',
+        '<defs><pattern id="waste" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" stroke="#aaa79b" stroke-width="2"/></pattern></defs>',
+        f'<rect width="100%" height="100%" fill="{_BACKGROUND}"/>',
+        f'<rect x="{ox:.1f}" y="{oy:.1f}" width="{width * scale:.1f}" height="{height * scale:.1f}" fill="url(#waste)" stroke="{_INK}" stroke-width="2"/>',
+        f'<rect x="{kept_x:.1f}" y="{kept_y:.1f}" width="{kept_width:.1f}" height="{kept_height:.1f}" fill="{fill}" stroke="{_INK}" stroke-width="1.5"/>',
+        f'<text x="{kept_x + kept_width / 2:.1f}" y="{kept_y - 24:.1f}" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" font-weight="bold" fill="#d94801">{tile.width:.0f} mm</text>',
+        f'<text x="{kept_x - 24:.1f}" y="{kept_y + kept_height / 2:.1f}" text-anchor="middle" transform="rotate(-90 {kept_x - 24:.1f} {kept_y + kept_height / 2:.1f})" font-family="Arial,sans-serif" font-size="12" font-weight="bold" fill="#d94801">{tile.height:.0f} mm</text>',
+        '</svg>',
+    ]
+    return TileSVGVisualizer().svg_to_base64("".join(elements))
+
+
 def generate_diagonal_piece_diagram(tile, fill: str) -> str:
     """Render a full tile with its kept polygon and marked cut edges.
 

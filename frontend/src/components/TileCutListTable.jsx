@@ -109,14 +109,23 @@ const TileCutListTable = ({ candidate }) => {
                     <>
                        {group.kind === 'notched' ? text('ui.diagonalOpening') : text('ui.diagonal')}
                       {group.edgeLengths && ` · ${group.edgeLengths.map((length) => mm(length)).join(' · ')} mm`}
-                       {candidate.piece_diagrams?.[group.label] && (
+                        {candidate.piece_diagrams?.[group.label] && (
                           <button type="button" className="btn btn-small" style={{ marginLeft: '8px' }} onClick={() => setTemplate({ ...group, image: candidate.piece_diagrams[group.label] })}>
                              {text('ui.viewCut', { label: group.label })}
                          </button>
                        )}
                     </>
                   )
-                   : (group.kind === 'notched' ? text('ui.openingDiagram') : text('ui.straightCut'))}
+                   : (
+                     <>
+                       {group.kind === 'notched' ? text('ui.openingDiagram') : text('ui.straightCut')}
+                       {candidate.piece_diagrams?.[group.label] && (
+                         <button type="button" className="btn btn-small" style={{ marginLeft: '8px' }} onClick={() => setTemplate({ ...group, image: candidate.piece_diagrams[group.label] })}>
+                           {text('ui.viewCut', { label: group.label })}
+                         </button>
+                       )}
+                     </>
+                   )}
               </td>
               <td>{group.reusedCount > 0 ? `${group.reusedCount} of ${group.count}` : '—'}</td>
               <td>{group.count}</td>
