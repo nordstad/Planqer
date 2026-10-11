@@ -12,9 +12,15 @@ depends_on = None
 
 def upgrade() -> None:
     with op.batch_alter_table("user_settings") as batch_op:
-        batch_op.add_column(sa.Column("spare_margin_percent", sa.Float(), nullable=False, server_default="10"))
+        batch_op.add_column(
+            sa.Column(
+                "spare_margin_percent", sa.Float(), nullable=False, server_default="10"
+            )
+        )
     with op.batch_alter_table("project_groups") as batch_op:
-        batch_op.add_column(sa.Column("spare_margin_percent", sa.Float(), nullable=True))
+        batch_op.add_column(
+            sa.Column("spare_margin_percent", sa.Float(), nullable=True)
+        )
 
 
 def downgrade() -> None:
