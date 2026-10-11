@@ -82,8 +82,10 @@ def tile_size_key(t) -> tuple:
     to guarantee two *diagonal* pieces are actually the same shape — a
     triangle and a pentagon can share a bounding box — so a diagonal
     tile's key also includes its vertex count and true polygon area.
-    Axis-aligned tiles are unaffected: their key is unchanged from before
-    diagonal existed."""
+    Axis-aligned tiles are keyed by the piece, the tile it was cut from (the
+    same 287x300 piece is a 13 mm trim of a 300x600 tile but a 313 mm trim of
+    a rotated one, as herringbone mixes both), and the exact opening notches
+    cut into it, so every key is one physical cut and has one template."""
     if t.vertices is not None:
         return (
             round(t.width),
@@ -93,15 +95,23 @@ def tile_size_key(t) -> tuple:
             len(t.vertices),
             round(t.area),
         )
-    return (round(t.width), round(t.height))
+    key = (
+        round(t.width),
+        round(t.height),
+        round(t.nominal_width),
+        round(t.nominal_height),
+    )
+    if t.notches:
+        key += tuple(sorted(tuple(round(v) for v in notch) for notch in t.notches))
+    return key
 
 
 def assign_size_colors(tiles) -> dict[tuple, str]:
     """Deterministic size -> color mapping, one entry per distinct
-    tile_size_key() among non-full tiles (CUT and NOTCHED share the same
-    keying — a notched piece is still "this size", just also needing a
-    notch, which the diagram marks with a hatch overlay instead of a second
-    color). Ordered by descending area so the biggest/most common groups get
+    tile_size_key() among non-full tiles (a notched piece is a different cut
+    from a plain one, or from one with its opening elsewhere, so it gets its
+    own key — the diagram still marks the notch with a hatch overlay rather
+    than a second color). Ordered by descending area so the biggest/most common groups get
     the earliest, most distinguishable palette entries.
 
     Pure function of `tiles`, so the SVG (drawn here) and the API's
@@ -452,27 +462,274 @@ def generate_piece_diagram(tile, fill: str) -> str:
     return generate_diagonal_piece_diagram(tile, fill)
 
 
+_SAW_COLOR = "#d94801"
+_LABEL_CHAR_WIDTH = 7.2  # px per character at the 12px bold label size
+_LABEL_ROW_HEIGHT = 15
+_MIN_PAD = 44
+_END = -1  # label placement: beyond the end of its chain
+
+
+def _label_rows(
+    lengths_px: list[float], labels: list[str], allow_end: bool = True
+) -> list[int]:
+    """Placement for each dimension label: 0 when it fits on its own segment,
+    END when it is the chain's last segment and too short (it then sits just
+    beyond the chain's end), else its own raised row reached by a leader line,
+    so labels never collide."""
+    rows, next_row = [], 1
+    for index, (length, label) in enumerate(zip(lengths_px, labels)):
+        if length >= len(label) * _LABEL_CHAR_WIDTH + 8:
+            rows.append(0)
+        elif allow_end and index == len(labels) - 1:
+            rows.append(_END)
+        else:
+            rows.append(next_row)
+            next_row += 1
+    return rows
+
+
+def _lane_gap(rows: list[int]) -> float:
+    return 24 + _LABEL_ROW_HEIGHT * max(max(rows, default=0), 0)
+
+
+def _end_overflow(rows: list[int], labels: list[str]) -> float:
+    """How far a label placed beyond the chain's end reaches past the tile."""
+    return max(
+        (
+            len(label) * _LABEL_CHAR_WIDTH + 24
+            for row, label in zip(rows, labels)
+            if row == _END
+        ),
+        default=0,
+    )
+
+
+def _dimension_chain(
+    elements, side, positions, labels, ext_px, lane_px, offset, rows
+) -> None:
+    """Draw one dimension chain: extension lines from `ext_px` out to a
+    baseline `offset` beyond `lane_px`, one dimension line per segment, and a
+    label per segment. `positions` are screen coordinates along the chain."""
+    horizontal = side in ("top", "bottom")
+    sign = -1 if side in ("top", "left") else 1
+    base = lane_px + sign * offset
+
+    def at(along, across):
+        return (along, across) if horizontal else (across, along)
+
+    def line(a, b, width):
+        (x1, y1), (x2, y2) = a, b
+        elements.append(
+            f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" '
+            f'stroke="{_SAW_COLOR}" stroke-width="{width}"/>'
+        )
+
+    for position in positions:
+        line(at(position, ext_px), at(position, base), 1.5)
+    for start, end, label, row in zip(positions, positions[1:], labels, rows):
+        line(at(start, base), at(end, base), 2)
+        mid = (start + end) / 2
+        along, anchor = mid, "middle"
+        if row == _END:
+            # Beyond the chain's end, in the direction the chain runs (right
+            # for a horizontal chain, down for a vertical one — whose text
+            # reads upward, so it starts a label's length past the end).
+            length = len(label) * _LABEL_CHAR_WIDTH
+            along = end + 8 if horizontal else end + 8 + length
+            anchor = "start"
+            row = 0
+        elif row:
+            # A raised label stays within the span it measures, so it never
+            # runs into another chain's labels past the tile's edge.
+            half = len(label) * _LABEL_CHAR_WIDTH / 2
+            low, high = min(positions) + half, max(positions) - half
+            along = min(max(mid, low), high) if low <= high else low
+        if side in ("top", "left"):
+            text_across = base + 17 + _LABEL_ROW_HEIGHT * row
+        else:
+            text_across = base - 5 - _LABEL_ROW_HEIGHT * row
+        if row:
+            reach = 3 + _LABEL_ROW_HEIGHT * row
+            line(at(mid, base), at(mid, base - sign * reach), 1)
+        x, y = at(along, text_across)
+        rotate = "" if horizontal else f' transform="rotate(-90 {x:.1f} {y:.1f})"'
+        elements.append(
+            f'<text x="{x:.1f}" y="{y:.1f}" text-anchor="{anchor}"{rotate} '
+            f'font-family="Arial,sans-serif" font-size="12" font-weight="bold" '
+            f'fill="{_SAW_COLOR}" stroke="{_BACKGROUND}" stroke-width="4" '
+            f'stroke-linejoin="round" paint-order="stroke">{label}</text>'
+        )
+
+
+def _chain_spans(total: int, notch: tuple[int, int]):
+    """(start, end, label) segments covering 0..total, split at the notch
+    span. Lengths are differences of whole-mm boundaries, so they always add
+    up to `total`."""
+    start, end = notch
+    bounds = sorted({0, start, end, total})
+    return [
+        (a, b, f"NOTCH {b - a} mm" if (a, b) == (start, end) else f"{b - a} mm")
+        for a, b in itertools.pairwise(bounds)
+    ]
+
+
 def generate_rectangular_piece_diagram(tile, fill: str) -> str:
-    """Render the template for an axis-aligned cut tile."""
-    width, height = tile.nominal_width, tile.nominal_height
-    padding = 120
-    scale = min(360 / width, 280 / height, 1.0)
-    svg_width = width * scale + padding * 2
-    svg_height = height * scale + padding * 2
-    ox, oy = padding, padding
-    kept_width, kept_height = tile.width * scale, tile.height * scale
-    kept_x, kept_y = ox, oy + (height - tile.height) * scale
+    """Render the template for an axis-aligned cut tile.
+
+    Drawn the way the layout is: y runs downward, so the whole tile is waste
+    with the piece to keep anchored at its top-left corner, an orange saw line
+    for each trimmed side, and each opening cut into the piece drawn as waste
+    too. A notch therefore sits where it does in the layout, measured from the
+    piece's own top-left corner.
+    """
+    nominal_w, nominal_h = round(tile.nominal_width), round(tile.nominal_height)
+    kept_w = min(round(tile.width), nominal_w)
+    kept_h = min(round(tile.height), nominal_h)
+    notches = []
+    for nx, ny, nw, nh in tile.notches:
+        left, right = round(nx), min(round(nx + nw), kept_w)
+        top, bottom = round(ny), min(round(ny + nh), kept_h)
+        if right > left and bottom > top:
+            notches.append((left, right, top, bottom))
+
+    scale = min(360 / nominal_w, 280 / nominal_h)
+    tile_w, tile_h = nominal_w * scale, nominal_h * scale
+
+    def chain_specs(spans):
+        return (
+            [span[2] for span in spans],
+            [(span[1] - span[0]) * scale for span in spans],
+        )
+
+    top_spans = [(0, kept_w, f"{kept_w} mm")]
+    left_spans = [(0, kept_h, f"{kept_h} mm")]
+    if kept_w < nominal_w:
+        top_spans.append((kept_w, nominal_w, f"CUT {nominal_w - kept_w} mm"))
+    if kept_h < nominal_h:
+        left_spans.append((kept_h, nominal_h, f"CUT {nominal_h - kept_h} mm"))
+
+    top_labels, top_lengths = chain_specs(top_spans)
+    left_labels, left_lengths = chain_specs(left_spans)
+    top_rows = _label_rows(top_lengths, top_labels)
+    left_rows = _label_rows(left_lengths, left_labels)
+    top_gap, left_gap = _lane_gap(top_rows), _lane_gap(left_rows)
+
+    # Each opening is measured by its own chains below and to the right.
+    notch_lanes = []
+    bottom_offset = right_offset = 0.0
+    overflow_right = _end_overflow(top_rows, top_labels)
+    overflow_bottom = _end_overflow(left_rows, left_labels)
+    for left, right, top, bottom in notches:
+        h_spans = _chain_spans(kept_w, (left, right))
+        v_spans = _chain_spans(kept_h, (top, bottom))
+        h_labels, h_lengths = chain_specs(h_spans)
+        v_labels, v_lengths = chain_specs(v_spans)
+        h_rows = _label_rows(h_lengths, h_labels)
+        v_rows = _label_rows(v_lengths, v_labels, allow_end=False)
+        bottom_offset += _lane_gap(h_rows)
+        right_offset += _lane_gap(v_rows)
+        overflow_right = max(overflow_right, _end_overflow(h_rows, h_labels))
+        notch_lanes.append(
+            (
+                h_spans,
+                h_labels,
+                h_rows,
+                bottom_offset,
+                v_spans,
+                v_labels,
+                v_rows,
+                right_offset,
+            )
+        )
+
+    pad_top = max(top_gap + 12, _MIN_PAD)
+    pad_left = max(left_gap + 12, _MIN_PAD)
+    pad_bottom = max(bottom_offset + 12, _MIN_PAD, overflow_bottom)
+    pad_right = max(right_offset + 12, _MIN_PAD, overflow_right)
+    svg_width = pad_left + tile_w + pad_right
+    svg_height = pad_top + tile_h + pad_bottom
+    x0, y0 = pad_left, pad_top
+
+    def sx(x):
+        return x0 + x * scale
+
+    def sy(y):
+        return y0 + y * scale
 
     elements = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{svg_width:.0f}" height="{svg_height:.0f}" viewBox="0 0 {svg_width:.0f} {svg_height:.0f}">',
         '<defs><pattern id="waste" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" stroke="#aaa79b" stroke-width="2"/></pattern></defs>',
         f'<rect width="100%" height="100%" fill="{_BACKGROUND}"/>',
-        f'<rect x="{ox:.1f}" y="{oy:.1f}" width="{width * scale:.1f}" height="{height * scale:.1f}" fill="url(#waste)" stroke="{_INK}" stroke-width="2"/>',
-        f'<rect x="{kept_x:.1f}" y="{kept_y:.1f}" width="{kept_width:.1f}" height="{kept_height:.1f}" fill="{fill}" stroke="{_INK}" stroke-width="1.5"/>',
-        f'<text x="{kept_x + kept_width / 2:.1f}" y="{kept_y - 24:.1f}" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" font-weight="bold" fill="#d94801">{tile.width:.0f} mm</text>',
-        f'<text x="{kept_x - 24:.1f}" y="{kept_y + kept_height / 2:.1f}" text-anchor="middle" transform="rotate(-90 {kept_x - 24:.1f} {kept_y + kept_height / 2:.1f})" font-family="Arial,sans-serif" font-size="12" font-weight="bold" fill="#d94801">{tile.height:.0f} mm</text>',
-        '</svg>',
+        f'<rect x="{x0:.1f}" y="{y0:.1f}" width="{tile_w:.1f}" height="{tile_h:.1f}" fill="url(#waste)" stroke="{_INK}" stroke-width="2"/>',
+        f'<rect x="{sx(0):.1f}" y="{sy(0):.1f}" width="{kept_w * scale:.1f}" height="{kept_h * scale:.1f}" fill="{fill}" stroke="{_INK}" stroke-width="1.5"/>',
     ]
+    for left, right, top, bottom in notches:
+        elements.append(
+            f'<rect x="{sx(left):.1f}" y="{sy(top):.1f}" width="{(right - left) * scale:.1f}" height="{(bottom - top) * scale:.1f}" fill="url(#waste)" stroke="{_INK}" stroke-width="1.5"/>'
+        )
+
+    saw = []
+    if kept_w < nominal_w:
+        saw.append((sx(kept_w), sy(0), sx(kept_w), sy(nominal_h)))
+    if kept_h < nominal_h:
+        saw.append((sx(0), sy(kept_h), sx(nominal_w), sy(kept_h)))
+    for x1, y1, x2, y2 in saw:
+        elements.append(
+            f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" stroke="{_SAW_COLOR}" stroke-width="3"/>'
+        )
+
+    _dimension_chain(
+        elements,
+        "top",
+        [sx(top_spans[0][0])] + [sx(span[1]) for span in top_spans],
+        top_labels,
+        y0,
+        y0,
+        top_gap,
+        top_rows,
+    )
+    _dimension_chain(
+        elements,
+        "left",
+        [sy(left_spans[0][0])] + [sy(span[1]) for span in left_spans],
+        left_labels,
+        x0,
+        x0,
+        left_gap,
+        left_rows,
+    )
+    for (
+        h_spans,
+        h_labels,
+        h_rows,
+        h_offset,
+        v_spans,
+        v_labels,
+        v_rows,
+        v_offset,
+    ) in notch_lanes:
+        _dimension_chain(
+            elements,
+            "bottom",
+            [sx(h_spans[0][0])] + [sx(span[1]) for span in h_spans],
+            h_labels,
+            sy(kept_h),
+            y0 + tile_h,
+            h_offset,
+            h_rows,
+        )
+        _dimension_chain(
+            elements,
+            "right",
+            [sy(v_spans[0][0])] + [sy(span[1]) for span in v_spans],
+            v_labels,
+            sx(kept_w),
+            x0 + tile_w,
+            v_offset,
+            v_rows,
+        )
+
+    elements.append("</svg>")
     return TileSVGVisualizer().svg_to_base64("".join(elements))
 
 

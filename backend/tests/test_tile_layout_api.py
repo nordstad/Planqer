@@ -64,6 +64,50 @@ def test_tile_layout_exact_division_has_zero_cut_candidate():
     assert any(c["cut_tile_count"] == 0 for c in candidates)
 
 
+@pytest.mark.parametrize(
+    "pattern",
+    [
+        "stack",
+        "running",
+        "herringbone",
+        "double_herringbone",
+        "diagonal",
+        "diagonal_herringbone",
+        "diagonal_double_herringbone",
+    ],
+)
+def test_every_cut_size_label_has_a_cut_template(pattern):
+    payload = dict(BASE_PAYLOAD)
+    payload["bond"] = {"pattern": pattern, "offset_fraction": 0.5}
+    payload["cutouts"] = [
+        {"x": 100, "y": 100, "width": 100, "height": 100, "label": "socket"}
+    ]
+    response = client.post("/api/tile-layout", json=payload)
+    assert response.status_code == 200
+
+    for candidate in response.json()["candidates"]:
+        labels = {t["size_label"] for t in candidate["tiles"] if t["kind"] != "full"}
+        assert labels, "the layout should need at least one cut"
+        assert labels <= set(candidate["piece_diagrams"])
+        for diagram in candidate["piece_diagrams"].values():
+            assert diagram.startswith("data:image/svg+xml;base64,")
+
+
+def test_tiles_report_the_notches_cut_into_them():
+    payload = dict(BASE_PAYLOAD)
+    payload["cutouts"] = [
+        {"x": 100, "y": 100, "width": 100, "height": 100, "label": "socket"}
+    ]
+    response = client.post("/api/tile-layout", json=payload)
+    assert response.status_code == 200
+
+    tiles = response.json()["candidates"][0]["tiles"]
+    notched = [t for t in tiles if t["kind"] == "notched"]
+    assert notched
+    assert all(t["notches"] for t in notched)
+    assert all(not t["notches"] for t in tiles if t["kind"] != "notched")
+
+
 def test_tile_layout_with_cutout():
     payload = dict(BASE_PAYLOAD)
     payload["cutouts"] = [

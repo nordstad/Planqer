@@ -136,6 +136,11 @@ class PlacedTile:
     # Diagonal pieces keep their clipped polygon in the tile's own, unrotated
     # coordinate frame for generating a mark-and-cut template.
     local_vertices: tuple[tuple[float, float], ...] | None = None
+    # Axis-aligned pieces keep each opening that cuts into them as
+    # (x, y, width, height), measured from the piece's own top-left corner
+    # (y runs downward, as everywhere else in the layout), so the exact notch
+    # can be drawn on a cut template.
+    notches: tuple[tuple[float, float, float, float], ...] = ()
 
     @property
     def area(self) -> float:
@@ -214,6 +219,7 @@ def place_and_clip(
     # Cutouts are validated as mutually non-overlapping, so overlap areas
     # against this (already surface-clipped) piece can simply be summed.
     notch_area = 0.0
+    notches = []
     remaining_area = cw * ch
     for cutout in surface.cutouts:
         overlap = _rect_intersection(
@@ -221,6 +227,7 @@ def place_and_clip(
         )
         if overlap is not None:
             notch_area += overlap[2] * overlap[3]
+            notches.append((overlap[0] - cx, overlap[1] - cy, overlap[2], overlap[3]))
 
     if notch_area >= remaining_area - 1e-9:
         return None  # entirely inside a cutout — not a real piece
@@ -242,6 +249,7 @@ def place_and_clip(
         nominal_width=w,
         nominal_height=h,
         notch_area=notch_area,
+        notches=tuple(notches) if notch_area > 1e-9 else (),
     )
 
 

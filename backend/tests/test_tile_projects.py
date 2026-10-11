@@ -1,4 +1,7 @@
+import base64
+import re
 import uuid
+from collections import Counter
 
 import pytest
 from fastapi.testclient import TestClient
@@ -339,6 +342,54 @@ def test_saved_diagonal_project_redraws_the_true_polygon_shape(client):
     assert response.status_code == 200
     assert response.headers["content-type"] == "image/svg+xml"
     assert b"<polygon" in response.content
+
+
+def test_saved_project_redraw_keeps_each_notched_cut_its_own_colour(client):
+    """Notches are part of a piece's identity (see tile_size_key): the saved
+    re-render must rebuild them, or two different cuts with the same bounding
+    box would collapse into one colour and stop matching the cut list."""
+    headers = _register_and_login(client)
+    wall = {
+        **TILE_PAYLOAD,
+        "surface_width": 2400,
+        "surface_height": 1200,
+        "tile": {"width": 300, "height": 600, "allow_rotation": False},
+        "bond": {"pattern": "stack", "offset_fraction": 0.5},
+        "cutouts": [{"x": 700, "y": 300, "width": 400, "height": 450}],
+    }
+    result = client.post("/api/tile-layout", json=wall).json()
+    candidate = result["candidates"][0]
+    notched_colours = {
+        t["fill_color"] for t in candidate["tiles"] if t["kind"] == "notched"
+    }
+    assert len(notched_colours) > 1  # sanity: differently notched pieces
+
+    saved = client.post(
+        "/api/tile-projects/",
+        json={
+            "name": "Window wall",
+            "project_group_id": None,
+            "surface_data": {
+                "width": wall["surface_width"],
+                "height": wall["surface_height"],
+                "cutouts": wall["cutouts"],
+            },
+            "tile_data": wall["tile"],
+            "bond_data": {**wall["bond"], **TILE_PAYLOAD["joint"]},
+            "options_data": {"candidate_count": wall["candidate_count"]},
+            "layout_result": candidate,
+        },
+        headers=headers,
+    ).json()
+
+    response = client.get(f"/api/tile-projects/{saved['id']}/image", headers=headers)
+
+    assert response.status_code == 200
+    original = base64.b64decode(candidate["visualization"].split(",", 1)[1]).decode()
+    fills = re.compile(r'fill="(#[0-9a-fA-F]{6})"')
+    assert Counter(fills.findall(response.content.decode())) == Counter(
+        fills.findall(original)
+    )
 
 
 # ── bad path / ownership ─────────────────────────────────────────────────

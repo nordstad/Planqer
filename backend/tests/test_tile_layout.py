@@ -163,6 +163,34 @@ def test_tile_partially_overlapping_cutout_is_notched():
     assert placed.notch_area == pytest.approx(10_000)
 
 
+def test_notched_tile_records_where_the_opening_cuts_into_it():
+    surface = Surface(
+        width=1000, height=1000, cutouts=(Cutout(x=250, y=0, width=100, height=100),)
+    )
+    tile = Tile(width=300, height=300)
+    joint = JointSpec(joint_width=0)
+
+    placed = place_and_clip(
+        x=200, y=0, rotated=False, tile=tile, surface=surface, joint=joint
+    )
+
+    # Positions are relative to the piece's own top-left corner (y downward).
+    assert placed.notches == ((50.0, 0.0, 100.0, 100.0),)
+
+
+def test_tiles_without_an_opening_have_no_notches():
+    surface = Surface(width=1000, height=1000)
+    tile = Tile(width=300, height=300)
+    joint = JointSpec(joint_width=0)
+
+    placed = place_and_clip(
+        x=800, y=0, rotated=False, tile=tile, surface=surface, joint=joint
+    )
+
+    assert placed.kind == TileKind.CUT
+    assert placed.notches == ()
+
+
 def test_rotation_swaps_dimensions():
     surface = Surface(width=1000, height=1000)
     tile = Tile(width=300, height=150, allow_rotation=True)
