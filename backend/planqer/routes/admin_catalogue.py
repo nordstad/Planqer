@@ -71,9 +71,17 @@ async def add_entry(
     except ValueError as error:
         raise _rejected(error) from error
 
-    built_in = {p.id for p in get_catalogue(configured_country()).products}
-    taken = await _entry(session, product.id)
-    if taken or product.id in built_in:
+    # Built-ins are `<country>:<type>:<size>`, local entries `local:<type>:<size>`:
+    # the same product under another prefix is still the same product.
+    built_in = {
+        p.id.split(":", 1)[1] for p in get_catalogue(configured_country()).products
+    }
+    if product.id.split(":", 1)[1] in built_in:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            detail="This product is already built in; edit it instead",
+        )
+    if await _entry(session, product.id):
         raise HTTPException(
             status.HTTP_409_CONFLICT,
             detail="This product already exists; edit it instead",

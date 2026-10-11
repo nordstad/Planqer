@@ -143,13 +143,13 @@ def test_adding_works_without_any_source(client, admin):
 def test_a_local_sheet_can_be_added(client, admin):
     body = {
         "type": "plywood",
-        "thickness": 21,
+        "thickness": 20,
         "formats": [{"width": 1220, "height": 2440}],
     }
     created = client.post("/api/admin/catalogue", json=body, headers=admin)
     assert created.status_code == 201
     product = created.json()["product"]
-    assert product["id"] == "local:plywood:21"
+    assert product["id"] == "local:plywood:20"
     assert product["kind"] == "sheet"
 
 
@@ -212,6 +212,17 @@ def test_adding_an_existing_product_is_a_conflict(client, admin):
     assert (
         client.post("/api/admin/catalogue", json=NEW_BOARD, headers=admin).status_code
         == 409
+    )
+
+
+def test_adding_a_local_copy_of_a_built_in_is_a_conflict(client, admin):
+    copy = {"type": "regel", "thickness": 45, "width": 95, "lengths": [3000]}
+    response = client.post("/api/admin/catalogue", json=copy, headers=admin)
+    assert response.status_code == 409
+    assert "built in" in response.json()["detail"]
+    assert not any(
+        i["origin"] == "local"
+        for i in client.get("/api/admin/catalogue", headers=admin).json()
     )
 
 
@@ -358,15 +369,15 @@ def test_suggestion_is_a_prefilled_issue_with_a_valid_yaml_snippet(client, admin
 def test_suggestion_for_a_sheet_uses_the_sheet_shape(client, admin):
     body = {
         "type": "plywood",
-        "thickness": 21,
+        "thickness": 20,
         "formats": [{"width": 1220, "height": 2440}],
     }
     client.post("/api/admin/catalogue", json=body, headers=admin)
     response = _suggestion(
-        client, admin, "local:plywood:21", source="https://www.metsagroup.com/x"
+        client, admin, "local:plywood:20", source="https://www.metsagroup.com/x"
     )
     group = yaml.safe_load(response.json()["snippet"])["products"][0]
-    assert group["thicknesses"] == [21]
+    assert group["thicknesses"] == [20]
     assert group["formats"] == ["1220x2440"]
     assert "sizes" not in group
 
