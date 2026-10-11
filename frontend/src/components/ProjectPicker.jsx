@@ -10,17 +10,25 @@
 
   It owns the naming state itself; the page only supplies the groups and does
   the API call, returning truthy so this knows whether to close.
+
+  Given `onNewNameChange`, it instead leaves creating to the page: "New
+  project…" becomes a value like any other (NEW_PROJECT), the page holds the
+  name, and the project is made when the page saves.
 */
 
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-const NEW = '__new__';
+export const NEW_PROJECT = '__new__';
+const NEW = NEW_PROJECT;
 
-const ProjectPicker = ({ groups, value, onChange, onCreate, defaultNewName = '' }) => {
+const ProjectPicker = ({ groups, value, onChange, onCreate, defaultNewName = '', newName, onNewNameChange }) => {
   const { t } = useTranslation();
-  const [creating, setCreating] = useState(false);
-  const [name, setName] = useState(defaultNewName);
+  const [creatingNow, setCreating] = useState(false);
+  const [ownName, setName] = useState(defaultNewName);
+  const deferred = Boolean(onNewNameChange);
+  const creating = deferred ? value === NEW : creatingNow;
+  const name = deferred ? newName : ownName;
 
   const cancel = () => {
     setCreating(false);
@@ -43,6 +51,10 @@ const ProjectPicker = ({ groups, value, onChange, onCreate, defaultNewName = '' 
         // showing the choice the user actually made.
         value={creating ? NEW : value}
         onChange={(e) => {
+          if (deferred) {
+            onChange(e.target.value);
+            return;
+          }
           if (e.target.value === NEW) {
             setCreating(true);
             return;
@@ -70,26 +82,30 @@ const ProjectPicker = ({ groups, value, onChange, onCreate, defaultNewName = '' 
             style={{ flex: '1 1 200px', width: 'auto' }}
             placeholder={t('ui.projectPlaceholder')}
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => (deferred ? onNewNameChange(e.target.value) : setName(e.target.value))}
             // This input sits inside the save form, where Enter would otherwise
             // try to save the plan. Enter here means "create this project".
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
-                create();
-              } else if (e.key === 'Escape') {
+                if (!deferred) create();
+              } else if (e.key === 'Escape' && !deferred) {
                 cancel();
               }
             }}
             aria-label={t('ui.newProjectName')}
-            autoFocus
+            autoFocus={!deferred}
           />
-          <button type="button" className="btn" onClick={create} disabled={!name.trim()}>
-            {t('ui.createProject')}
-          </button>
-          <button type="button" className="btn" onClick={cancel}>
-            {t('ui.cancel')}
-          </button>
+          {!deferred && (
+            <>
+              <button type="button" className="btn" onClick={create} disabled={!name.trim()}>
+                {t('ui.createProject')}
+              </button>
+              <button type="button" className="btn" onClick={cancel}>
+                {t('ui.cancel')}
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>

@@ -109,6 +109,7 @@ beforeEach(() => {
   getCatalogue.mockRejectedValue(new Error('no catalogue'));
   process3DCutlist.mockResolvedValue(benchModel);
   getProjectGroups.mockResolvedValue([]);
+  createProjectGroup.mockResolvedValue({ id: 'g1', name: 'bench' });
   getUserSettings.mockResolvedValue({ default_currency: 'SEK', default_vat_rate: 25, default_prices_include_vat: true });
   optimizeCutting.mockResolvedValue({ cut_list: [] });
   optimizeSheetCutting.mockResolvedValue({ sheets: [] });
@@ -291,18 +292,58 @@ describe('save step', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: 'Plan 3 cutlists' })).toBeDisabled());
   });
 
-  it('pre-fills a new project name from the model file and links to it once saved', async () => {
+  it('files every plan under a new project named after the model by default', async () => {
     createProjectGroup.mockResolvedValue({ id: 'g1', name: 'bench' });
     await toSaveStep();
-    fireEvent.change(screen.getByLabelText('Project — optional'), { target: { value: '__new__' } });
-    const nameField = screen.getByLabelText(/new project name/i);
-    expect(nameField).toHaveValue('bench');
-    fireEvent.click(screen.getByRole('button', { name: /create project/i }));
-    await waitFor(() => expect(createProjectGroup).toHaveBeenCalledWith('bench'));
+    expect(screen.getByLabelText('Project — optional')).toHaveValue('__new__');
+    expect(screen.getByLabelText(/new project name/i)).toHaveValue('bench');
+    expect(createProjectGroup).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole('button', { name: 'Plan 3 cutlists' }));
     const link = await screen.findByRole('link', { name: /open project/i });
+    expect(createProjectGroup).toHaveBeenCalledTimes(1);
+    expect(createProjectGroup).toHaveBeenCalledWith('bench');
     expect(link).toHaveAttribute('href', '/dashboard/project/g1');
-    expect(saveProject.mock.calls[0][0].projectGroupId).toBe('g1');
+    expect(saveProject.mock.calls.map(([arg]) => arg.projectGroupId)).toEqual(['g1', 'g1']);
+    expect(saveSheetProject.mock.calls[0][0].projectGroupId).toBe('g1');
+  });
+
+  it('uses the edited project name', async () => {
+    createProjectGroup.mockResolvedValue({ id: 'g2', name: 'Garden bench' });
+    await toSaveStep();
+    fireEvent.change(screen.getByLabelText(/new project name/i), { target: { value: 'Garden bench' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Plan 3 cutlists' }));
+    await waitFor(() => expect(saveSheetProject).toHaveBeenCalled());
+    expect(createProjectGroup).toHaveBeenCalledWith('Garden bench');
+    expect(saveProject.mock.calls[0][0].projectGroupId).toBe('g2');
+  });
+
+  it('pre-selects an existing project with the model\'s name instead of creating another', async () => {
+    getProjectGroups.mockResolvedValue([{ id: 'g9', name: 'Bench' }]);
+    await toSaveStep();
+    await waitFor(() => expect(screen.getByLabelText('Project — optional')).toHaveValue('g9'));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Plan 3 cutlists' }));
+    await screen.findByRole('link', { name: /open project/i });
+    expect(createProjectGroup).not.toHaveBeenCalled();
+    expect(saveProject.mock.calls[0][0].projectGroupId).toBe('g9');
+  });
+
+  it('still saves without a project when the user chooses so', async () => {
+    await toSaveStep();
+    fireEvent.change(screen.getByLabelText('Project — optional'), { target: { value: '' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Plan 3 cutlists' }));
+    await waitFor(() => expect(saveSheetProject).toHaveBeenCalled());
+    expect(createProjectGroup).not.toHaveBeenCalled();
+    expect(saveProject.mock.calls[0][0].projectGroupId).toBe('');
+  });
+
+  it('saves nothing when the project cannot be created', async () => {
+    createProjectGroup.mockRejectedValue(new Error('rate limited'));
+    await toSaveStep();
+    fireEvent.click(screen.getByRole('button', { name: 'Plan 3 cutlists' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('rate limited');
+    expect(saveProject).not.toHaveBeenCalled();
+    expect(saveSheetProject).not.toHaveBeenCalled();
   });
 });
