@@ -2,6 +2,27 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import TileCutListTable from './TileCutListTable';
 
 describe('TileCutListTable', () => {
+  it('offers detailed templates for straight cuts too', () => {
+    render(
+      <TileCutListTable
+        candidate={{
+          tiles: [{
+            kind: 'cut', width: 287, height: 600, nominal_width: 300, nominal_height: 600,
+            fill_color: '#eadb9c', size_label: 'A', is_sliver: false,
+            is_reused_offcut: false,
+          }],
+          piece_diagrams: { A: 'data:image/svg+xml;base64,PHN2Zy8+' },
+          notched_count: 0,
+          reused_offcut_count: 0,
+        }}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'View cut A' }));
+
+    expect(screen.getByAltText('Cut template for piece A')).toBeInTheDocument();
+  });
+
   it('renders diagonal template details as selectable text outside the image', () => {
     render(
       <TileCutListTable

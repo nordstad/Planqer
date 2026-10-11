@@ -25,6 +25,7 @@ from planqer.tile_visualization import (
     TileSVGVisualizer,
     assign_size_colors,
     generate_diagonal_piece_diagram,
+    generate_piece_diagram,
     generate_saved_tile_diagram,
     generate_tile_layout_visualization,
     tile_size_key,
@@ -35,6 +36,26 @@ def _decode(data_url: str) -> str:
     assert data_url.startswith("data:image/svg+xml;base64,")
     b64 = data_url.split(",", 1)[1]
     return base64.b64decode(b64).decode("utf-8")
+
+
+def test_generates_a_detailed_diagram_for_an_axis_aligned_cut():
+    tile = PlacedTile(
+        x=0,
+        y=0,
+        width=287,
+        height=600,
+        rotated=False,
+        kind=TileKind.CUT,
+        nominal_width=300,
+        nominal_height=600,
+    )
+
+    svg = _decode(generate_piece_diagram(tile, "#d9c98a"))
+
+    ET.fromstring(svg)
+    assert 'fill="url(#waste)"' in svg
+    assert "287 mm" in svg
+    assert "600 mm" in svg
 
 
 def _solve_simple():

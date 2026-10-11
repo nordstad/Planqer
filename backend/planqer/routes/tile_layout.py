@@ -22,7 +22,7 @@ from planqer.tile_visualization import (
     FULL_TILE_FILL,
     assign_size_colors,
     assign_size_labels,
-    generate_diagonal_piece_diagram,
+    generate_piece_diagram,
     generate_tile_layout_visualization,
     tile_size_key,
 )
@@ -78,14 +78,8 @@ async def create_tile_layout(request: Request, tile_request: TileLayoutRequest):
             diagrams = {}
             for item in candidate.tiles:
                 key = tile_size_key(item)
-                if (
-                    item.vertices is not None
-                    and item.kind != TileKind.FULL
-                    and labels[key] not in diagrams
-                ):
-                    diagrams[labels[key]] = generate_diagonal_piece_diagram(
-                        item, colors[key]
-                    )
+                if item.kind != TileKind.FULL and labels[key] not in diagrams:
+                    diagrams[labels[key]] = generate_piece_diagram(item, colors[key])
             tiles = [
                 PlacedTileInfo(
                     x=t.x,
