@@ -436,6 +436,16 @@
   .cat-table tr.is-sum td:first-child { color: var(--ink); }
   .cat-table tr.is-out td { color: var(--ink-3); }
   .cat-table.is-reference td:last-child { text-align: left; font-size: 13px; color: var(--ink-2); }
+
+  /* Where a catalogue product comes from: a small label, never run into the next column. */
+  .status-badge {
+    display: inline-block; padding: 1px 8px; border: 1px solid var(--rule); border-radius: 999px;
+    font-family: 'Archivo Narrow', sans-serif; font-size: 12px; font-weight: 600; letter-spacing: .02em;
+    line-height: 1.6; white-space: nowrap; color: var(--ink-3);
+  }
+  .status-badge-local { color: var(--accent); background: var(--accent-bg); border-color: var(--accent); }
+  .status-badge-modified { color: var(--ink); background: var(--ground-3); border-color: var(--ink-4); }
+  .status-badge-hidden { border-style: dashed; }
   .stock-table-wrap { overflow-x: auto; }
   .stock-price-label { display: none; }
   .stock-table-wrap .cat-table td:nth-child(1) .cell-input { text-align: left; max-width: 150px; }

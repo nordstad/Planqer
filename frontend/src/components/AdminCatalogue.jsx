@@ -130,8 +130,8 @@ const AdminCatalogue = () => {
           <thead>
             <tr>
               <th>{t('catalogueAdmin.product')}</th>
-              <th>{t('ui.status')}</th>
-              <th>{t('catalogueAdmin.summary')}</th>
+              <th style={{ textAlign: 'left' }}>{t('ui.status')}</th>
+              <th style={{ textAlign: 'left' }}>{t('catalogueAdmin.summary')}</th>
               <th aria-label={t('ui.actions')} />
             </tr>
           </thead>
@@ -141,7 +141,14 @@ const AdminCatalogue = () => {
               return (
                 <tr key={product.id} style={item.hidden ? { opacity: 0.6 } : undefined}>
                   <td style={{ textAlign: 'left', color: 'var(--ink)', fontWeight: 700 }}>{itemName(item, catalogue, i18n.language)}</td>
-                  <td>{t(`catalogueAdmin.state.${itemState(item)}`)}{item.hidden && item.origin !== 'builtin' ? ` · ${t(`catalogueAdmin.state.${item.origin}`)}` : ''}</td>
+                  <td style={{ textAlign: 'left' }}>
+                    <span className="flex gap-1" style={{ flexWrap: 'wrap' }}>
+                      <span className={`status-badge status-badge-${itemState(item)}`}>{t(`catalogueAdmin.state.${itemState(item)}`)}</span>
+                      {item.hidden && item.origin !== 'builtin' && (
+                        <span className={`status-badge status-badge-${item.origin}`}>{t(`catalogueAdmin.state.${item.origin}`)}</span>
+                      )}
+                    </span>
+                  </td>
                   <td style={{ textAlign: 'left' }}>{summarizeItem(product)}</td>
                   <td style={{ minWidth: '320px' }}>
                     <span className="flex justify-end gap-2" style={{ flexWrap: 'wrap' }}>
@@ -156,7 +163,9 @@ const AdminCatalogue = () => {
                           {item.origin === 'local' ? t('ui.delete') : t('catalogueAdmin.revert')}
                         </button>
                       )}
-                      <button type="button" className="btn" style={SMALL} onClick={() => setPanel({ mode: 'suggest', item })}>{t('catalogueAdmin.suggest')}</button>
+                      {isLocalOrModified(item) && (
+                        <button type="button" className="btn" style={SMALL} onClick={() => setPanel({ mode: 'suggest', item })}>{t('catalogueAdmin.suggest')}</button>
+                      )}
                     </span>
                   </td>
                 </tr>

@@ -44,7 +44,9 @@ grows through suggestions. If your instance is missing a product:
 
 1. Add it for your own instance first: **Admin → Catalogue → Add product**.
 2. Choose **Suggest to Planqer** on that row, enter a source URL and the
-   two-letter country code, and press **Prepare issue**. This builds a
+   two-letter country code, and press **Prepare issue**. The button is on local
+   additions and on built-in entries you have changed; unchanged built-ins are
+   already in Planqer. This builds a
    pre-filled issue from the *Catalogue product* template with the country, the
    product, the source and a YAML snippet.
 3. Review the snippet, then open the issue on GitHub and submit it.

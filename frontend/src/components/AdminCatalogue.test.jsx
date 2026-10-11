@@ -58,6 +58,38 @@ describe('AdminCatalogue', () => {
     expect(screen.getByRole('status')).toHaveTextContent('3 of 3 products');
   });
 
+  it('shows each product\'s origin as its own label', async () => {
+    api.getAdminCatalogue.mockResolvedValue([
+      ...listing(),
+      { product: product('se:regel:45x120', 'regel', 45, 120), origin: 'modified', hidden: false },
+      { product: product('local:regel:50x150', 'regel', 50, 150), origin: 'local', hidden: true },
+    ]);
+    render(<AdminCatalogue />);
+    await screen.findByText('Framing timber 45 × 95 mm');
+    const label = (name, text) => within(rowOf(name)).getByText(text);
+    expect(label('Framing timber 45 × 95 mm', 'Built-in')).toHaveClass('status-badge', 'status-badge-builtin');
+    expect(label('Framing timber 48 × 98 mm', 'Local')).toHaveClass('status-badge', 'status-badge-local');
+    expect(label('Framing timber 45 × 120 mm', 'Changed')).toHaveClass('status-badge', 'status-badge-modified');
+    expect(label('Framing timber 45 × 70 mm', 'Hidden')).toHaveClass('status-badge', 'status-badge-hidden');
+    // A hidden local product still says where it came from.
+    expect(label('Framing timber 50 × 150 mm', 'Hidden')).toHaveClass('status-badge-hidden');
+    expect(label('Framing timber 50 × 150 mm', 'Local')).toHaveClass('status-badge-local');
+  });
+
+  it('offers Suggest to Planqer only for local and modified products', async () => {
+    api.getAdminCatalogue.mockResolvedValue([
+      ...listing(),
+      { product: product('se:regel:45x120', 'regel', 45, 120), origin: 'modified', hidden: false },
+    ]);
+    render(<AdminCatalogue />);
+    await screen.findByText('Framing timber 45 × 95 mm');
+    const suggest = (name) => within(rowOf(name)).queryByRole('button', { name: 'Suggest to Planqer' });
+    expect(suggest('Framing timber 45 × 95 mm')).not.toBeInTheDocument();
+    expect(suggest('Framing timber 45 × 70 mm')).not.toBeInTheDocument();
+    expect(suggest('Framing timber 48 × 98 mm')).toBeInTheDocument();
+    expect(suggest('Framing timber 45 × 120 mm')).toBeInTheDocument();
+  });
+
   it('searches and filters', async () => {
     render(<AdminCatalogue />);
     await screen.findByText('Framing timber 45 × 95 mm');
@@ -152,13 +184,13 @@ describe('AdminCatalogue', () => {
     const open = vi.spyOn(window, 'open');
     render(<AdminCatalogue />);
     await screen.findByText('Framing timber 45 × 95 mm');
-    fireEvent.click(within(rowOf('Framing timber 45 × 95 mm')).getByRole('button', { name: 'Suggest to Planqer' }));
+    fireEvent.click(within(rowOf('Framing timber 48 × 98 mm')).getByRole('button', { name: 'Suggest to Planqer' }));
     const form = screen.getByRole('form', { name: 'Suggest to Planqer' });
     expect(within(form).getByLabelText('Source URL')).toHaveValue('https://www.traguiden.se/');
     expect(within(form).getByLabelText('Country')).toHaveValue('SE');
     expect(within(form).queryByRole('link')).not.toBeInTheDocument();
     fireEvent.click(within(form).getByRole('button', { name: 'Prepare issue' }));
-    await waitFor(() => expect(api.getCatalogueSuggestion).toHaveBeenCalledWith('se:regel:45x95', { source: 'https://www.traguiden.se/', country: 'SE' }));
+    await waitFor(() => expect(api.getCatalogueSuggestion).toHaveBeenCalledWith('local:regel:48x98', { source: 'https://www.traguiden.se/', country: 'SE' }));
     const link = await within(form).findByRole('link', { name: 'Open on GitHub' });
     expect(link).toHaveAttribute('href', expect.stringContaining('github.com/nordstad/Planqer/issues/new'));
     expect(link).toHaveAttribute('target', '_blank');
