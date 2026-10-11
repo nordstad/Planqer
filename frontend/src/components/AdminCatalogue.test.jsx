@@ -44,6 +44,7 @@ beforeEach(() => {
   api.getAdminCatalogue.mockImplementation(async () => listing());
   [api.createCatalogueEntry, api.updateCatalogueEntry, api.hideCatalogueEntry, api.restoreCatalogueEntry, api.resetCatalogueEntry]
     .forEach((fn) => fn.mockResolvedValue({}));
+  api.getCatalogueSuggestion.mockResolvedValue({ snippet: '', url: 'https://github.com/nordstad/Planqer/issues/new' });
 });
 
 const rowOf = (name) => screen.getByText(name).closest('tr');
@@ -190,27 +191,32 @@ describe('AdminCatalogue', () => {
     expect(screen.queryByRole('form', { name: 'Suggest to Planqer' })).not.toBeInTheDocument();
   });
 
-  it('needs an https source before an issue can be prepared', async () => {
+  it('prepares the issue only once there is an https source', async () => {
     api.getAdminCatalogue.mockResolvedValue([
       { product: product('local:regel:50x150', 'regel', 50, 150, { sources: [] }), origin: 'local', hidden: false },
     ]);
+    api.getCatalogueSuggestion.mockResolvedValue({ snippet: 'type: regel', url: 'https://github.com/nordstad/Planqer/issues/new?x' });
     render(<AdminCatalogue />);
     await screen.findByText('Framing timber 50 × 150 mm');
     fireEvent.click(within(rowOf('Framing timber 50 × 150 mm')).getByRole('button', { name: 'Suggest to Planqer' }));
     const form = screen.getByRole('form', { name: 'Suggest to Planqer' });
-    const prepare = within(form).getByRole('button', { name: 'Prepare issue' });
     const source = within(form).getByLabelText('Source URL');
 
-    expect(prepare).toBeDisabled();
+    expect(within(form).queryByRole('button', { name: 'Prepare issue' })).not.toBeInTheDocument();
     expect(within(form).getByText(/add an https:\/\/ link/i)).toBeInTheDocument();
     fireEvent.change(source, { target: { value: 'http://example.com/trall' } });
-    expect(prepare).toBeDisabled();
+    await new Promise((resolve) => { setTimeout(resolve, 600); });
+    expect(api.getCatalogueSuggestion).not.toHaveBeenCalled();
+    expect(within(form).queryByRole('link', { name: 'Open on GitHub' })).not.toBeInTheDocument();
+
     fireEvent.change(source, { target: { value: 'https://example.com/trall' } });
-    expect(prepare).toBeEnabled();
     expect(within(form).queryByText(/add an https:\/\/ link/i)).not.toBeInTheDocument();
+    expect(await within(form).findByRole('link', { name: 'Open on GitHub' })).toBeInTheDocument();
+    expect(api.getCatalogueSuggestion).toHaveBeenCalledTimes(1);
+    expect(api.getCatalogueSuggestion).toHaveBeenCalledWith('local:regel:50x150', { source: 'https://example.com/trall', country: 'SE' });
   });
 
-  it('prepares a GitHub issue and only links to it', async () => {
+  it('prepares a GitHub issue as soon as it opens, with one link and no popup', async () => {
     api.getCatalogueSuggestion.mockResolvedValue({
       snippet: 'country: SE\nproducts:\n- type: regel\n', url: 'https://github.com/nordstad/Planqer/issues/new?template=x',
     });
@@ -221,23 +227,49 @@ describe('AdminCatalogue', () => {
     const form = screen.getByRole('form', { name: 'Suggest to Planqer' });
     expect(within(form).getByLabelText('Source URL')).toHaveValue('https://www.traguiden.se/');
     expect(within(form).getByLabelText('Country')).toHaveValue('SE');
-    expect(within(form).queryByRole('link')).not.toBeInTheDocument();
-    fireEvent.click(within(form).getByRole('button', { name: 'Prepare issue' }));
-    await waitFor(() => expect(api.getCatalogueSuggestion).toHaveBeenCalledWith('local:regel:48x98', { source: 'https://www.traguiden.se/', country: 'SE' }));
+
     const link = await within(form).findByRole('link', { name: 'Open on GitHub' });
+    expect(api.getCatalogueSuggestion).toHaveBeenCalledWith('local:regel:48x98', { source: 'https://www.traguiden.se/', country: 'SE' });
     expect(link).toHaveAttribute('href', expect.stringContaining('github.com/nordstad/Planqer/issues/new'));
     expect(link).toHaveAttribute('target', '_blank');
     expect(within(form).getByTestId('suggestion-snippet')).toHaveTextContent('type: regel');
+    expect(within(form).getAllByRole('button').map((b) => b.textContent)).toEqual(['Close']);
     expect(open).not.toHaveBeenCalled();
   });
 
-  it('shows why an issue could not be prepared', async () => {
-    api.getCatalogueSuggestion.mockRejectedValue(new Error('a source URL is needed to suggest a product'));
+  it('says what happens next once the issue is opened', async () => {
+    api.getCatalogueSuggestion.mockResolvedValue({ snippet: 'type: regel', url: 'https://github.com/nordstad/Planqer/issues/new?x' });
     render(<AdminCatalogue />);
     await screen.findByText('Framing timber 45 × 95 mm');
     fireEvent.click(within(rowOf('Framing timber 48 × 98 mm')).getByRole('button', { name: 'Suggest to Planqer' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Prepare issue' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('source URL is needed');
+    const form = screen.getByRole('form', { name: 'Suggest to Planqer' });
+    expect(within(form).queryByText(/reviewed/i)).not.toBeInTheDocument();
+    const link = await within(form).findByRole('link', { name: 'Open on GitHub' });
+    link.addEventListener('click', (event) => event.preventDefault());
+    fireEvent.click(link);
+    expect(within(form).getByRole('status')).toHaveTextContent(/reviewed/i);
+    expect(within(form).getByRole('status')).toHaveTextContent(/local product keeps working/i);
+  });
+
+  it('shows why an issue could not be prepared', async () => {
+    api.getCatalogueSuggestion.mockRejectedValue(new Error('the source must be an https URL'));
+    render(<AdminCatalogue />);
+    await screen.findByText('Framing timber 45 × 95 mm');
+    fireEvent.click(within(rowOf('Framing timber 48 × 98 mm')).getByRole('button', { name: 'Suggest to Planqer' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('the source must be an https URL');
+  });
+
+  it('flags a local product that is now built in', async () => {
+    api.getAdminCatalogue.mockResolvedValue([
+      ...listing(),
+      { product: product('local:regel:45x95', 'regel', 45, 95), origin: 'local', hidden: false },
+    ]);
+    render(<AdminCatalogue />);
+    await screen.findByText('Framing timber 48 × 98 mm');
+    const [builtIn, local] = screen.getAllByText('Framing timber 45 × 95 mm').map((node) => node.closest('tr'));
+    expect(within(local).getByText(/now built in/i)).toBeInTheDocument();
+    expect(within(builtIn).queryByText(/now built in/i)).not.toBeInTheDocument();
+    expect(within(rowOf('Framing timber 48 × 98 mm')).queryByText(/now built in/i)).not.toBeInTheDocument();
   });
 
   it('shows a load error', async () => {

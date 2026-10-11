@@ -43,13 +43,16 @@ The built-in product catalogue (`backend/planqer/catalogue/data/<country>.yaml`)
 grows through suggestions. If your instance is missing a product:
 
 1. Add it for your own instance first: **Admin → Catalogue → Add product**.
-2. Choose **Suggest to Planqer** on that row, enter a source URL and the
-   two-letter country code, and press **Prepare issue**. The button is on local
-   additions and on built-in entries you have changed; unchanged built-ins are
-   already in Planqer. This builds a
-   pre-filled issue from the *Catalogue product* template with the country, the
-   product, the source and a YAML snippet.
-3. Review the snippet, then open the issue on GitHub and submit it.
+2. Choose **Suggest to Planqer** on that row. The button is on local additions
+   and on built-in entries you have changed; unchanged built-ins are already in
+   Planqer. Enter a source URL (an `https://` link) and check the two-letter
+   country code. As soon as there is a source, Planqer prepares a pre-filled
+   issue from the *Catalogue product* template with the country, the product,
+   the source and a YAML snippet.
+3. Review the snippet, then choose **Open on GitHub** and submit the issue
+   there. It is reviewed, and if accepted the product ships built in with a
+   later release. Your local copy keeps working until then; once it is built in,
+   the Catalogue tab marks the local copy so you can delete it.
 
 No catalogue data is sent to the Planqer project automatically; the issue only
 exists if you open and submit it. The snippet is one product group, in exactly

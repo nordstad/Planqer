@@ -77,6 +77,9 @@ const AdminCatalogue = () => {
 
   const countryName = catalogue?.country_name || t('catalogueAdmin.genericCountry');
   const isLocalOrModified = (item) => item.origin !== 'builtin';
+  // Same type and size as a built-in on show: a local entry an upgrade made redundant.
+  const sizeKey = (product) => product.id.split(':').slice(1).join(':');
+  const shippedSizes = new Set((items || []).filter((item) => item.origin !== 'local' && !item.hidden).map((item) => sizeKey(item.product)));
 
   return (
     <div>
@@ -130,7 +133,12 @@ const AdminCatalogue = () => {
               return (
                 <Fragment key={product.id}>
                   <tr style={item.hidden ? { opacity: 0.6 } : undefined}>
-                    <td style={{ textAlign: 'left', color: 'var(--ink)', fontWeight: 700 }}>{itemName(item, catalogue, i18n.language)}</td>
+                    <td style={{ textAlign: 'left', color: 'var(--ink)', fontWeight: 700 }}>
+                      {itemName(item, catalogue, i18n.language)}
+                      {item.origin === 'local' && shippedSizes.has(sizeKey(product)) && (
+                        <span className="block" style={{ marginTop: '3px', fontWeight: 500, color: 'var(--accent)' }}>{t('catalogueAdmin.builtInNow')}</span>
+                      )}
+                    </td>
                     <td style={{ textAlign: 'left' }}>
                       <span className="flex gap-1" style={{ flexWrap: 'wrap' }}>
                         <span className={`status-badge status-badge-${itemState(item)}`}>{t(`catalogueAdmin.state.${itemState(item)}`)}</span>
