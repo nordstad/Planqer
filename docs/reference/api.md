@@ -113,13 +113,15 @@ backend.
 
 ## Products
 
-`GET /catalogue/` returns the product types, the detail vocabularies and the
-entries for the instance's country (generic, with no entries, when
-`PLANQER_CATALOGUE_COUNTRY` is unset). Saved board and sheet plans accept an
+`GET /catalogue/?country=` returns the product types, the detail vocabularies
+and the entries for `SE`, `NO` or `generic`. Without `country` (or with one it
+doesn't know) it uses the instance default, `PLANQER_CATALOGUE_COUNTRY`, and is
+generic, with no entries, when that is unset. Saved board and sheet plans accept an
 optional `product` snapshot on create and update; it is stored and returned
 as given, and `material_type` stays a readable label for older clients.
 
-`GET /catalogue/products?q=&kind=&id=&limit=&lang=` searches the same catalogue
+`GET /catalogue/products?q=&kind=&id=&limit=&lang=&country=` searches the same
+catalogue
 by name, alias, grade or size (`regel c24`, `45x95`, `plywood 15`) and returns
 products with a display name; `id` returns exactly one product. The MCP server's
 `search_products` tool uses it. Product snapshots saved with a plan carry

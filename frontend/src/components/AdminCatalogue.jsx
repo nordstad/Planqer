@@ -5,25 +5,30 @@
   stored in this instance's database.
 */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import ConfirmDialog from './ConfirmDialog';
 import CatalogueEntryForm from './CatalogueEntryForm';
 import CatalogueSuggest from './CatalogueSuggest';
 import Loader from './Loader';
+import CatalogueCountrySelect from './CatalogueCountrySelect';
+import { useCatalogueChoice } from '../hooks/useCatalogueChoice';
 import {
   createCatalogueEntry, getAdminCatalogue, hideCatalogueEntry, resetCatalogueEntry,
   restoreCatalogueEntry, updateCatalogueEntry,
 } from '../utils/api';
-import { loadCatalogue, resetCatalogueCache } from '../utils/catalogue';
+import { loadCatalogue, labelIn, resetCatalogueCache } from '../utils/catalogue';
 import {
   LIST_FILTERS, filterItems, formFromProduct, itemName, itemState, summarizeItem,
 } from '../utils/catalogueAdmin';
 
 const SMALL = { padding: '5px 10px', minHeight: 0 };
+// The cell holding a row's edit or suggest form: undo the table's first-column type.
+const PANEL_CELL = { textAlign: 'left', fontSize: '14px', fontWeight: 400, letterSpacing: 'normal', color: 'var(--ink)', paddingTop: 0 };
 
 const AdminCatalogue = () => {
   const { t, i18n } = useTranslation();
+  const { choice, country, setChoice } = useCatalogueChoice();
   const [items, setItems] = useState(null);
   const [catalogue, setCatalogue] = useState(null);
   const [error, setError] = useState(null);
@@ -44,7 +49,7 @@ const AdminCatalogue = () => {
     } catch (err) {
       setError(err.message);
     }
-  }, []);
+  }, [country]);
 
   useEffect(() => { refresh(); }, [refresh]);
 
@@ -75,10 +80,31 @@ const AdminCatalogue = () => {
 
   const countryName = catalogue?.country_name || t('catalogueAdmin.genericCountry');
   const isLocalOrModified = (item) => item.origin !== 'builtin';
+  // Same type and size as a built-in on show: a local entry an upgrade made redundant.
+  const sizeKey = (product) => product.id.split(':').slice(1).join(':');
+  const shippedSizes = new Set((items || []).filter((item) => item.origin !== 'local' && !item.hidden).map((item) => sizeKey(item.product)));
+  // The source the built-in products of a type cite most: a starting point for suggesting one more.
+  const typeSource = (type) => {
+    const counts = new Map();
+    (items || [])
+      .filter((item) => item.origin !== 'local' && item.product.type === type)
+      .forEach((item) => item.product.sources.forEach((url) => counts.set(url, (counts.get(url) || 0) + 1)));
+    return [...counts].sort((a, b) => b[1] - a[1])[0]?.[0] || '';
+  };
+  const typeLabel = (type) => labelIn(catalogue?.types.find((entry) => entry.key === type)?.labels, i18n.language) || type;
 
   return (
     <div>
       {error && <div className="alert-danger" role="alert" style={{ marginBottom: '16px' }}>{error}</div>}
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
+        <label className="form-label" htmlFor="admin-catalogue-country" style={{ margin: 0 }}>{t('catalogueCountry.label')}</label>
+        <CatalogueCountrySelect
+          id="admin-catalogue-country"
+          value={choice || 'auto'}
+          onChange={(next) => setChoice(next === 'auto' ? null : next)}
+          style={{ width: 'auto', minWidth: '160px' }}
+        />
+      </div>
       <p className="synthetic" style={{ whiteSpace: 'normal', marginBottom: '12px' }}>
         {t('catalogueAdmin.intro', { country: countryName })}
       </p>
@@ -107,20 +133,6 @@ const AdminCatalogue = () => {
           onCancel={() => setPanel(null)}
         />
       )}
-      {panel?.mode === 'edit' && catalogue && (
-        <CatalogueEntryForm
-          key={panel.item.product.id}
-          catalogue={catalogue}
-          initial={formFromProduct(panel.item.product)}
-          busy={busy}
-          error={formError}
-          onSubmit={(payload) => run(() => updateCatalogueEntry(panel.item.product.id, payload), { inForm: true })}
-          onCancel={() => setPanel(null)}
-        />
-      )}
-      {panel?.mode === 'suggest' && (
-        <CatalogueSuggest key={panel.item.product.id} product={panel.item.product} onClose={() => setPanel(null)} />
-      )}
 
       <p className="synthetic" role="status" style={{ margin: '12px 0 6px' }}>
         {t('catalogueAdmin.count', { shown: shown.length, total: items?.length ?? 0 })}
@@ -130,36 +142,77 @@ const AdminCatalogue = () => {
           <thead>
             <tr>
               <th>{t('catalogueAdmin.product')}</th>
-              <th>{t('ui.status')}</th>
-              <th>{t('catalogueAdmin.summary')}</th>
+              <th style={{ textAlign: 'left' }}>{t('ui.status')}</th>
+              <th style={{ textAlign: 'left' }}>{t('catalogueAdmin.summary')}</th>
               <th aria-label={t('ui.actions')} />
             </tr>
           </thead>
           <tbody>
             {shown.slice(0, 200).map((item) => {
               const { product } = item;
+              const open = panel && panel.mode !== 'add' && panel.item.product.id === product.id ? panel.mode : null;
               return (
-                <tr key={product.id} style={item.hidden ? { opacity: 0.6 } : undefined}>
-                  <td style={{ textAlign: 'left', color: 'var(--ink)', fontWeight: 700 }}>{itemName(item, catalogue, i18n.language)}</td>
-                  <td>{t(`catalogueAdmin.state.${itemState(item)}`)}{item.hidden && item.origin !== 'builtin' ? ` · ${t(`catalogueAdmin.state.${item.origin}`)}` : ''}</td>
-                  <td style={{ textAlign: 'left' }}>{summarizeItem(product)}</td>
-                  <td style={{ minWidth: '320px' }}>
-                    <span className="flex justify-end gap-2" style={{ flexWrap: 'wrap' }}>
-                      <button type="button" className="btn" style={SMALL} disabled={busy} onClick={() => { setFormError(null); setPanel({ mode: 'edit', item }); }}>{t('catalogueAdmin.edit')}</button>
-                      {item.hidden ? (
-                        <button type="button" className="btn" style={SMALL} disabled={busy} onClick={() => run(() => restoreCatalogueEntry(product.id))}>{t('catalogueAdmin.restore')}</button>
-                      ) : (
-                        <button type="button" className="btn" style={SMALL} disabled={busy} onClick={() => run(() => hideCatalogueEntry(product.id))}>{t('catalogueAdmin.hide')}</button>
+                <Fragment key={product.id}>
+                  <tr style={item.hidden ? { opacity: 0.6 } : undefined}>
+                    <td style={{ textAlign: 'left', color: 'var(--ink)', fontWeight: 700 }}>
+                      {itemName(item, catalogue, i18n.language)}
+                      {item.origin === 'local' && shippedSizes.has(sizeKey(product)) && (
+                        <span className="block" style={{ marginTop: '3px', fontWeight: 500, color: 'var(--accent)' }}>{t('catalogueAdmin.builtInNow')}</span>
                       )}
-                      {isLocalOrModified(item) && (
-                        <button type="button" className="btn btn-outline-danger" style={SMALL} disabled={busy} onClick={() => setPendingReset(item)}>
-                          {item.origin === 'local' ? t('ui.delete') : t('catalogueAdmin.revert')}
-                        </button>
+                    </td>
+                    <td style={{ textAlign: 'left' }}>
+                      <span className="flex gap-1" style={{ flexWrap: 'wrap' }}>
+                        <span className={`status-badge status-badge-${itemState(item)}`}>{t(`catalogueAdmin.state.${itemState(item)}`)}</span>
+                        {item.hidden && item.origin !== 'builtin' && (
+                          <span className={`status-badge status-badge-${item.origin}`}>{t(`catalogueAdmin.state.${item.origin}`)}</span>
+                        )}
+                      </span>
+                    </td>
+                    <td style={{ textAlign: 'left' }}>{summarizeItem(product)}</td>
+                    <td style={{ minWidth: '320px' }}>
+                      <span className="flex justify-end gap-2" style={{ flexWrap: 'wrap' }}>
+                        <button type="button" className="btn" style={SMALL} disabled={busy} onClick={() => { setFormError(null); setPanel({ mode: 'edit', item }); }}>{t('catalogueAdmin.edit')}</button>
+                        {item.hidden ? (
+                          <button type="button" className="btn" style={SMALL} disabled={busy} onClick={() => run(() => restoreCatalogueEntry(product.id))}>{t('catalogueAdmin.restore')}</button>
+                        ) : (
+                          <button type="button" className="btn" style={SMALL} disabled={busy} onClick={() => run(() => hideCatalogueEntry(product.id))}>{t('catalogueAdmin.hide')}</button>
+                        )}
+                        {isLocalOrModified(item) && (
+                          <button type="button" className="btn btn-outline-danger" style={SMALL} disabled={busy} onClick={() => setPendingReset(item)}>
+                            {item.origin === 'local' ? t('ui.delete') : t('catalogueAdmin.revert')}
+                          </button>
+                        )}
+                        {isLocalOrModified(item) && (
+                          <button type="button" className="btn" style={SMALL} onClick={() => setPanel({ mode: 'suggest', item })}>{t('catalogueAdmin.suggest')}</button>
+                        )}
+                      </span>
+                    </td>
+                  </tr>
+                  {open && (
+                    <tr>
+                      <td colSpan={4} style={PANEL_CELL}>
+                        {open === 'edit' && catalogue && (
+                          <CatalogueEntryForm
+                            catalogue={catalogue}
+                            initial={formFromProduct(product)}
+                            busy={busy}
+                            error={formError}
+                            onSubmit={(payload) => run(() => updateCatalogueEntry(product.id, payload), { inForm: true })}
+                            onCancel={() => setPanel(null)}
+                          />
+                        )}
+                        {open === 'suggest' && (
+                        <CatalogueSuggest
+                          product={product}
+                          typeSource={typeSource(product.type)}
+                          typeName={typeLabel(product.type)}
+                          onClose={() => setPanel(null)}
+                        />
                       )}
-                      <button type="button" className="btn" style={SMALL} onClick={() => setPanel({ mode: 'suggest', item })}>{t('catalogueAdmin.suggest')}</button>
-                    </span>
-                  </td>
-                </tr>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
               );
             })}
             {shown.length === 0 && (

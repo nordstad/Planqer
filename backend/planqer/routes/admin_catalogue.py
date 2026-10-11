@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
 from planqer.auth import get_current_admin_user
-from planqer.catalogue import configured_country, get_catalogue
+from planqer.catalogue import get_catalogue, resolve_country
 from planqer.catalogue.local import (
     AdminItem,
     NewProduct,
@@ -18,6 +18,17 @@ from planqer.catalogue.local import (
 from planqer.database import CatalogueEntry, User, get_session
 
 router = APIRouter(prefix="/admin/catalogue", tags=["admin"])
+
+
+def _view(
+    catalogue: str | None = Query(
+        default=None,
+        max_length=10,
+        description="The catalogue being edited: SE, NO or generic. "
+        "Absent: the instance default.",
+    ),
+) -> str | None:
+    return resolve_country(catalogue)
 
 
 def _rejected(error: Exception) -> HTTPException:
@@ -36,8 +47,8 @@ async def _entry(session: AsyncSession, product_id: str) -> CatalogueEntry | Non
     ).scalar_one_or_none()
 
 
-async def _item(session: AsyncSession, product_id: str) -> AdminItem:
-    base = get_catalogue(configured_country())
+async def _item(session: AsyncSession, product_id: str, view: str | None) -> AdminItem:
+    base = get_catalogue(view)
     for item in admin_items(base, await _entries(session)):
         if item.product.id == product_id:
             return item
@@ -50,8 +61,9 @@ async def _item(session: AsyncSession, product_id: str) -> AdminItem:
 async def list_entries(
     admin_user: User = Depends(get_current_admin_user),
     session: AsyncSession = Depends(get_session),
+    view: str | None = Depends(_view),
 ):
-    base = get_catalogue(configured_country())
+    base = get_catalogue(view)
     return admin_items(base, await _entries(session))
 
 
@@ -60,6 +72,7 @@ async def add_entry(
     body: NewProduct,
     admin_user: User = Depends(get_current_admin_user),
     session: AsyncSession = Depends(get_session),
+    view: str | None = Depends(_view),
 ):
     try:
         product = build_product(
@@ -67,13 +80,20 @@ async def add_entry(
             body.thickness,
             body.width,
             ProductDetails(**body.model_dump(exclude={"type", "thickness", "width"})),
+            country=view or "local",
         )
     except ValueError as error:
         raise _rejected(error) from error
 
-    built_in = {p.id for p in get_catalogue(configured_country()).products}
-    taken = await _entry(session, product.id)
-    if taken or product.id in built_in:
+    # Built-ins are `<country>:<type>:<size>`, local entries `local:<type>:<size>`:
+    # the same product under another prefix is still the same product.
+    built_in = {p.id.split(":", 1)[1] for p in get_catalogue(view).products}
+    if product.id.split(":", 1)[1] in built_in:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            detail="This product is already built in; edit it instead",
+        )
+    if await _entry(session, product.id):
         raise HTTPException(
             status.HTTP_409_CONFLICT,
             detail="This product already exists; edit it instead",
@@ -89,10 +109,11 @@ async def update_entry(
     body: ProductDetails,
     admin_user: User = Depends(get_current_admin_user),
     session: AsyncSession = Depends(get_session),
+    view: str | None = Depends(_view),
 ):
     """Change a product's lengths, formats, details and sources. For a built-in
     this stores an override; the data file stays as shipped."""
-    current = await _item(session, product_id)
+    current = await _item(session, product_id, view)
     try:
         product = build_product(
             current.product.type,
@@ -117,9 +138,9 @@ async def update_entry(
 
 
 async def _set_hidden(
-    session: AsyncSession, product_id: str, hidden: bool
+    session: AsyncSession, product_id: str, hidden: bool, view: str | None
 ) -> AdminItem:
-    current = await _item(session, product_id)
+    current = await _item(session, product_id, view)
     entry = await _entry(session, product_id)
     if entry is None:
         entry = CatalogueEntry(product_id=product_id)
@@ -135,8 +156,9 @@ async def hide_entry(
     product_id: str,
     admin_user: User = Depends(get_current_admin_user),
     session: AsyncSession = Depends(get_session),
+    view: str | None = Depends(_view),
 ):
-    return await _set_hidden(session, product_id, True)
+    return await _set_hidden(session, product_id, True, view)
 
 
 @router.post("/{product_id:path}/restore", response_model=AdminItem)
@@ -144,8 +166,9 @@ async def restore_entry(
     product_id: str,
     admin_user: User = Depends(get_current_admin_user),
     session: AsyncSession = Depends(get_session),
+    view: str | None = Depends(_view),
 ):
-    return await _set_hidden(session, product_id, False)
+    return await _set_hidden(session, product_id, False, view)
 
 
 @router.get("/{product_id:path}/suggestion", response_model=Suggestion)
@@ -155,10 +178,11 @@ async def suggest_entry(
     country: str | None = Query(default=None, max_length=2),
     admin_user: User = Depends(get_current_admin_user),
     session: AsyncSession = Depends(get_session),
+    view: str | None = Depends(_view),
 ):
     """A pre-filled GitHub issue for this product. Only builds the link; nothing
     is sent anywhere until the admin opens it."""
-    item = await _item(session, product_id)
+    item = await _item(session, product_id, view)
     try:
         return build_suggestion(item.product, source=source, country=country)
     except ValueError as error:
@@ -170,10 +194,11 @@ async def reset_entry(
     product_id: str,
     admin_user: User = Depends(get_current_admin_user),
     session: AsyncSession = Depends(get_session),
+    view: str | None = Depends(_view),
 ):
     """Delete a local addition, or revert a built-in to its shipped data and
     show it again."""
-    await _item(session, product_id)
+    await _item(session, product_id, view)
     entry = await _entry(session, product_id)
     if entry is not None:
         await session.delete(entry)

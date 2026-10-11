@@ -67,19 +67,30 @@ test.describe('Admin catalogue', () => {
     await expect(page.getByText('No products match.')).toBeVisible();
   });
 
-  test('prepares a pre-filled GitHub issue without opening anything by itself', async ({ page, context }) => {
+  test('prepares a pre-filled GitHub issue without opening anything by itself', async ({ page, context, request }) => {
+    const headers = { Authorization: `Bearer ${accessToken}` };
+    const local = await request.post(`${API}/api/admin/catalogue`, {
+      headers, data: { type: 'regel', thickness: 48, width: 98, lengths: [3000], sources: ['https://www.traguiden.se/'] },
+    });
+    expect(local.status()).toBe(201);
+    const { product } = await local.json();
+
     await page.addInitScript((token) => localStorage.setItem('auth_token', token), accessToken);
     await page.goto('/admin');
     await page.getByRole('tab', { name: 'Catalogue' }).click();
     await page.getByLabel('Search products').fill('45x95');
-    await page.getByRole('row', { name: /Framing timber.*45 × 95 mm/ }).getByRole('button', { name: 'Suggest to Planqer' }).click();
+    // Built-ins already ship with Planqer: nothing to suggest.
+    await expect(page.getByRole('row', { name: /Framing timber.*45 × 95 mm/ }).getByRole('button', { name: 'Suggest to Planqer' })).toHaveCount(0);
 
+    await page.getByLabel('Search products').fill('48x98');
     const pages = context.pages().length;
+    await page.getByRole('row', { name: /48 × 98 mm/ }).getByRole('button', { name: 'Suggest to Planqer' }).click();
     const form = page.getByRole('form', { name: 'Suggest to Planqer' });
-    await form.getByRole('button', { name: 'Prepare issue' }).click();
     await expect(form.getByTestId('suggestion-snippet')).toContainText('type: regel');
     const link = form.getByRole('link', { name: 'Open on GitHub' });
     await expect(link).toHaveAttribute('href', /github\.com\/nordstad\/Planqer\/issues\/new\?template=catalogue-product\.yml/);
     expect(context.pages().length).toBe(pages);
+
+    await request.delete(`${API}/api/admin/catalogue/${encodeURIComponent(product.id)}`, { headers });
   });
 });

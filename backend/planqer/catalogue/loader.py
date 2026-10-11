@@ -158,6 +158,17 @@ def configured_country() -> str | None:
     return value if value in available_countries() else None
 
 
+def resolve_country(requested: str | None) -> str | None:
+    """The country a request asks for: `generic`, a built-in country, or (when
+    absent or unknown) the instance default from `PLANQER_CATALOGUE_COUNTRY`."""
+    value = (requested or "").strip().upper()
+    if value == "GENERIC":
+        return None
+    if value in available_countries():
+        return value
+    return configured_country()
+
+
 @cache
 def get_catalogue(country: str | None = None) -> Catalogue:
     name = None
