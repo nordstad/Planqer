@@ -382,6 +382,7 @@ Object.assign(locale, {
     openIssue: "Open on GitHub",
     openIssueHint: "Opens a new tab with the issue filled in.",
     sourceRequired: "Add an https:// link to where this product is documented, so it can be checked.",
+    sourceFromType: "Taken from the built-in {{type}} products.",
     saveLocal: "Save to local catalogue",
     saveLocalHint: "Keep “{{text}}” as a product everyone on this instance can search for.",
   },

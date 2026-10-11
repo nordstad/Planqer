@@ -12,10 +12,12 @@ import { useTranslation } from 'react-i18next';
 import { getCatalogueSuggestion } from '../utils/api';
 import { useDebounce } from '../hooks/useDebounce';
 
-const CatalogueSuggest = ({ product, onClose }) => {
+const CatalogueSuggest = ({ product, typeSource = '', typeName = '', onClose }) => {
   const { t } = useTranslation();
   const idBase = useId().replace(/:/g, '');
-  const [source, setSource] = useState(product.sources[0] || '');
+  // A product with no source of its own starts from the one its type's built-ins cite.
+  const borrowed = product.sources.length === 0 && Boolean(typeSource);
+  const [source, setSource] = useState(product.sources[0] || typeSource);
   const [country, setCountry] = useState(/^[A-Z]{2}$/.test(product.country) ? product.country : '');
   const [suggestion, setSuggestion] = useState(null);
   const [error, setError] = useState(null);
@@ -48,6 +50,7 @@ const CatalogueSuggest = ({ product, onClose }) => {
           <label className="form-label" htmlFor={`${idBase}-source`}>{t('catalogueAdmin.sourceUrl')}</label>
           <input id={`${idBase}-source`} className="form-input" value={source} placeholder="https://" required aria-describedby={sourceOk ? undefined : `${idBase}-source-hint`} onChange={(e) => { setSource(e.target.value); changed(); }} />
           {!sourceOk && <p id={`${idBase}-source-hint`} style={{ marginTop: '6px' }}>{t('catalogueAdmin.sourceRequired')}</p>}
+          {borrowed && source.trim() === typeSource && <p style={{ marginTop: '6px' }}>{t('catalogueAdmin.sourceFromType', { type: typeName })}</p>}
         </div>
         <div>
           <label className="form-label" htmlFor={`${idBase}-country`}>{t('catalogueAdmin.country')}</label>

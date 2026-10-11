@@ -462,6 +462,7 @@ Object.assign(locale, {
     openIssue: "Öppna på GitHub",
     openIssueHint: "Öppnar en ny flik med ärendet ifyllt.",
     sourceRequired: "Lägg till en https://-länk till var produkten finns beskriven, så att den kan kontrolleras.",
+    sourceFromType: "Hämtad från de inbyggda produkterna av typen {{type}}.",
     saveLocal: "Spara i lokala katalogen",
     saveLocalHint: "Behåll ”{{text}}” som en produkt alla på den här instansen kan söka efter.",
   },

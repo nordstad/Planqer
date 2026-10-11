@@ -191,6 +191,24 @@ describe('AdminCatalogue', () => {
     expect(screen.queryByRole('form', { name: 'Suggest to Planqer' })).not.toBeInTheDocument();
   });
 
+  it('pre-fills the source the built-in products of the same type cite', async () => {
+    api.getAdminCatalogue.mockResolvedValue([
+      ...listing(),
+      { product: product('se:regel:45x120', 'regel', 45, 120, { sources: ['https://www.svenskttra.se/lathunden', 'https://www.traguiden.se/'] }), origin: 'builtin', hidden: false },
+      { product: product('local:regel:50x150', 'regel', 50, 150, { sources: [] }), origin: 'local', hidden: false },
+    ]);
+    render(<AdminCatalogue />);
+    await screen.findByText('Framing timber 50 × 150 mm');
+    fireEvent.click(within(rowOf('Framing timber 50 × 150 mm')).getByRole('button', { name: 'Suggest to Planqer' }));
+    const form = screen.getByRole('form', { name: 'Suggest to Planqer' });
+
+    expect(within(form).getByLabelText('Source URL')).toHaveValue('https://www.traguiden.se/');
+    expect(within(form).getByText('Taken from the built-in Framing timber products.')).toBeInTheDocument();
+    await waitFor(() => expect(api.getCatalogueSuggestion).toHaveBeenCalledWith('local:regel:50x150', { source: 'https://www.traguiden.se/', country: 'SE' }));
+    fireEvent.change(within(form).getByLabelText('Source URL'), { target: { value: 'https://example.com/regel' } });
+    expect(within(form).queryByText(/taken from the built-in/i)).not.toBeInTheDocument();
+  });
+
   it('prepares the issue only once there is an https source', async () => {
     api.getAdminCatalogue.mockResolvedValue([
       { product: product('local:regel:50x150', 'regel', 50, 150, { sources: [] }), origin: 'local', hidden: false },

@@ -15,7 +15,7 @@ import {
   createCatalogueEntry, getAdminCatalogue, hideCatalogueEntry, resetCatalogueEntry,
   restoreCatalogueEntry, updateCatalogueEntry,
 } from '../utils/api';
-import { loadCatalogue, resetCatalogueCache } from '../utils/catalogue';
+import { loadCatalogue, labelIn, resetCatalogueCache } from '../utils/catalogue';
 import {
   LIST_FILTERS, filterItems, formFromProduct, itemName, itemState, summarizeItem,
 } from '../utils/catalogueAdmin';
@@ -80,6 +80,15 @@ const AdminCatalogue = () => {
   // Same type and size as a built-in on show: a local entry an upgrade made redundant.
   const sizeKey = (product) => product.id.split(':').slice(1).join(':');
   const shippedSizes = new Set((items || []).filter((item) => item.origin !== 'local' && !item.hidden).map((item) => sizeKey(item.product)));
+  // The source the built-in products of a type cite most: a starting point for suggesting one more.
+  const typeSource = (type) => {
+    const counts = new Map();
+    (items || [])
+      .filter((item) => item.origin !== 'local' && item.product.type === type)
+      .forEach((item) => item.product.sources.forEach((url) => counts.set(url, (counts.get(url) || 0) + 1)));
+    return [...counts].sort((a, b) => b[1] - a[1])[0]?.[0] || '';
+  };
+  const typeLabel = (type) => labelIn(catalogue?.types.find((entry) => entry.key === type)?.labels, i18n.language) || type;
 
   return (
     <div>
@@ -180,7 +189,14 @@ const AdminCatalogue = () => {
                             onCancel={() => setPanel(null)}
                           />
                         )}
-                        {open === 'suggest' && <CatalogueSuggest product={product} onClose={() => setPanel(null)} />}
+                        {open === 'suggest' && (
+                        <CatalogueSuggest
+                          product={product}
+                          typeSource={typeSource(product.type)}
+                          typeName={typeLabel(product.type)}
+                          onClose={() => setPanel(null)}
+                        />
+                      )}
                       </td>
                     </tr>
                   )}
