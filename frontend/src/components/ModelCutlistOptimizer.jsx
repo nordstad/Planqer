@@ -29,7 +29,7 @@ import { Link } from 'react-router-dom';
 import CatalogPage from './CatalogPage';
 import Loader from './Loader';
 import Disclosure from './Disclosure';
-import ProjectPicker from './ProjectPicker';
+import ProjectPicker, { NEW_PROJECT } from './ProjectPicker';
 import PlanSteps from './PlanSteps';
 import ModelGroupSettings from './ModelGroupSettings';
 import ProductPicker from './ProductPicker';
@@ -67,6 +67,7 @@ const formatFileSize = (bytes) => {
 };
 
 const extensionOf = (filename) => filename.toLowerCase().match(/\.[a-z0-9]+$/)?.[0] || '';
+const baseName = (filename) => filename.replace(/\.[a-z0-9]+$/i, '');
 const ACCEPTED = ['.stl', '.step', '.stp'];
 
 const spaced = (n) => Math.round(n).toLocaleString('sv-SE');
@@ -92,7 +93,7 @@ const ModelCutlistOptimizer = () => {
   const [defaults, setDefaults] = useState({});
   const [money, setMoney] = useState(DEFAULT_MONEY);
 
-  const modelName = file ? file.name.replace(/\.[a-z0-9]+$/i, '') : t('workflow.model');
+  const modelName = file ? baseName(file.name) : t('workflow.model');
   const selectedGroups = groups.filter((g) => selectedIds.has(g.id));
   const labelOf = (group) => groupLabel(group, configs[group.id] || {}, t, i18n.language);
   const planNameOf = (group) => planNameFor(modelName, group, configs[group.id] || {}, t, i18n.language);
@@ -100,7 +101,10 @@ const ModelCutlistOptimizer = () => {
   /* ── 03 · save: the project and the batch itself ─────────────────────── */
   const [limitsOpen, setLimitsOpen] = useState(false);
   const [projectGroups, setProjectGroups] = useState([]);
-  const [selectedGroupId, setSelectedGroupId] = useState('');
+  // A model's plans belong together: by default they go into a new project
+  // named after the file, made when they are saved.
+  const [selectedGroupId, setSelectedGroupId] = useState(NEW_PROJECT);
+  const [newProjectName, setNewProjectName] = useState('');
   const [apiError, setApiError] = useState('');
   const [appliedNote, setAppliedNote] = useState('');
   const [statuses, setStatuses] = useState({}); // id -> 'pending' | 'running' | 'done' | 'error'
@@ -123,7 +127,14 @@ const ModelCutlistOptimizer = () => {
     if (!user) return;
 
     if (step === STEP_SAVE) {
-      getProjectGroups().then(setProjectGroups).catch(() => {});
+      getProjectGroups().then((list) => {
+        setProjectGroups(list);
+        // Importing the same model again files it with the earlier plans
+        // rather than making a second project of the same name.
+        const wanted = newProjectName.trim().toLowerCase();
+        const existing = list.find((g) => g.name.trim().toLowerCase() === wanted);
+        if (existing) setSelectedGroupId((current) => (current === NEW_PROJECT ? existing.id : current));
+      }).catch(() => {});
     }
 
     getUserSettings().then((settings) => {
@@ -166,6 +177,8 @@ const ModelCutlistOptimizer = () => {
     setFile(candidate);
     setError(null);
     retireAll();
+    setSelectedGroupId(NEW_PROJECT);
+    setNewProjectName(baseName(candidate.name));
   };
 
   const handleDrag = useCallback((e) => {
@@ -249,20 +262,17 @@ const ModelCutlistOptimizer = () => {
   const totalComponents = groups.reduce((n, g) => n + g.quantity, 0);
 
   /* ── the save step ─────────────────────────────────────────────────── */
-  const createGroup = async (name) => {
-    try {
-      const group = await createProjectGroup(name);
-      setProjectGroups((prev) => [group, ...prev]);
-      setSelectedGroupId(group.id);
-      setApiError('');
-      return true;
-    } catch (err) {
-       setApiError(`${t('legacy.failed')}: ${err.message}`);
-      return false;
-    }
+  // The project the batch goes into: an existing one, none (''), or the new
+  // one, made first so a failure there saves nothing unfiled.
+  const resolveProject = async () => {
+    if (selectedGroupId !== NEW_PROJECT) return selectedGroupId;
+    const group = await createProjectGroup(newProjectName.trim() || modelName);
+    setProjectGroups((prev) => [group, ...prev]);
+    setSelectedGroupId(group.id);
+    return group.id;
   };
 
-  const runOne = async (group) => {
+  const runOne = async (group, projectGroupId) => {
     const config = configs[group.id];
     const material = resolveMaterial(config, i18n.language, group);
     const product = buildSnapshot(config.product, i18n.language, groupDimensions(group));
@@ -275,7 +285,7 @@ const ModelCutlistOptimizer = () => {
         const result = await optimizeCutting(parts, stock, config.kerf, costData);
         await saveProject({
           name: planNameOf(group),
-          projectGroupId: selectedGroupId,
+          projectGroupId,
           parts,
           boards: stock,
           sawKerf: config.kerf,
@@ -294,7 +304,7 @@ const ModelCutlistOptimizer = () => {
         const result = await optimizeSheetCutting(parts, config.sheetWidth, config.sheetHeight, config.kerf, material, undefined, config.allowRotation);
         await saveSheetProject({
           name: planNameOf(group),
-          projectGroupId: selectedGroupId,
+          projectGroupId,
           parts,
           sheetWidth: config.sheetWidth,
           sheetHeight: config.sheetHeight,
@@ -319,12 +329,20 @@ const ModelCutlistOptimizer = () => {
     setApiError('');
     if (selectedGroups.some((g) => errorsOf(g, configs).hasErrors)) return;
     setSaving(true);
+    let projectGroupId;
+    try {
+      projectGroupId = await resolveProject();
+    } catch (err) {
+      setApiError(`${t('legacy.failed')}: ${err.message}`);
+      setSaving(false);
+      return;
+    }
     // One at a time: /cutting-plans and /sheet-optimization are both rate
     // limited to 10 requests a minute, and this keeps the per-row status
     // readable instead of every row flipping to "running" at once.
     for (const group of selectedGroups) {
       if (statuses[group.id] === 'done') continue;
-      await runOne(group);
+      await runOne(group, projectGroupId);
     }
     setSaving(false);
   };
@@ -632,8 +650,8 @@ const ModelCutlistOptimizer = () => {
                       groups={projectGroups}
                       value={selectedGroupId}
                       onChange={setSelectedGroupId}
-                      onCreate={createGroup}
-                      defaultNewName={modelName}
+                      newName={newProjectName}
+                      onNewNameChange={setNewProjectName}
                     />
                   </section>
                 </>

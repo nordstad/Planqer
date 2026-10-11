@@ -138,9 +138,9 @@ test.describe('Model cutlist flow with example/bench.stl', () => {
     await expect(plywood.getByRole('button', { name: /apply to all/i })).toHaveCount(0);
     await plywood.getByLabel(/Price per sheet/).fill('350');
 
-    await page.getByLabel('Project — optional').selectOption({ label: 'New project…' });
+    // A model's plans go into a new project named after the file by default.
+    await expect(page.getByLabel('Project — optional')).toHaveValue('__new__');
     await expect(page.getByLabel('New project name')).toHaveValue('bench');
-    await page.getByRole('button', { name: 'Create project' }).click();
 
     const boardPosts = [];
     const sheetPosts = [];

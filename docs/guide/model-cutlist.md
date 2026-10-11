@@ -48,8 +48,11 @@ is used if it has one.
    others. Prices are never required: without them a cutlist is planned for
    the least waste; with a price on every length (or the sheet) the saved
    plan carries its cost.
-6. Pick or create a project — a new project is pre-named after the model file —
-   and save. A link takes you straight to that project.
+6. Save. By default every cutlist goes into a new project named after the model
+   file (rename it in place), made when you save. If you already have a project
+   with that name it is picked instead, so importing the same model again keeps
+   its plans together. You can also choose another project, or none. A link
+   takes you straight to that project.
 
 !!! note "Uploading doesn't need an account"
     Reading and extracting a model works without signing in. Planning and
