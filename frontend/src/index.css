@@ -31,6 +31,8 @@
     --signal-ink:  var(--accent-ink);
     --revision:    #cc2200;   /* over limit, unplaced, delete — stays red, distinct from the accent */
     --revision-bg: #fdeeea;
+    --builtin:     #3d6a2c;   /* ships with Planqer: the catalogue's built-in label, 4.5:1+ on its tint */
+    --builtin-bg:  #eaf2e3;
     --shop:        #16150f;   /* saved / confirmed — ink, not a fifth colour */
     --waste-dot:   rgba(22,21,15,.16);
   }
@@ -54,6 +56,8 @@
     --signal-ink:  var(--accent-ink);
     --revision:    #ff6b45;
     --revision-bg: #2e1410;
+    --builtin:     #9fcb8b;
+    --builtin-bg:  #1c2716;
     --shop:        #ece7d8;
     --waste-dot:   rgba(236,231,216,.16);
   }
@@ -443,6 +447,7 @@
     font-family: 'Archivo Narrow', sans-serif; font-size: 12px; font-weight: 600; letter-spacing: .02em;
     line-height: 1.6; white-space: nowrap; color: var(--ink-3);
   }
+  .status-badge-builtin { color: var(--builtin); background: var(--builtin-bg); border-color: var(--builtin); }
   .status-badge-local { color: var(--accent); background: var(--accent-bg); border-color: var(--accent); }
   .status-badge-modified { color: var(--ink); background: var(--ground-3); border-color: var(--ink-4); }
   .status-badge-hidden { border-style: dashed; }
