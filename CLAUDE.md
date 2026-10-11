@@ -87,7 +87,8 @@ docker compose up -d --build
 
 ### Frontend Architecture
 
-- **Router**: React Router with two main routes (`/` homepage, `/cutting` optimizer)
+- **Router**: React Router routes the homepage, board/sheet/tile/model-cutlist
+  optimizers, help, user dashboard, and admin dashboard
 - **Components**:
   - `CuttingOptimizer.jsx` - Main optimization interface
   - `HomePage.jsx` - Landing page
@@ -99,8 +100,9 @@ docker compose up -d --build
 
 ### MCP Server Architecture
 
-- **Tools**: Four main tools for AI assistants:
+- **Tools**: Five main tools for AI assistants:
   - `optimize_cutting` - Custom cutting optimization
+  - `search_products` - Search the product catalogue
   - `optimize_demo` - Pre-configured demos
   - `get_demo_payloads` - Sample data
   - `get_cutting_example` - API format examples
@@ -154,6 +156,12 @@ docker compose up -d --build
 2. **Frontend Changes**: Modify components in `/frontend/src/`, test with `npm test`
 3. **Full Stack Testing**: Use `docker compose up -d --build` to test integration
 4. **MCP Server Testing**: Use MCP Inspector for debugging AI tool interactions
+
+## Release Workflow
+
+Follow [`docs/releasing.md`](docs/releasing.md) for release checks, version
+updates, tagging, and GitHub Release creation. Do not invent a separate release
+procedure in this file.
 
 ## Key Algorithms
 
