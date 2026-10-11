@@ -141,6 +141,7 @@ class PlacedTileInfo(BaseModel):
     size_label: str | None = None
     edge_lengths: list[float] | None = None
     vertices: list[tuple[float, float]] | None = None
+    notches: list[tuple[float, float, float, float]] = []
 
 
 class TileLayoutCandidateResponse(BaseModel):

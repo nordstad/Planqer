@@ -112,6 +112,10 @@ def _render_saved_layout(
                 vertices=tuple(tuple(v) for v in t["vertices"])
                 if t.get("vertices")
                 else None,
+                # Where an opening cuts into the piece — part of its identity
+                # (see tile_size_key), so the saved re-render keeps the same
+                # colours and labels as the layout the user was shown.
+                notches=tuple(tuple(n) for n in t.get("notches", [])),
             )
             for t in layout_result["tiles"]
         )

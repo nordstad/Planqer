@@ -27,12 +27,16 @@ const polygonArea = (vertices) => {
 // The key non-full tiles are grouped by — kept in one place for the same
 // reason tile_size_key is on the backend: the diagram's colors and the cut
 // list's row counts must never drift apart from a duplicated key formula.
+// An axis-aligned piece's identity (its size, the tile it was cut from, and
+// the exact openings notched into it) is only known to the backend, which
+// hands every distinct cut its own size_label — so that label is the key.
 const tileGroupKey = (tile) => {
   const width = Math.round(tile.width);
   const height = Math.round(tile.height);
   if (tile.vertices) {
     return `${tile.kind}:${width}:${height}:${tile.vertices.length}:${Math.round(polygonArea(tile.vertices))}`;
   }
+  if (tile.size_label) return `${tile.kind}:${tile.size_label}`;
   return `${tile.kind}:${width}:${height}`;
 };
 

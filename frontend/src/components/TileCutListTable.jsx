@@ -107,25 +107,16 @@ const TileCutListTable = ({ candidate }) => {
                 {group.isDiagonal
                   ? (
                     <>
-                       {group.kind === 'notched' ? text('ui.diagonalOpening') : text('ui.diagonal')}
+                      {group.kind === 'notched' ? text('ui.diagonalOpening') : text('ui.diagonal')}
                       {group.edgeLengths && ` · ${group.edgeLengths.map((length) => mm(length)).join(' · ')} mm`}
-                        {candidate.piece_diagrams?.[group.label] && (
-                          <button type="button" className="btn btn-small" style={{ marginLeft: '8px' }} onClick={() => setTemplate({ ...group, image: candidate.piece_diagrams[group.label] })}>
-                             {text('ui.viewCut', { label: group.label })}
-                         </button>
-                       )}
                     </>
                   )
-                   : (
-                     <>
-                       {group.kind === 'notched' ? text('ui.openingDiagram') : text('ui.straightCut')}
-                       {candidate.piece_diagrams?.[group.label] && (
-                         <button type="button" className="btn btn-small" style={{ marginLeft: '8px' }} onClick={() => setTemplate({ ...group, image: candidate.piece_diagrams[group.label] })}>
-                           {text('ui.viewCut', { label: group.label })}
-                         </button>
-                       )}
-                     </>
-                   )}
+                  : (group.kind === 'notched' ? text('ui.openingDiagram') : text('ui.straightCut'))}
+                {candidate.piece_diagrams?.[group.label] && (
+                  <button type="button" className="btn btn-small" style={{ marginLeft: '8px' }} onClick={() => setTemplate({ ...group, image: candidate.piece_diagrams[group.label] })}>
+                    {text('ui.viewCut', { label: group.label })}
+                  </button>
+                )}
               </td>
               <td>{group.reusedCount > 0 ? `${group.reusedCount} of ${group.count}` : '—'}</td>
               <td>{group.count}</td>
@@ -149,7 +140,7 @@ const TileCutListTable = ({ candidate }) => {
             <div style={{ padding: '16px 16px 0', color: 'var(--ink-2)', fontSize: '13px', lineHeight: '1.5' }}>
                {pieceMeta(template, text)}
             </div>
-            <img src={template.image} alt={`Cut template for piece ${template.label}`} style={{ display: 'block', width: '100%', padding: '16px' }} />
+            <img src={template.image} alt={`Cut template for piece ${template.label}`} style={{ display: 'block', width: '100%', maxHeight: '65vh', objectFit: 'contain', padding: '16px' }} />
              <div style={{ padding: '0 16px 16px', color: 'var(--ink-2)', fontSize: '13px', lineHeight: '1.5' }}>
                <strong style={{ color: 'var(--ink)' }}>{text('ui.howToCut')}</strong> {text('ui.cutInstructions')}
             </div>

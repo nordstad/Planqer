@@ -102,6 +102,7 @@ async def create_tile_layout(request: Request, tile_request: TileLayoutRequest):
                     if t.vertices is not None
                     else None,
                     vertices=list(t.vertices) if t.vertices is not None else None,
+                    notches=list(t.notches),
                 )
                 for i, t in enumerate(candidate.tiles)
             ]

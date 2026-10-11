@@ -11,6 +11,8 @@ import base64
 import re
 import xml.etree.ElementTree as ET
 
+import pytest
+
 from planqer.tile_layout.geometry import (
     Cutout,
     JointSpec,
@@ -38,24 +40,253 @@ def _decode(data_url: str) -> str:
     return base64.b64decode(b64).decode("utf-8")
 
 
-def test_generates_a_detailed_diagram_for_an_axis_aligned_cut():
-    tile = PlacedTile(
+def _rect_tile(
+    width,
+    height,
+    nominal_width=300,
+    nominal_height=600,
+    kind=TileKind.CUT,
+    notches=(),
+):
+    return PlacedTile(
         x=0,
         y=0,
-        width=287,
-        height=600,
+        width=width,
+        height=height,
         rotated=False,
-        kind=TileKind.CUT,
-        nominal_width=300,
-        nominal_height=600,
+        kind=kind,
+        nominal_width=nominal_width,
+        nominal_height=nominal_height,
+        notches=notches,
     )
 
-    svg = _decode(generate_piece_diagram(tile, "#d9c98a"))
 
+def _piece_svg(tile):
+    svg = _decode(generate_piece_diagram(tile, "#d9c98a"))
     ET.fromstring(svg)
-    assert 'fill="url(#waste)"' in svg
-    assert "287 mm" in svg
-    assert "600 mm" in svg
+    return svg
+
+
+def _texts(svg):
+    return re.findall(r"<text[^>]*>([^<]*)</text>", svg)
+
+
+def _saw_lines(svg):
+    return re.findall(r'<line[^>]*stroke="#d94801" stroke-width="3"', svg)
+
+
+def _waste_rects(svg):
+    return re.findall(r'<rect[^>]*fill="url\(#waste\)"', svg)
+
+
+def test_straight_cut_template_marks_the_saw_line_and_the_strip_to_remove():
+    svg = _piece_svg(_rect_tile(287, 600))
+
+    texts = _texts(svg)
+    assert "287 mm" in texts
+    assert "600 mm" in texts
+    assert texts.count("CUT 13 mm") == 1
+    assert not any(t.startswith("CUT") and t != "CUT 13 mm" for t in texts)
+    assert len(_saw_lines(svg)) == 1
+    assert len(_waste_rects(svg)) == 1
+
+
+def test_corner_cut_template_marks_both_saw_lines():
+    svg = _piece_svg(_rect_tile(287, 500))
+
+    texts = _texts(svg)
+    assert "CUT 13 mm" in texts
+    assert "CUT 100 mm" in texts
+    assert "287 mm" in texts
+    assert "500 mm" in texts
+    assert len(_saw_lines(svg)) == 2
+
+
+def test_cut_template_of_a_rotated_tile_measures_from_its_rotated_shape():
+    svg = _piece_svg(_rect_tile(287, 300, nominal_width=600, nominal_height=300))
+
+    texts = _texts(svg)
+    assert "CUT 313 mm" in texts
+    assert not any(t.startswith("CUT") and t != "CUT 313 mm" for t in texts)
+
+
+def test_cut_template_lengths_always_add_up_to_the_whole_tile():
+    # 286.6 and 13.4 both round to whole mm that must still sum to 300.
+    svg = _piece_svg(_rect_tile(286.6, 600))
+
+    texts = _texts(svg)
+    assert "287 mm" in texts
+    assert "CUT 13 mm" in texts
+
+
+def test_notched_template_draws_the_opening_and_measures_its_position():
+    svg = _piece_svg(
+        _rect_tile(
+            300,
+            300,
+            nominal_width=300,
+            nominal_height=300,
+            kind=TileKind.NOTCHED,
+            notches=((50.0, 0.0, 100.0, 100.0),),
+        )
+    )
+
+    texts = _texts(svg)
+    assert texts.count("NOTCH 100 mm") == 2  # its width and its height
+    assert "50 mm" in texts  # from the left edge to the opening
+    assert "150 mm" in texts  # from the opening to the right edge
+    assert "200 mm" in texts  # from the opening up to the top edge
+    assert not any(t.startswith("CUT") for t in texts)  # nothing is trimmed
+    assert len(_waste_rects(svg)) == 2  # the surround is waste, so is the notch
+
+
+def test_notch_in_the_middle_of_a_tile_is_measured_from_every_side():
+    svg = _piece_svg(
+        _rect_tile(
+            300,
+            600,
+            kind=TileKind.NOTCHED,
+            notches=((100.0, 200.0, 80.0, 60.0),),
+        )
+    )
+
+    texts = _texts(svg)
+    assert "NOTCH 80 mm" in texts
+    assert "NOTCH 60 mm" in texts
+    assert {"100 mm", "120 mm", "200 mm", "340 mm"} <= set(texts)
+
+
+def test_trimmed_and_notched_template_shows_both_kinds_of_waste():
+    svg = _piece_svg(
+        _rect_tile(
+            287,
+            600,
+            kind=TileKind.NOTCHED,
+            notches=((0.0, 0.0, 100.0, 100.0),),
+        )
+    )
+
+    texts = _texts(svg)
+    assert "CUT 13 mm" in texts
+    assert "NOTCH 100 mm" in texts
+    assert len(_saw_lines(svg)) == 1
+
+
+def test_every_dimension_label_stays_inside_the_canvas():
+    tile = _rect_tile(
+        287,
+        500,
+        kind=TileKind.NOTCHED,
+        notches=((10.0, 10.0, 5.0, 5.0), (200.0, 300.0, 40.0, 40.0)),
+    )
+    svg = _piece_svg(tile)
+
+    root = ET.fromstring(svg)
+    canvas_w, canvas_h = float(root.get("width")), float(root.get("height"))
+    for text in root.iter("{http://www.w3.org/2000/svg}text"):
+        assert -1 <= float(text.get("x")) <= canvas_w + 1
+        assert -1 <= float(text.get("y")) <= canvas_h + 1
+
+
+def _label_boxes(svg):
+    """Approximate bounding box of every text label (12px bold Arial)."""
+    ns = "{http://www.w3.org/2000/svg}"
+    boxes = []
+    for text in ET.fromstring(svg).iter(f"{ns}text"):
+        x, y = float(text.get("x")), float(text.get("y"))
+        length = len(text.text) * 7.2
+        start = -length / 2 if text.get("text-anchor") == "middle" else 0
+        if text.get("transform"):  # rotated -90: reads upward from (x, y)
+            boxes.append((x - 12, y - (start + length), x + 3, y - start, text.text))
+        else:
+            boxes.append((x + start, y - 12, x + start + length, y + 3, text.text))
+    return boxes
+
+
+_SWEEP_NOTCHES = [
+    (),
+    ((0.0, 0.0, 100.0, 100.0),),  # top-left corner
+    ((100.0, 200.0, 80.0, 60.0),),  # floating in the middle
+    ((20.0, 10.0, 60.0, 50.0),),  # close to the top edge
+    ((20.0, 540.0, 60.0, 50.0),),  # close to the bottom edge
+    ((210.0, 500.0, 90.0, 100.0),),  # bottom-right corner
+    ((0.0, 250.0, 40.0, 120.0),),  # against the left edge
+    ((10.0, 10.0, 5.0, 5.0), (200.0, 300.0, 40.0, 40.0)),
+    ((120.0, 0.0, 60.0, 600.0),),  # a full-height slot
+]
+
+
+@pytest.mark.parametrize("notches", _SWEEP_NOTCHES)
+@pytest.mark.parametrize("nominal", [(300, 600), (600, 300), (200, 200), (600, 1200)])
+@pytest.mark.parametrize(
+    "trim", [(0, 0), (1, 0), (13, 0), (0, 3), (3, 3), (0, 100), (13, 100), (150, 150)]
+)
+def test_labels_never_overlap_and_stay_inside_the_canvas(nominal, trim, notches):
+    nominal_w, nominal_h = nominal
+    width, height = nominal_w - trim[0], nominal_h - trim[1]
+    kept = [n for n in notches if n[0] + n[2] <= width and n[1] + n[3] <= height]
+    if not kept and notches:
+        pytest.skip("opening falls outside this trimmed tile")
+    if not kept and trim == (0, 0):
+        pytest.skip("an untrimmed, un-notched tile is not a cut")
+    svg = _piece_svg(
+        _rect_tile(
+            width,
+            height,
+            nominal_w,
+            nominal_h,
+            kind=TileKind.NOTCHED if kept else TileKind.CUT,
+            notches=tuple(kept),
+        )
+    )
+
+    root = ET.fromstring(svg)
+    canvas_w, canvas_h = float(root.get("width")), float(root.get("height"))
+    boxes = _label_boxes(svg)
+    for left, top, right, bottom, text in boxes:
+        assert left >= 0 and top >= 0, f"{text!r} leaves the canvas"
+        assert right <= canvas_w and bottom <= canvas_h, f"{text!r} leaves the canvas"
+    for i, a in enumerate(boxes):
+        for b in boxes[i + 1 :]:
+            overlaps = (
+                a[0] < b[2] - 1
+                and b[0] < a[2] - 1
+                and a[1] < b[3] - 1
+                and b[1] < a[3] - 1
+            )
+            assert not overlaps, f"{a[4]!r} overlaps {b[4]!r}"
+
+
+def test_notch_is_drawn_where_the_layout_puts_it_measured_from_the_top():
+    # Surface y runs downward in the layout, so a notch 100 mm from the top
+    # edge must be 100 mm from the top of the template as well.
+    svg = _piece_svg(
+        _rect_tile(
+            300,
+            600,
+            kind=TileKind.NOTCHED,
+            notches=((0.0, 100.0, 50.0, 60.0),),
+        )
+    )
+
+    root = ET.fromstring(svg)
+    ns = "{http://www.w3.org/2000/svg}"
+    waste = [r for r in root.iter(f"{ns}rect") if r.get("fill") == "url(#waste)"]
+    tile_rect, notch_rect = waste
+    scale = float(tile_rect.get("width")) / 300
+    from_top = (float(notch_rect.get("y")) - float(tile_rect.get("y"))) / scale
+    assert from_top == pytest.approx(100, abs=0.5)
+    assert float(notch_rect.get("height")) / scale == pytest.approx(60, abs=0.5)
+    texts = _texts(svg)
+    assert "NOTCH 60 mm" in texts
+    assert "100 mm" in texts  # from the top edge down to the opening
+    assert "440 mm" in texts  # from the opening down to the bottom edge
+
+
+def test_rectangular_templates_are_valid_svg_data_urls():
+    assert generate_piece_diagram(_rect_tile(287, 600), "#d9c98a").startswith(
+        "data:image/svg+xml;base64,"
+    )
 
 
 def _solve_simple():
@@ -216,7 +447,7 @@ def test_assign_size_colors_ignores_full_tiles_and_is_deterministic():
 
     # One entry per distinct non-full size — the repeated 50x100 CUT tile
     # doesn't produce a second entry, and the FULL tile produces none.
-    assert set(colors.keys()) == {(50, 100), (30, 100)}
+    assert set(colors.keys()) == {(50, 100, 100, 100), (30, 100, 100, 100)}
     assert len(set(colors.values())) == 2  # the two sizes get different colors
     # Calling it again on the same input must produce the exact same mapping
     # (the SVG and the API's fill_color field both depend on this).
@@ -286,7 +517,45 @@ def test_tile_size_key_includes_nominal_shape_for_axis_aligned_tiles():
         nominal_width=100,
         nominal_height=100,
     )
-    assert tile_size_key(tile) == (50, 100)
+    assert tile_size_key(tile) == (50, 100, 100, 100)
+
+
+def test_same_size_cut_from_a_tile_and_from_a_rotated_tile_are_different_cuts():
+    # 287x300 is a 13 mm trim off a 300x600 tile, but a 313 mm trim off a
+    # rotated 600x300 one (herringbone mixes both).
+    common = {
+        "x": 0,
+        "y": 0,
+        "width": 287,
+        "height": 300,
+        "rotated": False,
+        "kind": TileKind.CUT,
+    }
+    upright = PlacedTile(nominal_width=300, nominal_height=600, **common)
+    rotated = PlacedTile(nominal_width=600, nominal_height=300, **common)
+
+    assert tile_size_key(upright) != tile_size_key(rotated)
+
+
+def test_tile_size_key_separates_different_notches_of_the_same_size():
+    common = {
+        "x": 0,
+        "y": 0,
+        "width": 300,
+        "height": 300,
+        "rotated": False,
+        "kind": TileKind.NOTCHED,
+        "nominal_width": 300,
+        "nominal_height": 300,
+    }
+    corner = PlacedTile(notches=((0.0, 0.0, 100.0, 100.0),), **common)
+    other_corner = PlacedTile(notches=((200.0, 0.0, 100.0, 100.0),), **common)
+    same_as_corner = PlacedTile(notches=((0.2, 0.0, 99.8, 100.0),), **common)
+    plain = PlacedTile(**{**common, "kind": TileKind.CUT})
+
+    assert tile_size_key(corner) != tile_size_key(other_corner)
+    assert tile_size_key(corner) == tile_size_key(same_as_corner)
+    assert tile_size_key(corner) != tile_size_key(plain)
 
 
 def test_diagonal_svg_draws_polygons_not_rects_for_tiles():

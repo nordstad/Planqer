@@ -57,6 +57,27 @@ The recommended candidate is only a starting point. Compare the alternatives
 when a slightly less efficient layout gives safer edge cuts or fewer saw
 setups.
 
+### Cut list and cut templates
+
+Below the diagram, the cut list groups every cut piece by size, with a colour
+and letter that match the diagram. Each cut piece has a **View cut** button
+that opens a cut template:
+
+- The piece to keep is drawn with the waste hatched around it, and an orange
+  line marks each saw cut with the amount to remove (`CUT 13 mm`).
+- Every opening that cuts into the piece is drawn as waste too, with its size
+  (`NOTCH 100 mm`) and its distance from each edge, so it can be marked out
+  directly on the tile.
+- Diagonal layouts, including diagonal herringbone, show the cut polygon with
+  the length of every edge instead.
+
+Two pieces share a letter only when they are the same physical cut: the same
+size, from the same tile orientation, with openings in the same places.
+Mirror-image notches therefore get separate letters and templates.
+
+Templates are drawn the way the layout is, from the piece's top-left corner,
+and all lengths are whole millimetres that add up to the tile's size.
+
 ## Saving a plan
 
 Name and save a selected layout to keep its inputs, chosen candidate, and
