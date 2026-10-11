@@ -216,19 +216,42 @@ _SWEEP_NOTCHES = [
 ]
 
 
-@pytest.mark.parametrize("notches", _SWEEP_NOTCHES)
-@pytest.mark.parametrize("nominal", [(300, 600), (600, 300), (200, 200), (600, 1200)])
+def _sweep_cases():
+    """Every (nominal, trim, notches) worth drawing: openings that don't fit
+    inside a trimmed tile are dropped, and an untrimmed, un-notched tile is
+    not a cut at all."""
+    cases = {}
+    for nominal_w, nominal_h in [(300, 600), (600, 300), (200, 200), (600, 1200)]:
+        for trim_w, trim_h in [
+            (0, 0),
+            (1, 0),
+            (13, 0),
+            (0, 3),
+            (3, 3),
+            (0, 100),
+            (13, 100),
+            (150, 150),
+        ]:
+            width, height = nominal_w - trim_w, nominal_h - trim_h
+            for notches in _SWEEP_NOTCHES:
+                kept = tuple(
+                    n for n in notches if n[0] + n[2] <= width and n[1] + n[3] <= height
+                )
+                if notches and not kept:
+                    continue
+                if not kept and (trim_w, trim_h) == (0, 0):
+                    continue
+                cases[(nominal_w, nominal_h, trim_w, trim_h, kept)] = None
+    return list(cases)
+
+
 @pytest.mark.parametrize(
-    "trim", [(0, 0), (1, 0), (13, 0), (0, 3), (3, 3), (0, 100), (13, 100), (150, 150)]
+    ("nominal_w", "nominal_h", "trim_w", "trim_h", "kept"), _sweep_cases()
 )
-def test_labels_never_overlap_and_stay_inside_the_canvas(nominal, trim, notches):
-    nominal_w, nominal_h = nominal
-    width, height = nominal_w - trim[0], nominal_h - trim[1]
-    kept = [n for n in notches if n[0] + n[2] <= width and n[1] + n[3] <= height]
-    if not kept and notches:
-        pytest.skip("opening falls outside this trimmed tile")
-    if not kept and trim == (0, 0):
-        pytest.skip("an untrimmed, un-notched tile is not a cut")
+def test_labels_never_overlap_and_stay_inside_the_canvas(
+    nominal_w, nominal_h, trim_w, trim_h, kept
+):
+    width, height = nominal_w - trim_w, nominal_h - trim_h
     svg = _piece_svg(
         _rect_tile(
             width,
