@@ -50,6 +50,18 @@ describe('UserSettings', () => {
     expect(await screen.findByText('Settings saved')).toBeInTheDocument();
   });
 
+  it('saves the catalogue country and applies it at once', async () => {
+    renderSettings();
+    const select = await screen.findByLabelText('Product catalogue');
+    expect(select).toHaveValue('auto');
+
+    fireEvent.change(select, { target: { value: 'NO' } });
+    fireEvent.click(screen.getByRole('button', { name: /Save settings/i }));
+
+    await waitFor(() => expect(updateUserSettings).toHaveBeenCalledWith(expect.objectContaining({ catalogue_country: 'NO' })));
+    expect(localStorage.getItem('planqer-catalogue-country-v1')).toBe('NO');
+  });
+
   it('allows typing a comma-separated board length', async () => {
     const user = userEvent.setup();
     renderSettings();

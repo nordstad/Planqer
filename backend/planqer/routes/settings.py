@@ -8,9 +8,25 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
 from planqer.auth import get_current_user
+from planqer.catalogue import configured_country
 from planqer.database import User, UserSettings, get_session
 
 router = APIRouter(prefix="/settings", tags=["user-settings"])
+
+# `auto` follows the language (decided by the client); the rest pick a catalogue.
+CatalogueChoice = Literal["auto", "SE", "NO", "generic"]
+
+# Starting currency and VAT for a new account on an instance with a default country.
+COUNTRY_USER_DEFAULTS = {
+    "SE": {"default_currency": "SEK", "default_vat_rate": 25.0},
+    "NO": {"default_currency": "NOK", "default_vat_rate": 25.0},
+}
+
+
+def new_user_settings(user_id: UUID) -> UserSettings:
+    return UserSettings(
+        user_id=user_id, **COUNTRY_USER_DEFAULTS.get(configured_country() or "", {})
+    )
 
 
 class UserSettingsResponse(BaseModel):
@@ -25,6 +41,7 @@ class UserSettingsResponse(BaseModel):
     preferred_units: str
     preferred_language: Literal["en-GB", "sv-SE", "nb-NO"] | None
     spare_margin_percent: float
+    catalogue_country: CatalogueChoice
 
 
 class UserSettingsUpdate(BaseModel):
@@ -37,6 +54,7 @@ class UserSettingsUpdate(BaseModel):
     preferred_units: str | None = None
     preferred_language: Literal["en-GB", "sv-SE", "nb-NO"] | None = None
     spare_margin_percent: float | None = Field(default=None, ge=0, le=100)
+    catalogue_country: CatalogueChoice | None = None
 
 
 LEGACY_DEFAULT_BOARD_LENGTHS = [300, 360, 500]
@@ -71,6 +89,7 @@ def settings_to_response(settings: UserSettings) -> UserSettingsResponse:
         preferred_units=settings.preferred_units,
         preferred_language=settings.preferred_language,
         spare_margin_percent=settings.spare_margin_percent,
+        catalogue_country=settings.catalogue_country,
     )
 
 
@@ -84,7 +103,7 @@ async def get_user_settings(
     settings = result.scalar_one_or_none()
 
     if not settings:
-        settings = UserSettings(user_id=current_user.id)
+        settings = new_user_settings(current_user.id)
         session.add(settings)
         await session.commit()
         await session.refresh(settings)
@@ -103,7 +122,7 @@ async def update_user_settings(
     settings = result.scalar_one_or_none()
 
     if not settings:
-        settings = UserSettings(user_id=current_user.id)
+        settings = new_user_settings(current_user.id)
         session.add(settings)
 
     if updates.default_board_lengths is not None:
@@ -124,6 +143,8 @@ async def update_user_settings(
         settings.preferred_language = updates.preferred_language
     if updates.spare_margin_percent is not None:
         settings.spare_margin_percent = updates.spare_margin_percent
+    if updates.catalogue_country is not None:
+        settings.catalogue_country = updates.catalogue_country
 
     await session.commit()
     await session.refresh(settings)

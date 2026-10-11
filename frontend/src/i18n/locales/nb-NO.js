@@ -80,6 +80,8 @@ const locale = {
     spareMargin: 'Standard tilleggsmargin, %', spareMarginHelp: 'Legges til for hver kjøpte lengde eller plate. Null slår av ekstra materialer.',
     loadError: 'Kunne ikke laste inn innstillingene: {{message}}',
     saveError: 'Kunne ikke lagre innstillingene: {{message}}',
+    catalogueCountry: 'Produktkatalog',
+    catalogueCountryHelp: 'Hvilket lands standardmål for trelast og plater Planqer foreslår. Automatisk følger språket ditt.',
   },
   access: {
     default: 'Logg inn for å bruke denne funksjonen.',
@@ -406,6 +408,13 @@ Object.assign(locale, {
     standardSheets: "Standardformat:",
     dimensionsRequired: "Oppgi tykkelse og bredde på bordet før du planlegger",
     chooseProductFor: "Produkt for {{name}}",
+  },
+  catalogueCountry: {
+    label: "Produktkatalog",
+    automatic: "Automatisk",
+    automaticWith: "Automatisk ({{country}})",
+    generic: "Generisk (uten land)",
+    genericHint: "Bare generiske mål vises. Velg et land for standardmål på trelast.",
   },
   catalogueAdmin: {
     tab: { users: "Brukere", catalogue: "Katalog" },

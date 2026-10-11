@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { resolveCatalogueCountry } from './catalogueChoice';
 
 /*
   Where the API lives, worked out from how you reached the app.
@@ -297,9 +298,10 @@ export const deleteProject = async (projectId) => {
 
 /* Revalidates a stored copy with its ETag. A 304 carries no body, so it is
    reported as notModified for the caller to keep what it has. */
-export const getCatalogue = async (etag) => {
+export const getCatalogue = async (etag, country) => {
   try {
     const response = await axios.get(`${API_URL}/api/catalogue/`, {
+      params: country ? { country } : undefined,
       headers: etag ? { 'If-None-Match': etag } : {},
       validateStatus: (status) => status === 200 || status === 304,
     });
@@ -519,9 +521,15 @@ export const downloadProjectImage = async (projectId, projectType) => {
 
 const catalogueEntryUrl = (productId, suffix = '') => `${API_URL}/api/admin/catalogue/${encodeURIComponent(productId)}${suffix}`;
 
+/* The catalogue the admin is looking at: the same country the picker shows. */
+const catalogueView = () => {
+  const catalogue = resolveCatalogueCountry();
+  return catalogue ? { catalogue } : undefined;
+};
+
 export const getAdminCatalogue = async () => {
   try {
-    const response = await axios.get(`${API_URL}/api/admin/catalogue`);
+    const response = await axios.get(`${API_URL}/api/admin/catalogue`, { params: catalogueView() });
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
@@ -530,7 +538,7 @@ export const getAdminCatalogue = async () => {
 
 export const createCatalogueEntry = async (entry) => {
   try {
-    const response = await axios.post(`${API_URL}/api/admin/catalogue`, entry);
+    const response = await axios.post(`${API_URL}/api/admin/catalogue`, entry, { params: catalogueView() });
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
@@ -539,7 +547,7 @@ export const createCatalogueEntry = async (entry) => {
 
 export const updateCatalogueEntry = async (productId, details) => {
   try {
-    const response = await axios.put(catalogueEntryUrl(productId), details);
+    const response = await axios.put(catalogueEntryUrl(productId), details, { params: catalogueView() });
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
@@ -548,7 +556,7 @@ export const updateCatalogueEntry = async (productId, details) => {
 
 export const hideCatalogueEntry = async (productId) => {
   try {
-    const response = await axios.post(catalogueEntryUrl(productId, '/hide'));
+    const response = await axios.post(catalogueEntryUrl(productId, '/hide'), undefined, { params: catalogueView() });
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
@@ -557,7 +565,7 @@ export const hideCatalogueEntry = async (productId) => {
 
 export const restoreCatalogueEntry = async (productId) => {
   try {
-    const response = await axios.post(catalogueEntryUrl(productId, '/restore'));
+    const response = await axios.post(catalogueEntryUrl(productId, '/restore'), undefined, { params: catalogueView() });
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
@@ -566,7 +574,7 @@ export const restoreCatalogueEntry = async (productId) => {
 
 export const resetCatalogueEntry = async (productId) => {
   try {
-    await axios.delete(catalogueEntryUrl(productId));
+    await axios.delete(catalogueEntryUrl(productId), { params: catalogueView() });
   } catch (error) {
     throw new Error(extractErrorMessage(error));
   }
@@ -576,7 +584,7 @@ export const resetCatalogueEntry = async (productId) => {
 export const getCatalogueSuggestion = async (productId, { source, country } = {}) => {
   try {
     const response = await axios.get(catalogueEntryUrl(productId, '/suggestion'), {
-      params: { ...(source ? { source } : {}), ...(country ? { country } : {}) },
+      params: { ...catalogueView(), ...(source ? { source } : {}), ...(country ? { country } : {}) },
     });
     return response.data;
   } catch (error) {

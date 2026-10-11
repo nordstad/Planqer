@@ -19,6 +19,7 @@
 */
 
 import { getCatalogue } from './api';
+import { resolveCatalogueCountry } from './catalogueChoice';
 
 export const FREE_TEXT_TYPE = { board: 'custom', sheet: 'sheet-custom' };
 export const DETAIL_FIELDS = ['species', 'treatment', 'grade', 'profile'];
@@ -37,11 +38,14 @@ const num = (value) => (Number.isFinite(value) ? String(Math.round(value * 100) 
 
 /* ── loading ─────────────────────────────────────────────────────────── */
 
-let pending = null;
+const pending = new Map();
 
-const readStored = () => {
+// The default catalogue keeps the original key; each chosen country has its own copy.
+const cacheKeyFor = (country) => (country ? `${CACHE_KEY}:${country}` : CACHE_KEY);
+
+const readStored = (country) => {
   try {
-    return JSON.parse(localStorage.getItem(CACHE_KEY));
+    return JSON.parse(localStorage.getItem(cacheKeyFor(country)));
   } catch {
     return null;
   }
@@ -50,29 +54,32 @@ const readStored = () => {
 /* Once per page load, and not at all when the stored copy is still current: the
    server answers a revalidation with a bare 304. If the server can't be reached
    the stored copy is used, so a flaky connection never empties the picker. */
-export const loadCatalogue = () => {
-  if (!pending) {
-    pending = (async () => {
-      const stored = readStored();
+export const loadCatalogue = (country = resolveCatalogueCountry()) => {
+  const key = country || '';
+  if (!pending.has(key)) {
+    pending.set(key, (async () => {
+      const stored = readStored(country);
       try {
-        const response = await getCatalogue(stored?.etag);
+        const response = country
+          ? await getCatalogue(stored?.etag, country)
+          : await getCatalogue(stored?.etag);
         if (response.notModified && stored) return stored.data;
-        localStorage.setItem(CACHE_KEY, JSON.stringify({ etag: response.etag, data: response.data }));
+        localStorage.setItem(cacheKeyFor(country), JSON.stringify({ etag: response.etag, data: response.data }));
         return response.data;
       } catch (error) {
         if (stored) return stored.data;
         throw error;
       }
     })().catch((error) => {
-      pending = null;
+      pending.delete(key);
       throw error;
-    });
+    }));
   }
-  return pending;
+  return pending.get(key);
 };
 
 export const resetCatalogueCache = () => {
-  pending = null;
+  pending.clear();
 };
 
 /* ── lookups ─────────────────────────────────────────────────────────── */

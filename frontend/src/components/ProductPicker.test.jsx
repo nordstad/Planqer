@@ -2,13 +2,15 @@ import { useState } from 'react';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import '../i18n';
 import ProductPicker, { StockSuggestions } from './ProductPicker';
-import { createCatalogueEntry, getCatalogue } from '../utils/api';
+import { createCatalogueEntry, getAuthToken, getCatalogue, updateUserSettings } from '../utils/api';
 import { AuthContext } from '../contexts/authState';
 import {
   emptySelection, freeTextSelection, resetCatalogueCache, suggestSelection, typeSelection,
 } from '../utils/catalogue';
 
-vi.mock('../utils/api', () => ({ getCatalogue: vi.fn(), createCatalogueEntry: vi.fn() }));
+vi.mock('../utils/api', () => ({
+  getCatalogue: vi.fn(), createCatalogueEntry: vi.fn(), getAuthToken: vi.fn(), updateUserSettings: vi.fn(),
+}));
 
 const entry = (id, type, thickness, width, extra = {}) => ({
   id, type, kind: 'board', country: 'SE', thickness, width, lengths: [2400, 3000], max_length: null,
@@ -98,14 +100,14 @@ describe('searching and picking', () => {
 
     const active = () => box().getAttribute('aria-activedescendant');
     const first = active();
-    expect(screen.getByRole('option', { selected: true })).toHaveAttribute('id', first);
+    expect(within(screen.getByRole('listbox')).getByRole('option', { selected: true })).toHaveAttribute('id', first);
 
     fireEvent.keyDown(box(), { key: 'ArrowDown' });
     expect(active()).not.toBe(first);
     fireEvent.keyDown(box(), { key: 'ArrowUp' });
     expect(active()).toBe(first);
     fireEvent.keyDown(box(), { key: 'ArrowUp' });
-    expect(screen.getByRole('option', { selected: true })).toHaveTextContent(/as my own product/);
+    expect(within(screen.getByRole('listbox')).getByRole('option', { selected: true })).toHaveTextContent(/as my own product/);
 
     fireEvent.keyDown(box(), { key: 'Escape' });
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
@@ -365,5 +367,53 @@ describe('ProductPicker: a product read from the model', () => {
     fireEvent.click(screen.getByRole('button', { name: /Details/ }));
     fireEvent.change(screen.getByLabelText(/^Species/), { target: { value: 'pine' } });
     expect(screen.getByTestId('product-summary')).not.toHaveTextContent('From model');
+  });
+});
+
+describe('ProductPicker: choosing the catalogue country', () => {
+  const generic = { ...catalogue, country: null, country_name: null, products: [] };
+
+  beforeEach(() => {
+    getAuthToken.mockReturnValue(null);
+    updateUserSettings.mockReset();
+  });
+
+  it('asks for the country the user has chosen', async () => {
+    localStorage.setItem('planqer-catalogue-country-v1', 'NO');
+    await show(<Harness />);
+    expect(getCatalogue).toHaveBeenCalledWith(undefined, 'NO');
+    expect(screen.getByLabelText('Product catalogue')).toHaveValue('NO');
+  });
+
+  it('prompts for a country while the generic catalogue is showing, and reloads on a choice', async () => {
+    getCatalogue.mockResolvedValue({ data: generic, etag: '"g"' });
+    await show(<Harness />);
+    expect(screen.getByText(/Only generic sizes are shown/)).toBeInTheDocument();
+
+    getCatalogue.mockResolvedValue({ data: catalogue, etag: '"se"' });
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Product catalogue'), { target: { value: 'SE' } });
+    });
+
+    expect(getCatalogue).toHaveBeenLastCalledWith(undefined, 'SE');
+    expect(localStorage.getItem('planqer-catalogue-country-v1')).toBe('SE');
+    expect(screen.queryByText(/Only generic sizes are shown/)).not.toBeInTheDocument();
+    expect(updateUserSettings).not.toHaveBeenCalled();
+  });
+
+  it('keeps the choice in the account when signed in', async () => {
+    getAuthToken.mockReturnValue('token');
+    updateUserSettings.mockResolvedValue({});
+    await show(<Harness />);
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Product catalogue'), { target: { value: 'generic' } });
+    });
+    expect(updateUserSettings).toHaveBeenCalledWith({ catalogue_country: 'generic' });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Product catalogue'), { target: { value: 'auto' } });
+    });
+    expect(updateUserSettings).toHaveBeenLastCalledWith({ catalogue_country: 'auto' });
+    expect(localStorage.getItem('planqer-catalogue-country-v1')).toBeNull();
   });
 });

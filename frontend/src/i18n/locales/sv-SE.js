@@ -80,6 +80,8 @@ const locale = {
     spareMargin: 'Standardmarginal, %', spareMarginHelp: 'Läggs till för varje köpt bräda eller skiva. Noll stänger av extra material.',
     loadError: 'Det gick inte att läsa inställningarna: {{message}}',
     saveError: 'Det gick inte att spara inställningarna: {{message}}',
+    catalogueCountry: 'Produktkatalog',
+    catalogueCountryHelp: 'Vilket lands standardmått för virke och skivor Planqer föreslår. Automatiskt följer ditt språk.',
   },
   access: {
     default: 'Logga in för att använda den här funktionen.',
@@ -408,6 +410,13 @@ Object.assign(locale, {
     standardSheets: "Standardformat:",
     dimensionsRequired: "Ange brädans tjocklek och bredd innan du planerar",
     chooseProductFor: "Produkt för {{name}}",
+  },
+  catalogueCountry: {
+    label: "Produktkatalog",
+    automatic: "Automatiskt",
+    automaticWith: "Automatiskt ({{country}})",
+    generic: "Generisk (inget land)",
+    genericHint: "Bara generiska mått visas. Välj ett land för standardmått på virke.",
   },
   catalogueAdmin: {
     tab: { users: "Användare", catalogue: "Katalog" },

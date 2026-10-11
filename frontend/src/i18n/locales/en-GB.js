@@ -81,6 +81,8 @@ const locale = {
     spareMarginHelp: 'Added to each purchased board or sheet size. Zero disables spare items.',
     loadError: 'Failed to load settings: {{message}}',
     saveError: 'Failed to save settings: {{message}}',
+    catalogueCountry: 'Product catalogue',
+    catalogueCountryHelp: "Which country's standard timber and sheet sizes Planqer suggests. Automatic follows your language.",
   },
   access: {
     default: 'Sign in to access this feature.',
@@ -328,6 +330,13 @@ Object.assign(locale, {
     standardSheets: "Standard sheet sizes:",
     dimensionsRequired: "Enter the board’s thickness and width before planning",
     chooseProductFor: "Product for {{name}}",
+  },
+  catalogueCountry: {
+    label: "Product catalogue",
+    automatic: "Automatic",
+    automaticWith: "Automatic ({{country}})",
+    generic: "Generic (no country)",
+    genericHint: "Only generic sizes are shown. Choose a country for standard timber sizes.",
   },
   catalogueAdmin: {
     tab: { users: "Users", catalogue: "Catalogue" },

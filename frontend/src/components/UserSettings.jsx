@@ -4,6 +4,8 @@ import { getUserSettings, updateUserSettings } from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import Loader from './Loader';
+import CatalogueCountrySelect from './CatalogueCountrySelect';
+import { setCatalogueChoice } from '../utils/catalogueChoice';
 
 const UserSettings = () => {
   const { t } = useTranslation();
@@ -17,6 +19,7 @@ const UserSettings = () => {
     default_prices_include_vat: true,
     preferred_language: activeLanguage,
     spare_margin_percent: 10,
+    catalogue_country: 'auto',
   });
   const [boardLengthsInput, setBoardLengthsInput] = useState('3000, 3600, 5000');
   const [loading, setLoading] = useState(true);
@@ -36,6 +39,7 @@ const UserSettings = () => {
           default_prices_include_vat: loadedSettings.default_prices_include_vat ?? true,
           preferred_language: loadedSettings.preferred_language || activeLanguage,
           spare_margin_percent: loadedSettings.spare_margin_percent ?? 10,
+          catalogue_country: loadedSettings.catalogue_country ?? 'auto',
         });
         setBoardLengthsInput(loadedSettings.default_board_lengths.join(', '));
       } catch (err) {
@@ -63,6 +67,7 @@ const UserSettings = () => {
         .filter((length) => !isNaN(length));
       await updateUserSettings({ ...settings, default_board_lengths: boardLengths });
       await changeLanguage(settings.preferred_language, { persistAccount: false });
+      setCatalogueChoice(settings.catalogue_country === 'auto' ? null : settings.catalogue_country);
       setSavedNotice(t('common.settingsSaved'));
       setTimeout(() => setSavedNotice(''), 3000);
     } catch (err) {
@@ -165,6 +170,18 @@ const UserSettings = () => {
             <option value="sv-SE">Svenska</option>
             <option value="nb-NO">Norsk bokmål</option>
           </select>
+        </div>
+
+        <div className="space-y-2" style={{ marginBottom: '20px' }}>
+          <label className="form-label" htmlFor="settings-catalogue">{t('settings.catalogueCountry')}</label>
+          <CatalogueCountrySelect
+            id="settings-catalogue"
+            className="form-select"
+            value={settings.catalogue_country}
+            onChange={(value) => setSettings((prev) => ({ ...prev, catalogue_country: value }))}
+            disabled={saving}
+          />
+          <p className="synthetic">{t('settings.catalogueCountryHelp')}</p>
         </div>
 
         <button type="submit" className="btn-order" disabled={saving}>

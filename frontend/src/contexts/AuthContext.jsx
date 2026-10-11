@@ -2,6 +2,7 @@ import { useContext, useState, useEffect } from 'react';
 import { getCurrentUser, logoutUser, getAuthToken, getSetupStatus, getUserSettings, updateUserSettings } from '../utils/api';
 import { useLanguage } from './LanguageContext';
 import { AuthContext } from './authState';
+import { setCatalogueChoice } from '../utils/catalogueChoice';
 
 export { AuthContext };
 
@@ -27,6 +28,7 @@ export const AuthProvider = ({ children }) => {
     const syncLanguage = async () => {
       try {
         const settings = await getUserSettings();
+        setCatalogueChoice(['SE', 'NO', 'generic'].includes(settings.catalogue_country) ? settings.catalogue_country : null);
         if (settings.preferred_language) {
           await changeLanguage(settings.preferred_language, { persistAccount: false });
         } else {

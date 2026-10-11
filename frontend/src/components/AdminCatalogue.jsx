@@ -11,6 +11,8 @@ import ConfirmDialog from './ConfirmDialog';
 import CatalogueEntryForm from './CatalogueEntryForm';
 import CatalogueSuggest from './CatalogueSuggest';
 import Loader from './Loader';
+import CatalogueCountrySelect from './CatalogueCountrySelect';
+import { useCatalogueChoice } from '../hooks/useCatalogueChoice';
 import {
   createCatalogueEntry, getAdminCatalogue, hideCatalogueEntry, resetCatalogueEntry,
   restoreCatalogueEntry, updateCatalogueEntry,
@@ -26,6 +28,7 @@ const PANEL_CELL = { textAlign: 'left', fontSize: '14px', fontWeight: 400, lette
 
 const AdminCatalogue = () => {
   const { t, i18n } = useTranslation();
+  const { choice, country, setChoice } = useCatalogueChoice();
   const [items, setItems] = useState(null);
   const [catalogue, setCatalogue] = useState(null);
   const [error, setError] = useState(null);
@@ -46,7 +49,7 @@ const AdminCatalogue = () => {
     } catch (err) {
       setError(err.message);
     }
-  }, []);
+  }, [country]);
 
   useEffect(() => { refresh(); }, [refresh]);
 
@@ -93,6 +96,15 @@ const AdminCatalogue = () => {
   return (
     <div>
       {error && <div className="alert-danger" role="alert" style={{ marginBottom: '16px' }}>{error}</div>}
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
+        <label className="form-label" htmlFor="admin-catalogue-country" style={{ margin: 0 }}>{t('catalogueCountry.label')}</label>
+        <CatalogueCountrySelect
+          id="admin-catalogue-country"
+          value={choice || 'auto'}
+          onChange={(next) => setChoice(next === 'auto' ? null : next)}
+          style={{ width: 'auto', minWidth: '160px' }}
+        />
+      </div>
       <p className="synthetic" style={{ whiteSpace: 'normal', marginBottom: '12px' }}>
         {t('catalogueAdmin.intro', { country: countryName })}
       </p>

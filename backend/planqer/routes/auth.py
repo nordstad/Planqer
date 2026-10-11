@@ -16,9 +16,10 @@ from planqer.auth import (
     validate_password,
     verify_password,
 )
-from planqer.database import InstanceBootstrap, User, UserSettings, get_session
+from planqer.database import InstanceBootstrap, User, get_session
 
 from .common import limiter
+from .settings import new_user_settings
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
@@ -109,7 +110,7 @@ async def register_user(
     await session.commit()
     await session.refresh(db_user)
 
-    session.add(UserSettings(user_id=db_user.id))
+    session.add(new_user_settings(db_user.id))
     await session.commit()
 
     return UserResponse(

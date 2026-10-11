@@ -73,6 +73,7 @@ class UserSettings(SQLModel, table=True):
     preferred_units: str = Field(default="mm")
     preferred_language: str | None = Field(default=None)
     spare_margin_percent: float = Field(default=10.0)
+    catalogue_country: str = Field(default="auto")
 
     created_at: datetime | None = Field(
         default_factory=lambda: datetime.now(),

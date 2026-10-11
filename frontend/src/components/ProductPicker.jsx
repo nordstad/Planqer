@@ -16,11 +16,31 @@ import { useTranslation } from 'react-i18next';
 import Disclosure from './Disclosure';
 import SaveToCatalogue from './SaveToCatalogue';
 import { AuthContext } from '../contexts/authState';
+import CatalogueCountrySelect from './CatalogueCountrySelect';
+import { useCatalogueChoice } from '../hooks/useCatalogueChoice';
 import {
   DETAIL_FIELDS, browseTypes, detailLabel, detailOptions, emptySelection, findType,
   freeTextSelection, isEmptySelection, labelIn, loadCatalogue, rememberChoice, resetCatalogueCache, searchProducts,
   selectionSummary, sizeLabel, typeSelection,
 } from '../utils/catalogue';
+
+/* Which catalogue the suggestions come from, with a prompt while it is the generic one. */
+const CatalogueLine = ({ catalogue, idBase }) => {
+  const { t } = useTranslation();
+  const { choice, setChoice } = useCatalogueChoice();
+  return (
+    <p className="synthetic" style={{ marginTop: '6px', whiteSpace: 'normal', display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+      <label htmlFor={`${idBase}-catalogue`}>{t('catalogueCountry.label')}</label>
+      <CatalogueCountrySelect
+        id={`${idBase}-catalogue`}
+        value={choice || 'auto'}
+        style={{ width: 'auto', minWidth: '160px', padding: '4px 28px 4px 8px' }}
+        onChange={(next) => setChoice(next === 'auto' ? null : next)}
+      />
+      {catalogue && !catalogue.country && <span>{t('catalogueCountry.genericHint')}</span>}
+    </p>
+  );
+};
 
 const spaced = (n) => Math.round(n).toLocaleString('sv-SE');
 const DETAIL_LABEL_KEYS = {
@@ -31,15 +51,16 @@ const DETAIL_LABEL_KEYS = {
 };
 
 export const useCatalogue = () => {
+  const { country } = useCatalogueChoice();
   const [state, setState] = useState({ catalogue: null, failed: false });
   const [version, setVersion] = useState(0);
   useEffect(() => {
     let live = true;
-    loadCatalogue()
+    loadCatalogue(country)
       .then((catalogue) => live && setState({ catalogue, failed: false }))
       .catch(() => live && setState({ catalogue: null, failed: true }));
     return () => { live = false; };
-  }, [version]);
+  }, [version, country]);
   const reload = () => {
     resetCatalogueCache();
     setVersion((v) => v + 1);
@@ -291,6 +312,8 @@ const ProductPicker = ({
           ))}
         </ul>
       )}
+
+      <CatalogueLine catalogue={catalogue} idBase={idBase} />
 
       <p className="synthetic" style={{ marginTop: '6px', whiteSpace: 'normal' }} role="status" data-testid="product-summary">
         {hasSelection ? (

@@ -62,10 +62,16 @@ accounts and saved projects.
 - `DATABASE_URL`: defaults to a local SQLite file. Overrides the database
   location/engine.
 
-- `PLANQER_CATALOGUE_COUNTRY`: no default. `SE` (Sweden) or `NO` (Norway),
-  selecting the built-in product catalogue. Unset, or a country without
-  built-in data, gives the generic catalogue: product types and details, no
-  sized entries. See [Product catalogue](#product-catalogue).
+- `PLANQER_CATALOGUE_COUNTRY`: optional, no default. `SE` (Sweden) or `NO`
+  (Norway). The catalogue used by anyone who hasn't chosen one and whose
+  language and browser don't point to a country; leave it empty for the generic
+  catalogue (product types and details, no sized entries). It is only a
+  default: every user picks their own catalogue in the product picker or under
+  **Defaults → Product catalogue**, and *Automatic* follows their language
+  (Svenska: Sweden, Norsk bokmål: Norway) or an `en-SE`-style browser locale.
+  New accounts also start with this country's currency and VAT (SEK or NOK,
+  25 %); existing accounts keep their own. See
+  [Product catalogue](#product-catalogue).
 
 Other backend limits (rate limits, token expiry) live in `backend/config.yaml`,
 not environment variables. Board and part lengths are limited to 15 000 mm and
@@ -92,8 +98,9 @@ from Moelven's stated fixed lengths. Data files live in
 ### Changing the catalogue for your instance
 
 Admins can adjust the catalogue without touching those files: **Admin →
-Catalogue** lists every product the picker offers, built-in and local, with a
-search and filters. From there an admin can
+Catalogue** lists every product the picker offers for the catalogue country
+chosen at the top of the page (the same choice as in the picker), built-in and
+local, with a search and filters. From there an admin can
 
 - **add** a product that is missing (type, size, stock lengths, details and an
   optional source);

@@ -71,6 +71,22 @@ describe('loading', () => {
     expect(JSON.parse(localStorage.getItem('planqer-catalogue-v1'))).toEqual({ etag: '"abc"', data: catalogue });
   });
 
+  it('keeps a separate copy for each country', async () => {
+    getCatalogue.mockResolvedValue({ data: catalogue, etag: '"se"' });
+    expect(await loadCatalogue('SE')).toBe(catalogue);
+    const norway = { ...catalogue, country: 'NO' };
+    getCatalogue.mockResolvedValue({ data: norway, etag: '"no"' });
+    expect(await loadCatalogue('NO')).toBe(norway);
+
+    expect(getCatalogue).toHaveBeenNthCalledWith(1, undefined, 'SE');
+    expect(getCatalogue).toHaveBeenNthCalledWith(2, undefined, 'NO');
+    expect(await loadCatalogue('SE')).toBe(catalogue);
+    expect(getCatalogue).toHaveBeenCalledTimes(2);
+    expect(JSON.parse(localStorage.getItem('planqer-catalogue-v1:SE')).etag).toBe('"se"');
+    expect(JSON.parse(localStorage.getItem('planqer-catalogue-v1:NO')).etag).toBe('"no"');
+    expect(localStorage.getItem('planqer-catalogue-v1')).toBeNull();
+  });
+
   it('revalidates a stored copy and keeps it on 304', async () => {
     localStorage.setItem('planqer-catalogue-v1', JSON.stringify({ etag: '"abc"', data: catalogue }));
     getCatalogue.mockResolvedValue({ notModified: true, etag: '"abc"' });
