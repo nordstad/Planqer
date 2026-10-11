@@ -452,7 +452,7 @@ Object.assign(locale, {
       saveLocal: "Velg en type og oppgi målene.",
     },
     suggestTitle: "Foreslå til Planqer",
-    suggestIntro: "Dette lager en forhåndsutfylt GitHub-sak til Planqer-prosjektet. Ingenting sendes før du åpner den, og du kan redigere den først. Legg til en kilde slik at oppføringen kan kontrolleres.",
+    suggestIntro: "Lager en forhåndsutfylt sak på GitHub. Ingenting sendes før du selv sender den inn.",
     sourceUrl: "Kilde-URL",
     country: "Land",
     prepareIssue: "Klargjør sak",

@@ -374,7 +374,7 @@ Object.assign(locale, {
       saveLocal: "Choose a type and enter the size.",
     },
     suggestTitle: "Suggest to Planqer",
-    suggestIntro: "This builds a pre-filled GitHub issue for the Planqer project. Nothing is sent until you open it, and you can edit it first. Add a source so the entry can be checked.",
+    suggestIntro: "Creates a pre-filled issue on GitHub. Nothing is sent until you submit it yourself.",
     sourceUrl: "Source URL",
     country: "Country",
     prepareIssue: "Prepare issue",
