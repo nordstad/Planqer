@@ -209,6 +209,30 @@ describe('AdminCatalogue', () => {
     expect(within(form).queryByText(/taken from the built-in/i)).not.toBeInTheDocument();
   });
 
+  it('drops the borrowed source for another country, but keeps one the admin typed', async () => {
+    api.getAdminCatalogue.mockResolvedValue([
+      ...listing(),
+      { product: product('local:regel:50x150', 'regel', 50, 150, { sources: [] }), origin: 'local', hidden: false },
+    ]);
+    render(<AdminCatalogue />);
+    await screen.findByText('Framing timber 50 × 150 mm');
+    fireEvent.click(within(rowOf('Framing timber 50 × 150 mm')).getByRole('button', { name: 'Suggest to Planqer' }));
+    const form = screen.getByRole('form', { name: 'Suggest to Planqer' });
+    const source = within(form).getByLabelText('Source URL');
+    const country = within(form).getByLabelText('Country');
+
+    fireEvent.change(country, { target: { value: 'no' } });
+    expect(country).toHaveValue('NO');
+    expect(source).toHaveValue('');
+    expect(within(form).getByText(/add an https:\/\/ link/i)).toBeInTheDocument();
+    fireEvent.change(country, { target: { value: 'SE' } });
+    expect(source).toHaveValue('https://www.traguiden.se/');
+
+    fireEvent.change(source, { target: { value: 'https://www.moelven.com/no/regel' } });
+    fireEvent.change(country, { target: { value: 'NO' } });
+    expect(source).toHaveValue('https://www.moelven.com/no/regel');
+  });
+
   it('prepares the issue only once there is an https source', async () => {
     api.getAdminCatalogue.mockResolvedValue([
       { product: product('local:regel:50x150', 'regel', 50, 150, { sources: [] }), origin: 'local', hidden: false },

@@ -18,7 +18,8 @@ const CatalogueSuggest = ({ product, typeSource = '', typeName = '', onClose }) 
   // A product with no source of its own starts from the one its type's built-ins cite.
   const borrowed = product.sources.length === 0 && Boolean(typeSource);
   const [source, setSource] = useState(product.sources[0] || typeSource);
-  const [country, setCountry] = useState(/^[A-Z]{2}$/.test(product.country) ? product.country : '');
+  const home = /^[A-Z]{2}$/.test(product.country) ? product.country : '';
+  const [country, setCountry] = useState(home);
   const [suggestion, setSuggestion] = useState(null);
   const [error, setError] = useState(null);
   const [opened, setOpened] = useState(false);
@@ -42,6 +43,15 @@ const CatalogueSuggest = ({ product, typeSource = '', typeName = '', onClose }) 
     setOpened(false);
   };
 
+  // The borrowed source documents this instance's country only: another country
+  // needs its own, while one the admin typed is theirs to keep.
+  const changeCountry = (value) => {
+    const next = value.toUpperCase();
+    setCountry(next);
+    if (borrowed && (source === typeSource || source === '')) setSource(next === home ? typeSource : '');
+    changed();
+  };
+
   return (
     <form onSubmit={(e) => e.preventDefault()} className="synthetic" style={{ display: 'grid', gap: '10px', whiteSpace: 'normal', padding: '14px', border: '1px solid var(--rule)', borderRadius: '10px', margin: '12px 0' }} aria-label={t('catalogueAdmin.suggestTitle')}>
       <p>{t('catalogueAdmin.suggestIntro')}</p>
@@ -54,7 +64,7 @@ const CatalogueSuggest = ({ product, typeSource = '', typeName = '', onClose }) 
         </div>
         <div>
           <label className="form-label" htmlFor={`${idBase}-country`}>{t('catalogueAdmin.country')}</label>
-          <input id={`${idBase}-country`} className="form-input" value={country} maxLength={2} placeholder="SE" onChange={(e) => { setCountry(e.target.value.toUpperCase()); changed(); }} />
+          <input id={`${idBase}-country`} className="form-input" value={country} maxLength={2} placeholder="SE" onChange={(e) => changeCountry(e.target.value)} />
         </div>
       </div>
       {error && <div className="alert-danger" role="alert">{error}</div>}
