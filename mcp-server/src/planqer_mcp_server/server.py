@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import random
+import re
 import uuid
 from pathlib import Path
 from typing import Any
@@ -92,6 +93,74 @@ def build_tools_from_contract() -> list[types.Tool]:
     ]
 
 
+# Catalogue product ids look like "se:regel:45x95" or "local:plywood:21".
+CATALOGUE_ID = re.compile(r"^[a-z]{2,}:[a-z0-9-]+:\d+(?:\.\d+)?(?:x\d+(?:\.\d+)?)?$")
+SEARCH_DEFAULT_LIMIT = 10
+
+
+def _plain(value: Any) -> str:
+    return f"{value:g}" if isinstance(value, (int, float)) else str(value)
+
+
+def _spaced(values: list[Any]) -> str:
+    return ", ".join(_plain(v) for v in values)
+
+
+def describe_product(item: dict[str, Any]) -> str:
+    """One search result as a short block of text an assistant can quote."""
+    product = item["product"]
+    lines = [f"**{item['name']}** — `{product['id']}`"]
+    if product.get("grades"):
+        lines.append(f"   - Grades: {_spaced(product['grades'])}")
+    if product.get("species"):
+        lines.append(f"   - Species: {_spaced(product['species'])}")
+    if product.get("treatments"):
+        lines.append(f"   - Treatments: {_spaced(product['treatments'])}")
+    if product.get("lengths"):
+        lines.append(f"   - Standard lengths: {_spaced(product['lengths'])} mm")
+    if product.get("max_length"):
+        lines.append(f"   - Stocked up to: {_plain(product['max_length'])} mm")
+    if product.get("formats"):
+        formats = ", ".join(
+            f"{_plain(f['width'])} × {_plain(f['height'])}" for f in product["formats"]
+        )
+        lines.append(f"   - Standard sheets: {formats} mm")
+    if product.get("note"):
+        lines.append(f"   - Note: {product['note']}")
+    if product.get("sources"):
+        lines.append(f"   - Source: {product['sources'][0]}")
+    return "\n".join(lines)
+
+
+def format_product_note(product: str | dict[str, Any]) -> str:
+    """The Product line of an optimization result: a catalogue product or the
+    caller's own words."""
+    if isinstance(product, str):
+        return f"**Product:** {product} (own words)\n"
+    note = f"**Product:** {product['name']} (`{product['product']['id']}`)\n"
+    lengths = product["product"].get("lengths")
+    if lengths:
+        note += f"**Standard stock lengths for this product:** {_spaced(lengths)} mm\n"
+    return note
+
+
+async def fetch_products(params: dict[str, Any]) -> list[dict[str, Any]]:
+    """Ask the Planqer API's catalogue search. Local additions are included and
+    hidden entries left out, because the API serves the instance's catalogue."""
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        response = await client.get(f"{API_BASE_URL}/catalogue/products", params=params)
+    if response.status_code != 200:
+        detail = ""
+        try:
+            detail = str(response.json().get("detail", ""))
+        except (ValueError, AttributeError):
+            pass
+        raise ValueError(
+            f"Catalogue lookup failed (HTTP {response.status_code}){': ' + detail if detail else ''}"
+        )
+    return response.json()
+
+
 def make_request_id() -> str:
     return uuid.uuid4().hex[:12]
 
@@ -133,7 +202,9 @@ def _is_error_content(content: list[types.TextContent]) -> bool:
 
 
 def format_optimization_result(
-    result: dict[str, Any], request_payload: dict[str, Any]
+    result: dict[str, Any],
+    request_payload: dict[str, Any],
+    product: str | dict[str, Any] | None = None,
 ) -> str:
     """
     Format the API response in a way that's easy for AI assistants to understand and interpret.
@@ -147,6 +218,9 @@ def format_optimization_result(
 
         if request_payload.get("project_name"):
             formatted += f"**Project:** {request_payload['project_name']}\n"
+
+        if product:
+            formatted += format_product_note(product)
 
         # Input summary
         parts_count = sum(request_payload["parts"].values())
@@ -232,6 +306,10 @@ async def handle_call_tool(
         result = await handle_optimize_cutting(arguments, request_id=request_id)
         logger.info("event=mcp_call_end request_id=%s tool=%s", request_id, name)
         return types.CallToolResult(content=result, isError=_is_error_content(result))
+    elif name == "search_products":
+        result = await handle_search_products(arguments, request_id=request_id)
+        logger.info("event=mcp_call_end request_id=%s tool=%s", request_id, name)
+        return types.CallToolResult(content=result, isError=_is_error_content(result))
     elif name == "optimize_demo":
         result = await handle_optimize_demo(arguments, request_id=request_id)
         logger.info("event=mcp_call_end request_id=%s tool=%s", request_id, name)
@@ -288,6 +366,27 @@ async def handle_optimize_cutting(
             raise ValueError("available_board_lengths must contain values of at least 1")
         if not isinstance(saw_blade_width, (int, float)) or saw_blade_width <= 0:
             raise ValueError("saw_blade_width must be greater than 0")
+
+        product = arguments.get("product")
+        if product is not None and (
+            not isinstance(product, str) or not 1 <= len(product.strip()) <= 200
+        ):
+            raise ValueError("product must be text of 1 to 200 characters")
+        resolved_product: str | dict[str, Any] | None = None
+        if product:
+            product = product.strip()
+            if CATALOGUE_ID.match(product):
+                found = await fetch_products({"id": product, "limit": 1})
+                if not found:
+                    return [
+                        types.TextContent(
+                            type="text",
+                            text=f"❌ Unknown catalogue product '{product}'. Use search_products to find a valid id, or give the product in your own words.",
+                        )
+                    ]
+                resolved_product = found[0]
+            else:
+                resolved_product = product
 
         # Check if using async processing
         use_async = bool(arguments.get("use_async", False))
@@ -421,7 +520,9 @@ async def handle_optimize_cutting(
                     ]
                 else:
                     # Handle synchronous response
-                    formatted_response = format_optimization_result(result, payload)
+                    formatted_response = format_optimization_result(
+                        result, payload, resolved_product
+                    )
                     return [types.TextContent(type="text", text=formatted_response)]
             else:
                 error_details = ""
@@ -464,6 +565,69 @@ async def handle_optimize_cutting(
         ]
     except (KeyError, TypeError, ValueError) as e:
         logger.exception("event=api_unexpected_error request_id=%s", rid)
+        return [types.TextContent(type="text", text=f"❌ Unexpected error: {e!s}")]
+
+
+async def handle_search_products(
+    arguments: dict[str, Any], request_id: str | None = None
+) -> list[types.TextContent]:
+    """Search the instance's product catalogue through the Planqer API."""
+    rid = request_id or make_request_id()
+    try:
+        query = arguments.get("query")
+        if not isinstance(query, str) or not 1 <= len(query.strip()) <= 100:
+            raise ValueError("query must be text of 1 to 100 characters")
+        query = query.strip()
+        params: dict[str, Any] = {"q": query}
+        kind = arguments.get("kind")
+        if kind is not None:
+            if kind not in ("board", "sheet"):
+                raise ValueError("kind must be 'board' or 'sheet'")
+            params["kind"] = kind
+        limit = arguments.get("limit", SEARCH_DEFAULT_LIMIT)
+        if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= 20:
+            raise ValueError("limit must be a whole number from 1 to 20")
+        params["limit"] = limit
+        language = arguments.get("language", "en")
+        if language not in ("en", "sv", "nb"):
+            raise ValueError("language must be 'en', 'sv' or 'nb'")
+        params["lang"] = language
+
+        logger.debug("event=catalogue_search_start request_id=%s", rid)
+        results = await fetch_products(params)
+        if not results:
+            return [
+                types.TextContent(
+                    type="text",
+                    text=f'No products found for "{query}". Try fewer words, a size like 45x95, '
+                    "or use your own words as the product.",
+                )
+            ]
+        blocks = [f"{i}. {describe_product(item)}" for i, item in enumerate(results, 1)]
+        return [
+            types.TextContent(
+                type="text",
+                text=f'🔎 **Products matching "{query}"** ({len(results)})\n\n'
+                + "\n\n".join(blocks)
+                + "\n\nUse a product id as `product` in `optimize_cutting`.",
+            )
+        ]
+    except httpx.TimeoutException:
+        return [
+            types.TextContent(
+                type="text",
+                text="❌ Request timeout: The API took too long to respond. Please try again.",
+            )
+        ]
+    except httpx.ConnectError:
+        return [
+            types.TextContent(
+                type="text",
+                text=f"❌ Connection error: Could not reach the Planqer API at {API_BASE_URL}. Please check if the service is running.",
+            )
+        ]
+    except (KeyError, TypeError, ValueError) as e:
+        logger.warning("event=catalogue_search_failed request_id=%s error=%s", rid, e)
         return [types.TextContent(type="text", text=f"❌ Unexpected error: {e!s}")]
 
 
@@ -537,6 +701,8 @@ You can use the `optimize_cutting` tool with similar data to get an optimized cu
 - `best_fit_decreasing` - Combines sorting with best fit (recommended)
 - `genetic` - Near-optimal solutions for complex problems
 - `branch_bound` - Optimal solutions for small problems
+
+**Optional `product`:** your own words (e.g. "Framing timber 45x95") or a catalogue id found with `search_products` (e.g. "se:regel:45x95"), shown with the result.
 
 **Usage:**
 ```

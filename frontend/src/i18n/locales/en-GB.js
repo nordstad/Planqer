@@ -308,6 +308,7 @@ Object.assign(locale, {
     noneChosen: "No product chosen. You can plan without one.",
     loadFailed: "The product catalogue could not be loaded. You can still type your own product.",
     suggested: "Suggested",
+    fromModel: "From model",
     confirm: "Looks right",
     clear: "Clear",
     source: "Source",

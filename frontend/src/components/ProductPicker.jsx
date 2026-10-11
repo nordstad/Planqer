@@ -215,7 +215,7 @@ const ProductPicker = ({
   };
 
   const setDetail = (field, detail) => commit({
-    ...selection, details: { ...selection.details, [field]: detail }, suggested: false,
+    ...selection, details: { ...selection.details, [field]: detail }, suggested: false, fromModel: false,
   });
 
   const rowLabel = (row) => {
@@ -297,6 +297,7 @@ const ProductPicker = ({
           <>
             <strong style={{ color: 'var(--ink)' }}>{summary}</strong>
             {selection.suggested && <span style={{ color: 'var(--accent)', fontWeight: 700 }}> · {t('productUi.suggested')}</span>}
+            {selection.fromModel && <span style={{ color: 'var(--accent)', fontWeight: 700 }}> · {t('productUi.fromModel')}</span>}
             {source && <> · <a href={source} target="_blank" rel="noreferrer">{t('productUi.source')}</a></>}
           </>
         ) : failed ? t('productUi.loadFailed') : t('productUi.noneChosen')}

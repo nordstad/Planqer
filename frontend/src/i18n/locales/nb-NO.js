@@ -386,6 +386,7 @@ Object.assign(locale, {
     noneChosen: "Ingen produkt valgt. Du kan planlegge uten.",
     loadFailed: "Produktkatalogen kunne ikke lastes. Du kan likevel skrive et eget produkt.",
     suggested: "Forslag",
+    fromModel: "Fra modellen",
     confirm: "Stemmer",
     clear: "Fjern",
     source: "Kilde",

@@ -19,6 +19,7 @@ from planqer_mcp_server.server import (
     handle_list_tools,
     handle_optimize_cutting,
     handle_optimize_demo,
+    handle_search_products,
 )
 
 
@@ -297,6 +298,7 @@ def test_mcp_tool_contract_exposes_all_tools():
     result = asyncio.run(handle_list_tools(None, None))
     assert {tool.name for tool in result.tools} == {
         "optimize_cutting",
+        "search_products",
         "optimize_demo",
         "get_demo_payloads",
         "get_cutting_example",
@@ -533,3 +535,193 @@ async def test_integration_workflow():
         assert len(optimization_result) == 1
         assert "Optimizing with \"kitchen cabinets\" demo payload" in optimization_result[0].text
         assert "**Optimal board length:** 120.0" in optimization_result[0].text
+
+
+REGEL = {
+    "name": "Framing timber / studs 45 × 95 mm",
+    "product": {
+        "id": "se:regel:45x95",
+        "grades": ["C14", "C24"],
+        "species": ["pine", "spruce"],
+        "treatments": ["untreated"],
+        "lengths": [2400.0, 3000.0],
+        "max_length": None,
+        "formats": [],
+        "note": None,
+        "sources": ["https://www.traguiden.se/"],
+    },
+}
+PLYWOOD = {
+    "name": "Plywood 15 mm",
+    "product": {
+        "id": "se:plywood:15",
+        "grades": [],
+        "species": ["birch"],
+        "lengths": [],
+        "max_length": 5400,
+        "formats": [{"width": 1200.0, "height": 2400.0}],
+        "note": "Not every pairing is made.",
+        "sources": ["https://www.egger.com/"],
+    },
+}
+CUT_RESULT = {
+    "optimal_board_length": 300.0,
+    "cost": 1.0,
+    "total_waste": 5.0,
+    "algorithm_used": "best_fit",
+    "cut_list": [[100.0]],
+}
+CUT_ARGS = {"parts": {"100": 1}, "available_board_lengths": [300], "saw_blade_width": 3.0}
+
+
+def _json_response(body, status=200):
+    response = MagicMock(status_code=status)
+    response.json.return_value = body
+    return response
+
+
+class TestSearchProducts:
+    @pytest.mark.asyncio
+    @patch("httpx.AsyncClient.get")
+    async def test_lists_products_with_ids_and_stock(self, mock_get):
+        mock_get.return_value = _json_response([REGEL, PLYWOOD])
+
+        result = await handle_search_products({"query": "45x95"})
+
+        text = result[0].text
+        assert 'Products matching "45x95"' in text
+        assert "1. **Framing timber / studs 45 × 95 mm** — `se:regel:45x95`" in text
+        assert "Grades: C14, C24" in text
+        assert "Standard lengths: 2400, 3000 mm" in text
+        assert "Standard sheets: 1200 × 2400 mm" in text
+        assert "Stocked up to: 5400 mm" in text
+        assert "Note: Not every pairing is made." in text
+        assert "Source: https://www.traguiden.se/" in text
+        assert "`product` in `optimize_cutting`" in text
+
+    @pytest.mark.asyncio
+    @patch("httpx.AsyncClient.get")
+    async def test_passes_the_filters_to_the_catalogue_api(self, mock_get):
+        mock_get.return_value = _json_response([])
+
+        result = await handle_search_products(
+            {"query": " kryssfiner ", "kind": "sheet", "limit": 3, "language": "sv"}
+        )
+
+        assert mock_get.call_args.args[0].endswith("/catalogue/products")
+        assert mock_get.call_args.kwargs["params"] == {
+            "q": "kryssfiner",
+            "kind": "sheet",
+            "limit": 3,
+            "lang": "sv",
+        }
+        assert "No products found for \"kryssfiner\"" in result[0].text
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "arguments, message",
+        [
+            ({}, "query"),
+            ({"query": ""}, "query"),
+            ({"query": "x" * 101}, "query"),
+            ({"query": "x", "kind": "tile"}, "kind"),
+            ({"query": "x", "limit": 0}, "limit"),
+            ({"query": "x", "limit": True}, "limit"),
+            ({"query": "x", "language": "fr"}, "language"),
+        ],
+    )
+    async def test_rejects_bad_input_without_calling_the_api(self, arguments, message):
+        with patch("httpx.AsyncClient.get") as mock_get:
+            result = await handle_search_products(arguments)
+        assert message in result[0].text and result[0].text.startswith("❌")
+        mock_get.assert_not_called()
+
+    @pytest.mark.asyncio
+    @patch("httpx.AsyncClient.get")
+    async def test_reports_api_and_network_failures(self, mock_get):
+        mock_get.return_value = _json_response({"detail": "boom"}, status=500)
+        assert "(HTTP 500): boom" in (await handle_search_products({"query": "x"}))[0].text
+        mock_get.side_effect = httpx.ConnectError("down")
+        assert "Connection error" in (await handle_search_products({"query": "x"}))[0].text
+        mock_get.side_effect = httpx.TimeoutException("slow")
+        assert "Request timeout" in (await handle_search_products({"query": "x"}))[0].text
+
+    @pytest.mark.asyncio
+    @patch("httpx.AsyncClient.get")
+    async def test_is_reachable_as_a_tool(self, mock_get):
+        mock_get.return_value = _json_response([REGEL])
+        result = await handle_call_tool(
+            None, types.CallToolRequestParams(name="search_products", arguments={"query": "regel"})
+        )
+        assert result.is_error is False
+        assert "se:regel:45x95" in result.content[0].text
+
+
+class TestOptimizeWithProduct:
+    @pytest.mark.asyncio
+    @patch("httpx.AsyncClient.post")
+    async def test_own_words_are_shown_and_not_sent_to_the_planner(self, mock_post):
+        mock_post.return_value = _json_response(CUT_RESULT)
+
+        result = await handle_optimize_cutting({**CUT_ARGS, "product": " Furu 45x95 "})
+
+        assert "**Product:** Furu 45x95 (own words)" in result[0].text
+        assert "product" not in mock_post.call_args.kwargs["json"]
+
+    @pytest.mark.asyncio
+    @patch("httpx.AsyncClient.get")
+    @patch("httpx.AsyncClient.post")
+    async def test_a_catalogue_id_is_resolved_with_its_stock_lengths(self, mock_post, mock_get):
+        mock_post.return_value = _json_response(CUT_RESULT)
+        mock_get.return_value = _json_response([REGEL])
+
+        result = await handle_optimize_cutting({**CUT_ARGS, "product": "se:regel:45x95"})
+
+        assert mock_get.call_args.kwargs["params"] == {"id": "se:regel:45x95", "limit": 1}
+        text = result[0].text
+        assert "**Product:** Framing timber / studs 45 × 95 mm (`se:regel:45x95`)" in text
+        assert "**Standard stock lengths for this product:** 2400, 3000 mm" in text
+        assert "product" not in mock_post.call_args.kwargs["json"]
+
+    @pytest.mark.asyncio
+    @patch("httpx.AsyncClient.get")
+    @patch("httpx.AsyncClient.post")
+    async def test_an_unknown_catalogue_id_is_an_error_and_nothing_is_planned(self, mock_post, mock_get):
+        mock_get.return_value = _json_response([])
+
+        result = await handle_optimize_cutting({**CUT_ARGS, "product": "se:regel:1x1"})
+
+        assert result[0].text.startswith("❌ Unknown catalogue product 'se:regel:1x1'")
+        assert "search_products" in result[0].text
+        mock_post.assert_not_called()
+
+    @pytest.mark.asyncio
+    @patch("httpx.AsyncClient.get")
+    @patch("httpx.AsyncClient.post")
+    async def test_text_that_only_looks_like_an_id_is_not_looked_up(self, mock_post, mock_get):
+        mock_post.return_value = _json_response(CUT_RESULT)
+
+        await handle_optimize_cutting({**CUT_ARGS, "product": "Oak: 2x4"})
+
+        mock_get.assert_not_called()
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("product", ["", "   ", 5, "x" * 201])
+    async def test_rejects_bad_product_values(self, product):
+        with patch("httpx.AsyncClient.post") as mock_post:
+            result = await handle_optimize_cutting({**CUT_ARGS, "product": product})
+        assert "product must be text" in result[0].text
+        mock_post.assert_not_called()
+
+    @pytest.mark.asyncio
+    @patch("httpx.AsyncClient.post")
+    async def test_leaving_the_product_out_changes_nothing(self, mock_post):
+        mock_post.return_value = _json_response(CUT_RESULT)
+        result = await handle_optimize_cutting(CUT_ARGS)
+        assert "**Product:**" not in result[0].text
+
+    def test_the_demo_payloads_and_tool_contract_describe_the_product(self):
+        assert DEMO_PAYLOADS["furniture_project"]["product"] == "Framing timber 45x95"
+        tools = {t.name: t for t in asyncio.run(handle_list_tools(None, None)).tools}
+        assert "product" in tools["optimize_cutting"].input_schema["properties"]
+        assert tools["search_products"].input_schema["required"] == ["query"]

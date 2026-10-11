@@ -290,6 +290,7 @@ describe('snapshots', () => {
       sources: ['https://www.traguiden.se/'],
       details: { species: 'spruce', treatment: null, grade: 'C24', profile: null, text: null },
       suggested: true,
+      from_model: false,
     });
   });
 

@@ -8,10 +8,18 @@ on:
     branches: [main]
     paths:
       - "backend/**"
+      - "scripts/**"
+      - "README.md"
+      - ".env.example"
+      - "docs/**"
       - ".github/workflows/backend-ci.yml"
   pull_request:
     paths:
       - "backend/**"
+      - "scripts/**"
+      - "README.md"
+      - ".env.example"
+      - "docs/**"
       - ".github/workflows/backend-ci.yml"
 
 jobs:

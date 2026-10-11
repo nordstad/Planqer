@@ -119,6 +119,12 @@ entries for the instance's country (generic, with no entries, when
 optional `product` snapshot on create and update; it is stored and returned
 as given, and `material_type` stays a readable label for older clients.
 
+`GET /catalogue/products?q=&kind=&id=&limit=&lang=` searches the same catalogue
+by name, alias, grade or size (`regel c24`, `45x95`, `plywood 15`) and returns
+products with a display name; `id` returns exactly one product. The MCP server's
+`search_products` tool uses it. Product snapshots saved with a plan carry
+`from_model: true` when the product was read from a model's material name.
+
 The catalogue returned already includes this instance's local additions,
 overrides and hidden entries. Admins manage them under `/admin/catalogue`:
 

@@ -9,7 +9,16 @@ permissions:
   packages: write
 
 jobs:
+  verify-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Check the tag matches every hard-coded version
+        run: python3 scripts/check-versions.py --tag "$GITHUB_REF_NAME"
+
   publish:
+    needs: verify-version
     runs-on: ubuntu-latest
     strategy:
       matrix:

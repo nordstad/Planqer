@@ -76,7 +76,7 @@ The easiest way to run Planqer is with Docker Compose. Two ways to do it:
   ```
 
   For a one-off upgrade without editing `.env`, prefix both commands with
-  `PLANQER_VERSION=0.4.1`.
+  `PLANQER_VERSION=0.7.0`.
 
   Run these commands from the directory containing both files. The Compose
   volume preserves local accounts and saved projects across upgrades.

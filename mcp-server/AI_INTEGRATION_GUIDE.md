@@ -44,6 +44,23 @@ Assistant: I'll optimize that cutting plan for you...
 → Interpret and explain the results
 ```
 
+#### With a product
+```
+User: "Cut these from 45x95 framing timber"
+Assistant: I'll look the product up first...
+→ Call search_products({"query": "regel 45x95", "kind": "board"})
+→ Call optimize_cutting({
+    "parts": {"2700": 4},
+    "available_board_lengths": [3000, 3600],
+    "saw_blade_width": 3,
+    "product": "se:regel:45x95"
+  })
+→ The result names the product and lists its standard stock lengths
+```
+`product` can also be the user's own words (`"Furu 45x95"`). Use an id only when
+it came from `search_products`; an unknown id is refused. The product does not
+change the plan. This server cannot save plans, so don't promise that.
+
 ## Understanding Results
 
 When you receive optimization results, help users understand:
