@@ -96,6 +96,7 @@ test.describe('Planqer Frontend E2E Tests', () => {
     await page.addInitScript((token) => localStorage.setItem('auth_token', token), accessToken);
 
     await page.goto('/cutting');
+    await page.getByRole('button', { name: /try an example/i }).click();
     await ownProduct(page, 'Product', 'Oak');
     await page.getByLabel('Thickness (mm)').fill('45');
     await page.getByLabel('Width (mm)').fill('45');
@@ -235,6 +236,7 @@ test.describe('Planqer Frontend E2E Tests', () => {
     await page.addInitScript((token) => localStorage.setItem('auth_token', token), accessToken);
 
     await page.goto('/cutting');
+    await page.getByRole('button', { name: /try an example/i }).click();
     await ownProduct(page, 'Product', 'Oak');
     await page.getByLabel('Thickness (mm)').fill('45');
     await page.getByLabel('Width (mm)').fill('45');
