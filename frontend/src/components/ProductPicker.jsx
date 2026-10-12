@@ -25,7 +25,7 @@ import {
 } from '../utils/catalogue';
 
 /* Which catalogue the suggestions come from, with a prompt while it is the generic one. */
-const CatalogueLine = ({ catalogue, idBase }) => {
+const CatalogueLine = ({ catalogue, idBase, kind }) => {
   const { t } = useTranslation();
   const { choice, setChoice } = useCatalogueChoice();
   return (
@@ -37,7 +37,7 @@ const CatalogueLine = ({ catalogue, idBase }) => {
         style={{ width: 'auto', minWidth: '160px', padding: '4px 28px 4px 8px' }}
         onChange={(next) => setChoice(next === 'auto' ? null : next)}
       />
-      {catalogue && !catalogue.country && <span>{t('catalogueCountry.genericHint')}</span>}
+      {catalogue && !catalogue.country && <span>{t(kind === 'sheet' ? 'catalogueCountry.genericSheetHint' : 'catalogueCountry.genericHint')}</span>}
     </p>
   );
 };
@@ -194,6 +194,7 @@ const ProductPicker = ({
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [changing, setChanging] = useState(false);
   const wrapper = useRef(null);
 
   const selection = value || emptySelection();
@@ -218,6 +219,13 @@ const ProductPicker = ({
       : typeSelection(row.type, row.kind === 'product' ? row.product : null));
     setQuery('');
     setOpen(false);
+    setChanging(false);
+  };
+
+  const stopChanging = () => {
+    setQuery('');
+    setOpen(false);
+    setChanging(false);
   };
 
   const onKeyDown = (event) => {
@@ -229,6 +237,9 @@ const ProductPicker = ({
     } else if (event.key === 'Enter' && open && rows[active]) {
       event.preventDefault();
       pick(rows[active]);
+    } else if (event.key === 'Escape' && changing) {
+      event.preventDefault();
+      stopChanging();
     } else if (event.key === 'Escape' && open) {
       event.preventDefault();
       setOpen(false);
@@ -251,6 +262,7 @@ const ProductPicker = ({
   };
 
   const hasSelection = !isEmptySelection(selection);
+  const showSearch = !hasSelection || changing;
   const free = hasSelection && !!selection.text;
   const summary = selectionSummary(selection, i18n.language, dims, catalogue);
   const source = selection.product?.sources?.[0];
@@ -259,8 +271,12 @@ const ProductPicker = ({
     <div
       ref={wrapper}
       style={{ position: 'relative' }}
-      onBlur={(event) => { if (!wrapper.current?.contains(event.relatedTarget)) setOpen(false); }}
+      onBlur={(event) => {
+        if (wrapper.current?.contains(event.relatedTarget)) return;
+        if (changing) stopChanging(); else setOpen(false);
+      }}
     >
+      {showSearch && (
       <input
         type="text"
         role="combobox"
@@ -271,13 +287,15 @@ const ProductPicker = ({
         aria-autocomplete="list"
         aria-activedescendant={open && rows[active] ? `${idBase}-opt-${active}` : undefined}
         autoComplete="off"
+        autoFocus={changing}
         value={query}
-        placeholder={t('productUi.searchPlaceholder')}
+        placeholder={t(`productUi.${kind === 'sheet' ? 'sheetSearchPlaceholder' : 'searchPlaceholder'}${catalogue?.country ? '' : 'Own'}`)}
         onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
         onFocus={() => setOpen(true)}
         onKeyDown={onKeyDown}
       />
-      {open && (
+      )}
+      {showSearch && open && (
         <ul
           id={listId}
           role="listbox"
@@ -313,8 +331,6 @@ const ProductPicker = ({
         </ul>
       )}
 
-      <CatalogueLine catalogue={catalogue} idBase={idBase} />
-
       <p className="synthetic" style={{ marginTop: '6px', whiteSpace: 'normal' }} role="status" data-testid="product-summary">
         {hasSelection ? (
           <>
@@ -325,16 +341,19 @@ const ProductPicker = ({
           </>
         ) : failed ? t('productUi.loadFailed') : t('productUi.noneChosen')}
       </p>
-      {hasSelection && (
+      {hasSelection && !changing && (
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '4px' }}>
           {selection.suggested && (
             <button type="button" className="btn btn-sm" onClick={() => commit({ ...selection, suggested: false })}>
               {t('productUi.confirm')}
             </button>
           )}
+          <button type="button" className="btn btn-sm" aria-label={`${t('productUi.change')} — ${label}`} onClick={() => setChanging(true)}>{t('productUi.change')}</button>
           <button type="button" className="btn btn-sm" onClick={() => commit(emptySelection())}>{t('productUi.clear')}</button>
         </div>
       )}
+
+      {showSearch && <CatalogueLine catalogue={catalogue} idBase={idBase} kind={kind} />}
 
       {isAdmin && free && catalogue && (
         <SaveToCatalogue

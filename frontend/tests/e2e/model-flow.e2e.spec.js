@@ -74,6 +74,7 @@ test.describe('Model cutlist flow with example/bench.stl', () => {
     await signIn(page);
     await readBench(page);
 
+    await page.getByRole('button', { name: 'Change — Product for Planed timber 95 × 95 mm' }).click();
     const search = page.getByRole('combobox', { name: 'Product for Planed timber 95 × 95 mm' });
     await search.fill('trall');
     await expect(page.getByRole('option', { name: /^Decking/ }).first()).toBeVisible();
@@ -81,6 +82,7 @@ test.describe('Model cutlist flow with example/bench.stl', () => {
     await expect(page.getByTestId('product-summary').nth(1)).toContainText('Decking');
     await expect(page.getByTestId('product-summary').nth(1)).not.toContainText('Suggested');
 
+    await page.getByRole('button', { name: 'Change — Product for Framing timber / studs 45 × 95 mm' }).click();
     const own = page.getByRole('combobox', { name: 'Product for Framing timber / studs 45 × 95 mm' });
     await own.fill('Larch');
     await page.getByRole('option', { name: 'Use “Larch” as my own product' }).click();

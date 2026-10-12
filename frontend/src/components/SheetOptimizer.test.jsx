@@ -39,6 +39,16 @@ const catalogue = {
   }],
 };
 
+const renderSheetOptimizer = ({ loadExample = true, ...options } = {}) => {
+  const result = render(
+    <MemoryRouter {...options}>
+      <LanguageProvider><SheetOptimizer /></LanguageProvider>
+    </MemoryRouter>,
+  );
+  if (loadExample) fireEvent.click(screen.getByRole('button', { name: /example|exempel|eksempel/i }));
+  return result;
+};
+
 beforeEach(() => {
   resetCatalogueCache();
   getCatalogue.mockRejectedValue(new Error('offline'));
@@ -82,9 +92,22 @@ it('restores a saved sheet plan addressed by the edit query', async () => {
   expect(screen.getByLabelText('Price per sheet · NOK')).toHaveValue(650);
 });
 
+it('starts empty and loads named example parts on request', async () => {
+  window.history.replaceState({}, '', '/sheet-cutting');
+  renderSheetOptimizer({ loadExample: false, initialEntries: ['/sheet-cutting'] });
+
+  expect(screen.queryByDisplayValue('800')).not.toBeInTheDocument();
+  expect(screen.getByText(/Add the parts you need/i)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: /example|exempel|eksempel/i }));
+
+  expect(screen.getByDisplayValue('800')).toBeInTheDocument();
+  expect(screen.getByDisplayValue('Shelf back')).toBeInTheDocument();
+  expect(screen.getByDisplayValue('Shelf bottom')).toBeInTheDocument();
+});
+
 it('shows the sheet material cost using the configured VAT basis', async () => {
   window.history.replaceState({}, '', '/sheet-cutting');
-  render(<MemoryRouter><LanguageProvider><SheetOptimizer /></LanguageProvider></MemoryRouter>);
+  renderSheetOptimizer();
 
   fireEvent.change(document.getElementById('sheet-thickness'), { target: { value: '18' } });
   fireEvent.change(screen.getByLabelText('Price per sheet · SEK'), { target: { value: '250' } });
@@ -141,14 +164,11 @@ it('reruns restored rows without collapsing identical names', async () => {
 
 it('explains why sheet planning is disabled when thickness is missing', async () => {
   window.history.replaceState({}, '', '/sheet-cutting');
-  render(
-    <MemoryRouter initialEntries={['/sheet-cutting']}>
-      <LanguageProvider><SheetOptimizer /></LanguageProvider>
-    </MemoryRouter>,
-  );
+  renderSheetOptimizer({ loadExample: false, initialEntries: ['/sheet-cutting'] });
 
   expect(screen.getByRole('button', { name: /plan the sheet cuts/i })).toBeDisabled();
-  expect(await screen.findByText(/enter the sheet thickness before planning/i)).toBeInTheDocument();
+  expect(screen.queryByText(/enter the sheet thickness before planning/i)).not.toBeInTheDocument();
+  expect(screen.getByText(/Add the parts you need/i)).toBeInTheDocument();
 });
 
 it.each([
@@ -160,8 +180,7 @@ it.each([
   window.history.replaceState({}, '', '/sheet-cutting');
   const translate = vi.spyOn(i18n, 't');
   try {
-    render(<MemoryRouter><LanguageProvider><SheetOptimizer /></LanguageProvider></MemoryRouter>);
-    await screen.findByText(/enter the sheet thickness before planning/i);
+    renderSheetOptimizer();
     expect(translate).toHaveBeenCalledWith('ui.fixLines', expect.any(Object));
     expect(translate).not.toHaveBeenCalledWith('ui.fixLines', expect.objectContaining({ kind: expect.anything() }));
     const strategy = screen.getByRole('button', { name: new RegExp(i18n.t('ui.packingStrategy')) });
@@ -192,7 +211,7 @@ it.each([
 
 it('plans without any product chosen and sends no placeholder material', async () => {
   window.history.replaceState({}, '', '/sheet-cutting');
-  render(<MemoryRouter><LanguageProvider><SheetOptimizer /></LanguageProvider></MemoryRouter>);
+  renderSheetOptimizer();
 
   expect(screen.queryByText(/choose a sheet material/i)).not.toBeInTheDocument();
   fireEvent.change(document.getElementById('sheet-thickness'), { target: { value: '18' } });
@@ -207,7 +226,7 @@ it('plans without any product chosen and sends no placeholder material', async (
 it('takes a product\'s thickness and standard sheet size when the user asks', async () => {
   getCatalogue.mockResolvedValue({ data: catalogue, etag: '"x"' });
   window.history.replaceState({}, '', '/sheet-cutting');
-  render(<MemoryRouter><LanguageProvider><SheetOptimizer /></LanguageProvider></MemoryRouter>);
+  renderSheetOptimizer();
 
   const box = screen.getByRole('combobox', { name: 'Product' });
   fireEvent.focus(box);

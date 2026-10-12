@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import '../i18n';
+import i18n from '../i18n';
 import ProductPicker, { StockSuggestions } from './ProductPicker';
 import { createCatalogueEntry, getAuthToken, getCatalogue, updateUserSettings } from '../utils/api';
 import { AuthContext } from '../contexts/authState';
@@ -70,6 +71,46 @@ beforeEach(() => {
 const box = () => screen.getByRole('combobox', { name: 'Product' });
 
 describe('searching and picking', () => {
+  it.each([
+    ['en-GB', 'Search by name or size, e.g. “stud 45x95”'],
+    ['sv-SE', 'Sök på namn eller mått, t.ex. ”regel 45x95”'],
+    ['nb-NO', 'Søk på navn eller mål, f.eks. «reisverk 45x45»'],
+  ])('localizes the search placeholder in %s', async (language, placeholder) => {
+    await act(() => i18n.changeLanguage(language));
+    try {
+      await show(<Harness />);
+      expect(box()).toHaveAttribute('placeholder', placeholder);
+    } finally {
+      await act(() => i18n.changeLanguage('en-GB'));
+    }
+  });
+
+  it('uses sheet-material examples in the sheet picker', async () => {
+    await show(<Harness kind="sheet" />);
+    expect(box()).toHaveAttribute('placeholder', 'Search by name or thickness, e.g. “plywood 15”');
+  });
+
+  it.each([
+    ['board', 'Type your product, e.g. “Pine 45x95”'],
+    ['sheet', 'Type your sheet material, e.g. “Birch plywood”'],
+  ])('asks for the user\'s own %s words when the catalogue has no products', async (kind, placeholder) => {
+    getCatalogue.mockResolvedValue({ data: { ...catalogue, country: null, products: [] }, etag: '"generic"' });
+    await show(<Harness kind={kind} />);
+    expect(box()).toHaveAttribute('placeholder', placeholder);
+  });
+
+  it('shows a type picked from the generic catalogue as the choice, not an empty search', async () => {
+    getCatalogue.mockResolvedValue({ data: { ...catalogue, country: null, products: [] }, etag: '"generic"' });
+    await show(<Harness kind="sheet" />);
+    fireEvent.focus(box());
+    fireEvent.mouseDown(screen.getByRole('option', { name: /^Plywood/ }));
+
+    expect(screen.queryByRole('combobox', { name: 'Product' })).not.toBeInTheDocument();
+    expect(screen.getByTestId('product-summary')).toHaveTextContent('Plywood');
+    expect(screen.queryByText(/Only generic/)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Change — Product' })).toBeInTheDocument();
+  });
+
   it('lists the product types before anything is typed, most common first', async () => {
     await show(<Harness />);
     fireEvent.focus(box());
@@ -89,8 +130,15 @@ describe('searching and picking', () => {
     expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ type: 'regel', suggested: false }));
     expect(onSelect.mock.calls[0][0].product.id).toBe('se:regel:45x95');
     expect(screen.getByTestId('product-summary')).toHaveTextContent('Framing timber 45 × 95 mm');
-    expect(box()).toHaveValue('');
+    expect(screen.queryByRole('combobox', { name: 'Product' })).not.toBeInTheDocument();
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Change — Product' }));
+    expect(box()).toHaveValue('');
+    expect(box()).toHaveFocus();
+    fireEvent.keyDown(box(), { key: 'Escape' });
+    expect(screen.queryByRole('combobox', { name: 'Product' })).not.toBeInTheDocument();
+    expect(screen.getByTestId('product-summary')).toHaveTextContent('Framing timber 45 × 95 mm');
   });
 
   it('works from the keyboard: arrows move, Enter picks, Escape closes', async () => {
@@ -177,6 +225,7 @@ describe('suggestions', () => {
 
   it('changing a suggested product replaces it', async () => {
     await show(<Harness initial={suggested()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Change — Product' }));
     fireEvent.change(box(), { target: { value: 'trall' } });
     fireEvent.mouseDown(screen.getByRole('option', { name: /^Decking 28 × 120 mm/ }));
     expect(screen.getByTestId('product-summary')).not.toHaveTextContent('Suggested');

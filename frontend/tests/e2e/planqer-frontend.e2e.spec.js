@@ -288,6 +288,7 @@ test.describe('Planqer Frontend E2E Tests', () => {
     await expect(page.getByText(/thickness and width before planning/i)).toBeVisible();
     await page.getByLabel('Thickness (mm)').fill('30');
     await page.getByLabel('Width (mm)').fill('80');
+    await page.getByRole('button', { name: /try an example/i }).click();
     await expect(planButton).toBeEnabled();
     await ownProduct(page, 'Product', 'Ash');
     await expect(page.getByTestId('product-summary')).toContainText('Ash');
@@ -305,6 +306,7 @@ test.describe('Planqer Frontend E2E Tests', () => {
     await page.goto('/sheet-cutting');
     const packButton = page.getByRole('button', { name: /plan the sheet cuts/i });
     await expect(packButton).toBeDisabled();
+    await page.getByRole('button', { name: /try an example/i }).click();
     await ownProduct(page, 'Product', 'Birch plywood');
     await page.locator('#sheet-thickness').fill('12');
     await expect(packButton).toBeEnabled();
