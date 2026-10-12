@@ -50,6 +50,12 @@ const algorithmLabelKeys = {
   guillotine_cut: 'ui.guillotine',
 };
 
+const exampleParts = (t) => [
+  { width: "800", height: "400", quantity: "2", name: t('workflow.exampleShelfBack'), id: "shelf_back" },
+  { width: "300", height: "400", quantity: "4", name: t('workflow.exampleShelfSide'), id: "shelf_side" },
+  { width: "780", height: "280", quantity: "2", name: t('workflow.exampleShelfBottom'), id: "shelf_bottom" },
+];
+
 const validateSheetParts = (parts, t) => parts.map((part) => {
   const errors = {};
   const width = parseFloat(part.width);
@@ -73,11 +79,7 @@ const SheetOptimizer = () => {
   const { user } = useAuth();
   const [step, setStep] = useState(STEP_PARTS);
 
-  const [parts, setParts] = useState([
-    { width: "800", height: "400", quantity: "2", name: t('workflow.parts'), id: "shelf_back" },
-    { width: "300", height: "400", quantity: "4", name: t('workflow.parts'), id: "shelf_side" },
-    { width: "780", height: "280", quantity: "2", name: t('workflow.parts'), id: "shelf_bottom" },
-  ]);
+  const [parts, setParts] = useState([]);
 
   const [sheetWidth, setSheetWidth] = useState("1200");
   const [sheetHeight, setSheetHeight] = useState("2500");
@@ -93,7 +95,8 @@ const SheetOptimizer = () => {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState("");
-   const [inputErrors, setInputErrors] = useState({ parts: [], sheetWidth: "", sheetHeight: "", kerfWidth: "", sheetThickness: "" });
+  const [inputErrors, setInputErrors] = useState({ parts: [], sheetWidth: "", sheetHeight: "", kerfWidth: "", sheetThickness: "" });
+  const [sheetFieldsTouched, setSheetFieldsTouched] = useState(false);
 
   const [strategyOpen, setStrategyOpen] = useState(false);
   const [limitsOpen, setLimitsOpen] = useState(false);
@@ -142,10 +145,10 @@ const SheetOptimizer = () => {
        kerfWidth: !debouncedKerfWidth || isNaN(kerf) || kerf < SAW_KERF_MIN
           ? t('modelUi.kerfZero')
           : kerf > 50 ? t('modelUi.kerfWide') : "",
-       sheetThickness: !sheetThickness || isNaN(parseFloat(sheetThickness)) || parseFloat(sheetThickness) <= 0
-         ? t('auditUi.sheetThicknessRequired') : "",
-     });
-   }, [debouncedParts, debouncedSheetWidth, debouncedSheetHeight, debouncedKerfWidth, sheetThickness, t]);
+        sheetThickness: sheetFieldsTouched && (!sheetThickness || isNaN(parseFloat(sheetThickness)) || parseFloat(sheetThickness) <= 0)
+          ? t('auditUi.sheetThicknessRequired') : "",
+      });
+    }, [debouncedParts, debouncedSheetWidth, debouncedSheetHeight, debouncedKerfWidth, sheetFieldsTouched, sheetThickness, t]);
 
   // This page requires sign-in, so project groups and saved plans are always available
   useEffect(() => {
@@ -212,7 +215,8 @@ const SheetOptimizer = () => {
     setParts(parts.filter((_, i) => i !== index));
   };
 
-  const setSheetField = (setter) => (value) => { retireLayout(); setter(value); };
+  const setSheetField = (setter) => (value) => { retireLayout(); setSheetFieldsTouched(true); setter(value); };
+  const loadExample = () => { retireLayout(); setParts(exampleParts(t)); };
 
   const loadProject = (project) => {
     retireLayout();
@@ -256,9 +260,9 @@ const SheetOptimizer = () => {
 
   /* ── derived facts ─────────────────────────────────────────────────────── */
   const partCount = parts.reduce((n, p) => n + (parseInt(p.quantity, 10) || 0), 0);
-  const hasErrors = inputErrors.parts.some(Boolean)
+  const hasErrors = parts.length === 0 || inputErrors.parts.some(Boolean)
     || !!inputErrors.sheetWidth || !!inputErrors.sheetHeight || !!inputErrors.kerfWidth
-    || !!inputErrors.sheetThickness;
+    || !!inputErrors.sheetThickness || !sheetThickness;
   const sheetError = inputErrors.sheetWidth || inputErrors.sheetHeight || inputErrors.sheetThickness;
   const sectionDims = { thickness: parseFloat(sheetThickness) };
   const material = selectionName(productSel, i18n.language, sectionDims);
@@ -431,14 +435,27 @@ const SheetOptimizer = () => {
                   canRemove={parts.length > 1}
                 />
               ))}
-              <tr className="is-sum">
-                <td>Σ</td><td /><td>{partCount}</td><td /><td />
-              </tr>
+              {parts.length > 0 ? (
+                <tr className="is-sum">
+                  <td>Σ</td><td /><td>{partCount}</td><td /><td />
+                </tr>
+              ) : (
+                <tr>
+                  <td colSpan="5" className="synthetic">{t('workflow.emptyParts')}</td>
+                </tr>
+              )}
             </tbody>
           </table>
-          <button type="button" className="btn" style={{ marginTop: '12px' }} onClick={addPart}>
-            <Plus /> {t('workflow.addPart')}
-          </button>
+          <div className="flex items-center gap-3" style={{ marginTop: '12px', flexWrap: 'wrap' }}>
+            <button type="button" className="btn" onClick={addPart}>
+              <Plus /> {t('workflow.addPart')}
+            </button>
+            {parts.length === 0 && (
+              <button type="button" className="btn" onClick={loadExample}>
+                {t('workflow.tryExample')}
+              </button>
+            )}
+          </div>
 
           {/* Kerf gets the same standalone bordered field as the board page,
               rather than a borderless row inside the sheet table — the same

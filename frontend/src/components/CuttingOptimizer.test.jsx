@@ -29,14 +29,17 @@ vi.mock('../contexts/AuthContext', async () => ({
   useAuth: () => ({ user: { id: 'user-1' } }),
 }));
 
-const renderOptimizer = () =>
-  render(
+const renderOptimizer = ({ loadExample = true } = {}) => {
+  const result = render(
     <MemoryRouter initialEntries={['/cutting']}>
       <AuthProvider>
         <CuttingOptimizer />
       </AuthProvider>
     </MemoryRouter>
   );
+  if (loadExample) fireEvent.click(screen.getByRole('button', { name: /example|exempel|eksempel/i }));
+  return result;
+};
 
 const fillMaterial = () => {
   fireEvent.change(screen.getByLabelText('Thickness (mm)'), { target: { value: '45' } });
@@ -75,6 +78,15 @@ beforeEach(() => {
 });
 
 describe('CuttingOptimizer', () => {
+  it('starts with no required parts and offers an example', async () => {
+    renderOptimizer({ loadExample: false });
+    expect(await screen.findByRole('heading', { name: /Required parts/i })).toBeInTheDocument();
+    expect(screen.queryByLabelText(/Part length in millimetres/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/Add the parts you need/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Plan the cuts/i })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: /Try an example/i }));
+    expect(screen.getByDisplayValue('80')).toBeInTheDocument();
+  });
   it('requests a standalone validation hint without interpolating a plan noun', async () => {
     const translate = vi.spyOn(i18n, 't');
     try {

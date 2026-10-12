@@ -19,7 +19,7 @@ products:
     sources:
       - https://www.traguiden.se/produkter/konstruktionsvirke/konstruktionsvirke-obehandlat/konstruktionsvirke-hallfasthetsklass-c24/
       - https://www.svenskttra.se/siteassets/5-publikationer/pdfer/st-lathunden-2021-med-utvik.pdf
-    sizes: [45x70, 45x95, 45x120, 45x145, 45x170, 45x195, 45x220, 45x245, 70x195, 70x220]
+    sizes: [45x45, 45x70, 45x95, 45x120, 45x145, 45x170, 45x195, 45x220, 45x245, 70x195, 70x220]
     lengths: &short_stock [1800, 2100]
     length_range: &stock_steps {from: 2400, to: 5400, step: 300}
     species: [pine, spruce]

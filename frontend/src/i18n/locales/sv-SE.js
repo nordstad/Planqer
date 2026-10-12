@@ -142,7 +142,7 @@ const locale = {
     planTheCuts: 'Planera kapningarna', yourCuttingPlan: 'Din kapplan', cuttingPlanIntro: 'Varje bräda ritas i samma skala, med kapningarna i den ordning du gör dem.', costAnalysis: 'Kostnadsanalys', planSaved: 'Plan sparad', saveThisPlan: 'Spara den här planen', planName: 'Plannamn', yourSheetLayout: 'Din skivlayout', sheetLayoutIntro: 'Varje skiva ritas i sina verkliga proportioner, med varje del placerad där den ska kapas.',
     sheetPartsSummary: '{{count}} delar · {{width}} × {{height}} mm skiva', sheetPartsSummary_one: '{{count}} del · {{width}} × {{height}} mm skiva', sheetsSummary: '{{count}} skivor · {{efficiency}} % utnyttjade', sheetsSummary_one: '{{count}} skiva · {{efficiency}} % utnyttjad', packsFromParts: 'Beräknas utifrån dina delar',
     parts: 'Delar', thePlan: 'Planen', theLayout: 'Layouten', save: 'Spara', layout: 'Layout', keep: 'Behåll', surface: 'Yta', model: 'Modell', cutlists: 'Kaplistor', someLinesNeedFixing: 'Vissa rader behöver rättas', someFieldsNeedFixing: 'Vissa fält behöver rättas', partsSummary: '{{count}} delar · {{demand}} mm · {{kerf}} mm sågspår', boardsSummary: '{{count}} brädor · {{offcut}} mm restbit', runsFromParts: 'Beräknas utifrån dina delar', solvesFromSurface: 'Beräknas utifrån din yta', savedAs: 'Sparad som {{name}}', nameAndKeep: 'Namnge och spara', waitsForPlan: 'Väntar på en plan', waitsForLayout: 'Väntar på en layout',
-    requiredParts: 'Delar som behövs', requiredPartsIntro: 'Alla längder du behöver och hur många av varje. Planqer räknar ut hur mycket material du ska köpa och var varje kapning ska göras.', partsToCut: 'Delar att kapa', partsToCutIntro: 'Alla rektanglar du behöver från skivmaterial. Planqer packar dem på så få skivor som möjligt och visar var de ligger.', loadSavedPlan: 'Ladda sparad plan', item: 'Del', lengthMm: 'Längd mm', sizeMm: 'Storlek mm', qty: 'Antal', total: 'Totalt', name: 'Namn', addPart: 'Lägg till del', addOpening: 'Lägg till öppning', pasteParts: 'Klistra in flera rader samtidigt — en längd och ett antal per rad', sawBlade: 'Sågspårets bredd', kerfHint: 'Bredden på materialet som försvinner vid varje kapning. Planen räknar med denna förlust.', stockAvailable: 'Tillgängligt råmaterial', supplierStock: 'Det din leverantör säljer, inte det du behöver', stock: 'Råmaterial', metres: 'Meter', offered: 'Erbjudet', lengthCount_one: '{{count}} längd', lengthCount_other: '{{count}} längder', addStockLength: 'Lägg till lagerlängd',
+    requiredParts: 'Delar som behövs', requiredPartsIntro: 'Alla längder du behöver och hur många av varje. Planqer räknar ut hur mycket material du ska köpa och var varje kapning ska göras.', partsToCut: 'Delar att kapa', partsToCutIntro: 'Alla rektanglar du behöver från skivmaterial. Planqer packar dem på så få skivor som möjligt och visar var de ligger.', loadSavedPlan: 'Ladda sparad plan', item: 'Del', lengthMm: 'Längd mm', sizeMm: 'Storlek mm', qty: 'Antal', total: 'Totalt', name: 'Namn', addPart: 'Lägg till del', addOpening: 'Lägg till öppning', emptyParts: 'Lägg till delarna du behöver eller prova ett exempel för att se hur Planqer fungerar.', tryExample: 'Prova ett exempel', exampleShelfBack: 'Bakstycke', exampleShelfSide: 'Sida', exampleShelfBottom: 'Botten', pasteParts: 'Klistra in flera rader samtidigt — en längd och ett antal per rad', sawBlade: 'Sågspårets bredd', kerfHint: 'Bredden på materialet som försvinner vid varje kapning. Planen räknar med denna förlust.', stockAvailable: 'Tillgängligt råmaterial', supplierStock: 'Det din leverantör säljer, inte det du behöver', stock: 'Råmaterial', metres: 'Meter', offered: 'Erbjudet', lengthCount_one: '{{count}} längd', lengthCount_other: '{{count}} längder', addStockLength: 'Lägg till lagerlängd',
     sheetSource: 'Skivan du kapar från', sheetSourceHint: 'Det du kapar ur, inte det du behöver', width: 'Bredd', height: 'Höjd', material: 'Material', packing: 'Placering av delar', packSheets: 'Planera skivkapningen', surfaceTitle: 'Ytan du ska täcka med plattor', surfaceIntro: 'Ange ytans storlek, öppningar och plattornas mått. Jämför rutnätets placering för att undvika smala kantbitar.', surfaceHint: 'Väggen, golvet eller taket du täcker', openings: 'Öppningar', openingsHint: 'Fönster, dörrar, uttag och köksfläkt', positionMm: 'Position mm', label: 'Etikett', noOpenings: 'Inga öppningar — en vanlig rektangel.', tile: 'Platta', tileHint: 'Ange måtten på plattorna du kan köpa', allowRotation: 'Tillåt att hela layouten roteras 90°', rotationHint: 'Provar även hela layouten roterad 90°. Stäng av om fiberriktningen eller ytmönstret måste följa en bestämd riktning.', jointBond: 'Fog och förband', jointBondHint: 'Fogbredden och hur varje rad förskjuts från den förra', solving: 'Beräknar', solveLayout: 'Beräkna layout', uploadModel: 'Ladda upp en modell', uploadModelIntro: 'Ladda upp en STL- eller STEP-fil. Planqer mäter soliderna och grupperar delarna i kaplistor som du kan beräkna och spara.', dropModel: 'Släpp modellen här', browseFiles: 'Bläddra bland filer', readingModel: 'Läser modell', readModel: 'Läs modellen', removeFile: 'Ta bort fil', planCuts: 'Planera en kapning',
   },
   projects: { myProjects: 'Mina projekt', refresh: 'Uppdatera', nothingSaved: 'Inget sparat ännu. Beräkna en plan, ge den ett namn och tryck på Spara för att spara den här under ditt konto.', noPlans: 'Inga planer ännu' },
@@ -382,7 +382,7 @@ Object.assign(locale.modelUi, {
 Object.assign(locale, {
   productUi: {
     product: "Produkt",
-    searchPlaceholder: "Sök på namn eller mått, t.ex. ”regel 45x95”",
+    searchPlaceholder: "Sök på namn eller mått, t.ex. ”regel 45x95”", sheetSearchPlaceholder: "Sök på namn eller tjocklek, t.ex. ”plywood 15”", searchPlaceholderOwn: "Skriv din produkt, t.ex. ”Furu 45x95”", sheetSearchPlaceholderOwn: "Skriv ditt skivmaterial, t.ex. ”Björkplywood”",
     results: "Matchande produkter",
     noResults: "Ingen matchande produkt. Du kan ändå skriva egna ord.",
     useAsOwn: "Använd ”{{text}}” som egen produkt",
@@ -392,7 +392,7 @@ Object.assign(locale, {
     suggested: "Förslag",
     fromModel: "Från modellen",
     confirm: "Stämmer",
-    clear: "Rensa",
+    clear: "Rensa", change: "Ändra",
     source: "Källa",
     details: "Detaljer",
     detailsHint: "Träslag, behandling, sortering, yta (valfritt)",
@@ -416,7 +416,7 @@ Object.assign(locale, {
     automatic: "Automatiskt",
     automaticWith: "Automatiskt ({{country}})",
     generic: "Generisk (inget land)",
-    genericHint: "Bara generiska mått visas. Välj ett land för standardmått på virke.",
+    genericHint: "Bara generiska mått visas. Välj ett land för standardmått på virke.", genericSheetHint: "Bara generiska skivtyper visas. Välj ett land för standardmått på skivor.",
   },
   catalogueAdmin: {
     tab: { users: "Användare", catalogue: "Katalog" },

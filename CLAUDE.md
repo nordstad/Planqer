@@ -95,7 +95,7 @@ docker compose up -d --build
   - `ResultDisplay.jsx` - Show optimization results and visualizations
   - `PartInputRow.jsx` / `BoardLengthRow.jsx` - Input components
 - **API Integration**: `/frontend/src/utils/api.js` - Backend communication
-- **Testing**: Component tests using React Testing Library + Jest
+- **Testing**: Component tests using React Testing Library + Vitest
 - **E2E Testing**: Playwright tests in `/frontend/tests/e2e/`
 
 ### MCP Server Architecture

@@ -90,6 +90,8 @@ const readBench = async () => {
 };
 
 const chooseOwnProduct = async (label, text) => {
+  const change = screen.queryByRole('button', { name: `Change — ${label}` });
+  if (change) fireEvent.click(change);
   const box = screen.getByRole('combobox', { name: label });
   fireEvent.focus(box);
   fireEvent.change(box, { target: { value: text } });

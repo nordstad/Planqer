@@ -32,6 +32,18 @@ def test_search_by_name_size_and_grade():
     assert ids(search_products(catalogue, "plywood 15"))[0] == "se:plywood:15"
 
 
+def test_general_regel_45x45_is_distinct_from_pressure_treated_45x45():
+    catalogue = get_catalogue("SE")
+    results = search_products(catalogue, "regel 45x45")
+
+    assert ids(results)[0] == "se:regel:45x45"
+    assert "se:tryckimpregnerat:45x45" not in ids(results)
+    assert {
+        "se:regel:45x45",
+        "se:tryckimpregnerat:45x45",
+    }.issubset({product.id for product in catalogue.products if product.width == 45 and product.thickness == 45})
+
+
 def test_search_matches_aliases_in_any_language():
     catalogue = get_catalogue("SE")
     assert "se:plywood:15" in ids(search_products(catalogue, "kryssfiner 15"))
@@ -98,6 +110,10 @@ def test_search_endpoint_is_public_and_validates_input(client):
     first = response.json()[0]
     assert first["product"]["id"] == "se:regel:45x95"
     assert first["name"] == "Träreglar 45 × 95 mm"
+    regel_45 = client.get("/api/catalogue/products", params={"q": "regel 45x45", "lang": "sv"})
+    assert regel_45.status_code == 200
+    assert regel_45.json()[0]["product"]["id"] == "se:regel:45x45"
+    assert regel_45.json()[0]["name"] == "Träreglar 45 × 45 mm"
     assert (
         client.get("/api/catalogue/products", params={"kind": "nope"}).status_code
         == 422

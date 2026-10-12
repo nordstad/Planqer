@@ -145,7 +145,7 @@ const locale = {
     sheetPartsSummary: '{{count}} parts · {{width}} × {{height}} mm sheet', sheetsSummary: '{{count}} sheets · {{efficiency}}% used', packsFromParts: 'Calculated from your parts',
     parts: 'Parts', thePlan: 'The plan', theLayout: 'The layout', save: 'Save', layout: 'Layout', keep: 'Keep', surface: 'Surface', model: 'Model', cutlists: 'Cutlists',
     someLinesNeedFixing: 'Some rows need correcting', someFieldsNeedFixing: 'Some fields need fixing', partsSummary: '{{count}} parts · {{demand}} mm · {{kerf}} mm kerf', boardsSummary: '{{count}} boards · {{offcut}} mm offcut', runsFromParts: 'Calculated from your parts', solvesFromSurface: 'Calculated from your surface', savedAs: 'Saved as {{name}}', nameAndKeep: 'Name it and keep it', waitsForPlan: 'Waits for a plan', waitsForLayout: 'Waits for a layout',
-    requiredParts: 'Required parts', requiredPartsIntro: 'Every length you need, and how many of each. Planqer works out how much stock to buy and where each cut goes.', partsToCut: 'Parts to cut', partsToCutIntro: 'Every rectangle you need out of sheet stock. Planqer packs them onto as few sheets as it can and shows where each one sits.', loadSavedPlan: 'Load a saved plan', item: 'Item', lengthMm: 'Length mm', sizeMm: 'Size mm', qty: 'Qty', total: 'Total', name: 'Name', addPart: 'Add part', addOpening: 'Add opening', pasteParts: 'Paste several lines at once — one length and quantity per line', sawBlade: 'Cut width (kerf)', kerfHint: 'Width of material removed by each cut. The plan includes this loss.', stockAvailable: 'Stock available', supplierStock: 'What your supplier sells, not what you need', stock: 'Stock', metres: 'Metres', offered: 'Offered', lengthCount_one: '{{count}} length', lengthCount_other: '{{count}} lengths', addStockLength: 'Add stock length',
+    requiredParts: 'Required parts', requiredPartsIntro: 'Every length you need, and how many of each. Planqer works out how much stock to buy and where each cut goes.', partsToCut: 'Parts to cut', partsToCutIntro: 'Every rectangle you need out of sheet stock. Planqer packs them onto as few sheets as it can and shows where each one sits.', loadSavedPlan: 'Load a saved plan', item: 'Item', lengthMm: 'Length mm', sizeMm: 'Size mm', qty: 'Qty', total: 'Total', name: 'Name', addPart: 'Add part', addOpening: 'Add opening', emptyParts: 'Add the parts you need, or try an example to see how Planqer works.', tryExample: 'Try an example', exampleShelfBack: 'Shelf back', exampleShelfSide: 'Shelf side', exampleShelfBottom: 'Shelf bottom', pasteParts: 'Paste several lines at once — one length and quantity per line', sawBlade: 'Cut width (kerf)', kerfHint: 'Width of material removed by each cut. The plan includes this loss.', stockAvailable: 'Stock available', supplierStock: 'What your supplier sells, not what you need', stock: 'Stock', metres: 'Metres', offered: 'Offered', lengthCount_one: '{{count}} length', lengthCount_other: '{{count}} lengths', addStockLength: 'Add stock length',
      sheetSource: "The sheet you're cutting from", sheetSourceHint: "What you're cutting out of, not what you need", width: 'Width', height: 'Height', material: 'Material', packing: 'Part placement', packSheets: 'Plan the sheet cuts',
     surfaceTitle: "The surface you're tiling", surfaceIntro: 'Enter the surface size, openings and tile dimensions. Compare grid positions to avoid narrow edge pieces.', surfaceHint: "The wall, floor, or roof you're covering", openings: 'Openings', openingsHint: 'Windows, doors, sockets, an extractor hood', positionMm: 'Position mm', label: 'Label', noOpenings: 'No openings — a plain rectangle.', tile: 'Tile', tileHint: 'Enter the dimensions of the tiles you can buy', allowRotation: 'Allow the whole layout to rotate 90°', rotationHint: 'Also tries the whole layout rotated 90°. Switch off if the grain or face pattern must run in one direction.', jointBond: 'Joint & bond', jointBondHint: 'The grout gap, and how each row shifts from the last', solving: 'Calculating', solveLayout: 'Calculate layout',
     uploadModel: 'Upload a model', uploadModelIntro: 'Upload an STL or STEP file. Planqer measures the solids and groups the parts into cutlists you can plan and save.', dropModel: 'Drop your model here', browseFiles: 'Browse files', readingModel: 'Reading model', readModel: 'Read the model', removeFile: 'Remove file', planCuts: 'Plan a cut',
@@ -302,7 +302,7 @@ Object.assign(locale.modelUi, {
 Object.assign(locale, {
   productUi: {
     product: "Product",
-    searchPlaceholder: "Search by name or size, e.g. “regel 45x95”",
+    searchPlaceholder: "Search by name or size, e.g. “stud 45x95”", sheetSearchPlaceholder: "Search by name or thickness, e.g. “plywood 15”", searchPlaceholderOwn: "Type your product, e.g. “Pine 45x95”", sheetSearchPlaceholderOwn: "Type your sheet material, e.g. “Birch plywood”",
     results: "Matching products",
     noResults: "No matching product. You can still use your own words.",
     useAsOwn: "Use “{{text}}” as my own product",
@@ -312,7 +312,7 @@ Object.assign(locale, {
     suggested: "Suggested",
     fromModel: "From model",
     confirm: "Looks right",
-    clear: "Clear",
+    clear: "Clear", change: "Change",
     source: "Source",
     details: "Details",
     detailsHint: "Species, treatment, grade, surface (optional)",
@@ -336,7 +336,7 @@ Object.assign(locale, {
     automatic: "Automatic",
     automaticWith: "Automatic ({{country}})",
     generic: "Generic (no country)",
-    genericHint: "Only generic sizes are shown. Choose a country for standard timber sizes.",
+    genericHint: "Only generic sizes are shown. Choose a country for standard timber sizes.", genericSheetHint: "Only generic sheet types are shown. Choose a country for standard sheet sizes.",
   },
   catalogueAdmin: {
     tab: { users: "Users", catalogue: "Catalogue" },

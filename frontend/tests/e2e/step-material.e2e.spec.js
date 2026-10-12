@@ -68,6 +68,7 @@ test.describe('Model materials read against the catalogue', () => {
     await expect(page.locator('body')).not.toContainText(/unknown/i);
 
     // The match can be reviewed and changed.
+    await page.getByRole('button', { name: 'Change — Product for Framing timber / studs 45 × 95 mm' }).click();
     const search = page.getByRole('combobox', { name: 'Product for Framing timber / studs 45 × 95 mm' });
     await search.fill('trall');
     await search.press('Enter');

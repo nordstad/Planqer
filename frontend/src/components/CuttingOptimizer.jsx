@@ -54,17 +54,19 @@ const STEP_SAVE = 2;
 
 const DEFAULT_CURRENCY = 'SEK';
 
+const EXAMPLE_PARTS = [
+  { length: "80", quantity: "10" },
+  { length: "150", quantity: "10" },
+  { length: "1550", quantity: "8" },
+  { length: "2000", quantity: "2" },
+];
+
 const CuttingOptimizer = () => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const [step, setStep] = useState(STEP_PARTS);
 
-  const [parts, setParts] = useState([
-    { length: "80", quantity: "10" },
-    { length: "150", quantity: "10" },
-    { length: "1550", quantity: "8" },
-    { length: "2000", quantity: "2" },
-  ]);
+  const [parts, setParts] = useState([]);
   const [boards, setBoards] = useState(["2500", "3600", "4200", "5100"]);
   const [sawKerf, setSawKerf] = useState("3"); // millimetres, whole numbers
   const [productSel, setProductSel] = useState(emptySelection);
@@ -259,6 +261,7 @@ const CuttingOptimizer = () => {
   };
 
   const addPart = () => { retirePlan(); setParts([...parts, { length: "", quantity: "" }]); };
+  const loadExample = () => { retirePlan(); setParts(EXAMPLE_PARTS.map((part) => ({ ...part }))); };
   const removePart = (index) => {
     if (parts.length <= 1) return;
     retirePlan();
@@ -330,7 +333,7 @@ const CuttingOptimizer = () => {
     (sum, p) => sum + (parseFloat(p.length) || 0) * (parseFloat(p.quantity) || 0), 0);
   const sectionDims = { thickness: parseFloat(boardThickness), width: parseFloat(boardWidth) };
   const material = selectionName(productSel, i18n.language, sectionDims);
-  const hasErrors = inputErrors.parts.some(Boolean) || inputErrors.boards.some(Boolean) || !!inputErrors.sawKerf
+  const hasErrors = parts.length === 0 || inputErrors.parts.some(Boolean) || inputErrors.boards.some(Boolean) || !!inputErrors.sawKerf
     || !parseFloat(boardThickness) || !parseFloat(boardWidth);
   const validBoards = boards.filter(b => b && !isNaN(parseFloat(b)));
   const uniqueValidBoards = [...new Set(validBoards.map((board) => parseFloat(board)))];
@@ -617,14 +620,27 @@ const CuttingOptimizer = () => {
                   canRemove={parts.length > 1}
                 />
               ))}
-              <tr className="is-sum">
-                <td>Σ</td><td /><td>{partCount}</td><td>{mm(demand)}</td><td />
-              </tr>
+              {parts.length > 0 ? (
+                <tr className="is-sum">
+                  <td>Σ</td><td /><td>{partCount}</td><td>{mm(demand)}</td><td />
+                </tr>
+              ) : (
+                <tr>
+                  <td colSpan="5" className="synthetic">{t('workflow.emptyParts')}</td>
+                </tr>
+              )}
             </tbody>
           </table>
-          <button type="button" className="btn" style={{ marginTop: '12px' }} onClick={addPart}>
-            <Plus /> {t('workflow.addPart')}
-          </button>
+          <div className="flex items-center gap-3" style={{ marginTop: '12px', flexWrap: 'wrap' }}>
+            <button type="button" className="btn" onClick={addPart}>
+              <Plus /> {t('workflow.addPart')}
+            </button>
+            {parts.length === 0 && (
+              <button type="button" className="btn" onClick={loadExample}>
+                {t('workflow.tryExample')}
+              </button>
+            )}
+          </div>
           <p className="synthetic" style={{ marginTop: '10px' }}>
             {t('workflow.pasteParts')}
           </p>
