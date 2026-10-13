@@ -152,3 +152,69 @@ describe("local transport: catalogue", () => {
     expect(call.mock.calls[0].slice(0, 2)).toEqual(["catalogue", {}]);
   });
 });
+
+describe("local transport: saved projects, groups and settings", () => {
+  function withStore(result) {
+    const call = vi.fn();
+    const handle = vi.fn(async () => result);
+    return { call, handle, transport: createLocalTransport({ call, handle }) };
+  }
+
+  it("answers from the local store, with the route stripped of /api and slashes", async () => {
+    const { handle, transport } = withStore({ status: 200, body: [{ id: "a" }] });
+
+    const response = await transport.get(`${API}/project-groups/`);
+
+    expect(handle).toHaveBeenCalledWith("GET", "/project-groups", undefined);
+    expect(response).toMatchObject({ status: 200, data: [{ id: "a" }] });
+  });
+
+  it("passes the request body on", async () => {
+    const { handle, transport } = withStore({ status: 200, body: {} });
+
+    await transport.put(`${API}/projects/abc`, { name: "Renamed" });
+
+    expect(handle).toHaveBeenCalledWith("PUT", "/projects/abc", { name: "Renamed" });
+  });
+
+  it("fails like axios when the store says no", async () => {
+    const { transport } = withStore({ status: 404, body: { detail: "Project not found" } });
+
+    const error = await transport.delete(`${API}/projects/abc`).catch((e) => e);
+
+    expect(error.response.status).toBe(404);
+    expect(error.response.data).toEqual({ detail: "Project not found" });
+  });
+
+  it("turns a stored diagram into a file the caller can download", async () => {
+    const { transport } = withStore({
+      status: 200,
+      image: "data:image/svg+xml;base64,PHN2Zy8+",
+      name: "Shelves",
+    });
+
+    const response = await transport.get(`${API}/projects/abc/image`, { responseType: "blob" });
+
+    expect(response.data).toBeInstanceOf(Blob);
+    expect(response.data.type).toBe("image/svg+xml");
+    expect(await response.data.text()).toBe("<svg/>");
+  });
+
+  it("does not ask the store about solver routes", async () => {
+    const { call, handle, transport } = withStore({ status: 200, body: {} });
+    call.mockResolvedValue({ status: 200, body: { ok: true } });
+
+    await transport.post(`${API}/cutting-plans`, {});
+
+    expect(handle).not.toHaveBeenCalled();
+  });
+
+  it("still says a route is not part of the demo when the store does not know it", async () => {
+    const { transport } = withStore(null);
+
+    const error = await transport.get(`${API}/admin/users`).catch((e) => e);
+
+    expect(error.response.status).toBe(404);
+    expect(error.response.data.detail).toMatch(/not available in the demo/i);
+  });
+});
