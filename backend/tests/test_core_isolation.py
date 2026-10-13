@@ -34,6 +34,8 @@ SERVER_ONLY_PACKAGES = (
 
 CORE_MODULES = [
     "planqer.services",
+    "planqer.threed_cutlist",
+    "planqer.step_cutlist",
 ]
 
 

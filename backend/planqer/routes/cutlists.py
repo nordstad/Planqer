@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from starlette.requests import Request
 
 from planqer.auth import get_current_user
+from planqer.errors import PlanqerError
 from planqer.schemas import (
     CutListItemResponse,
     StepCutListItemResponse,
@@ -81,7 +82,7 @@ async def create_3d_cutlist(
             board_count=len(boards),
             sheet_count=len(sheets),
         )
-    except HTTPException:
+    except (HTTPException, PlanqerError):
         raise
     except Exception as exc:
         raise HTTPException(
@@ -150,7 +151,7 @@ async def create_step_cutlist(
             ),
             assembly_structure=structure,
         )
-    except HTTPException:
+    except (HTTPException, PlanqerError):
         raise
     except Exception as exc:
         raise HTTPException(

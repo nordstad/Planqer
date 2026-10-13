@@ -13,7 +13,8 @@ not answered.
 
 import pytest
 
-from planqer.step_cutlist import StepComponentType, StepProcessor
+from planqer.errors import PlanqerError
+from planqer.step_cutlist import StepComponentType, StepProcessor, process_step_bytes
 from planqer.step_reader import StepModel, StepParseError, read_step_file
 
 MM_CONTEXT = """
@@ -393,3 +394,34 @@ def test_strings_holding_a_semicolon_do_not_end_the_record():
 
     assert len(bodies) == 1
     assert bodies[0].name == "Rail; short"
+
+
+def test_step_file_contents_become_a_cutlist_and_optimizer_payload():
+    products = _product(0, "Long", [_box_corners(1800.0, 95.0, 45.0)])
+
+    items, parts = process_step_bytes(
+        _step_file(products).encode(), "shelf.step", units="mm"
+    )
+
+    assert [(i.type, i.length, i.width, i.thickness) for i in items] == [
+        (StepComponentType.BOARD, 1800.0, 95.0, 45.0)
+    ]
+    assert parts == {"1800": 1}
+
+
+def test_step_contents_with_the_wrong_extension_are_refused():
+    products = _product(0, "Long", [_box_corners(1800.0, 95.0, 45.0)])
+
+    with pytest.raises(PlanqerError) as exc_info:
+        process_step_bytes(_step_file(products).encode(), "shelf.stl")
+
+    assert exc_info.value.status_code == 400
+    assert "STEP file" in exc_info.value.detail
+
+
+def test_step_contents_that_are_not_step_are_refused_with_the_readers_message():
+    with pytest.raises(PlanqerError) as exc_info:
+        process_step_bytes(b"this is not a step file", "broken.step")
+
+    assert exc_info.value.status_code == 400
+    assert "ISO-10303-21" in exc_info.value.detail

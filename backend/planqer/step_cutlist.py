@@ -17,14 +17,14 @@ import logging
 import os
 import tempfile
 
-from fastapi import HTTPException, UploadFile
-
+from planqer.errors import PlanqerError
 from planqer.step_policy import (
     StepComponentType,
     StepCutListItem,
     measured_bodies_to_cutlist,
 )
 from planqer.step_reader import StepParseError, read_step_file
+from planqer.uploads import UploadedFile
 
 logger = logging.getLogger("planqer.step_cutlist")
 
@@ -63,12 +63,12 @@ class StepProcessor:
         except StepParseError as e:
             # The file's own shape is the user's problem to fix, so say what is
             # wrong with it rather than reporting a server fault.
-            raise HTTPException(status_code=400, detail=str(e)) from e
-        except HTTPException:
+            raise PlanqerError(status_code=400, detail=str(e)) from e
+        except PlanqerError:
             raise
         except Exception as e:
             logger.error(f"STEP processing failed: {e}")
-            raise HTTPException(
+            raise PlanqerError(
                 status_code=500, detail=f"STEP processing failed: {e}"
             ) from e
 
@@ -88,34 +88,39 @@ class StepProcessor:
         return parts
 
 
-async def process_uploaded_step(
-    file: UploadFile,
-    units: str = "mm",
-    round_precision: int = 1,
-    project_name: str | None = None,
-) -> tuple[list[StepCutListItem], dict[str, int]]:
-    """Read an uploaded STEP file into cutlist items and the 1D parts payload.
-
-    `units` is the fallback for a file that declares no length unit; the file's
-    own declaration always wins.
-    """
-    if not file.filename or not file.filename.lower().endswith((".step", ".stp")):
-        raise HTTPException(
+def _check_step_upload(filename: str | None, size: int | None) -> None:
+    if not filename or not filename.lower().endswith((".step", ".stp")):
+        raise PlanqerError(
             status_code=400,
             detail="File must be a STEP file (.step or .stp extension)",
         )
 
-    if file.size and file.size > MAX_UPLOAD_BYTES:
-        raise HTTPException(
+    if size and size > MAX_UPLOAD_BYTES:
+        raise PlanqerError(
             status_code=400,
             detail=f"File size too large. Maximum {MAX_UPLOAD_BYTES // (1024 * 1024)}MB allowed.",
         )
+
+
+def process_step_bytes(
+    data: bytes,
+    filename: str | None,
+    units: str = "mm",
+    round_precision: int = 1,
+    project_name: str | None = None,
+) -> tuple[list[StepCutListItem], dict[str, int]]:
+    """Read the contents of a STEP file into cutlist items and the 1D parts payload.
+
+    `units` is the fallback for a file that declares no length unit; the file's
+    own declaration always wins.
+    """
+    _check_step_upload(filename, len(data))
 
     temp_fd, temp_path = tempfile.mkstemp(prefix="planqer-step-", suffix=".step")
     try:
         os.chmod(temp_path, 0o600)
         with os.fdopen(temp_fd, "wb") as temp_file:
-            temp_file.write(await file.read())
+            temp_file.write(data)
             temp_file.flush()
 
         processor = StepProcessor(units=units, round_precision=round_precision)
@@ -126,3 +131,17 @@ async def process_uploaded_step(
             os.unlink(temp_path)
         except OSError:
             pass
+
+
+async def process_uploaded_step(
+    file: UploadedFile,
+    units: str = "mm",
+    round_precision: int = 1,
+    project_name: str | None = None,
+) -> tuple[list[StepCutListItem], dict[str, int]]:
+    """Read an uploaded STEP file; see `process_step_bytes`."""
+    # Reject before reading the body, as the endpoint always has.
+    _check_step_upload(file.filename, file.size)
+    return process_step_bytes(
+        await file.read(), file.filename, units, round_precision, project_name
+    )

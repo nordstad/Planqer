@@ -6,12 +6,14 @@ import tempfile
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-from fastapi import HTTPException, UploadFile
+from fastapi import UploadFile
 
+from planqer.errors import PlanqerError
 from planqer.threed_cutlist import (
     ComponentType,
     CutListItem,
     STLProcessor,
+    process_stl_bytes,
     process_uploaded_stl,
 )
 
@@ -115,7 +117,7 @@ class TestSTLProcessor:
         processor = STLProcessor()
 
         with tempfile.NamedTemporaryFile(suffix=".stl") as temp_file:
-            with pytest.raises(HTTPException) as exc_info:
+            with pytest.raises(PlanqerError) as exc_info:
                 processor._load_stl(temp_file.name)
 
             assert exc_info.value.status_code == 400
@@ -192,8 +194,9 @@ async def test_process_uploaded_stl_invalid_extension():
     """Test process_uploaded_stl with invalid file extension."""
     mock_file = Mock(spec=UploadFile)
     mock_file.filename = "test.obj"  # Wrong extension
+    mock_file.size = 1024
 
-    with pytest.raises(HTTPException) as exc_info:
+    with pytest.raises(PlanqerError) as exc_info:
         await process_uploaded_stl(mock_file)
 
     assert exc_info.value.status_code == 400
@@ -207,7 +210,7 @@ async def test_process_uploaded_stl_file_too_large():
     mock_file.filename = "test.stl"
     mock_file.size = 60 * 1024 * 1024  # 60MB, over the 50MB limit
 
-    with pytest.raises(HTTPException) as exc_info:
+    with pytest.raises(PlanqerError) as exc_info:
         await process_uploaded_stl(mock_file)
 
     assert exc_info.value.status_code == 400
@@ -360,3 +363,28 @@ class TestIntegration:
         # Should combine quantities for same length
         expected = {"1200": 5}  # 2 + 3
         assert planqer_parts == expected
+
+
+def _box_stl(length, width, thickness):
+    import trimesh
+
+    return trimesh.creation.box(extents=[length, width, thickness]).export(
+        file_type="stl"
+    )
+
+
+def test_process_stl_bytes_reads_a_board_from_file_contents():
+    items, parts = process_stl_bytes(_box_stl(1000, 95, 45), "shelf.stl")
+
+    assert [(i.type, i.length, i.width, i.thickness) for i in items] == [
+        (ComponentType.BOARD, 1000.0, 95.0, 45.0)
+    ]
+    assert parts == {"1000": 1}
+
+
+def test_process_stl_bytes_rejects_a_file_that_is_not_stl():
+    with pytest.raises(PlanqerError) as exc_info:
+        process_stl_bytes(_box_stl(1000, 95, 45), "shelf.obj")
+
+    assert exc_info.value.status_code == 400
+    assert "STL file" in exc_info.value.detail

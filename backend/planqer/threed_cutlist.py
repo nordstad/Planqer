@@ -12,9 +12,10 @@ from dataclasses import dataclass
 from enum import Enum
 
 import trimesh
-from fastapi import HTTPException, UploadFile
 
 from planqer.cad_policy import is_sheet
+from planqer.errors import PlanqerError
+from planqer.uploads import UploadedFile
 
 logger = logging.getLogger("planqer.threed_cutlist")
 
@@ -118,7 +119,7 @@ class STLProcessor:
             return mesh
 
         except Exception as e:
-            raise HTTPException(
+            raise PlanqerError(
                 status_code=400, detail=f"Failed to load STL file: {e!s}"
             )
 
@@ -237,7 +238,7 @@ class STLProcessor:
 
         except Exception as e:
             logger.error(f"STL processing failed: {e}")
-            raise HTTPException(status_code=500, detail=f"STL processing failed: {e!s}")
+            raise PlanqerError(status_code=500, detail=f"STL processing failed: {e!s}")
 
     def convert_to_planqer_parts(
         self, cutlist_items: list[CutListItem]
@@ -254,17 +255,33 @@ class STLProcessor:
         return parts
 
 
-async def process_uploaded_stl(
-    file: UploadFile,
+def _check_stl_upload(filename: str | None, size: int | None) -> None:
+    if not filename or not filename.lower().endswith(".stl"):
+        raise PlanqerError(
+            status_code=400, detail="File must be an STL file (.stl extension)"
+        )
+
+    # Check file size (limit to 50MB)
+    if size and size > 50 * 1024 * 1024:
+        raise PlanqerError(
+            status_code=400, detail="File size too large. Maximum 50MB allowed."
+        )
+
+
+def process_stl_bytes(
+    data: bytes,
+    filename: str | None,
     units: str = "mm",
     round_precision: int = 1,
     project_name: str | None = None,
 ) -> tuple[list[CutListItem], dict[str, int]]:
     """
-    Process uploaded STL file and return cutlist items and Planqer parts format.
+    Process the contents of an STL file and return cutlist items and Planqer
+    parts format.
 
     Args:
-        file: Uploaded STL file
+        data: The STL file contents
+        filename: The uploaded file name, used to check the extension
         units: Units for dimensions (mm, cm, m, in, ft)
         round_precision: Decimal places for rounding
         project_name: Optional project name
@@ -272,23 +289,13 @@ async def process_uploaded_stl(
     Returns:
         Tuple of (cutlist_items, planqer_parts_dict)
     """
-    # Validate file
-    if not file.filename or not file.filename.lower().endswith(".stl"):
-        raise HTTPException(
-            status_code=400, detail="File must be an STL file (.stl extension)"
-        )
-
-    # Check file size (limit to 50MB)
-    if file.size and file.size > 50 * 1024 * 1024:
-        raise HTTPException(
-            status_code=400, detail="File size too large. Maximum 50MB allowed."
-        )
+    _check_stl_upload(filename, len(data))
 
     temp_fd, temp_path = tempfile.mkstemp(prefix="planqer-stl-", suffix=".stl")
     try:
         os.chmod(temp_path, 0o600)
         with os.fdopen(temp_fd, "wb") as temp_file:
-            temp_file.write(await file.read())
+            temp_file.write(data)
             temp_file.flush()
 
         processor = STLProcessor(units=units, round_precision=round_precision)
@@ -300,3 +307,17 @@ async def process_uploaded_stl(
             os.unlink(temp_path)
         except OSError:
             pass
+
+
+async def process_uploaded_stl(
+    file: UploadedFile,
+    units: str = "mm",
+    round_precision: int = 1,
+    project_name: str | None = None,
+) -> tuple[list[CutListItem], dict[str, int]]:
+    """Process an uploaded STL file; see `process_stl_bytes`."""
+    # Reject before reading the body, as the endpoint always has.
+    _check_stl_upload(file.filename, file.size)
+    return process_stl_bytes(
+        await file.read(), file.filename, units, round_precision, project_name
+    )
