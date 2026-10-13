@@ -1,20 +1,13 @@
 // Every local_api operation, run in Pyodide and in native Python, must give
 // the same answer. Fixtures are seeded because the genetic solvers use random.
 
-import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
-import { mkdtempSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { beforeAll, describe, expect, it } from "vitest";
-import manifest from "../../src/runtime/manifest.json";
-import { createSolverRuntime } from "../../src/runtime/solverRuntime";
+import { script, startRuntime } from "./startRuntime";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const root = resolve(here, "../../..");
-const python =
-  process.env.PLANQER_PYTHON ?? join(root, "backend/.venv/bin/python");
 const fixtures = JSON.parse(readFileSync(join(here, "fixtures.json"), "utf-8"));
 
 const TIMING_KEYS = new Set(["computation_time", "processing_time"]);
@@ -31,40 +24,13 @@ function withoutTimings(value) {
   return value;
 }
 
-function script(name, ...args) {
-  return execFileSync(python, [join(root, "scripts", name), ...args], {
-    encoding: "utf-8",
-    maxBuffer: 256 * 1024 * 1024,
-  });
-}
-
 let native;
 let pyodide;
 let runtime;
 
 beforeAll(async () => {
-  const runtimeDir = join(root, "build/pyodide/runtime");
-  const bundleDir = mkdtempSync(join(tmpdir(), "planqer-bundle-"));
-  script("fetch-pyodide-runtime.py", "--out", runtimeDir);
-  const bundle = script("build-pyodide-bundle.py", "--out", bundleDir)
-    .trim()
-    .replace(/ \(\d+ KB\)$/, "");
-
   native = JSON.parse(script("parity-native.py"));
-
-  // The same self-hosted loader the browser worker imports.
-  // Vite logs a missing source map for this file; it is harmless.
-  const { loadPyodide } = await import(
-    /* @vite-ignore */ pathToFileURL(join(runtimeDir, "pyodide.mjs")).href
-  );
-  runtime = createSolverRuntime({
-    loadPyodide,
-    runtimeUrl: `${runtimeDir}/`,
-    bundleUrl: bundle,
-    manifest,
-    fetchBytes: async (path) => new Uint8Array(readFileSync(path)),
-  });
-  pyodide = await runtime.init();
+  ({ runtime, pyodide } = await startRuntime());
 });
 
 const MODEL_PACKAGES = "('numpy', 'scipy', 'networkx', 'trimesh')";
