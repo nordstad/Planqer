@@ -42,6 +42,8 @@ MODULES = (
     "planqer/schemas/__init__.py",
     "planqer/schemas/cutlists.py",
     "planqer/schemas/cutting.py",
+    "planqer/schemas/product.py",
+    "planqer/schemas/saved.py",
     "planqer/schemas/sheet.py",
     "planqer/schemas/tile.py",
     "planqer/services.py",

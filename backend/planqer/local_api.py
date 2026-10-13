@@ -32,6 +32,16 @@ from planqer.schemas import (
     SheetOptimizationRequest,
     TileLayoutRequest,
 )
+from planqer.schemas.saved import (
+    CreateSheetProjectRequest,
+    CreateTileProjectRequest,
+    ProjectCreateRequest,
+    ProjectGroupRequest,
+    ProjectUpdateRequest,
+    UpdateSheetProjectRequest,
+    UpdateTileProjectRequest,
+    UserSettingsUpdate,
+)
 from planqer.services import normalize_optimization_options, run_optimization
 from planqer.sheet_services import run_sheet_optimization
 from planqer.tile_services import run_tile_layout
@@ -170,6 +180,37 @@ def _saved_diagram(payload: dict) -> dict:
     return {"image": image}
 
 
+# The model each kind of saved thing is validated with, for a new one and for
+# an edit. Settings and groups use one model for both.
+SAVED_REQUESTS: dict[str, dict[str, type[BaseModel]]] = {
+    "board": {"create": ProjectCreateRequest, "update": ProjectUpdateRequest},
+    "sheet": {"create": CreateSheetProjectRequest, "update": UpdateSheetProjectRequest},
+    "tile": {"create": CreateTileProjectRequest, "update": UpdateTileProjectRequest},
+    "group": {"create": ProjectGroupRequest, "update": ProjectGroupRequest},
+    "settings": {"create": UserSettingsUpdate, "update": UserSettingsUpdate},
+}
+
+
+class SavedRequest(BaseModel):
+    kind: Literal["board", "sheet", "tile", "group", "settings"]
+    mode: Literal["create", "update"]
+    body: dict
+
+
+def _saved_request(payload: dict) -> dict:
+    """Validate what the user wants to save, with the endpoint's own models.
+
+    Returns the values to store: everything, defaults filled in, for a new
+    one; only the fields that were sent, for an edit (an explicit null counts
+    as sent, the same way the endpoints read it).
+    """
+    request = SavedRequest.model_validate(payload)
+    saved = SAVED_REQUESTS[request.kind][request.mode].model_validate(request.body)
+    if request.mode == "create":
+        return {"values": saved.model_dump(mode="json")}
+    return {"values": saved.model_dump(mode="json", include=saved.model_fields_set)}
+
+
 def _model_cutlist(run: Callable, failure: str) -> Callable[[dict, bytes], dict]:
     def operation(options: dict, data: bytes) -> dict:
         try:
@@ -196,6 +237,7 @@ OPERATIONS: dict[str, Callable[[dict], dict | list]] = {
     "catalogue": _catalogue,
     "catalogue_search": _catalogue_search,
     "saved_diagram": _saved_diagram,
+    "saved_request": _saved_request,
 }
 
 # Operations that read a file: the JSON carries only the options, and the file

@@ -3,18 +3,17 @@ from typing import Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
 from planqer.auth import get_current_user
 from planqer.catalogue import configured_country
 from planqer.database import User, UserSettings, get_session
+from planqer.schemas.saved import CatalogueChoice, UserSettingsUpdate
 
 router = APIRouter(prefix="/settings", tags=["user-settings"])
 
-# `auto` follows the language (decided by the client); the rest pick a catalogue.
-CatalogueChoice = Literal["auto", "SE", "NO", "generic"]
 
 # Starting currency and VAT for a new account on an instance with a default country.
 COUNTRY_USER_DEFAULTS = {
@@ -42,19 +41,6 @@ class UserSettingsResponse(BaseModel):
     preferred_language: Literal["en-GB", "sv-SE", "nb-NO"] | None
     spare_margin_percent: float
     catalogue_country: CatalogueChoice
-
-
-class UserSettingsUpdate(BaseModel):
-    default_board_lengths: list[int] | None = None
-    default_saw_blade_width: float | None = None
-    default_currency: str | None = None
-    default_vat_rate: float | None = None
-    default_prices_include_vat: bool | None = None
-    preferred_algorithm: str | None = None
-    preferred_units: str | None = None
-    preferred_language: Literal["en-GB", "sv-SE", "nb-NO"] | None = None
-    spare_margin_percent: float | None = Field(default=None, ge=0, le=100)
-    catalogue_country: CatalogueChoice | None = None
 
 
 LEGACY_DEFAULT_BOARD_LENGTHS = [300, 360, 500]

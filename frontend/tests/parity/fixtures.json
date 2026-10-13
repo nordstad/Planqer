@@ -3039,5 +3039,111 @@
         "sheets": []
       }
     }
+  },
+  {
+    "name": "saved_request_board_create",
+    "op": "saved_request",
+    "seed": 0,
+    "payload": {
+      "kind": "board",
+      "mode": "create",
+      "body": {
+        "name": "Shelves",
+        "parts_data": {
+          "100": 2
+        },
+        "board_lengths": [
+          200.0
+        ],
+        "saw_blade_width": 3.0,
+        "optimization_result": {},
+        "product": {
+          "type": "board",
+          "name": "Spruce 45x95",
+          "thickness": 45
+        }
+      }
+    }
+  },
+  {
+    "name": "saved_request_sheet_defaults",
+    "op": "saved_request",
+    "seed": 0,
+    "payload": {
+      "kind": "sheet",
+      "mode": "create",
+      "body": {
+        "name": "Cabinet",
+        "parts_data": [],
+        "sheet_width": 2440,
+        "sheet_height": 1220,
+        "kerf_width": 3
+      }
+    }
+  },
+  {
+    "name": "saved_request_tile_update",
+    "op": "saved_request",
+    "seed": 0,
+    "payload": {
+      "kind": "tile",
+      "mode": "update",
+      "body": {
+        "name": "Wall",
+        "project_group_id": null
+      }
+    }
+  },
+  {
+    "name": "saved_request_invalid_name",
+    "op": "saved_request",
+    "seed": 0,
+    "payload": {
+      "kind": "board",
+      "mode": "create",
+      "body": {
+        "name": "",
+        "parts_data": {},
+        "board_lengths": [],
+        "saw_blade_width": 3,
+        "optimization_result": {}
+      }
+    }
+  },
+  {
+    "name": "saved_request_group_margin",
+    "op": "saved_request",
+    "seed": 0,
+    "payload": {
+      "kind": "group",
+      "mode": "create",
+      "body": {
+        "name": "Chair",
+        "spare_margin_percent": 120
+      }
+    }
+  },
+  {
+    "name": "saved_request_settings_partial",
+    "op": "saved_request",
+    "seed": 0,
+    "payload": {
+      "kind": "settings",
+      "mode": "update",
+      "body": {
+        "default_currency": "NOK",
+        "spare_margin_percent": 15
+      }
+    }
+  },
+  {
+    "name": "saved_request_unknown_kind",
+    "op": "saved_request",
+    "seed": 0,
+    "payload": {
+      "kind": "wall",
+      "mode": "create",
+      "body": {}
+    }
   }
 ]

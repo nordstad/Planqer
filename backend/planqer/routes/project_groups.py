@@ -3,7 +3,7 @@ from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
@@ -16,6 +16,7 @@ from planqer.database import (
     UserTileProject,
     get_session,
 )
+from planqer.schemas.saved import ProjectGroupRequest
 
 router = APIRouter(prefix="/project-groups", tags=["project-groups"])
 logger = logging.getLogger("planqer.routes.project_groups")
@@ -27,11 +28,6 @@ class ProjectGroupResponse(BaseModel):
     created_at: str
     updated_at: str
     spare_margin_percent: float | None = None
-
-
-class ProjectGroupRequest(BaseModel):
-    name: str
-    spare_margin_percent: float | None = Field(default=None, ge=0, le=100)
 
 
 def group_to_response(group: ProjectGroup) -> ProjectGroupResponse:

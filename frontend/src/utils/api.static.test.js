@@ -12,6 +12,8 @@ vi.mock('axios', () => ({
 
 const solverCall = vi.fn();
 vi.mock('../runtime/solver', () => ({ solverCall }));
+const handle = vi.fn();
+vi.mock('../runtime/localBackend', () => ({ handle }));
 
 let api;
 
@@ -89,6 +91,63 @@ it('loads the catalogue from the browser and never reports it unchanged', async 
 });
 
 it('says plainly when a server-only feature is asked for', async () => {
+  handle.mockResolvedValue(null);
+
   await expect(api.getAdminUsers()).rejects.toThrow(/not available in the demo/i);
   expect(axios.get).not.toHaveBeenCalled();
+});
+
+it('keeps a saved project in the browser and returns the server\'s shape', async () => {
+  handle.mockResolvedValue({ status: 200, body: { id: 'abc', name: 'Shelves' } });
+
+  const saved = await api.saveProject({
+    name: 'Shelves',
+    parts: [{ length: 100, quantity: 2 }],
+    boards: [200],
+    sawKerf: 3,
+    result: { cut_list: [] },
+  });
+
+  expect(saved).toEqual({ id: 'abc', name: 'Shelves' });
+  expect(handle).toHaveBeenCalledWith(
+    'POST',
+    '/projects',
+    expect.objectContaining({ name: 'Shelves', parts_data: { 100: 2 }, board_lengths: [200] }),
+  );
+  expect(axios.post).not.toHaveBeenCalled();
+});
+
+it('lists projects, groups and settings from the browser', async () => {
+  handle.mockResolvedValue({ status: 200, body: [] });
+
+  await api.getUserProjects();
+  await api.getProjectGroups();
+  await api.getUserSettings();
+
+  expect(handle.mock.calls.map(([method, path]) => `${method} ${path}`)).toEqual([
+    'GET /projects',
+    'GET /project-groups',
+    'GET /settings',
+  ]);
+});
+
+it('shows the endpoint\'s message when the browser store refuses a save', async () => {
+  handle.mockResolvedValue({ status: 404, body: { detail: 'Project not found' } });
+
+  await expect(api.deleteProject('missing')).rejects.toThrow('Project not found');
+});
+
+it('downloads a saved diagram as a file', async () => {
+  handle.mockResolvedValue({ status: 200, image: 'data:image/svg+xml;base64,PHN2Zy8+', name: 'x' });
+
+  const blob = await api.downloadProjectImage('abc', 'board');
+
+  expect(handle).toHaveBeenCalledWith('GET', '/projects/abc/image', undefined);
+  expect(await blob.text()).toBe('<svg/>');
+});
+
+it('fails a missing diagram the way the server download does', async () => {
+  handle.mockResolvedValue({ status: 404, body: { detail: 'No diagram was saved with this cutlist' } });
+
+  await expect(api.downloadProjectImage('abc', 'board')).rejects.toThrow('HTTP error! status: 404');
 });

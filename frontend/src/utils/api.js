@@ -52,6 +52,7 @@ const API_URL = getApiUrl();
 const http = import.meta.env.VITE_PLANQER_MODE === 'static'
   ? createLocalTransport({
     call: (...args) => import('../runtime/solver').then(({ solverCall }) => solverCall(...args)),
+    handle: (...args) => import('../runtime/localBackend').then(({ handle }) => handle(...args)),
   })
   : axios;
 
@@ -519,6 +520,14 @@ export const downloadProjectImage = async (projectId, projectType) => {
   const endpoint = PROJECT_IMAGE_ENDPOINTS[projectType];
   if (!endpoint) {
     throw new Error(`Unknown project type "${projectType}"`);
+  }
+  if (import.meta.env.VITE_PLANQER_MODE === 'static') {
+    try {
+      const { data } = await http.get(`${API_URL}/api/${endpoint}/${projectId}/image`, { responseType: 'blob' });
+      return data;
+    } catch (error) {
+      throw new Error(`HTTP error! status: ${error.response?.status}`);
+    }
   }
   const response = await fetch(`${API_URL}/api/${endpoint}/${projectId}/image`, {
     headers: authHeaders(),

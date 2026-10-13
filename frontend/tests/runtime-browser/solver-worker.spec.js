@@ -42,8 +42,6 @@ function script(name, ...args) {
 let native;
 
 test.beforeAll(() => {
-  script("fetch-pyodide-runtime.py");
-  script("build-pyodide-bundle.py");
   native = JSON.parse(script("parity-native.py"));
 });
 
