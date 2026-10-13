@@ -74,6 +74,46 @@ Run the full stack:
 docker compose up -d --build
 ```
 
+#### Testing local changes in Docker
+
+`localhost:3001` (frontend) and `localhost:8002` (backend) are usually served by
+long-running containers that may be days old. Never assume they match the
+checkout, and do not start a second `npm start` or `uvicorn` on the same ports.
+Before telling the user to test, rebuild what changed:
+
+- **Frontend dependencies or config** (`frontend/package.json`,
+  `package-lock.json`, `vite.config.mjs`, anything outside `src/` and
+  `public/`): rebuild with `docker compose up -d --build frontend`. Only
+  `src/` and `public/` are bind-mounted, and `npm ci` runs at image build
+  time, so a new dependency is missing at runtime.
+- **Anything under `backend/`** (code, `pyproject.toml`, `uv.lock`,
+  `config.yaml`, `alembic/`): rebuild with
+  `docker compose up -d --build backend`. The backend image copies the code
+  in and has no source mount.
+- **Only `frontend/src/` or `frontend/public/`**: no rebuild. They are
+  bind-mounted, so Vite hot-reloads.
+
+A symptom of a stale image is a Vite error such as
+`Failed to resolve import "<package>"` with `/app/node_modules` in the path.
+It is not a code bug; rebuild the frontend.
+
+The frontend container serves whichever branch is currently checked out, so
+confirm the branch before testing. Rebuilding never touches the `backend_data`
+volume, so accounts and saved projects survive.
+
+After rebuilding, verify rather than assume:
+
+```bash
+# new dependency is present in the container
+docker exec planqer-web-frontend ls node_modules/<package>
+# pages are served
+curl -s -o /dev/null -w "%{http_code}\n" http://localhost:3001/model-cutlist
+# backend is healthy
+docker ps --filter name=planqer-web --format '{{.Names}}\t{{.Status}}'
+```
+
+Then give the user the URL to open, and tell them to hard-refresh (⌘⇧R).
+
 ## Architecture
 
 ### Backend Architecture
