@@ -1,0 +1,20 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Planqer runtime harness</title>
+<script type="module">
+  import { createSolverClient } from "/src/runtime/solverClient.js";
+
+  const progress = [];
+  const client = createSolverClient({
+    createWorker: () =>
+      new Worker(new URL("/src/runtime/solverWorker.js", import.meta.url), {
+        type: "module",
+      }),
+    runtimeUrl: `${location.origin}/pyodide/runtime/`,
+    bundleUrl: `${location.origin}/pyodide/bundle.zip`,
+    timeoutMs: 120000,
+    onProgress: (stage, detail) => progress.push({ stage, ...detail, at: performance.now() }),
+  });
+  window.harness = { client, progress };
+  window.harnessReady = true;
+</script>
