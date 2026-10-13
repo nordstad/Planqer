@@ -23,7 +23,7 @@
   doesn't need a project at all.
 */
 
-import { Fragment, useState, useCallback, useEffect } from 'react';
+import { Fragment, lazy, Suspense, useState, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import CatalogPage from './CatalogPage';
@@ -52,6 +52,8 @@ import {
 } from '../utils/modelGroups';
 import { loadCatalogue, buildSnapshot } from '../utils/catalogue';
 
+const ModelPreview = lazy(() => import('./ModelPreview'));
+
 const STEP_MODEL = 0;
 const STEP_CUTLISTS = 1;
 const STEP_SAVE = 2;
@@ -69,6 +71,7 @@ const formatFileSize = (bytes) => {
 const extensionOf = (filename) => filename.toLowerCase().match(/\.[a-z0-9]+$/)?.[0] || '';
 const baseName = (filename) => filename.replace(/\.[a-z0-9]+$/i, '');
 const ACCEPTED = ['.stl', '.step', '.stp'];
+const isStl = (candidate) => extensionOf(candidate.name) === '.stl';
 
 const spaced = (n) => Math.round(n).toLocaleString('sv-SE');
 
@@ -445,6 +448,16 @@ const ModelCutlistOptimizer = () => {
               </div>
             )}
           </div>
+
+          {file && (isStl(file) ? (
+            <Suspense fallback={<p className="synthetic" role="status" style={{ margin: '14px 0 0' }}>{t('modelUi.previewLoading')}</p>}>
+              <ModelPreview file={file} />
+            </Suspense>
+          ) : (
+            <p className="synthetic" role="status" style={{ margin: '14px 0 0' }}>
+              {t('modelUi.stepPreviewUnavailable')}
+            </p>
+          ))}
 
           <div style={{ marginTop: '26px' }}>
             <Disclosure
