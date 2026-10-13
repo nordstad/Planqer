@@ -13,6 +13,7 @@ from planqer.async_processing import (
     process_optimization_async,
     task_manager,
 )
+from planqer.errors import PlanqerError
 from planqer.logging_config import (
     log_error,
     log_websocket_event,
@@ -130,7 +131,7 @@ async def create_cutting_plan(request: Request, planqer_request: PlanqerRequest)
             status_code=504,
             detail="Optimization exceeded the 30 second time limit",
         ) from exc
-    except HTTPException:
+    except (HTTPException, PlanqerError):
         raise
     except Exception as exc:
         track_optimization_metrics(
