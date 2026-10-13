@@ -41,13 +41,13 @@ import {
   process3DCutlist, processStepCutlist,
   optimizeCutting, saveProject,
   optimizeSheetCutting, saveSheetProject,
-  getProjectGroups, createProjectGroup,
+  getProjectGroups, createProjectGroup, getUserProjects, getUserSheetProjects,
   getUserSettings,
 } from '../utils/api';
 import {
   groupBoards, groupSheets, groupLabel, planNameFor, resolveMaterial,
   groupDimensions, groupMemoryKey,
-  initialConfig, boardCostPayloads, sheetPricingPayload,
+  initialConfig, boardCostPayloads, sheetPricingPayload, matchExistingPlans,
   applySettingsToAll, validateGroupConfig, standaloneHandoff,
 } from '../utils/modelGroups';
 import { loadCatalogue, buildSnapshot } from '../utils/catalogue';
@@ -118,6 +118,10 @@ const ModelCutlistOptimizer = () => {
   const [statuses, setStatuses] = useState({}); // id -> 'pending' | 'running' | 'done' | 'error'
   const [statusMessages, setStatusMessages] = useState({});
   const [saving, setSaving] = useState(false);
+  // Plans already in the chosen project, so importing a model again updates
+  // them rather than stacking copies beside them.
+  const [existingPlans, setExistingPlans] = useState([]);
+  const [replaceExisting, setReplaceExisting] = useState(true);
 
   const debouncedConfigs = useDebounce(configs, 300);
   // Validation follows the debounced values so errors don't flash while typing; a
@@ -163,6 +167,29 @@ const ModelCutlistOptimizer = () => {
       });
     }).catch(() => {});
   }, [user, step]);
+
+  useEffect(() => {
+    if (!user || step !== STEP_SAVE || !selectedGroupId || selectedGroupId === NEW_PROJECT) {
+      setExistingPlans([]);
+      return undefined;
+    }
+    let current = true;
+    Promise.all([getUserProjects(), getUserSheetProjects()]).then(([boards, sheets]) => {
+      if (!current) return;
+      const asPlan = (kind) => (p) => ({
+        id: p.id,
+        kind,
+        groupId: p.project_group_id,
+        name: p.name,
+        thickness: kind === 'board' ? p.board_thickness : p.sheet_thickness,
+        width: p.board_width,
+        updatedAt: p.updated_at,
+      });
+      setExistingPlans([...boards.map(asPlan('board')), ...sheets.map(asPlan('sheet'))]
+        .filter((p) => p.groupId === selectedGroupId));
+    }).catch(() => { if (current) setExistingPlans([]); });
+    return () => { current = false; };
+  }, [user, step, selectedGroupId]);
 
   /* ── the model ─────────────────────────────────────────────────────── */
   const retireAll = () => {
@@ -291,7 +318,11 @@ const ModelCutlistOptimizer = () => {
     return group.id;
   };
 
+  const availableMatches = matchExistingPlans(selectedGroups, existingPlans, planNameOf);
+  const matches = replaceExisting ? availableMatches : {};
+
   const runOne = async (group, projectGroupId) => {
+    const replaced = matches[group.id];
     const config = configs[group.id];
     const material = resolveMaterial(config, i18n.language, group);
     const product = buildSnapshot(config.product, i18n.language, groupDimensions(group));
@@ -303,7 +334,8 @@ const ModelCutlistOptimizer = () => {
         const { costData, saved } = boardCostPayloads(config, money);
         const result = await optimizeCutting(parts, stock, config.kerf, costData);
         await saveProject({
-          name: planNameOf(group),
+          id: replaced?.id,
+          name: replaced?.name || planNameOf(group),
           projectGroupId,
           parts,
           boards: stock,
@@ -322,7 +354,8 @@ const ModelCutlistOptimizer = () => {
         }));
         const result = await optimizeSheetCutting(parts, config.sheetWidth, config.sheetHeight, config.kerf, material, undefined, config.allowRotation);
         await saveSheetProject({
-          name: planNameOf(group),
+          id: replaced?.id,
+          name: replaced?.name || planNameOf(group),
           projectGroupId,
           parts,
           sheetWidth: config.sheetWidth,
@@ -733,6 +766,12 @@ const ModelCutlistOptimizer = () => {
                       newName={newProjectName}
                       onNewNameChange={setNewProjectName}
                     />
+                    {Object.keys(availableMatches).length > 0 && (
+                      <label className="check-row" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '12px' }}>
+                        <input type="checkbox" checked={replaceExisting} onChange={(e) => setReplaceExisting(e.target.checked)} />
+                        <span>{t('modelUi.replaceExisting')}</span>
+                      </label>
+                    )}
                   </section>
                 </>
               )}
@@ -747,7 +786,14 @@ const ModelCutlistOptimizer = () => {
                       const status = statuses[group.id];
                       return (
                         <tr key={group.id}>
-                          <td style={{ textAlign: 'left' }}>{planNameOf(group)}</td>
+                          <td style={{ textAlign: 'left' }}>
+                            {planNameOf(group)}
+                            {matches[group.id] && !allDone && (
+                              <span className="text-muted" style={{ display: 'block', fontSize: '12px' }}>
+                                {t('modelUi.replacesPlan', { name: matches[group.id].name })}
+                              </span>
+                            )}
+                          </td>
                           <td style={{ width: '140px' }}>
                             {status === 'done' && <span style={{ color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', gap: '5px' }}><Tick size={14} /> {t('legacy.saved')}</span>}
                             {status === 'running' && <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Loader /> {t('legacy.planning')}</span>}
