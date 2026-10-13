@@ -5,9 +5,12 @@ checked against the real endpoint it stands in for: same status, same body.
 """
 
 import json
+import uuid
 
 import pytest
+import trimesh
 from fastapi.testclient import TestClient
+from step_fixtures import _box_corners, _product, _step_file
 
 from planqer.api import app
 from planqer.local_api import handle
@@ -16,13 +19,14 @@ client = TestClient(app)
 client.headers["X-Planqer-Setup-Secret"] = "test-setup-secret"
 
 
-def call(op, payload):
-    reply = json.loads(handle(op, json.dumps(payload)))
+def call(op, payload, data=None):
+    reply = json.loads(handle(op, json.dumps(payload), data))
     return reply["status"], reply["body"]
 
 
 def without_timing(body):
-    return {k: v for k, v in body.items() if k != "computation_time"}
+    timings = {"computation_time", "processing_time"}
+    return {k: v for k, v in body.items() if k not in timings}
 
 
 @pytest.mark.api
@@ -196,3 +200,157 @@ def test_tile_layout_errors_match_the_http_endpoint():
 
     assert status == http.status_code == 400
     assert body == http.json()
+
+
+@pytest.fixture
+def signed_in_client():
+    with TestClient(app) as authed:
+        authed.headers["X-Planqer-Setup-Secret"] = "test-setup-secret"
+        user = {
+            "email": f"local-api-{uuid.uuid4()}@example.com",
+            "password": "Testpassword" + "123!",
+        }
+        authed.post("/api/auth/register", json=user)
+        token = authed.post("/api/auth/login", json=user).json()["access_token"]
+        authed.headers["Authorization"] = f"Bearer {token}"
+        yield authed
+
+
+def stl_bytes():
+    boards = []
+    for i, length in enumerate((1800, 1800, 800)):
+        board = trimesh.creation.box(extents=[length, 95, 45])
+        board.apply_translation([0, i * 300, 0])
+        boards.append(board)
+    sheet = trimesh.creation.box(extents=[900, 600, 18])
+    sheet.apply_translation([0, 2000, 0])
+    return trimesh.util.concatenate([*boards, sheet]).export(file_type="stl")
+
+
+def step_bytes():
+    products = "\n".join(
+        [
+            _product(0, "Long", [_box_corners(1800.0, 95.0, 45.0)]),
+            _product(1, "Short", [_box_corners(520.0, 95.0, 45.0)]),
+            _product(2, "Ply", [_box_corners(1800.0, 800.0, 15.0)]),
+        ]
+    )
+    return _step_file(products).encode()
+
+
+@pytest.mark.api
+@pytest.mark.parametrize(
+    ("op", "url", "filename", "content"),
+    [
+        ("cutlist_3d", "/api/3d-cutlist", "cabinet.stl", stl_bytes),
+        ("cutlist_step", "/api/step-cutlist", "cabinet.step", step_bytes),
+    ],
+)
+def test_model_cutlists_match_the_http_endpoints(
+    signed_in_client, op, url, filename, content
+):
+    data = content()
+    options = {"filename": filename, "units": "mm", "round_precision": 1}
+
+    http = signed_in_client.post(
+        url,
+        files={"file": (filename, data, "application/octet-stream")},
+        data={"units": "mm", "round_precision": "1"},
+    )
+    status, body = call(op, options, data)
+
+    assert status == http.status_code == 200
+    assert body["cutlist_items"]
+    assert without_timing(body) == without_timing(http.json())
+
+
+@pytest.mark.api
+@pytest.mark.parametrize(
+    ("op", "url", "filename", "extra", "status"),
+    [
+        ("cutlist_3d", "/api/3d-cutlist", "notes.txt", {}, 400),
+        ("cutlist_step", "/api/step-cutlist", "notes.txt", {}, 400),
+        ("cutlist_3d", "/api/3d-cutlist", "a.stl", {"units": "furlongs"}, 400),
+        ("cutlist_3d", "/api/3d-cutlist", "a.stl", {"round_precision": 5}, 400),
+        ("cutlist_3d", "/api/3d-cutlist", "broken.stl", {}, 400),
+        ("cutlist_step", "/api/step-cutlist", "broken.step", {}, 400),
+    ],
+)
+def test_rejected_model_files_match_the_http_endpoints(
+    signed_in_client, op, url, filename, extra, status
+):
+    options = {"filename": filename, "units": "mm", "round_precision": 1, **extra}
+
+    http = signed_in_client.post(
+        url,
+        files={"file": (filename, b"not a model", "application/octet-stream")},
+        data={k: str(v) for k, v in options.items() if k != "filename"},
+    )
+    reply_status, body = call(op, options, b"not a model")
+
+    assert reply_status == http.status_code == status
+    assert body == http.json()
+
+
+def test_a_model_operation_without_a_file_is_reported():
+    status, body = call("cutlist_3d", {"filename": "a.stl"})
+
+    assert status == 400
+    assert "file" in body["detail"].lower()
+
+
+@pytest.fixture
+def started_client():
+    """A client that has run the app's startup, so the database tables exist."""
+    with TestClient(app) as started:
+        yield started
+
+
+@pytest.mark.api
+@pytest.mark.parametrize("country", ["SE", "NO", "generic", None])
+def test_catalogue_matches_the_http_endpoint(started_client, country):
+    query = {"country": country} if country else {}
+
+    http = started_client.get("/api/catalogue/", params=query)
+    status, body = call("catalogue", query)
+
+    assert status == http.status_code == 200
+    assert body["types"]
+    assert body == http.json()
+
+
+@pytest.mark.api
+def test_product_search_matches_the_http_endpoint(started_client):
+    query = {"q": "regel", "kind": "board", "limit": 5, "lang": "sv", "country": "SE"}
+
+    http = started_client.get("/api/catalogue/products", params=query)
+    status, body = call("catalogue_search", query)
+
+    assert status == http.status_code == 200
+    assert body
+    assert body == http.json()
+
+
+@pytest.mark.api
+def test_stored_catalogue_changes_are_applied_like_the_server_applies_them():
+    product_id = "se:regel:45x95"
+    hide = {"product_id": product_id, "hidden": True}
+
+    _, shown = call("catalogue", {"country": "SE"})
+    _, hidden = call("catalogue", {"country": "SE", "entries": [hide]})
+
+    assert product_id in {p["id"] for p in shown["products"]}
+    assert product_id not in {p["id"] for p in hidden["products"]}
+    assert len(hidden["products"]) == len(shown["products"]) - 1
+
+
+@pytest.mark.api
+def test_invalid_search_limits_are_rejected_like_the_http_endpoint(started_client):
+    http = started_client.get(
+        "/api/catalogue/products", params={"q": "regel", "limit": 0}
+    )
+    status, body = call("catalogue_search", {"q": "regel", "limit": 0})
+
+    assert status == http.status_code == 422
+    assert body["detail"][0]["type"] == http.json()["detail"][0]["type"]
+    assert body["detail"][0]["msg"] == http.json()["detail"][0]["msg"]

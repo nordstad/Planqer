@@ -5,8 +5,7 @@ from fastapi import APIRouter, Depends, Query, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
-from planqer.catalogue import get_catalogue, resolve_country
-from planqer.catalogue.local import merge_local
+from planqer.catalogue.local import layered_catalogue
 from planqer.catalogue.schema import Catalogue
 from planqer.catalogue.search import ProductResult, search_products
 from planqer.database import CatalogueEntry, get_session
@@ -18,7 +17,7 @@ async def effective_catalogue(
     session: AsyncSession, country: str | None = None
 ) -> Catalogue:
     entries = (await session.execute(select(CatalogueEntry))).scalars().all()
-    return merge_local(get_catalogue(resolve_country(country)), entries)
+    return layered_catalogue(entries, country)
 
 
 @router.get("/", response_model=Catalogue, summary="The instance's product catalogue")

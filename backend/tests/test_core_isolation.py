@@ -37,6 +37,9 @@ CORE_MODULES = [
     "planqer.threed_cutlist",
     "planqer.step_cutlist",
     "planqer.local_api",
+    "planqer.catalogue",
+    "planqer.catalogue.local",
+    "planqer.catalogue.search",
 ]
 
 
@@ -131,6 +134,45 @@ def test_a_tile_layout_runs_without_the_server_stack():
         reply = json.loads(handle("tile_layout", json.dumps(request)))
         assert reply["status"] == 200, reply
         assert reply["body"]["candidates"]
+        """
+    )
+
+    assert result.returncode == 0, result.stderr.strip().splitlines()[-1]
+
+
+def test_a_model_cutlist_runs_without_the_server_stack():
+    result = run_without_the_server_stack(
+        """
+        import json
+        import trimesh
+        from planqer.local_api import handle
+
+        stl = trimesh.creation.box(extents=[1800, 95, 45]).export(file_type="stl")
+        options = {"filename": "shelf.stl"}
+        reply = json.loads(handle("cutlist_3d", json.dumps(options), stl))
+        assert reply["status"] == 200, reply
+        assert reply["body"]["board_count"] == 1
+
+        reply = json.loads(handle("cutlist_step", json.dumps(options), b"nope"))
+        assert reply["status"] == 400, reply
+        """
+    )
+
+    assert result.returncode == 0, result.stderr.strip().splitlines()[-1]
+
+
+def test_the_catalogue_runs_without_the_server_stack():
+    result = run_without_the_server_stack(
+        """
+        import json
+        from planqer.local_api import handle
+
+        reply = json.loads(handle("catalogue", json.dumps({"country": "SE"})))
+        assert reply["status"] == 200 and reply["body"]["products"], reply
+
+        query = {"q": "regel", "country": "SE", "limit": 3}
+        reply = json.loads(handle("catalogue_search", json.dumps(query)))
+        assert reply["status"] == 200 and reply["body"], reply
         """
     )
 
