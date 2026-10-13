@@ -54,6 +54,22 @@ is used if it has one.
    its plans together. You can also choose another project, or none. A link
    takes you straight to that project.
 
+## STL preview
+
+When you choose an STL file, Planqer can show an interactive browser preview
+before reading the model. Rotate, zoom, or pan the model to check that the
+correct file is selected. The preview is read from the selected file in your
+browser; it is not uploaded separately and is not saved with a project.
+
+Very large or highly detailed files may skip the browser preview to keep the
+page responsive. This does not change the 50 MB model-upload limit or prevent
+you from pressing **Read the model**. If the browser cannot provide a 3D
+context, the cutlist workflow remains available without the preview.
+
+STEP and STP files do not have a geometry preview at this stage. After reading,
+Planqer still shows the measured cutlists extracted from them. It does not yet
+reconstruct or display the assembled CAD model in the browser.
+
 !!! note "Uploading doesn't need an account"
     Reading and extracting a model works without signing in. Planning and
     saving the resulting cutlist does.

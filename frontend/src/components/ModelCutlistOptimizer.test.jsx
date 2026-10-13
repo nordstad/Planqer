@@ -193,6 +193,28 @@ describe('cutlists step', () => {
   });
 });
 
+describe('model preview', () => {
+  it('shows an STL preview without blocking model reading', async () => {
+    const { container } = await renderFlow();
+    fireEvent.change(container.querySelector('input[type="file"]'), {
+      target: { files: [new File(['solid cube\nendsolid cube'], 'cube.stl')] },
+    });
+
+    expect(await screen.findByRole('region', { name: 'STL model preview' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Read the model' })).toBeEnabled();
+  });
+
+  it('explains that STEP geometry preview is not available yet', async () => {
+    const { container } = await renderFlow();
+    fireEvent.change(container.querySelector('input[type="file"]'), {
+      target: { files: [new File(['ISO-10303-21;'], 'assembly.step')] },
+    });
+
+    expect(screen.getByText(/STEP files do not have a geometry preview yet/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Read the model' })).toBeEnabled();
+  });
+});
+
 describe('save step', () => {
   it('gives every selected cutlist its own stock and prices', async () => {
     await toSaveStep();
