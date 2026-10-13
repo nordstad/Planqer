@@ -1,12 +1,16 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import CatalogPage from './CatalogPage';
 import { useAuth } from '../contexts/AuthContext';
+import { FULL_VERSION_URL, isStaticMode } from '../utils/mode';
 import UserProjectsContent from './UserProjectsContent';
 import UserSettings from './UserSettings';
 import TileCutListTable from './TileCutListTable';
 import { ArrowLeft, ArrowRight } from './icons';
+
+// Literal comparison, so a normal build drops the panel and the runtime behind it.
+const BackupPanel = import.meta.env.VITE_PLANQER_MODE === 'static' ? lazy(() => import('./demo/BackupPanel')) : null;
 
 const TABS = [
   { key: 'projects', label: 'common.myProjects' },
@@ -76,12 +80,21 @@ const UserDashboard = () => {
     <CatalogPage>
       {!inProject && (
         <>
-          <dl className="job-block">
-            <div className="job-cell" style={{ flex: '1 1 260px' }}>
-               <dt>{t('ui.account')}</dt>
-              <dd>{user?.email}</dd>
-            </div>
-          </dl>
+          {isStaticMode() && (
+            <p className="synthetic" role="note" style={{ marginBottom: '14px' }}>
+              {t('demo.fullVersionNote.text')}{' '}
+              <a href={FULL_VERSION_URL} target="_blank" rel="noopener noreferrer">{t('demo.fullVersionNote.cta')}</a>
+            </p>
+          )}
+          {BackupPanel && isStaticMode() && <Suspense fallback={null}><BackupPanel /></Suspense>}
+          {!isStaticMode() && (
+            <dl className="job-block">
+              <div className="job-cell" style={{ flex: '1 1 260px' }}>
+                 <dt>{t('ui.account')}</dt>
+                <dd>{user?.email}</dd>
+              </div>
+            </dl>
+          )}
 
           <div className="flex gap-2" style={{ marginTop: '20px', marginBottom: '24px' }}>
             {TABS.map((tab) => (

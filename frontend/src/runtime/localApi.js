@@ -335,12 +335,59 @@ export function createLocalApi({
     return { status: 200, image: stored, name: record.name };
   }
 
+  /* ── the user's own catalogue entries ── */
+
+  // A stored entry is keyed by its product id; `id` is the key the store and
+  // the backup use, the rest is what the server keeps per product.
+  const entryOf = ({ product_id, hidden, data }) => ({ product_id, hidden, data });
+
+  async function entries() {
+    return (await db.list("catalogue_entries")).map(entryOf);
+  }
+
+  const CATALOGUE_ACTIONS = {
+    "GET ": "list",
+    "POST ": "add",
+    "PUT id": "update",
+    "POST id/hide": "hide",
+    "POST id/restore": "restore",
+    "GET id/suggestion": "suggest",
+    "DELETE id": "reset",
+  };
+  const CATALOGUE_STATUS = { add: 201, reset: 204 };
+
+  async function catalogue(method, rest, body, params = {}) {
+    const [id, tail] = rest.map(decodeURIComponent);
+    const action = CATALOGUE_ACTIONS[`${method} ${id === undefined ? "" : `id${tail ? `/${tail}` : ""}`}`];
+    if (!action || rest.length > 2) return null;
+
+    const { status, body: answer } = await call("catalogue_admin", {
+      action,
+      catalogue: params.catalogue,
+      entries: await entries(),
+      product_id: id,
+      body,
+      source: params.source,
+      country: params.country,
+    });
+    if (status !== 200) return reply(status, answer);
+
+    const { change } = answer;
+    if (change?.put) await db.put("catalogue_entries", { id: change.put.product_id, ...change.put });
+    if (change?.delete) await db.delete("catalogue_entries", change.delete);
+    return reply(CATALOGUE_STATUS[action] ?? 200, answer.result);
+  }
+
   /* ── routing ── */
 
   // Answers a request, or returns null when this is not one of its routes.
-  async function handle(method, path, body) {
+  async function handle(method, path, body, config) {
     const parts = path.split("/").filter(Boolean);
     const [resource, id, tail] = parts;
+
+    if (resource === "admin" && id === "catalogue") {
+      return catalogue(method, parts.slice(2), body, config?.params);
+    }
 
     if (resource === "settings" && parts.length === 1) {
       return method === "GET" || method === "PUT" ? settings(method, body) : null;
@@ -355,5 +402,5 @@ export function createLocalApi({
     return null;
   }
 
-  return { handle };
+  return { handle, entries };
 }

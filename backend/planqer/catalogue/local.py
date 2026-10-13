@@ -10,6 +10,7 @@ built-in couldn't.
 import logging
 import re
 from collections.abc import Iterable
+from dataclasses import dataclass
 from typing import Literal, Protocol
 from urllib.parse import quote, urlencode
 
@@ -32,6 +33,7 @@ from planqer.catalogue.schema import (
     SheetFormat,
     Strict,
 )
+from planqer.errors import PlanqerError
 
 logger = logging.getLogger(__name__)
 
@@ -290,3 +292,134 @@ def build_suggestion(
         snippet=snippet,
         url=f"{ISSUES_URL}?{query}",
     )
+
+
+# --- Editing the catalogue -----------------------------------------------------
+#
+# The decisions behind the admin routes (what is missing, what conflicts, what
+# gets stored) live here so the server and the browser make them identically.
+# Each function reads the stored entries it is given and returns what to store;
+# keeping it (a database row, an IndexedDB record) is the caller's job.
+
+
+@dataclass(frozen=True)
+class StoredChange:
+    """The state to keep for one product id after an edit."""
+
+    product_id: str
+    hidden: bool
+    data: str | None
+
+
+def _rejected(error: Exception) -> PlanqerError:
+    return PlanqerError(422, str(error))
+
+
+def _find(view: str | None, entries: list[StoredEntry], product_id: str) -> AdminItem:
+    for item in admin_items(get_catalogue(view), entries):
+        if item.product.id == product_id:
+            return item
+    raise PlanqerError(404, "Catalogue entry not found")
+
+
+def _entry_for(entries: list[StoredEntry], product_id: str) -> StoredEntry | None:
+    return next((e for e in entries if e.product_id == product_id), None)
+
+
+def list_items(view: str | None, entries: Iterable[StoredEntry]) -> list[AdminItem]:
+    return admin_items(get_catalogue(view), list(entries))
+
+
+def add_entry(
+    body: NewProduct, view: str | None, entries: Iterable[StoredEntry]
+) -> tuple[AdminItem, StoredChange]:
+    entries = list(entries)
+    try:
+        product = build_product(
+            body.type,
+            body.thickness,
+            body.width,
+            ProductDetails(**body.model_dump(exclude={"type", "thickness", "width"})),
+            country=view or "local",
+        )
+    except ValueError as error:
+        raise _rejected(error) from error
+
+    # Built-ins are `<country>:<type>:<size>`, local entries `local:<type>:<size>`:
+    # the same product under another prefix is still the same product.
+    built_in = {p.id.split(":", 1)[1] for p in get_catalogue(view).products}
+    if product.id.split(":", 1)[1] in built_in:
+        raise PlanqerError(409, "This product is already built in; edit it instead")
+    if _entry_for(entries, product.id):
+        raise PlanqerError(409, "This product already exists; edit it instead")
+    return (
+        AdminItem(product=product, origin="local", hidden=False),
+        StoredChange(product.id, False, product.model_dump_json()),
+    )
+
+
+def update_entry(
+    product_id: str,
+    body: ProductDetails,
+    view: str | None,
+    entries: Iterable[StoredEntry],
+) -> tuple[AdminItem, StoredChange]:
+    """Change a product's lengths, formats, details and sources. For a built-in
+    this stores an override; the data file stays as shipped."""
+    entries = list(entries)
+    current = _find(view, entries, product_id)
+    try:
+        product = build_product(
+            current.product.type,
+            current.product.thickness,
+            current.product.width,
+            body,
+            product_id=product_id,
+            country=current.product.country,
+        )
+    except ValueError as error:
+        raise _rejected(error) from error
+
+    existing = _entry_for(entries, product_id)
+    hidden = existing.hidden if existing else False
+    origin = "local" if current.origin == "local" else "modified"
+    return (
+        AdminItem(product=product, origin=origin, hidden=hidden),
+        StoredChange(product_id, hidden, product.model_dump_json()),
+    )
+
+
+def set_entry_hidden(
+    product_id: str, hidden: bool, view: str | None, entries: Iterable[StoredEntry]
+) -> tuple[AdminItem, StoredChange]:
+    entries = list(entries)
+    current = _find(view, entries, product_id)
+    existing = _entry_for(entries, product_id)
+    return (
+        current.model_copy(update={"hidden": hidden}),
+        StoredChange(product_id, hidden, existing.data if existing else None),
+    )
+
+
+def suggest_entry(
+    product_id: str,
+    view: str | None,
+    entries: Iterable[StoredEntry],
+    *,
+    source: str | None,
+    country: str | None,
+) -> Suggestion:
+    item = _find(view, list(entries), product_id)
+    try:
+        return build_suggestion(item.product, source=source, country=country)
+    except ValueError as error:
+        raise _rejected(error) from error
+
+
+def reset_entry(
+    product_id: str, view: str | None, entries: Iterable[StoredEntry]
+) -> None:
+    """Check that the product exists. Deleting a local addition, or reverting a
+    built-in to its shipped data and showing it again, means dropping its stored
+    entry, which the caller does."""
+    _find(view, list(entries), product_id)

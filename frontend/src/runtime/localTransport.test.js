@@ -139,7 +139,7 @@ describe("local transport: catalogue", () => {
       validateStatus: (status) => status === 200 || status === 304,
     });
 
-    expect(call.mock.calls[0].slice(0, 2)).toEqual(["catalogue", { country: "SE" }]);
+    expect(call.mock.calls[0].slice(0, 2)).toEqual(["catalogue", { country: "SE", entries: [] }]);
     expect(response).toMatchObject({ status: 200, data: { products: [] } });
     expect(response.headers.etag).toBeUndefined();
   });
@@ -149,7 +149,7 @@ describe("local transport: catalogue", () => {
 
     await transport.get(`${API}/catalogue/`);
 
-    expect(call.mock.calls[0].slice(0, 2)).toEqual(["catalogue", {}]);
+    expect(call.mock.calls[0].slice(0, 2)).toEqual(["catalogue", { entries: [] }]);
   });
 });
 
@@ -165,7 +165,7 @@ describe("local transport: saved projects, groups and settings", () => {
 
     const response = await transport.get(`${API}/project-groups/`);
 
-    expect(handle).toHaveBeenCalledWith("GET", "/project-groups", undefined);
+    expect(handle).toHaveBeenCalledWith("GET", "/project-groups", undefined, undefined);
     expect(response).toMatchObject({ status: 200, data: [{ id: "a" }] });
   });
 
@@ -174,7 +174,7 @@ describe("local transport: saved projects, groups and settings", () => {
 
     await transport.put(`${API}/projects/abc`, { name: "Renamed" });
 
-    expect(handle).toHaveBeenCalledWith("PUT", "/projects/abc", { name: "Renamed" });
+    expect(handle).toHaveBeenCalledWith("PUT", "/projects/abc", { name: "Renamed" }, undefined);
   });
 
   it("fails like axios when the store says no", async () => {
@@ -216,5 +216,35 @@ describe("local transport: saved projects, groups and settings", () => {
 
     expect(error.response.status).toBe(404);
     expect(error.response.data.detail).toMatch(/not available in the demo/i);
+  });
+});
+
+describe("local transport: the user's own catalogue entries", () => {
+  it("gives the store the request's parameters", async () => {
+    const handle = vi.fn(async () => ({ status: 200, body: [] }));
+    const transport = createLocalTransport({ call: vi.fn(), handle });
+
+    await transport.get(`${API}/admin/catalogue`, { params: { catalogue: "NO" } });
+
+    expect(handle).toHaveBeenCalledWith("GET", "/admin/catalogue", undefined, { params: { catalogue: "NO" } });
+  });
+
+  it("serves the catalogue with the entries the user has stored", async () => {
+    const stored = [{ product_id: "local:regel:48x98", hidden: false, data: "{}" }];
+    const call = vi.fn(async () => ({ status: 200, body: { products: [] } }));
+    const transport = createLocalTransport({ call, entries: async () => stored });
+
+    await transport.get(`${API}/catalogue/`, { params: { country: "SE" } });
+
+    expect(call).toHaveBeenCalledWith("catalogue", { country: "SE", entries: stored }, undefined, expect.anything());
+  });
+
+  it("serves the plain catalogue when nothing is stored", async () => {
+    const call = vi.fn(async () => ({ status: 200, body: { products: [] } }));
+    const transport = createLocalTransport({ call });
+
+    await transport.get(`${API}/catalogue/`);
+
+    expect(call).toHaveBeenCalledWith("catalogue", { entries: [] }, undefined, expect.anything());
   });
 });

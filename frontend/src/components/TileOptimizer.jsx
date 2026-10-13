@@ -19,6 +19,8 @@ import {
 } from '../utils/api';
 import { useDebounce } from '../hooks/useDebounce';
 import { useAuth } from '../contexts/AuthContext';
+import { demoContext, isStaticMode } from '../utils/mode';
+import { isHeavyTileJob } from '../utils/tileLoad';
 import CatalogPage from './CatalogPage';
 import ConfirmDialog from './ConfirmDialog';
 import Disclosure from './Disclosure';
@@ -663,6 +665,9 @@ const TileOptimizer = () => {
                    double_herringbone: t('tileUi.doubleHerringboneHint'), diagonal_double_herringbone: t('tileUi.diagonalDoubleHerringboneHint'),
                  }[bondPattern] || t('tileUi.defaultBondHint')}
             </p>
+            {isStaticMode() && isHeavyTileJob(bondPattern, surfaceWidth, surfaceHeight) && (
+              <p className="synthetic" role="note" style={{ marginTop: '6px', color: 'var(--accent)' }}>{t('demo.solver.heavyTile')}</p>
+            )}
           </section>
 
 
@@ -813,7 +818,7 @@ const TileOptimizer = () => {
                 <h1 className="step-h1">{saved ? t('ui.layoutSaved') : t('ui.saveLayout')}</h1>
               <p className="step-lede">
                 {saved
-                    ? t('ui.keptPlan')
+                    ? t('ui.keptPlan', demoContext())
                     : t('ui.namePlan')}
               </p>
             </div>

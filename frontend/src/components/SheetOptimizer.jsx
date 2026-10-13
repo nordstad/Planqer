@@ -18,6 +18,7 @@ import ConfirmDialog from './ConfirmDialog';
 import { optimizeSheetCutting, saveSheetProject, getProjectGroups, createProjectGroup, getUserSheetProjects, getUserSettings } from '../utils/api';
 import { useDebounce } from '../hooks/useDebounce';
 import { useAuth } from '../contexts/AuthContext';
+import { demoContext } from '../utils/mode';
 import Disclosure from './Disclosure';
 import ProjectPicker from './ProjectPicker';
 import ProductPicker from './ProductPicker';
@@ -719,7 +720,7 @@ const SheetOptimizer = () => {
               <h1 className="step-h1">{saved ? t('workflow.planSaved') : t('workflow.saveThisPlan')}</h1>
               <p className="step-lede">
                 {saved
-                   ? t('ui.keptPlan')
+                   ? t('ui.keptPlan', demoContext())
                    : t('ui.namePlan')}
               </p>
             </div>

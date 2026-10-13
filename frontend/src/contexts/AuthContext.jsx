@@ -3,6 +3,7 @@ import { getCurrentUser, logoutUser, getAuthToken, getSetupStatus, getUserSettin
 import { useLanguage } from './LanguageContext';
 import { AuthContext } from './authState';
 import { setCatalogueChoice } from '../utils/catalogueChoice';
+import { isStaticMode, LOCAL_USER } from '../utils/mode';
 
 export { AuthContext };
 
@@ -16,8 +17,9 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const { language, changeLanguage } = useLanguage();
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const demo = isStaticMode();
+  const [user, setUser] = useState(demo ? LOCAL_USER : null);
+  const [loading, setLoading] = useState(!demo);
   const [error, setError] = useState(null);
   const [needsSetup, setNeedsSetup] = useState(false);
   const [setupCheckError, setSetupCheckError] = useState(false);
@@ -43,6 +45,7 @@ export const AuthProvider = ({ children }) => {
   }, [user]);
 
   useEffect(() => {
+    if (demo) return;
     const checkAuth = async () => {
       if (getAuthToken()) {
         try {

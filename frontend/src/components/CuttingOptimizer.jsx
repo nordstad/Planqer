@@ -34,6 +34,7 @@ import {
 } from '../utils/validators';
 import { useDebounce } from '../hooks/useDebounce';
 import { useAuth } from '../contexts/AuthContext';
+import { demoContext } from '../utils/mode';
 import BoardLengthRow from './BoardLengthRow';
 import CatalogPage from './CatalogPage';
 import ConfirmDialog from './ConfirmDialog';
@@ -967,7 +968,7 @@ const CuttingOptimizer = () => {
                <h1 className="step-h1">{saved ? t('workflow.planSaved') : t('workflow.saveThisPlan')}</h1>
               <p className="step-lede">
                 {saved
-                   ? t('ui.keptPlan')
+                   ? t('ui.keptPlan', demoContext())
                    : t('ui.namePlan')}
               </p>
             </div>
