@@ -22,5 +22,7 @@ export default defineConfig({
     url: "http://127.0.0.1:3002/tests/runtime-browser/harness.html",
     reuseExistingServer: false,
     timeout: 60000,
+    // api.js is built in static mode for the api.html harness.
+    env: { VITE_PLANQER_MODE: "static" },
   },
 });
