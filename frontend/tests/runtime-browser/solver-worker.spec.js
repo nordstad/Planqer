@@ -7,6 +7,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
+import { cannotLoadScipy, SCIPY_NOTE } from "./platform.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, "../../..");
@@ -52,7 +53,11 @@ async function openHarness(page) {
 
 test("every fixture runs in a real Web Worker and matches native Python", async ({
   page,
+  browserName,
 }, info) => {
+  const skipStl = cannotLoadScipy(browserName);
+  const list = fixtures.filter((fixture) => !(skipStl && fixture.op === "cutlist_3d"));
+  if (skipStl) info.annotations.push({ type: "note", description: SCIPY_NOTE });
   await openHarness(page);
 
   const run = await page.evaluate(async (list) => {
@@ -79,9 +84,9 @@ test("every fixture runs in a real Web Worker and matches native Python", async 
         .filter((entry) => entry.stage !== "solving")
         .map((entry) => ({ stage: entry.stage, at: Math.round(entry.at) })),
     };
-  }, fixtures);
+  }, list);
 
-  for (const fixture of fixtures) {
+  for (const fixture of list) {
     const { reply } = run.results[fixture.name];
     if (UNSEEDED.has(fixture.name)) {
       expect(reply.status, fixture.name).toBe(200);
