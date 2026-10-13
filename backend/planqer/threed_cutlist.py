@@ -236,6 +236,8 @@ class STLProcessor:
 
             return cutlist_items
 
+        except PlanqerError:
+            raise
         except Exception as e:
             logger.error(f"STL processing failed: {e}")
             raise PlanqerError(status_code=500, detail=f"STL processing failed: {e!s}")

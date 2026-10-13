@@ -308,11 +308,8 @@ def test_3d_cutlist_project_name_sanitization(client):
             "/api/3d-cutlist",
             "broken.stl",
             b"this is not an stl",
-            500,
-            (
-                "STL processing failed: 400: Failed to load STL file: "
-                "STL file contains empty mesh"
-            ),
+            400,
+            "Failed to load STL file: STL file contains empty mesh",
         ),
         (
             "/api/step-cutlist",
