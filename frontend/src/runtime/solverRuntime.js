@@ -5,6 +5,7 @@
 // Pyodide and the network.
 
 const BASE_PACKAGES = (manifest) => manifest.packages.base.map((p) => p.name);
+const MODEL_OPERATION = "cutlist_3d";
 
 export function createSolverRuntime({
   loadPyodide,
@@ -15,6 +16,7 @@ export function createSolverRuntime({
   onProgress = () => {},
 }) {
   let ready = null;
+  let modelPackages = null;
 
   async function start() {
     onProgress("loading-runtime");
@@ -46,8 +48,31 @@ def call_local_api(op, payload, data):
     return ready;
   }
 
+  // numpy and scipy come from Pyodide's index. networkx and trimesh are pure
+  // Python wheels unpacked directly, so networkx does not drag in matplotlib.
+  async function loadModelPackages(pyodide) {
+    onProgress("loading-model-packages");
+    await pyodide.loadPackage(
+      manifest.packages.model_pyodide.map((p) => p.name),
+    );
+    for (const { file } of manifest.packages.model_pure) {
+      const wheel = await fetchBytes(`${runtimeUrl}${file}`);
+      pyodide.unpackArchive(wheel, "wheel");
+    }
+    onProgress("model-packages-ready");
+  }
+
+  function ensureModelPackages(pyodide) {
+    modelPackages ??= loadModelPackages(pyodide).catch((error) => {
+      modelPackages = null;
+      throw error;
+    });
+    return modelPackages;
+  }
+
   async function call(op, payload, data) {
     const pyodide = await init();
+    if (op === MODEL_OPERATION) await ensureModelPackages(pyodide);
     // undefined becomes Python None; null would arrive as a JsNull object.
     const callLocalApi = pyodide.globals.get("call_local_api");
     try {

@@ -115,4 +115,71 @@ describe("solver runtime", () => {
       status: 200,
     });
   });
+
+  describe("model packages", () => {
+    it("are not loaded for the solvers or STEP files", async () => {
+      const { runtime, pyodide } = setup();
+
+      await runtime.call("cutting_plan", {});
+      await runtime.call("cutlist_step", {}, new Uint8Array([1]));
+
+      expect(pyodide.loadPackage).toHaveBeenCalledTimes(1);
+      expect(pyodide.unpackArchive).toHaveBeenCalledTimes(1);
+    });
+
+    it("load on the first STL import, with progress", async () => {
+      const { runtime, pyodide, options } = setup({
+        fetchBytes: vi.fn(async () => new Uint8Array([1])),
+      });
+
+      await runtime.call("cutlist_3d", {}, new Uint8Array([5]));
+
+      expect(pyodide.loadPackage).toHaveBeenLastCalledWith(["numpy", "scipy"]);
+      const wheels = options.fetchBytes.mock.calls
+        .map(([url]) => url)
+        .filter((url) => url.endsWith(".whl"));
+      expect(wheels).toEqual([
+        "/runtime/networkx-3.7-py3-none-any.whl",
+        "/runtime/trimesh-5.1.1-py3-none-any.whl",
+      ]);
+      expect(pyodide.unpackArchive).toHaveBeenCalledWith(
+        expect.anything(),
+        "wheel",
+      );
+      const stages = options.onProgress.mock.calls.map(([stage]) => stage);
+      expect(stages.slice(-2)).toEqual([
+        "loading-model-packages",
+        "model-packages-ready",
+      ]);
+    });
+
+    it("load only once across STL imports", async () => {
+      const { runtime, pyodide } = setup();
+
+      await Promise.all([
+        runtime.call("cutlist_3d", {}, new Uint8Array([1])),
+        runtime.call("cutlist_3d", {}, new Uint8Array([2])),
+      ]);
+      await runtime.call("cutlist_3d", {}, new Uint8Array([3]));
+
+      const modelLoads = pyodide.loadPackage.mock.calls.filter(([names]) =>
+        names.includes("scipy"),
+      );
+      expect(modelLoads).toHaveLength(1);
+    });
+
+    it("can be retried after a failed download", async () => {
+      const { runtime, pyodide } = setup();
+      pyodide.loadPackage
+        .mockImplementationOnce(async () => {})
+        .mockRejectedValueOnce(new Error("offline"));
+
+      await expect(
+        runtime.call("cutlist_3d", {}, new Uint8Array([1])),
+      ).rejects.toThrow("offline");
+      await expect(
+        runtime.call("cutlist_3d", {}, new Uint8Array([1])),
+      ).resolves.toMatchObject({ status: 200 });
+    });
+  });
 });
