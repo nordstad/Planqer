@@ -4,7 +4,7 @@ import ModelCutlistOptimizer from './ModelCutlistOptimizer';
 import { LanguageProvider } from '../contexts/LanguageContext';
 import {
   process3DCutlist, optimizeCutting, saveProject, optimizeSheetCutting, saveSheetProject,
-  getProjectGroups, createProjectGroup, getUserSettings, getCatalogue,
+  getProjectGroups, getUserProjects, getUserSheetProjects, createProjectGroup, getUserSettings, getCatalogue,
 } from '../utils/api';
 import { resetCatalogueCache } from '../utils/catalogue';
 
@@ -16,6 +16,8 @@ vi.mock('../utils/api', () => ({
   optimizeSheetCutting: vi.fn(),
   saveSheetProject: vi.fn(),
   getProjectGroups: vi.fn(),
+  getUserProjects: vi.fn(),
+  getUserSheetProjects: vi.fn(),
   createProjectGroup: vi.fn(),
   getUserSettings: vi.fn(),
   getCatalogue: vi.fn(),
@@ -122,6 +124,8 @@ beforeEach(() => {
   getCatalogue.mockRejectedValue(new Error('no catalogue'));
   process3DCutlist.mockResolvedValue(benchModel);
   getProjectGroups.mockResolvedValue([]);
+  getUserProjects.mockResolvedValue([]);
+  getUserSheetProjects.mockResolvedValue([]);
   createProjectGroup.mockResolvedValue({ id: 'g1', name: 'bench' });
   getUserSettings.mockResolvedValue({ default_currency: 'SEK', default_vat_rate: 25, default_prices_include_vat: true });
   optimizeCutting.mockResolvedValue({ cut_list: [] });
@@ -282,6 +286,44 @@ describe('save step', () => {
     expect(screen.getByRole('region', { name: 'Board 95 × 95 mm' })).toBeInTheDocument();
     expect(screen.getByRole('region', { name: 'Sheet 15 mm' })).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/SPF-/);
+  });
+
+  describe('importing a model that is already in the project', () => {
+    const earlier = {
+      project_group_id: 'g9', updated_at: '2026-10-11T10:00:00',
+    };
+    const filedPlans = () => {
+      getProjectGroups.mockResolvedValue([{ id: 'g9', name: 'bench' }]);
+      getUserProjects.mockResolvedValue([
+        { ...earlier, id: 'old-board', name: 'my own name', board_thickness: 45, board_width: 95 },
+        { ...earlier, id: 'elsewhere', name: 'other', board_thickness: 95, board_width: 95, project_group_id: 'g-other' },
+      ]);
+      getUserSheetProjects.mockResolvedValue([
+        { ...earlier, id: 'old-sheet', name: 'bench · 15 mm sheet', sheet_thickness: 15 },
+      ]);
+    };
+
+    it('updates the matching plans in place instead of adding copies', async () => {
+      filedPlans();
+      await toSaveStep();
+      expect(await screen.findByText('Replaces “my own name”')).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Plan 3 cutlists' }));
+      await waitFor(() => expect(saveProject).toHaveBeenCalledTimes(2));
+      const [saved45, saved95] = saveProject.mock.calls.map(([arg]) => arg);
+      expect(saved45).toMatchObject({ id: 'old-board', name: 'my own name', projectGroupId: 'g9' });
+      expect(saved95.id).toBeUndefined();
+      expect(saveSheetProject.mock.calls[0][0]).toMatchObject({ id: 'old-sheet', name: 'bench · 15 mm sheet' });
+    });
+
+    it('adds new plans when replacing is switched off', async () => {
+      filedPlans();
+      await toSaveStep();
+      fireEvent.click(await screen.findByRole('checkbox', { name: /Replace the matching plans/ }));
+      fireEvent.click(screen.getByRole('button', { name: 'Plan 3 cutlists' }));
+      await waitFor(() => expect(saveProject).toHaveBeenCalledTimes(2));
+      expect(saveProject.mock.calls.every(([arg]) => arg.id === undefined)).toBe(true);
+      expect(saveSheetProject.mock.calls[0][0].id).toBeUndefined();
+    });
   });
 
   it('plans unpriced groups without blocking and saves no cost', async () => {

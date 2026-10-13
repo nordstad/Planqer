@@ -1,7 +1,7 @@
 import {
   naturalCompare, groupBoards, groupSheets, groupLabel, planNameFor, resolveMaterial,
   initialConfig, boardPricing, boardCostPayloads, sheetPricingPayload, applySettingsToAll,
-  validateGroupConfig, standaloneHandoff, pricingState, groupDimensions, groupMemoryKey,
+  validateGroupConfig, standaloneHandoff, pricingState, groupDimensions, groupMemoryKey, matchExistingPlans,
 } from './modelGroups';
 import { freeTextSelection, rememberChoice, isEmptySelection, typeSelection } from './catalogue';
 
@@ -253,5 +253,38 @@ describe('plan alone hand-off', () => {
   it('hands over a type-only choice', () => {
     const config = { ...initialConfig(board()), product: typeSelection(catalogue.types[0]) };
     expect(standaloneHandoff(board(), config, 'bench').data.product.type).toBe('regel');
+  });
+});
+
+describe('matchExistingPlans', () => {
+  const plan = (o) => ({ id: 'p', kind: 'board', thickness: 45, width: 95, name: 'x', updatedAt: '2026-10-10', ...o });
+  const nameOf = () => 'bench · Board 45 × 95 mm';
+
+  it('matches on kind and size, ignoring names', () => {
+    const plans = [plan({ id: 'a' }), plan({ id: 'b', width: 45 }), plan({ id: 'c', kind: 'sheet', thickness: 45 })];
+    expect(matchExistingPlans([board()], plans, nameOf)[board().id].id).toBe('a');
+  });
+
+  it('matches a sheet on thickness alone', () => {
+    const plans = [plan({ id: 's', kind: 'sheet', thickness: 15, width: 0 })];
+    expect(matchExistingPlans([sheet()], plans, nameOf)[sheet().id].id).toBe('s');
+  });
+
+  it('prefers the same name, then the newest, and claims each plan once', () => {
+    const g = board();
+    const plans = [
+      plan({ id: 'old', updatedAt: '2026-10-10' }),
+      plan({ id: 'new', updatedAt: '2026-10-13' }),
+      plan({ id: 'same', name: 'bench · Board 45 × 95 mm', updatedAt: '2026-10-01' }),
+    ];
+    expect(matchExistingPlans([g], plans, nameOf)[g.id].id).toBe('same');
+    expect(matchExistingPlans([g], plans.slice(0, 2), nameOf)[g.id].id).toBe('new');
+    const twin = { ...g, id: 'twin' };
+    const both = matchExistingPlans([g, twin], plans.slice(0, 2), nameOf);
+    expect(new Set([both[g.id].id, both.twin.id]).size).toBe(2);
+  });
+
+  it('matches nothing when no plan fits', () => {
+    expect(matchExistingPlans([board()], [plan({ thickness: 20 })], nameOf)).toEqual({});
   });
 });

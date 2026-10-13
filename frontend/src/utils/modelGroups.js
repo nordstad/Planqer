@@ -283,3 +283,29 @@ export const standaloneHandoff = (group, config, planName, sheetWord = 'Sheet') 
     },
   };
 };
+
+/* Plans already filed in the target project that a cutlist would only repeat.
+   A plan counts when it is the same kind and size; names and materials are
+   left out because they change with what the user picked. Each plan is claimed
+   at most once, preferring the one with the same name, then the newest. */
+const sameSize = (group, plan) => {
+  if (plan.kind !== group.kind) return false;
+  if (Math.round(plan.thickness) !== group.thickness) return false;
+  return group.kind === 'sheet' || Math.round(plan.width) === group.width;
+};
+
+export const matchExistingPlans = (groups, plans, nameOf) => {
+  const claimed = new Set();
+  const matches = {};
+  groups.forEach((group) => {
+    const fits = plans
+      .filter((plan) => !claimed.has(plan.id) && sameSize(group, plan))
+      .sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
+    const best = fits.find((plan) => plan.name === nameOf(group)) || fits[0];
+    if (best) {
+      claimed.add(best.id);
+      matches[group.id] = best;
+    }
+  });
+  return matches;
+};

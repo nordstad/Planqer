@@ -68,6 +68,12 @@ is used if it has one.
    its plans together. You can also choose another project, or none. A link
    takes you straight to that project.
 
+   When the chosen project already holds a plan of the same kind and size
+   (for example a 45 × 95 mm board plan), that plan is updated in place and
+   keeps its name, instead of a copy being added. The list shows which plan
+   each cutlist replaces; untick *Replace the matching plans* to add new
+   plans instead.
+
 !!! note "Uploading doesn't need an account"
     Reading and extracting a model works without signing in. Planning and
     saving the resulting cutlist does.
