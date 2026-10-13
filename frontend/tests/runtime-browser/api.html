@@ -1,0 +1,10 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Planqer static-mode api harness</title>
+<script type="module">
+  import * as api from "/src/utils/api.js";
+  import { cancelSolver } from "/src/runtime/solver.js";
+  window.api = api;
+  window.cancelSolver = cancelSolver;
+  window.apiReady = true;
+</script>
