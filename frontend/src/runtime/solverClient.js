@@ -8,6 +8,7 @@ export class SolverTimeoutError extends Error {
   constructor(timeoutMs) {
     super(`The calculation took longer than ${timeoutMs / 1000} seconds`);
     this.name = "SolverTimeoutError";
+    this.timeoutMs = timeoutMs;
   }
 }
 

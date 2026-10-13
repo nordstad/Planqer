@@ -402,6 +402,9 @@ Object.assign(locale, {
       calculating: "Calculating… {{seconds}} s",
       cancel: "Cancel",
       cancelled: "Cancelled",
+      timedOut: "The calculation took longer than {{seconds}} seconds and was stopped. Try fewer parts or a simpler layout.",
+      failed: "The calculation engine could not start. Reload the page and try again.",
+      unsupported: "This browser cannot run the demo. It needs WebAssembly and web workers; use an up-to-date Chrome, Edge, Firefox or Safari on a computer.",
     },
   },
 });

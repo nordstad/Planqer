@@ -482,6 +482,9 @@ Object.assign(locale, {
       calculating: "Beräknar… {{seconds}} s",
       cancel: "Avbryt",
       cancelled: "Avbrutet",
+      timedOut: "Beräkningen tog längre tid än {{seconds}} sekunder och stoppades. Prova färre delar eller en enklare layout.",
+      failed: "Beräkningsmotorn kunde inte starta. Ladda om sidan och försök igen.",
+      unsupported: "Den här webbläsaren kan inte köra demon. Den kräver WebAssembly och web workers; använd en uppdaterad Chrome, Edge, Firefox eller Safari på en dator.",
     },
   },
 });
