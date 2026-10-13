@@ -70,3 +70,74 @@ test("a server-only feature says it is not available in the demo", async ({ page
 
   expect(message).toMatch(/not available in the demo/i);
 });
+
+test("saved projects, groups and settings live in the browser and survive a reload", async ({
+  page,
+}) => {
+  const saved = await page.evaluate(async () => {
+    const { api } = window;
+    const plan = await api.optimizeCutting(
+      [{ length: 100, quantity: 2 }, { length: 50, quantity: 2 }],
+      [200],
+      3,
+    );
+    const group = await api.createProjectGroup("Chair");
+    const project = await api.saveProject({
+      name: "Shelves",
+      projectGroupId: group.id,
+      parts: [{ length: 100, quantity: 2 }, { length: 50, quantity: 2 }],
+      boards: [200],
+      sawKerf: 3,
+      result: plan,
+    });
+    await api.updateUserSettings({ default_currency: "NOK" });
+    return { groupId: group.id, projectId: project.id, hasImage: Boolean(project.cutlist_image) };
+  });
+  expect(saved.hasImage).toBe(true);
+
+  await page.reload();
+  await page.waitForFunction(() => window.apiReady === true);
+
+  const after = await page.evaluate(async (ids) => {
+    const { api } = window;
+    const projects = await api.getUserProjects();
+    const groups = await api.getProjectGroups();
+    const settings = await api.getUserSettings();
+    const image = await api.downloadProjectImage(ids.projectId, "board");
+    return {
+      projects: projects.map((p) => [p.name, p.project_group_id === ids.groupId]),
+      groups: groups.map((g) => g.name),
+      currency: settings.default_currency,
+      imageType: image.type,
+      imageText: (await image.text()).slice(0, 5),
+    };
+  }, saved);
+
+  expect(after.projects).toEqual([["Shelves", true]]);
+  expect(after.groups).toEqual(["Chair"]);
+  expect(after.currency).toBe("NOK");
+  expect(after.imageType).toBe("image/svg+xml");
+  expect(after.imageText).toBe("<?xml");
+});
+
+test("deleting a group in the browser removes its projects, and a missing one says so", async ({
+  page,
+}) => {
+  const outcome = await page.evaluate(async () => {
+    const { api } = window;
+    const plan = await api.optimizeCutting([{ length: 100, quantity: 1 }], [200], 3);
+    const group = await api.createProjectGroup("Shed");
+    await api.saveProject({
+      name: "Frame", projectGroupId: group.id, parts: [{ length: 100, quantity: 1 }],
+      boards: [200], sawKerf: 3, result: plan,
+    });
+    await api.deleteProjectGroup(group.id);
+    const projects = await api.getUserProjects();
+    const message = await api.deleteProject("00000000-0000-4000-8000-000000000000")
+      .then(() => null, (error) => error.message);
+    return { remaining: projects.length, message };
+  });
+
+  expect(outcome.remaining).toBe(0);
+  expect(outcome.message).toBe("Project not found");
+});

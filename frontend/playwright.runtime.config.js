@@ -7,6 +7,7 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "./tests/runtime-browser",
   testMatch: "*.spec.js",
+  globalSetup: "./tests/runtime-browser/global-setup.js",
   fullyParallel: false,
   workers: 1,
   timeout: 300000,
