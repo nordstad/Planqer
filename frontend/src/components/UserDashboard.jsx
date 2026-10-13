@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import CatalogPage from './CatalogPage';
@@ -8,6 +8,9 @@ import UserProjectsContent from './UserProjectsContent';
 import UserSettings from './UserSettings';
 import TileCutListTable from './TileCutListTable';
 import { ArrowLeft, ArrowRight } from './icons';
+
+// Literal comparison, so a normal build drops the panel and the runtime behind it.
+const BackupPanel = import.meta.env.VITE_PLANQER_MODE === 'static' ? lazy(() => import('./demo/BackupPanel')) : null;
 
 const TABS = [
   { key: 'projects', label: 'common.myProjects' },
@@ -83,6 +86,7 @@ const UserDashboard = () => {
               <a href={FULL_VERSION_URL} target="_blank" rel="noopener noreferrer">{t('demo.fullVersionNote.cta')}</a>
             </p>
           )}
+          {BackupPanel && isStaticMode() && <Suspense fallback={null}><BackupPanel /></Suspense>}
           {!isStaticMode() && (
             <dl className="job-block">
               <div className="job-cell" style={{ flex: '1 1 260px' }}>

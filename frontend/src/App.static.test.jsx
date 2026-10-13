@@ -6,6 +6,13 @@ vi.mock('./utils/api', async () => ({
   updateUserSettings: vi.fn().mockResolvedValue({}),
 }));
 
+vi.mock('./runtime/localBackend', () => ({
+  handle: vi.fn().mockResolvedValue(null),
+  backupExport: vi.fn(),
+  backupImport: vi.fn(),
+  hasSavedWork: vi.fn().mockResolvedValue(false),
+}));
+
 const renderAtHash = async (hash) => {
   localStorage.setItem('planqer.demo.welcomed', '1');
   vi.stubEnv('VITE_PLANQER_MODE', 'static');
@@ -56,4 +63,9 @@ it('wraps the app in the demo notice and footer', async () => {
   await screen.findByRole('heading', { level: 1 });
   expect(screen.getByRole('region', { name: 'Demo notice' })).toBeInTheDocument();
   expect(screen.getAllByRole('contentinfo')).toHaveLength(1);
+});
+
+it('offers a backup on the project page', async () => {
+  await renderAtHash('#/dashboard');
+  expect(await screen.findByRole('button', { name: 'Export backup' })).toBeInTheDocument();
 });
