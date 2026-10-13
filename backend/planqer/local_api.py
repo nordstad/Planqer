@@ -13,14 +13,19 @@ this module with it blocked.
 import json
 import logging
 from collections.abc import Callable
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field, TypeAdapter, ValidationError
 
 from planqer.catalogue.local import layered_catalogue
 from planqer.catalogue.search import search_products
 from planqer.cutlist_services import run_cutlist_3d, run_cutlist_step
 from planqer.errors import PlanqerError
+from planqer.saved_diagrams import (
+    render_saved_board_diagram,
+    render_saved_sheet_layout,
+    render_saved_tile_layout,
+)
 from planqer.schemas import (
     PlanqerRequest,
     PlanqerResponse,
@@ -120,6 +125,51 @@ def _catalogue_search(payload: dict) -> list[dict]:
     return [result.model_dump(mode="json") for result in results]
 
 
+class SavedBoardDiagram(BaseModel):
+    kind: Literal["board"]
+    name: str
+    saw_blade_width: float
+    optimization_result: dict
+
+
+class SavedSheetDiagram(BaseModel):
+    kind: Literal["sheet"]
+    name: str
+    optimization_result: dict | None = None
+
+
+class SavedTileDiagram(BaseModel):
+    kind: Literal["tile"]
+    name: str
+    surface_data: dict | None = None
+    layout_result: dict | None = None
+
+
+_saved_diagram_request = TypeAdapter(
+    Annotated[
+        SavedBoardDiagram | SavedSheetDiagram | SavedTileDiagram,
+        Field(discriminator="kind"),
+    ]
+)
+
+
+def _saved_diagram(payload: dict) -> dict:
+    """The diagram stored with a saved project, or None when there is nothing
+    to draw. Drawn from the approved plan, never by solving again."""
+    request = _saved_diagram_request.validate_python(payload)
+    if isinstance(request, SavedBoardDiagram):
+        image = render_saved_board_diagram(
+            request.optimization_result, request.saw_blade_width, request.name
+        )
+    elif isinstance(request, SavedSheetDiagram):
+        image = render_saved_sheet_layout(request.optimization_result, request.name)
+    else:
+        image = render_saved_tile_layout(
+            request.surface_data, request.layout_result, request.name
+        )
+    return {"image": image}
+
+
 def _model_cutlist(run: Callable, failure: str) -> Callable[[dict, bytes], dict]:
     def operation(options: dict, data: bytes) -> dict:
         try:
@@ -145,6 +195,7 @@ OPERATIONS: dict[str, Callable[[dict], dict | list]] = {
     "tile_layout": _tile_layout,
     "catalogue": _catalogue,
     "catalogue_search": _catalogue_search,
+    "saved_diagram": _saved_diagram,
 }
 
 # Operations that read a file: the JSON carries only the options, and the file

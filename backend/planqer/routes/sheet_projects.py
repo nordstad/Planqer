@@ -1,5 +1,4 @@
 import json
-import logging
 from datetime import datetime
 from uuid import UUID
 
@@ -11,15 +10,14 @@ from sqlmodel import select
 from planqer.auth import get_current_user
 from planqer.database import User, UserSheetProject, get_session
 from planqer.routes.project_groups import _get_owned_group
+from planqer.saved_diagrams import render_saved_sheet_layout
 from planqer.saved_project_adapters import load_saved_json, update_saved_image
 from planqer.schemas.product import ProductSnapshot
 from planqer.sheet_visualization import (
-    generate_saved_sheet_diagram,
     generate_single_sheet_visualization,
 )
 
 router = APIRouter(prefix="/sheet-projects", tags=["user-sheet-projects"])
-logger = logging.getLogger("planqer.routes.sheet_projects")
 
 
 class SheetProjectResponse(BaseModel):
@@ -76,26 +74,6 @@ class UpdateSheetProjectRequest(BaseModel):
     optimization_result: dict | None = None
     pricing: dict | None = None
     product: ProductSnapshot | None = None
-
-
-def _render_saved_layout(optimization_result: dict | None, name: str) -> str | None:
-    """Redraw the layout's diagram, now captioned with the name the user gave it.
-
-    Drawn from the submitted layout rather than by packing again: the 2D
-    packers include a genetic strategy that is not deterministic, so a second
-    run could store a different layout than the one the user approved.
-    """
-    if not optimization_result or not optimization_result.get("sheets"):
-        return None
-
-    try:
-        return generate_saved_sheet_diagram(optimization_result, name)
-    except Exception as e:
-        # A missing diagram is worth far less than a lost layout — keep the save.
-        logger.warning(
-            f"Failed to render diagram for saved sheet project '{name}': {e}"
-        )
-        return None
 
 
 def sheet_project_to_response(project: UserSheetProject) -> SheetProjectResponse:
@@ -185,7 +163,7 @@ async def create_sheet_project(
     if project_data.project_group_id is not None:
         await _get_owned_group(project_data.project_group_id, current_user, session)
 
-    svg_data_url = _render_saved_layout(
+    svg_data_url = render_saved_sheet_layout(
         project_data.optimization_result, project_data.name
     )
 
@@ -272,7 +250,7 @@ async def update_sheet_project(
             project_data.product.model_dump_json() if project_data.product else None
         )
 
-    svg_data_url = _render_saved_layout(
+    svg_data_url = render_saved_sheet_layout(
         project_data.optimization_result
         if project_data.optimization_result is not None
         else json.loads(project.optimization_result)

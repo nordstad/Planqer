@@ -38,6 +38,7 @@ MODULES = (
     "planqer/cutlist_services.py",
     "planqer/errors.py",
     "planqer/local_api.py",
+    "planqer/saved_diagrams.py",
     "planqer/schemas/__init__.py",
     "planqer/schemas/cutlists.py",
     "planqer/schemas/cutting.py",
