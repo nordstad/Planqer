@@ -32,6 +32,8 @@ SERVER_ONLY_PACKAGES = (
     "multipart",
 )
 
+MODEL_PACKAGES = ("numpy", "scipy", "networkx", "trimesh")
+
 CORE_MODULES = [
     "planqer.services",
     "planqer.threed_cutlist",
@@ -43,13 +45,15 @@ CORE_MODULES = [
 ]
 
 
-def run_without_the_server_stack(code: str) -> subprocess.CompletedProcess:
+def run_without_the_server_stack(
+    code: str, extra_blocked: tuple[str, ...] = ()
+) -> subprocess.CompletedProcess:
     script = textwrap.dedent(
         f"""
         import importlib.abc
         import sys
 
-        BLOCKED = {SERVER_ONLY_PACKAGES!r}
+        BLOCKED = {SERVER_ONLY_PACKAGES + extra_blocked!r}
 
         class BlockServerStack(importlib.abc.MetaPathFinder):
             def find_spec(self, name, path, target=None):
@@ -174,6 +178,62 @@ def test_the_catalogue_runs_without_the_server_stack():
         reply = json.loads(handle("catalogue_search", json.dumps(query)))
         assert reply["status"] == 200 and reply["body"], reply
         """
+    )
+
+    assert result.returncode == 0, result.stderr.strip().splitlines()[-1]
+
+
+def test_the_solvers_run_without_the_model_import_packages():
+    result = run_without_the_server_stack(
+        """
+        import json
+        from planqer.local_api import handle
+
+        def call(op, request, data=None):
+            return json.loads(handle(op, json.dumps(request), data))
+
+        reply = call(
+            "cutting_plan",
+            {
+                "parts": {"100": 2, "50": 2},
+                "available_board_lengths": [200],
+                "algorithm": "first_fit_decreasing",
+            },
+        )
+        assert reply["status"] == 200, reply
+
+        reply = call(
+            "sheet_optimization",
+            {
+                "parts": {"side": {"width": 600, "height": 400, "quantity": 2}},
+                "sheet_width": 2440,
+                "sheet_height": 1220,
+                "algorithm": "guillotine_cut",
+            },
+        )
+        assert reply["status"] == 200, reply
+
+        reply = call(
+            "tile_layout",
+            {
+                "surface_width": 1500,
+                "surface_height": 1200,
+                "tile": {"width": 600, "height": 300},
+                "candidate_count": 2,
+            },
+        )
+        assert reply["status"] == 200, reply
+
+        reply = call("catalogue", {"country": "SE"})
+        assert reply["status"] == 200, reply
+
+        reply = call("cutlist_step", {"filename": "shelf.step"}, b"nope")
+        assert reply["status"] == 400, reply
+
+        loaded = [m for m in MODEL_PACKAGES if m in sys.modules]
+        assert not loaded, loaded
+        """.replace("MODEL_PACKAGES", repr(MODEL_PACKAGES)),
+        extra_blocked=MODEL_PACKAGES,
     )
 
     assert result.returncode == 0, result.stderr.strip().splitlines()[-1]

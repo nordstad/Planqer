@@ -1,0 +1,112 @@
+{
+  "pyodide": {
+    "version": "314.0.7",
+    "python": "3.14.2",
+    "abi": "2026_0",
+    "core": {
+      "pyodide.mjs": {
+        "url": "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pyodide.mjs",
+        "sha256": "6f1d60f7bf529beb300f0f47983c921d3982363640ba20af0e38efdddbc66109",
+        "bytes": 17931
+      },
+      "pyodide.asm.mjs": {
+        "url": "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pyodide.asm.mjs",
+        "sha256": "f7cdc8ece80678ceb712f8e65ebe6d3a83203a180c399865f49612a051693635",
+        "bytes": 1250344
+      },
+      "pyodide.asm.wasm": {
+        "url": "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pyodide.asm.wasm",
+        "sha256": "cc36e3cab04fdfc9a63ff13eb52eae2b911bf46c025cc7b281f394bd3de1d5e6",
+        "bytes": 9598218
+      },
+      "python_stdlib.zip": {
+        "url": "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/python_stdlib.zip",
+        "sha256": "fa1957e5777068fc4f7437f96d860ae2fbe9c19732ba06c84e004ec16dd7dd7a",
+        "bytes": 2545637
+      },
+      "pyodide-lock.json": {
+        "url": "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pyodide-lock.json",
+        "sha256": "5dc2fc119108bc148c7457dc86e7675b5c87e1cafd420b9c34c1eaef7b36c010",
+        "bytes": 119077
+      }
+    }
+  },
+  "packages": {
+    "base": [
+      {
+        "name": "typing-extensions",
+        "version": "4.15.0",
+        "file": "typing_extensions-4.15.0-py3-none-any.whl",
+        "url": "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/typing_extensions-4.15.0-py3-none-any.whl",
+        "sha256": "4fec68770a05408e668a4fa53d6bf4f0f684b9dacf820c7c5d6e97d3ad225e29"
+      },
+      {
+        "name": "pydantic-core",
+        "version": "2.41.5",
+        "file": "pydantic_core-2.41.5-cp314-cp314-pyemscripten_2026_0_wasm32.whl",
+        "url": "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pydantic_core-2.41.5-cp314-cp314-pyemscripten_2026_0_wasm32.whl",
+        "sha256": "54703fa42a0d4d574283cfb8f08050ba7820c9a42b0a21bc1286407d9a9e54da"
+      },
+      {
+        "name": "annotated-types",
+        "version": "0.7.0",
+        "file": "annotated_types-0.7.0-py3-none-any.whl",
+        "url": "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/annotated_types-0.7.0-py3-none-any.whl",
+        "sha256": "6541523b4b16c1953d2fc9b82fb86c540eea9f78fca329ab371ed13a8b0faa51"
+      },
+      {
+        "name": "typing-inspection",
+        "version": "0.4.2",
+        "file": "typing_inspection-0.4.2-py3-none-any.whl",
+        "url": "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/typing_inspection-0.4.2-py3-none-any.whl",
+        "sha256": "deb989630985f7a7296b90357a947a804a7612cecbb6439d6e71128e01f61051"
+      },
+      {
+        "name": "pydantic",
+        "version": "2.12.5",
+        "file": "pydantic-2.12.5-py3-none-any.whl",
+        "url": "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pydantic-2.12.5-py3-none-any.whl",
+        "sha256": "04854875001e07a8a74d87b7c80296cba168773d8c9804e232d695f82484d7d7"
+      },
+      {
+        "name": "pyyaml",
+        "version": "6.0.3",
+        "file": "pyyaml-6.0.3-cp314-cp314-pyemscripten_2026_0_wasm32.whl",
+        "url": "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pyyaml-6.0.3-cp314-cp314-pyemscripten_2026_0_wasm32.whl",
+        "sha256": "a05d2a48c13ed72a8c60c73b30b753a25c3a591bb66c15428b7e95e69a9e806f"
+      }
+    ],
+    "model_pyodide": [
+      {
+        "name": "numpy",
+        "version": "2.4.6",
+        "file": "numpy-2.4.6-cp314-cp314-pyemscripten_2026_0_wasm32.whl",
+        "url": "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/numpy-2.4.6-cp314-cp314-pyemscripten_2026_0_wasm32.whl",
+        "sha256": "a292c1f5d7d8a2208cd5e94fc467604c131cabcd2fc14fed6eefde121e7fabdf"
+      },
+      {
+        "name": "scipy",
+        "version": "1.18.0",
+        "file": "scipy-1.18.0-cp314-cp314-pyemscripten_2026_0_wasm32.whl",
+        "url": "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/scipy-1.18.0-cp314-cp314-pyemscripten_2026_0_wasm32.whl",
+        "sha256": "17ee329a957863516d1bb6a6aaa0c60576fac027e9cd3d43de27f58b5b599b50"
+      }
+    ],
+    "model_pure": [
+      {
+        "name": "networkx",
+        "version": "3.7",
+        "file": "networkx-3.7-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/7e/cd/fe58041e9011f307c490e3e17dd48cc516448f7c698a3f2d9d9d65d7e6a8/networkx-3.7-py3-none-any.whl",
+        "sha256": "e3fd2c13a7814cee3746340d8d7f8598a67f16a58bf47fb7f8793fab6efca1b0"
+      },
+      {
+        "name": "trimesh",
+        "version": "5.1.1",
+        "file": "trimesh-5.1.1-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/8f/f6/fb68b8c08f864ecee8f7f7ee2f1203ed5cba2335215de69e4f621eb47db5/trimesh-5.1.1-py3-none-any.whl",
+        "sha256": "c5be85a3e31e9ff749f9b0aecc204e37a2cf7cca4e92cd066bb5f3d3c1127765"
+      }
+    ]
+  }
+}
