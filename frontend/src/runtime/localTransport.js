@@ -59,7 +59,7 @@ function imageFile(dataUrl) {
   return new Blob([bytes], { type });
 }
 
-export function createLocalTransport({ call, handle = async () => null }) {
+export function createLocalTransport({ call, handle = async () => null, entries = async () => [] }) {
   async function answer(op, payload, data, config) {
     const { status, body } = await call(op, payload, data, limits(config));
     if (status >= 400) throw httpError(status, body);
@@ -78,10 +78,10 @@ export function createLocalTransport({ call, handle = async () => null }) {
 
     if (key === "GET /catalogue") {
       const country = config?.params?.country;
-      return answer("catalogue", country ? { country } : {}, undefined, config);
+      return answer("catalogue", { ...(country ? { country } : {}), entries: await entries() }, undefined, config);
     }
 
-    const stored = await handle(method, path, body);
+    const stored = await handle(method, path, body, config);
     if (stored?.image) {
       return { data: imageFile(stored.image), status: 200, headers: { "content-type": "image/svg+xml" } };
     }

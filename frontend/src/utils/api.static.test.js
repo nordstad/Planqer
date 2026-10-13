@@ -13,12 +13,14 @@ vi.mock('axios', () => ({
 const solverCall = vi.fn();
 vi.mock('../runtime/solver', () => ({ solverCall }));
 const handle = vi.fn();
-vi.mock('../runtime/localBackend', () => ({ handle }));
+const entries = vi.fn();
+vi.mock('../runtime/localBackend', () => ({ handle, entries }));
 
 let api;
 
 beforeEach(async () => {
   vi.clearAllMocks();
+  entries.mockResolvedValue([]);
   vi.stubEnv('VITE_PLANQER_MODE', 'static');
   vi.resetModules();
   api = await import('./api');
@@ -86,7 +88,7 @@ it('loads the catalogue from the browser and never reports it unchanged', async 
 
   const result = await api.getCatalogue('"old-etag"', 'SE');
 
-  expect(solverCall.mock.calls[0].slice(0, 2)).toEqual(['catalogue', { country: 'SE' }]);
+  expect(solverCall.mock.calls[0].slice(0, 2)).toEqual(['catalogue', { country: 'SE', entries: [] }]);
   expect(result).toEqual({ data: { products: [] }, etag: undefined });
 });
 
@@ -113,6 +115,7 @@ it('keeps a saved project in the browser and returns the server\'s shape', async
     'POST',
     '/projects',
     expect.objectContaining({ name: 'Shelves', parts_data: { 100: 2 }, board_lengths: [200] }),
+    undefined,
   );
   expect(axios.post).not.toHaveBeenCalled();
 });
@@ -142,7 +145,7 @@ it('downloads a saved diagram as a file', async () => {
 
   const blob = await api.downloadProjectImage('abc', 'board');
 
-  expect(handle).toHaveBeenCalledWith('GET', '/projects/abc/image', undefined);
+  expect(handle).toHaveBeenCalledWith('GET', '/projects/abc/image', undefined, { responseType: 'blob' });
   expect(await blob.text()).toBe('<svg/>');
 });
 

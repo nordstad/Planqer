@@ -3145,5 +3145,126 @@
       "mode": "create",
       "body": {}
     }
+  },
+  {
+    "name": "catalogue_admin_list",
+    "op": "catalogue_admin",
+    "seed": 0,
+    "payload": {
+      "action": "list",
+      "catalogue": "SE",
+      "entries": []
+    }
+  },
+  {
+    "name": "catalogue_admin_add",
+    "op": "catalogue_admin",
+    "seed": 0,
+    "payload": {
+      "action": "add",
+      "catalogue": "SE",
+      "entries": [],
+      "body": {
+        "type": "regel",
+        "thickness": 48,
+        "width": 98,
+        "lengths": [
+          2400,
+          3000
+        ],
+        "grades": [
+          "C24"
+        ],
+        "species": [
+          "spruce"
+        ],
+        "sources": [
+          "https://www.traguiden.se/example"
+        ],
+        "note": "Local stock"
+      }
+    }
+  },
+  {
+    "name": "catalogue_admin_add_builtin_conflicts",
+    "op": "catalogue_admin",
+    "seed": 0,
+    "payload": {
+      "action": "add",
+      "catalogue": "SE",
+      "entries": [],
+      "body": {
+        "type": "regel",
+        "thickness": 45,
+        "width": 95,
+        "lengths": [
+          2400,
+          3000
+        ],
+        "grades": [
+          "C24"
+        ],
+        "species": [
+          "spruce"
+        ],
+        "sources": [
+          "https://www.traguiden.se/example"
+        ],
+        "note": "Local stock"
+      }
+    }
+  },
+  {
+    "name": "catalogue_admin_update_builtin",
+    "op": "catalogue_admin",
+    "seed": 0,
+    "payload": {
+      "action": "update",
+      "catalogue": "SE",
+      "entries": [],
+      "product_id": "se:regel:45x95",
+      "body": {
+        "lengths": [
+          2400,
+          4800
+        ],
+        "note": "mine"
+      }
+    }
+  },
+  {
+    "name": "catalogue_admin_hide",
+    "op": "catalogue_admin",
+    "seed": 0,
+    "payload": {
+      "action": "hide",
+      "catalogue": "SE",
+      "entries": [],
+      "product_id": "se:regel:45x95"
+    }
+  },
+  {
+    "name": "catalogue_admin_suggest",
+    "op": "catalogue_admin",
+    "seed": 0,
+    "payload": {
+      "action": "suggest",
+      "catalogue": "SE",
+      "entries": [],
+      "product_id": "se:regel:45x95",
+      "source": "https://example.com/p",
+      "country": "SE"
+    }
+  },
+  {
+    "name": "catalogue_admin_reset_missing",
+    "op": "catalogue_admin",
+    "seed": 0,
+    "payload": {
+      "action": "reset",
+      "catalogue": "SE",
+      "entries": [],
+      "product_id": "se:nope:1x1"
+    }
   }
 ]

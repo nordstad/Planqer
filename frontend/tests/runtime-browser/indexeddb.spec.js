@@ -39,10 +39,30 @@ test("every store the app uses exists and finds records by id", async ({ page })
     return found;
   });
 
-  for (const store of ["projects", "sheet_projects", "tile_projects", "groups", "settings"]) {
+  for (const store of ["projects", "sheet_projects", "tile_projects", "groups", "settings", "catalogue_entries"]) {
     expect(results[store]).toBe(store);
     expect(results[`${store} after delete`]).toBeUndefined();
   }
+});
+
+test("a browser holding the first version of the database upgrades without losing anything", async ({ page }) => {
+  const result = await page.evaluate(async () => {
+    const [first] = window.store.MIGRATIONS;
+    let old = await window.store.openDatabase({ name: "from-v1", migrations: [first] });
+    await old.put("groups", { id: "g1", name: "Chair" });
+    await old.put("projects", { id: "p1", name: "Rails" });
+    old.close();
+
+    const upgraded = await window.store.openDatabase({ name: "from-v1" });
+    await upgraded.put("catalogue_entries", { id: "local:regel:48x98", product_id: "local:regel:48x98", hidden: false, data: "{}" });
+    return {
+      groups: (await upgraded.list("groups")).map((g) => g.name),
+      projects: (await upgraded.list("projects")).map((p) => p.name),
+      entries: (await upgraded.list("catalogue_entries")).map((e) => e.product_id),
+    };
+  });
+
+  expect(result).toEqual({ groups: ["Chair"], projects: ["Rails"], entries: ["local:regel:48x98"] });
 });
 
 test("migrations run once each, in order, and only the ones not yet seen", async ({ page }) => {

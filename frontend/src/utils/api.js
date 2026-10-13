@@ -53,6 +53,7 @@ const http = import.meta.env.VITE_PLANQER_MODE === 'static'
   ? createLocalTransport({
     call: (...args) => import('../runtime/solver').then(({ solverCall }) => solverCall(...args)),
     handle: (...args) => import('../runtime/localBackend').then(({ handle }) => handle(...args)),
+    entries: () => import('../runtime/localBackend').then(({ entries }) => entries()),
   })
   : axios;
 

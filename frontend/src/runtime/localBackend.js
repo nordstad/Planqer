@@ -28,8 +28,10 @@ const localApi = () => {
   return api;
 };
 
-export const handle = (method, path, body) =>
-  localApi().then((ready) => ready.handle(method, path, body));
+export const handle = (method, path, body, config) =>
+  localApi().then((ready) => ready.handle(method, path, body, config));
+
+export const entries = () => localApi().then((ready) => ready.entries());
 
 export const backupExport = () =>
   db().then((ready) => exportBackup(ready, { appVersion: packageJson.version }));
