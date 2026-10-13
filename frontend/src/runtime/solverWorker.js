@@ -1,6 +1,7 @@
 // Web Worker entry. The main thread talks to it with these messages:
 //
 //   -> { type: "init", runtimeUrl, bundleUrl }
+//   <- { type: "ready" }  or  { type: "init-failed", error }
 //   -> { id, type: "call", op, payload, data }   (data: ArrayBuffer, optional)
 //   <- { type: "progress", stage }
 //   <- { id, ok: true, result: { status, body } }
@@ -39,6 +40,14 @@ self.onmessage = async ({ data: message }) => {
       fetchBytes,
       onProgress: (stage) => self.postMessage({ type: "progress", stage }),
     });
+    runtime.init().then(
+      () => self.postMessage({ type: "ready" }),
+      (error) =>
+        self.postMessage({
+          type: "init-failed",
+          error: error?.message ?? String(error),
+        }),
+    );
     return;
   }
 
