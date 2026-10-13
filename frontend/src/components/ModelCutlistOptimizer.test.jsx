@@ -28,6 +28,16 @@ vi.mock('../contexts/AuthContext', () => ({
 
 vi.mock('./CatalogPage', () => ({ default: ({ children }) => <div>{children}</div> }));
 
+vi.mock('./ModelPartsPreview', () => ({
+  default: ({ highlightedGroupId, selectedIds }) => (
+    <div
+      data-testid="model-parts-preview"
+      data-highlighted-group={highlightedGroupId || ''}
+      data-selected-count={selectedIds.size}
+    />
+  ),
+}));
+
 const benchModel = {
   boards: [
     { name: 'board_10', width: 95, thickness: 45, length: 500, quantity: 1 },
@@ -202,6 +212,25 @@ describe('model preview', () => {
 
     expect(await screen.findByRole('region', { name: 'STL model preview' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Read the model' })).toBeEnabled();
+  });
+
+  it('shows a parts lineup and highlights its matching cutlist row', async () => {
+    await readBench();
+
+    expect(screen.getByTestId('model-parts-preview')).toBeInTheDocument();
+    expect(screen.getAllByTestId('model-group-colour')).toHaveLength(3);
+
+    const row = screen.getByLabelText(/Name for Board 45 × 95 mm/).closest('tr');
+    fireEvent.mouseEnter(row);
+    expect(screen.getByTestId('model-parts-preview')).toHaveAttribute(
+      'data-highlighted-group',
+      'board||95x45',
+    );
+    fireEvent.mouseLeave(row);
+    expect(screen.getByTestId('model-parts-preview')).toHaveAttribute('data-highlighted-group', '');
+
+    fireEvent.click(within(row).getByRole('checkbox'));
+    expect(screen.getByTestId('model-parts-preview')).toHaveAttribute('data-selected-count', '2');
   });
 
   it('explains that STEP geometry preview is not available yet', async () => {

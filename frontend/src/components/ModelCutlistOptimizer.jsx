@@ -51,8 +51,10 @@ import {
   applySettingsToAll, validateGroupConfig, standaloneHandoff,
 } from '../utils/modelGroups';
 import { loadCatalogue, buildSnapshot } from '../utils/catalogue';
+import { colourForModelGroup } from '../utils/modelPreview';
 
 const ModelPreview = lazy(() => import('./ModelPreview'));
+const ModelPartsPreview = lazy(() => import('./ModelPartsPreview'));
 
 const STEP_MODEL = 0;
 const STEP_CUTLISTS = 1;
@@ -91,6 +93,7 @@ const ModelCutlistOptimizer = () => {
   const [groups, setGroups] = useState([]);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [expandedIds, setExpandedIds] = useState(new Set());
+  const [highlightedGroupId, setHighlightedGroupId] = useState(null);
   // id -> that cutlist's own name, material, stock, kerf and prices
   const [configs, setConfigs] = useState({});
   const [defaults, setDefaults] = useState({});
@@ -164,6 +167,7 @@ const ModelCutlistOptimizer = () => {
     setGroups([]);
     setSelectedIds(new Set());
     setExpandedIds(new Set());
+    setHighlightedGroupId(null);
     setConfigs({});
     setStatuses({});
     setStatusMessages({});
@@ -502,15 +506,23 @@ const ModelCutlistOptimizer = () => {
       {step === STEP_CUTLISTS && groups.length > 0 && (
         <div className="step-view">
           <div className="step-head" style={{ marginBottom: '20px' }}>
-            <div>
-          <h1 className="step-h1">{t('ui.cutlistsFound')}</h1>
+           <div>
+           <h1 className="step-h1">{t('ui.cutlistsFound')}</h1>
               <p className="step-lede">
                  {t('ui.cutlistsIntro', { model: modelName })}
               </p>
             </div>
           </div>
 
-          <table className="cat-table model-cutlists">
+          <Suspense fallback={<p className="synthetic" role="status">{t('modelUi.partsPreviewLoading')}</p>}>
+            <ModelPartsPreview
+              groups={groups}
+              selectedIds={selectedIds}
+              highlightedGroupId={highlightedGroupId}
+            />
+          </Suspense>
+
+           <table className="cat-table model-cutlists">
             <thead>
               <tr>
                  <th aria-label={t('ui.include')} style={{ width: '30px' }} />
@@ -527,7 +539,14 @@ const ModelCutlistOptimizer = () => {
                 const expanded = expandedIds.has(group.id);
                 return (
                   <Fragment key={group.id}>
-                    <tr>
+                    <tr
+                      onMouseEnter={() => setHighlightedGroupId(group.id)}
+                      onMouseLeave={() => setHighlightedGroupId(null)}
+                      onFocus={() => setHighlightedGroupId(group.id)}
+                      onBlur={(event) => {
+                        if (!event.currentTarget.contains(event.relatedTarget)) setHighlightedGroupId(null);
+                      }}
+                    >
                       <td>
                         <input
                           type="checkbox"
@@ -537,6 +556,19 @@ const ModelCutlistOptimizer = () => {
                         />
                       </td>
                       <td style={{ textAlign: 'left' }}>
+                        <span
+                          aria-hidden="true"
+                          data-testid="model-group-colour"
+                          style={{
+                            display: 'inline-block',
+                            width: '9px',
+                            height: '9px',
+                            borderRadius: '50%',
+                            background: colourForModelGroup(group.id),
+                            marginRight: '7px',
+                            verticalAlign: '1px',
+                          }}
+                        />
                         <input
                           type="text"
                           className="form-input"

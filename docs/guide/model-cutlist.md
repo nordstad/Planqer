@@ -66,9 +66,11 @@ page responsive. This does not change the 50 MB model-upload limit or prevent
 you from pressing **Read the model**. If the browser cannot provide a 3D
 context, the cutlist workflow remains available without the preview.
 
-STEP and STP files do not have a geometry preview at this stage. After reading,
-Planqer still shows the measured cutlists extracted from them. It does not yet
-reconstruct or display the assembled CAD model in the browser.
+STEP and STP files do not have a geometry preview before reading. After the
+model has been read, the cutlists step shows a schematic parts lineup for both
+formats, with one colour per cutlist. The lineup is arranged for inspection;
+it does not preserve assembly placement or reconstruct the assembled CAD model
+in the browser.
 
 !!! note "Uploading doesn't need an account"
     Reading and extracting a model works without signing in. Planning and
