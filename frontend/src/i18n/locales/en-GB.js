@@ -402,6 +402,7 @@ Object.assign(locale, {
       calculating: "Calculating… {{seconds}} s",
       cancel: "Cancel",
       cancelled: "Cancelled",
+      heavyTile: "A large diagonal layout can take ten seconds or more in this browser demo, and longer on a phone. You can cancel at any time. The full version calculates faster.",
       timedOut: "The calculation took longer than {{seconds}} seconds and was stopped. Try fewer parts or a simpler layout.",
       failed: "The calculation engine could not start. Reload the page and try again.",
       unsupported: "This browser cannot run the demo. It needs WebAssembly and web workers; use an up-to-date Chrome, Edge, Firefox or Safari on a computer.",

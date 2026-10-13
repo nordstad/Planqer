@@ -123,3 +123,35 @@ it('shows the tile material cost using the configured VAT basis', async () => {
 
   expect(await screen.findByText('250.00 SEK · including VAT (25%)')).toBeInTheDocument();
 });
+
+describe('the demo warning for large diagonal layouts', () => {
+  const renderTile = () => render(
+    <MemoryRouter>
+      <LanguageProvider>
+        <TileOptimizer />
+      </LanguageProvider>
+    </MemoryRouter>,
+  );
+
+  const makeBigDiagonal = () => {
+    fireEvent.change(screen.getByLabelText(/Surface width/i), { target: { value: '6000' } });
+    fireEvent.change(screen.getByLabelText(/Surface height/i), { target: { value: '4500' } });
+    fireEvent.change(document.getElementById('tile-bond'), { target: { value: 'diagonal' } });
+  };
+
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('warns in the demo', async () => {
+    vi.stubEnv('VITE_PLANQER_MODE', 'static');
+    renderTile();
+    makeBigDiagonal();
+    expect(await screen.findByText(/can take ten seconds or more/i)).toBeInTheDocument();
+  });
+
+  it('says nothing in the full version', async () => {
+    renderTile();
+    makeBigDiagonal();
+    await waitFor(() => expect(document.getElementById('tile-bond').value).toBe('diagonal'));
+    expect(screen.queryByText(/can take ten seconds or more/i)).not.toBeInTheDocument();
+  });
+});

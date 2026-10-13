@@ -480,6 +480,7 @@ Object.assign(locale, {
       calculating: "Beregner… {{seconds}} s",
       cancel: "Avbryt",
       cancelled: "Avbrutt",
+      heavyTile: "Et stort diagonalt oppsett kan ta ti sekunder eller mer i denne nettleserdemoen, og lenger på en mobil. Du kan avbryte når som helst. Fullversjonen beregner raskere.",
       timedOut: "Beregningen tok mer enn {{seconds}} sekunder og ble stoppet. Prøv færre deler eller et enklere oppsett.",
       failed: "Beregningsmotoren kunne ikke starte. Last siden på nytt og prøv igjen.",
       unsupported: "Denne nettleseren kan ikke kjøre demoen. Den krever WebAssembly og web workers; bruk en oppdatert Chrome, Edge, Firefox eller Safari på en datamaskin.",
