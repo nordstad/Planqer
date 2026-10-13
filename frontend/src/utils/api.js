@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { resolveCatalogueCountry } from './catalogueChoice';
+import { createLocalTransport } from '../runtime/localTransport';
 
 /*
   Where the API lives, worked out from how you reached the app.
@@ -42,6 +43,17 @@ const getApiUrl = () => {
 };
 
 const API_URL = getApiUrl();
+
+/*
+  Static mode (VITE_PLANQER_MODE=static) answers from the in-browser solver
+  instead of a server. It is a build-time constant, so a normal build drops the
+  local branch, and the worker with it.
+*/
+const http = import.meta.env.VITE_PLANQER_MODE === 'static'
+  ? createLocalTransport({
+    call: (...args) => import('../runtime/solver').then(({ solverCall }) => solverCall(...args)),
+  })
+  : axios;
 
 // Helper function to extract meaningful error messages from API responses
 const extractErrorMessage = (error) => {
@@ -93,7 +105,7 @@ axios.interceptors.response.use(
 export const registerUser = async (email, password, setupSecret = '') => {
   try {
     const headers = setupSecret ? { 'X-Planqer-Setup-Secret': setupSecret } : undefined;
-    const response = await axios.post(`${API_URL}/api/auth/register`, { email, password }, { headers });
+    const response = await http.post(`${API_URL}/api/auth/register`, { email, password }, { headers });
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
@@ -102,7 +114,7 @@ export const registerUser = async (email, password, setupSecret = '') => {
 
 export const loginUser = async (email, password) => {
   try {
-    const response = await axios.post(`${API_URL}/api/auth/login`, { email, password });
+    const response = await http.post(`${API_URL}/api/auth/login`, { email, password });
     setAuthToken(response.data.access_token);
     return response.data;
   } catch (error) {
@@ -113,7 +125,7 @@ export const loginUser = async (email, password) => {
 export const logoutUser = () => clearAuthToken();
 
 export const getHealth = async () => {
-  const response = await axios.get(`${API_URL}/health`);
+  const response = await http.get(`${API_URL}/health`);
   return response.data;
 };
 
@@ -133,7 +145,7 @@ export const getLatestRelease = async () => {
     // Ignore malformed cache entries and re-fetch.
   }
 
-  const response = await axios.get('https://api.github.com/repos/nordstad/Planqer/releases/latest');
+  const response = await http.get('https://api.github.com/repos/nordstad/Planqer/releases/latest');
   const tag = response.data.tag_name;
   localStorage.setItem(LATEST_RELEASE_CACHE_KEY, JSON.stringify({ tag, fetchedAt: Date.now() }));
   return tag;
@@ -141,7 +153,7 @@ export const getLatestRelease = async () => {
 
 export const getSetupStatus = async () => {
   try {
-    const response = await axios.get(`${API_URL}/api/auth/setup-status`);
+    const response = await http.get(`${API_URL}/api/auth/setup-status`);
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
@@ -150,7 +162,7 @@ export const getSetupStatus = async () => {
 
 export const getCurrentUser = async () => {
   try {
-    const response = await axios.get(`${API_URL}/api/auth/me`);
+    const response = await http.get(`${API_URL}/api/auth/me`);
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
@@ -161,7 +173,7 @@ export const getCurrentUser = async () => {
 
 export const getUserSettings = async () => {
   try {
-    const response = await axios.get(`${API_URL}/api/settings/`);
+    const response = await http.get(`${API_URL}/api/settings/`);
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
@@ -170,7 +182,7 @@ export const getUserSettings = async () => {
 
 export const updateUserSettings = async (settings) => {
   try {
-    const response = await axios.put(`${API_URL}/api/settings/`, settings);
+    const response = await http.put(`${API_URL}/api/settings/`, settings);
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
@@ -181,7 +193,7 @@ export const updateUserSettings = async (settings) => {
 
 export const getUserProjects = async () => {
   try {
-    const response = await axios.get(`${API_URL}/api/projects/`);
+    const response = await http.get(`${API_URL}/api/projects/`);
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
@@ -268,8 +280,8 @@ export const saveProject = async ({ id, name, projectGroupId, parts, boards, saw
       optimization_result: result,
     };
     const response = id
-      ? await axios.put(`${API_URL}/api/projects/${id}`, payload)
-      : await axios.post(`${API_URL}/api/projects/`, payload);
+      ? await http.put(`${API_URL}/api/projects/${id}`, payload)
+      : await http.post(`${API_URL}/api/projects/`, payload);
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
@@ -278,7 +290,7 @@ export const saveProject = async ({ id, name, projectGroupId, parts, boards, saw
 
 export const updateProject = async (projectId, updates) => {
   try {
-    const response = await axios.put(`${API_URL}/api/projects/${projectId}`, updates);
+    const response = await http.put(`${API_URL}/api/projects/${projectId}`, updates);
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
@@ -287,7 +299,7 @@ export const updateProject = async (projectId, updates) => {
 
 export const deleteProject = async (projectId) => {
   try {
-    const response = await axios.delete(`${API_URL}/api/projects/${projectId}`);
+    const response = await http.delete(`${API_URL}/api/projects/${projectId}`);
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
@@ -300,7 +312,7 @@ export const deleteProject = async (projectId) => {
    reported as notModified for the caller to keep what it has. */
 export const getCatalogue = async (etag, country) => {
   try {
-    const response = await axios.get(`${API_URL}/api/catalogue/`, {
+    const response = await http.get(`${API_URL}/api/catalogue/`, {
       params: country ? { country } : undefined,
       headers: etag ? { 'If-None-Match': etag } : {},
       validateStatus: (status) => status === 200 || status === 304,
@@ -316,7 +328,7 @@ export const getCatalogue = async (etag, country) => {
 
 export const getUserSheetProjects = async () => {
   try {
-    const response = await axios.get(`${API_URL}/api/sheet-projects/`);
+    const response = await http.get(`${API_URL}/api/sheet-projects/`);
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
@@ -343,8 +355,8 @@ export const saveSheetProject = async ({
       pricing: pricing || null,
     };
     const response = id
-      ? await axios.put(`${API_URL}/api/sheet-projects/${id}`, payload)
-      : await axios.post(`${API_URL}/api/sheet-projects/`, payload);
+      ? await http.put(`${API_URL}/api/sheet-projects/${id}`, payload)
+      : await http.post(`${API_URL}/api/sheet-projects/`, payload);
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
@@ -353,7 +365,7 @@ export const saveSheetProject = async ({
 
 export const updateSheetProject = async (projectId, updates) => {
   try {
-    const response = await axios.put(`${API_URL}/api/sheet-projects/${projectId}`, updates);
+    const response = await http.put(`${API_URL}/api/sheet-projects/${projectId}`, updates);
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
@@ -362,7 +374,7 @@ export const updateSheetProject = async (projectId, updates) => {
 
 export const deleteSheetProject = async (projectId) => {
   try {
-    const response = await axios.delete(`${API_URL}/api/sheet-projects/${projectId}`);
+    const response = await http.delete(`${API_URL}/api/sheet-projects/${projectId}`);
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
@@ -373,7 +385,7 @@ export const deleteSheetProject = async (projectId) => {
 
 export const getUserTileProjects = async () => {
   try {
-    const response = await axios.get(`${API_URL}/api/tile-projects/`);
+    const response = await http.get(`${API_URL}/api/tile-projects/`);
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
@@ -426,8 +438,8 @@ export const saveTileProject = async ({
       pricing: pricing || null,
     };
     const response = id
-      ? await axios.put(`${API_URL}/api/tile-projects/${id}`, payload)
-      : await axios.post(`${API_URL}/api/tile-projects/`, payload);
+      ? await http.put(`${API_URL}/api/tile-projects/${id}`, payload)
+      : await http.post(`${API_URL}/api/tile-projects/`, payload);
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
@@ -436,7 +448,7 @@ export const saveTileProject = async ({
 
 export const updateTileProject = async (projectId, updates) => {
   try {
-    const response = await axios.put(`${API_URL}/api/tile-projects/${projectId}`, updates);
+    const response = await http.put(`${API_URL}/api/tile-projects/${projectId}`, updates);
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
@@ -445,7 +457,7 @@ export const updateTileProject = async (projectId, updates) => {
 
 export const deleteTileProject = async (projectId) => {
   try {
-    const response = await axios.delete(`${API_URL}/api/tile-projects/${projectId}`);
+    const response = await http.delete(`${API_URL}/api/tile-projects/${projectId}`);
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
@@ -456,7 +468,7 @@ export const deleteTileProject = async (projectId) => {
 
 export const getProjectGroups = async () => {
   try {
-    const response = await axios.get(`${API_URL}/api/project-groups/`);
+    const response = await http.get(`${API_URL}/api/project-groups/`);
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
@@ -465,7 +477,7 @@ export const getProjectGroups = async () => {
 
 export const createProjectGroup = async (name) => {
   try {
-    const response = await axios.post(`${API_URL}/api/project-groups/`, { name });
+    const response = await http.post(`${API_URL}/api/project-groups/`, { name });
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
@@ -475,7 +487,7 @@ export const createProjectGroup = async (name) => {
 export const renameProjectGroup = async (groupId, name) => {
   try {
     const payload = typeof name === 'string' ? { name } : name;
-    const response = await axios.put(`${API_URL}/api/project-groups/${groupId}`, payload);
+    const response = await http.put(`${API_URL}/api/project-groups/${groupId}`, payload);
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
@@ -484,7 +496,7 @@ export const renameProjectGroup = async (groupId, name) => {
 
 export const deleteProjectGroup = async (groupId) => {
   try {
-    const response = await axios.delete(`${API_URL}/api/project-groups/${groupId}`);
+    const response = await http.delete(`${API_URL}/api/project-groups/${groupId}`);
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
@@ -529,7 +541,7 @@ const catalogueView = () => {
 
 export const getAdminCatalogue = async () => {
   try {
-    const response = await axios.get(`${API_URL}/api/admin/catalogue`, { params: catalogueView() });
+    const response = await http.get(`${API_URL}/api/admin/catalogue`, { params: catalogueView() });
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
@@ -538,7 +550,7 @@ export const getAdminCatalogue = async () => {
 
 export const createCatalogueEntry = async (entry) => {
   try {
-    const response = await axios.post(`${API_URL}/api/admin/catalogue`, entry, { params: catalogueView() });
+    const response = await http.post(`${API_URL}/api/admin/catalogue`, entry, { params: catalogueView() });
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
@@ -547,7 +559,7 @@ export const createCatalogueEntry = async (entry) => {
 
 export const updateCatalogueEntry = async (productId, details) => {
   try {
-    const response = await axios.put(catalogueEntryUrl(productId), details, { params: catalogueView() });
+    const response = await http.put(catalogueEntryUrl(productId), details, { params: catalogueView() });
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
@@ -556,7 +568,7 @@ export const updateCatalogueEntry = async (productId, details) => {
 
 export const hideCatalogueEntry = async (productId) => {
   try {
-    const response = await axios.post(catalogueEntryUrl(productId, '/hide'), undefined, { params: catalogueView() });
+    const response = await http.post(catalogueEntryUrl(productId, '/hide'), undefined, { params: catalogueView() });
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
@@ -565,7 +577,7 @@ export const hideCatalogueEntry = async (productId) => {
 
 export const restoreCatalogueEntry = async (productId) => {
   try {
-    const response = await axios.post(catalogueEntryUrl(productId, '/restore'), undefined, { params: catalogueView() });
+    const response = await http.post(catalogueEntryUrl(productId, '/restore'), undefined, { params: catalogueView() });
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
@@ -574,7 +586,7 @@ export const restoreCatalogueEntry = async (productId) => {
 
 export const resetCatalogueEntry = async (productId) => {
   try {
-    await axios.delete(catalogueEntryUrl(productId), { params: catalogueView() });
+    await http.delete(catalogueEntryUrl(productId), { params: catalogueView() });
   } catch (error) {
     throw new Error(extractErrorMessage(error));
   }
@@ -583,7 +595,7 @@ export const resetCatalogueEntry = async (productId) => {
 /* Only builds the pre-filled GitHub issue link; nothing is sent anywhere. */
 export const getCatalogueSuggestion = async (productId, { source, country } = {}) => {
   try {
-    const response = await axios.get(catalogueEntryUrl(productId, '/suggestion'), {
+    const response = await http.get(catalogueEntryUrl(productId, '/suggestion'), {
       params: { ...catalogueView(), ...(source ? { source } : {}), ...(country ? { country } : {}) },
     });
     return response.data;
@@ -596,7 +608,7 @@ export const getCatalogueSuggestion = async (productId, { source, country } = {}
 
 export const getAdminStats = async () => {
   try {
-    const response = await axios.get(`${API_URL}/api/admin/stats`);
+    const response = await http.get(`${API_URL}/api/admin/stats`);
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
@@ -605,7 +617,7 @@ export const getAdminStats = async () => {
 
 export const getAdminUsers = async () => {
   try {
-    const response = await axios.get(`${API_URL}/api/admin/users`);
+    const response = await http.get(`${API_URL}/api/admin/users`);
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
@@ -614,7 +626,7 @@ export const getAdminUsers = async () => {
 
 export const toggleUserAdmin = async (userId, isAdmin) => {
   try {
-    const response = await axios.put(`${API_URL}/api/admin/users/${userId}/toggle-admin`, { is_admin: isAdmin });
+    const response = await http.put(`${API_URL}/api/admin/users/${userId}/toggle-admin`, { is_admin: isAdmin });
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
@@ -623,7 +635,7 @@ export const toggleUserAdmin = async (userId, isAdmin) => {
 
 export const toggleUserActive = async (userId) => {
   try {
-    const response = await axios.put(`${API_URL}/api/admin/users/${userId}/toggle-active`);
+    const response = await http.put(`${API_URL}/api/admin/users/${userId}/toggle-active`);
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
@@ -632,7 +644,7 @@ export const toggleUserActive = async (userId) => {
 
 export const deleteUser = async (userId) => {
   try {
-    const response = await axios.delete(`${API_URL}/api/admin/users/${userId}`);
+    const response = await http.delete(`${API_URL}/api/admin/users/${userId}`);
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
@@ -641,7 +653,7 @@ export const deleteUser = async (userId) => {
 
 export const resetUserPassword = async (userId, password) => {
   try {
-    const response = await axios.put(`${API_URL}/api/admin/users/${userId}/password`, { password });
+    const response = await http.put(`${API_URL}/api/admin/users/${userId}/password`, { password });
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
@@ -673,7 +685,7 @@ export const optimizeCutting = async (parts, boards, sawKerf, costData = null) =
   }
 
   try {
-    const response = await axios.post(
+    const response = await http.post(
       `${API_URL}/api/cutting-plans`,
       payload,
       { timeout: 15000 } // 15 seconds timeout
@@ -701,7 +713,7 @@ export const optimizeSheetCutting = async (parts, sheetWidth, sheetHeight, kerfW
   };
 
   try {
-    const response = await axios.post(
+    const response = await http.post(
       `${API_URL}/api/sheet-optimization`,
       payload,
       { timeout: 30000 } // 30 seconds timeout for more complex 2D optimization
@@ -758,7 +770,7 @@ export const optimizeTileLayout = async ({
   };
 
   try {
-    const response = await axios.post(
+    const response = await http.post(
       `${API_URL}/api/tile-layout`,
       payload,
       { timeout: 30000 } // 30 seconds — the solver samples the offset space, same order of cost as sheet packing
@@ -792,7 +804,7 @@ export const process3DCutlist = async (file, units = 'mm', roundPrecision = 1, p
       formData.append('project_name', projectName.trim());
     }
 
-    const response = await axios.post(`${API_URL}/api/3d-cutlist`, formData, {
+    const response = await http.post(`${API_URL}/api/3d-cutlist`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -828,7 +840,7 @@ export const processStepCutlist = async (file, units = 'mm', roundPrecision = 1,
       formData.append('project_name', projectName.trim());
     }
 
-    const response = await axios.post(`${API_URL}/api/step-cutlist`, formData, {
+    const response = await http.post(`${API_URL}/api/step-cutlist`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
