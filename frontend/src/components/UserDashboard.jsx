@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import CatalogPage from './CatalogPage';
 import { useAuth } from '../contexts/AuthContext';
+import { isStaticMode } from '../utils/mode';
 import UserProjectsContent from './UserProjectsContent';
 import UserSettings from './UserSettings';
 import TileCutListTable from './TileCutListTable';
@@ -76,12 +77,14 @@ const UserDashboard = () => {
     <CatalogPage>
       {!inProject && (
         <>
-          <dl className="job-block">
-            <div className="job-cell" style={{ flex: '1 1 260px' }}>
-               <dt>{t('ui.account')}</dt>
-              <dd>{user?.email}</dd>
-            </div>
-          </dl>
+          {!isStaticMode() && (
+            <dl className="job-block">
+              <div className="job-cell" style={{ flex: '1 1 260px' }}>
+                 <dt>{t('ui.account')}</dt>
+                <dd>{user?.email}</dd>
+              </div>
+            </dl>
+          )}
 
           <div className="flex gap-2" style={{ marginTop: '20px', marginBottom: '24px' }}>
             {TABS.map((tab) => (
