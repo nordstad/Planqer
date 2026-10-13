@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { demoContext } from '../utils/mode';
 import CatalogPage from './CatalogPage';
 
 const DOCS_URL = 'https://nordstad.github.io/Planqer/';
@@ -163,7 +164,7 @@ const HelpPage = () => {
             <p>{t('help.beforeCuttingText')}</p>
           </div>
           <p>
-            {t('help.saveIntro')}
+            {t('help.saveIntro', demoContext())}
           </p>
         </section>
 

@@ -30,6 +30,7 @@ import { buildMaterialListHtml, buildMaterialCsv, isPlanPriced } from '../utils/
 import { materialLabel, cleanMaterial } from '../utils/materialLabel';
 import { buildCutListHtml } from '../utils/tileCutList';
 import { useAuth } from '../contexts/AuthContext';
+import { demoContext } from '../utils/mode';
 import Loader from './Loader';
 import PlanThumb from './PlanThumb';
 import ConfirmDialog from './ConfirmDialog';
@@ -765,7 +766,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
       {shelves.length === 0 && loose.length === 0 && (
         <div className="proj-blank is-first">
           <p>
-            {t('projects.nothingSaved')}
+            {t('projects.nothingSaved', demoContext())}
           </p>
           <Link to="/cutting" className="btn btn-primary">{t('workflow.planCuts')}</Link>
         </div>

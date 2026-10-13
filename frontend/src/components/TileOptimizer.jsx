@@ -19,7 +19,7 @@ import {
 } from '../utils/api';
 import { useDebounce } from '../hooks/useDebounce';
 import { useAuth } from '../contexts/AuthContext';
-import { isStaticMode } from '../utils/mode';
+import { demoContext, isStaticMode } from '../utils/mode';
 import { isHeavyTileJob } from '../utils/tileLoad';
 import CatalogPage from './CatalogPage';
 import ConfirmDialog from './ConfirmDialog';
@@ -818,7 +818,7 @@ const TileOptimizer = () => {
                 <h1 className="step-h1">{saved ? t('ui.layoutSaved') : t('ui.saveLayout')}</h1>
               <p className="step-lede">
                 {saved
-                    ? t('ui.keptPlan')
+                    ? t('ui.keptPlan', demoContext())
                     : t('ui.namePlan')}
               </p>
             </div>

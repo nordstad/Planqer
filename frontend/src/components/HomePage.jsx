@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import CatalogPage from './CatalogPage';
 import { BoardIcon, SheetIcon, CubeIcon, TileIcon, ArrowRight } from './icons';
 import { getHealth, getLatestRelease } from '../utils/api';
+import { demoContext } from '../utils/mode';
 import packageJson from '../../package.json';
 
 // Compares two dotted version strings, e.g. isNewer('0.2.0', '0.1.0') -> true
@@ -146,7 +147,7 @@ const HomePage = () => {
         </div>
         <p className="hp-note">
            {t('home.noteBefore')} <b>{t('home.noteDiagram')}</b> — {t('home.noteRunsOn')} <b>{t('home.noteComputer')}</b>.
-           {t('home.noteAccount')}
+           {t('home.noteAccount', demoContext())}
         </p>
       </div>
     </div>

@@ -42,3 +42,10 @@ it('shows the calculation bar while the solver works', async () => {
   expect(await screen.findByText('Calculating… 2 s')).toBeInTheDocument();
   act(() => solverStatus.finish());
 });
+
+it('talks about this browser, not an account or an instance', async () => {
+  await renderAtHash('#/');
+  await screen.findByRole('heading', { level: 1 });
+  expect(screen.getByText(/saved in this browser/i)).toBeInTheDocument();
+  expect(screen.queryByText(/local account|this instance/i)).not.toBeInTheDocument();
+});
