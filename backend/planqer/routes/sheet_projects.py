@@ -3,7 +3,7 @@ from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
@@ -12,7 +12,7 @@ from planqer.database import User, UserSheetProject, get_session
 from planqer.routes.project_groups import _get_owned_group
 from planqer.saved_diagrams import render_saved_sheet_layout
 from planqer.saved_project_adapters import load_saved_json, update_saved_image
-from planqer.schemas.product import ProductSnapshot
+from planqer.schemas.saved import CreateSheetProjectRequest, UpdateSheetProjectRequest
 from planqer.sheet_visualization import (
     generate_single_sheet_visualization,
 )
@@ -39,41 +39,6 @@ class SheetProjectResponse(BaseModel):
     has_svg_image: bool = False
     created_at: str
     updated_at: str
-
-
-class CreateSheetProjectRequest(BaseModel):
-    """A layout the user has chosen to keep. The diagram is redrawn server-side
-    from optimization_result, so no image comes over the wire."""
-
-    name: str = Field(min_length=1, max_length=200)
-    project_group_id: UUID | None = None
-    parts_data: list
-    sheet_width: float
-    sheet_height: float
-    kerf_width: float
-    material_type: str = "plywood"
-    sheet_thickness: float = 0
-    algorithm: str | None = None
-    allow_rotation: bool = True
-    optimization_result: dict | None = None
-    pricing: dict | None = None
-    product: ProductSnapshot | None = None
-
-
-class UpdateSheetProjectRequest(BaseModel):
-    name: str | None = Field(default=None, min_length=1, max_length=200)
-    project_group_id: UUID | None = None
-    parts_data: list | None = None
-    sheet_width: float | None = None
-    sheet_height: float | None = None
-    kerf_width: float | None = None
-    material_type: str | None = None
-    sheet_thickness: float | None = None
-    algorithm: str | None = None
-    allow_rotation: bool | None = None
-    optimization_result: dict | None = None
-    pricing: dict | None = None
-    product: ProductSnapshot | None = None
 
 
 def sheet_project_to_response(project: UserSheetProject) -> SheetProjectResponse:

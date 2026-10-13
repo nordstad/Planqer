@@ -40,6 +40,7 @@ CORE_MODULES = [
     "planqer.step_cutlist",
     "planqer.local_api",
     "planqer.saved_diagrams",
+    "planqer.schemas.saved",
     "planqer.catalogue",
     "planqer.catalogue.local",
     "planqer.catalogue.search",
@@ -297,6 +298,36 @@ def test_saved_diagrams_are_drawn_without_the_server_stack():
             },
         )
         assert reply["status"] == 200 and reply["body"]["image"], reply
+        """
+    )
+
+    assert result.returncode == 0, result.stderr.strip().splitlines()[-1]
+
+
+def test_a_save_is_validated_without_the_server_stack():
+    result = run_without_the_server_stack(
+        """
+        import json
+        from planqer.local_api import handle
+
+        request = {
+            "kind": "sheet",
+            "mode": "create",
+            "body": {
+                "name": "Cabinet",
+                "parts_data": [],
+                "sheet_width": 2440,
+                "sheet_height": 1220,
+                "kerf_width": 3,
+            },
+        }
+        reply = json.loads(handle("saved_request", json.dumps(request)))
+        assert reply["status"] == 200, reply
+        assert reply["body"]["values"]["material_type"] == "plywood", reply
+
+        request["body"]["name"] = ""
+        reply = json.loads(handle("saved_request", json.dumps(request)))
+        assert reply["status"] == 422, reply
         """
     )
 

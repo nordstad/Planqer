@@ -3,7 +3,7 @@ from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
@@ -12,6 +12,7 @@ from planqer.database import User, UserTileProject, get_session
 from planqer.routes.project_groups import _get_owned_group
 from planqer.saved_diagrams import render_saved_tile_layout
 from planqer.saved_project_adapters import load_saved_json, update_saved_image
+from planqer.schemas.saved import CreateTileProjectRequest, UpdateTileProjectRequest
 
 router = APIRouter(prefix="/tile-projects", tags=["user-tile-projects"])
 
@@ -30,32 +31,6 @@ class TileProjectResponse(BaseModel):
     has_svg_image: bool = False
     created_at: str
     updated_at: str
-
-
-class CreateTileProjectRequest(BaseModel):
-    """A layout the user has chosen to keep. The diagram is redrawn
-    server-side from surface_data + layout_result, so no image comes over
-    the wire — same reasoning as CreateSheetProjectRequest."""
-
-    name: str = Field(min_length=1, max_length=200)
-    project_group_id: UUID | None = None
-    surface_data: dict
-    tile_data: dict
-    bond_data: dict
-    options_data: dict = {}
-    layout_result: dict | None = None
-    pricing: dict | None = None
-
-
-class UpdateTileProjectRequest(BaseModel):
-    name: str | None = Field(default=None, min_length=1, max_length=200)
-    project_group_id: UUID | None = None
-    surface_data: dict | None = None
-    tile_data: dict | None = None
-    bond_data: dict | None = None
-    options_data: dict | None = None
-    layout_result: dict | None = None
-    pricing: dict | None = None
 
 
 def tile_project_to_response(project: UserTileProject) -> TileProjectResponse:

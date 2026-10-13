@@ -3,7 +3,7 @@ from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
@@ -12,7 +12,7 @@ from planqer.database import User, UserProject, get_session
 from planqer.routes.project_groups import _get_owned_group
 from planqer.saved_diagrams import render_saved_board_diagram
 from planqer.saved_project_adapters import load_saved_json, update_saved_image
-from planqer.schemas.product import ProductSnapshot
+from planqer.schemas.saved import ProjectCreateRequest, ProjectUpdateRequest
 
 router = APIRouter(prefix="/projects", tags=["user-projects"])
 
@@ -34,42 +34,6 @@ class ProjectResponse(BaseModel):
     has_svg_image: bool = False
     created_at: str
     updated_at: str
-
-
-class ProjectCreateRequest(BaseModel):
-    """A plan the user has chosen to keep. Carries the plan itself, not a
-    request to compute one: /cutting-plans solves and returns, this stores."""
-
-    name: str = Field(min_length=1, max_length=200)
-    project_group_id: UUID | None = None
-    parts_data: dict
-    board_lengths: list[float]
-    saw_blade_width: float
-    material_type: str = ""
-    board_thickness: float = 0
-    board_width: float = 0
-    # The prices behind this plan's cost analysis, if it was priced. Stored so
-    # loading the plan restores the pricing panel — supplier prices and stocked
-    # lengths differ per job, so they belong to the plan, not to the app.
-    board_costs: dict | None = None
-    # The catalogue product (or free text) the plan is for, snapshotted so later
-    # catalogue changes never alter it. material_type stays the readable label.
-    product: ProductSnapshot | None = None
-    optimization_result: dict
-
-
-class ProjectUpdateRequest(BaseModel):
-    name: str | None = Field(default=None, min_length=1, max_length=200)
-    project_group_id: UUID | None = None
-    parts_data: dict | None = None
-    board_lengths: list[float] | None = None
-    saw_blade_width: float | None = None
-    material_type: str | None = None
-    board_thickness: float | None = None
-    board_width: float | None = None
-    board_costs: dict | None = None
-    product: ProductSnapshot | None = None
-    optimization_result: dict | None = None
 
 
 def project_to_response(project: UserProject) -> ProjectResponse:
