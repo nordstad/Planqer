@@ -1,9 +1,10 @@
 import { lazy, Suspense } from 'react';
-import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
+import { Navigate, Route, BrowserRouter, HashRouter, Routes } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import HomePage from './components/HomePage';
 import ProtectedRoute from './components/ProtectedRoute';
+import { isStaticMode } from './utils/mode';
 
 const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
 const AdminRoute = lazy(() => import('./components/AdminRoute'));
@@ -15,6 +16,10 @@ const HelpPage = lazy(() => import('./components/Help'));
 const UserDashboard = lazy(() => import('./components/UserDashboard'));
 
 const App = () => {
+  const demo = isStaticMode();
+  // GitHub Pages cannot rewrite a reloaded deep link to index.html, so the demo
+  // keeps its route after the # where the server never sees it.
+  const Router = demo ? HashRouter : BrowserRouter;
   return (
     <LanguageProvider>
       <AuthProvider>
@@ -33,7 +38,7 @@ const App = () => {
             {/* A project is a place, so it gets an address: back, refresh and a
                 shared link all land where the user was. */}
             <Route path="/dashboard/project/:groupId" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
-            <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+            {!demo && <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />}
             </Routes>
           </Suspense>
         </Router>

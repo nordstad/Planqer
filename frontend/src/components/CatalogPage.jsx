@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { LANGUAGES } from '../i18n/languages';
 import AuthModal from './auth/AuthModal';
+import { isStaticMode } from '../utils/mode';
 
 /*
   The frame every page sits in: one plain top nav, on every page. No trim
@@ -44,6 +45,7 @@ const CatalogPage = ({ children }) => {
   const isCurrent = (path) => pathname === path;
   const { user, isAuthenticated, logout, needsSetup, setupCheckError } = useAuth();
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const demo = isStaticMode();
 
   const navLinks = user?.is_admin
     ? [...BASE_NAV_LINKS, { path: '/admin', label: 'common.admin' }]
@@ -54,7 +56,7 @@ const CatalogPage = ({ children }) => {
       <nav className="app-nav">
         <div className="app-nav-row">
           <Link to="/" className="app-wordmark">
-            <img src={isDark ? '/planqer_logo_white.png' : '/planqer_logo_black.png'} alt="" className="h-5 w-5" />
+            <img src={`${import.meta.env.BASE_URL}${isDark ? 'planqer_logo_white.png' : 'planqer_logo_black.png'}`} alt="" className="h-5 w-5" />
             planqer
           </Link>
           <div className="app-nav-links">
@@ -70,7 +72,11 @@ const CatalogPage = ({ children }) => {
             ))}
           </div>
           <div className="app-nav-right">
-            {isAuthenticated ? (
+            {demo ? (
+              <Link to="/dashboard" className={`app-nav-link ${isCurrent('/dashboard') ? 'is-current' : ''}`}>
+                {t('common.myProjects')}
+              </Link>
+            ) : isAuthenticated ? (
               <>
                 <Link to="/dashboard" className={`app-nav-link ${isCurrent('/dashboard') ? 'is-current' : ''}`}>
                   {user.email}
@@ -102,7 +108,7 @@ const CatalogPage = ({ children }) => {
       <div className="cat-body">
         {children}
       </div>
-      {!setupCheckError && (
+      {!demo && !setupCheckError && (
         <AuthModal
           isOpen={authModalOpen}
           onClose={() => setAuthModalOpen(false)}
