@@ -8,7 +8,6 @@ from planqer.schemas import (
     ThreeDCutlistResponse,
 )
 from planqer.step_cutlist import process_step_bytes
-from planqer.threed_cutlist import process_stl_bytes
 from planqer.validation import sanitize_project_name
 
 VALID_UNITS = {"mm", "cm", "m", "in", "inch", "inches", "ft", "feet"}
@@ -108,6 +107,10 @@ def run_cutlist_3d(
     project_name: str | None = None,
 ) -> ThreeDCutlistResponse:
     """Turn the contents of an STL file into a cutlist; shared by the API and the browser."""
+    # Imported here because it pulls in trimesh, numpy and scipy, which the
+    # browser runtime downloads only when a model is first imported.
+    from planqer.threed_cutlist import process_stl_bytes
+
     validate_cutlist_options(units, round_precision)
     project_name = sanitize_project_name(project_name) if project_name else None
     started = time.time()
