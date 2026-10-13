@@ -17,7 +17,18 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, TypeAdapter, ValidationError
 
-from planqer.catalogue.local import layered_catalogue
+from planqer.catalogue.loader import resolve_country
+from planqer.catalogue.local import (
+    NewProduct,
+    ProductDetails,
+    add_entry,
+    layered_catalogue,
+    list_items,
+    reset_entry,
+    set_entry_hidden,
+    suggest_entry,
+    update_entry,
+)
 from planqer.catalogue.search import search_products
 from planqer.cutlist_services import run_cutlist_3d, run_cutlist_step
 from planqer.errors import PlanqerError
@@ -116,6 +127,64 @@ class CatalogueSearchRequest(CatalogueRequest):
     kind: Literal["board", "sheet"] | None = None
     limit: int = Field(default=20, ge=1, le=50)
     lang: Literal["en", "sv", "nb"] = "en"
+
+
+class CatalogueAdminRequest(BaseModel):
+    """One edit to the user's own catalogue entries.
+
+    The operation holds no state: the browser sends the entries it has stored
+    and applies the change that comes back.
+    """
+
+    action: Literal["list", "add", "update", "hide", "restore", "suggest", "reset"]
+    # The same limit as the admin endpoints' `catalogue` query parameter.
+    catalogue: str | None = Field(default=None, max_length=10)
+    entries: list[StoredCatalogueEntry] = []
+    product_id: str | None = None
+    body: dict = {}
+    source: str | None = Field(default=None, max_length=500)
+    country: str | None = Field(default=None, max_length=2)
+
+
+def _put(change) -> dict:
+    return {
+        "put": {
+            "product_id": change.product_id,
+            "hidden": change.hidden,
+            "data": change.data,
+        }
+    }
+
+
+def _catalogue_admin(payload: dict) -> dict:
+    request = CatalogueAdminRequest.model_validate(payload)
+    view = resolve_country(request.catalogue)
+    action, entries = request.action, request.entries
+
+    if action == "list":
+        items = list_items(view, entries)
+        return {"result": [i.model_dump(mode="json") for i in items], "change": None}
+    if action == "add":
+        item, change = add_entry(NewProduct.model_validate(request.body), view, entries)
+        return {"result": item.model_dump(mode="json"), "change": _put(change)}
+
+    if not request.product_id:
+        raise PlanqerError(422, f"'{action}' needs a product_id")
+    product_id = request.product_id
+    if action == "update":
+        details = ProductDetails.model_validate(request.body)
+        item, change = update_entry(product_id, details, view, entries)
+        return {"result": item.model_dump(mode="json"), "change": _put(change)}
+    if action in ("hide", "restore"):
+        item, change = set_entry_hidden(product_id, action == "hide", view, entries)
+        return {"result": item.model_dump(mode="json"), "change": _put(change)}
+    if action == "suggest":
+        suggestion = suggest_entry(
+            product_id, view, entries, source=request.source, country=request.country
+        )
+        return {"result": suggestion.model_dump(mode="json"), "change": None}
+    reset_entry(product_id, view, entries)
+    return {"result": None, "change": {"delete": product_id}}
 
 
 def _catalogue(payload: dict) -> dict:
@@ -236,6 +305,7 @@ OPERATIONS: dict[str, Callable[[dict], dict | list]] = {
     "tile_layout": _tile_layout,
     "catalogue": _catalogue,
     "catalogue_search": _catalogue_search,
+    "catalogue_admin": _catalogue_admin,
     "saved_diagram": _saved_diagram,
     "saved_request": _saved_request,
 }
