@@ -1,7 +1,5 @@
 import json
-import logging
 from datetime import datetime
-from types import SimpleNamespace
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -12,12 +10,10 @@ from sqlmodel import select
 from planqer.auth import get_current_user
 from planqer.database import User, UserTileProject, get_session
 from planqer.routes.project_groups import _get_owned_group
+from planqer.saved_diagrams import render_saved_tile_layout
 from planqer.saved_project_adapters import load_saved_json, update_saved_image
-from planqer.tile_layout.geometry import Cutout, PlacedTile, Surface, TileKind
-from planqer.tile_visualization import generate_saved_tile_diagram
 
 router = APIRouter(prefix="/tile-projects", tags=["user-tile-projects"])
-logger = logging.getLogger("planqer.routes.tile_projects")
 
 
 class TileProjectResponse(BaseModel):
@@ -60,75 +56,6 @@ class UpdateTileProjectRequest(BaseModel):
     options_data: dict | None = None
     layout_result: dict | None = None
     pricing: dict | None = None
-
-
-def _render_saved_layout(
-    surface_data: dict | None, layout_result: dict | None, name: str
-) -> str | None:
-    """Redraw the layout's diagram, now captioned with the name the user gave
-    it. Drawn from the submitted candidate rather than by re-solving: the
-    tile solver samples an offset grid, and re-running it is not guaranteed
-    to reproduce the exact candidate the user picked from a ranked list.
-
-    tile_visualization.py deliberately takes typed dataclasses, not raw
-    dicts (see its own module docstring and .plans/tile-layout.md Phase 1
-    notes on PlacedTileInfo) — so this rebuilds just enough of a
-    solver.LayoutCandidate and geometry.Surface from the stored JSON to
-    satisfy that contract, rather than loosening the visualizer back to
-    untyped dict access.
-    """
-    if not layout_result or not layout_result.get("tiles") or not surface_data:
-        return None
-
-    try:
-        cutouts = tuple(
-            Cutout(
-                x=c["x"],
-                y=c["y"],
-                width=c["width"],
-                height=c["height"],
-                label=c.get("label"),
-            )
-            for c in surface_data.get("cutouts", [])
-        )
-        surface = Surface(
-            width=surface_data["width"], height=surface_data["height"], cutouts=cutouts
-        )
-        tiles = tuple(
-            PlacedTile(
-                x=t["x"],
-                y=t["y"],
-                width=t["width"],
-                height=t["height"],
-                nominal_width=t.get("nominal_width", t["width"]),
-                nominal_height=t.get("nominal_height", t["height"]),
-                rotated=t.get("rotated", False),
-                kind=TileKind(t["kind"]),
-                is_sliver=t.get("is_sliver", False),
-                # A diagonal ("set on point") piece's true shape — x/y/width/
-                # height above are only its bounding box for these; without
-                # this, a saved diagonal project's re-render would silently
-                # draw a rectangle instead of the real polygon.
-                vertices=tuple(tuple(v) for v in t["vertices"])
-                if t.get("vertices")
-                else None,
-                # Where an opening cuts into the piece — part of its identity
-                # (see tile_size_key), so the saved re-render keeps the same
-                # colours and labels as the layout the user was shown.
-                notches=tuple(tuple(n) for n in t.get("notches", [])),
-            )
-            for t in layout_result["tiles"]
-        )
-        candidate = SimpleNamespace(
-            label=layout_result.get("label", ""),
-            tiles=tiles,
-            tiles_to_purchase=layout_result.get("tiles_to_purchase", 0),
-        )
-        return generate_saved_tile_diagram(candidate, surface, name)
-    except Exception as e:
-        # A missing diagram is worth far less than a lost layout — keep the save.
-        logger.warning(f"Failed to render diagram for saved tile project '{name}': {e}")
-        return None
 
 
 def tile_project_to_response(project: UserTileProject) -> TileProjectResponse:
@@ -202,7 +129,7 @@ async def create_tile_project(
     if project_data.project_group_id is not None:
         await _get_owned_group(project_data.project_group_id, current_user, session)
 
-    svg_data_url = _render_saved_layout(
+    svg_data_url = render_saved_tile_layout(
         project_data.surface_data, project_data.layout_result, project_data.name
     )
 
@@ -271,7 +198,7 @@ async def update_tile_project(
         )
 
     # A rename or changed layout inputs both change what the diagram should show.
-    svg_data_url = _render_saved_layout(
+    svg_data_url = render_saved_tile_layout(
         load_saved_json(
             project.surface_data, field="tile surface", default={}, expected=dict
         ),

@@ -39,6 +39,7 @@ CORE_MODULES = [
     "planqer.threed_cutlist",
     "planqer.step_cutlist",
     "planqer.local_api",
+    "planqer.saved_diagrams",
     "planqer.catalogue",
     "planqer.catalogue.local",
     "planqer.catalogue.search",
@@ -234,6 +235,69 @@ def test_the_solvers_run_without_the_model_import_packages():
         assert not loaded, loaded
         """.replace("MODEL_PACKAGES", repr(MODEL_PACKAGES)),
         extra_blocked=MODEL_PACKAGES,
+    )
+
+    assert result.returncode == 0, result.stderr.strip().splitlines()[-1]
+
+
+def test_saved_diagrams_are_drawn_without_the_server_stack():
+    result = run_without_the_server_stack(
+        """
+        import json
+        from planqer.local_api import handle
+
+        def call(op, request):
+            return json.loads(handle(op, json.dumps(request)))
+
+        plan = call(
+            "cutting_plan",
+            {"parts": {"100": 2}, "available_board_lengths": [200]},
+        )["body"]
+        reply = call(
+            "saved_diagram",
+            {
+                "kind": "board",
+                "name": "Shelf",
+                "saw_blade_width": 3,
+                "optimization_result": plan,
+            },
+        )
+        assert reply["status"] == 200 and reply["body"]["image"], reply
+
+        layout = call(
+            "sheet_optimization",
+            {
+                "parts": {"side": {"width": 600, "height": 400, "quantity": 1}},
+                "sheet_width": 2440,
+                "sheet_height": 1220,
+            },
+        )["body"]
+        reply = call(
+            "saved_diagram",
+            {"kind": "sheet", "name": "Cabinet", "optimization_result": layout},
+        )
+        assert reply["status"] == 200 and reply["body"]["image"], reply
+
+        tiles = call(
+            "tile_layout",
+            {
+                "surface_width": 900,
+                "surface_height": 600,
+                "tile": {"width": 300, "height": 300},
+                "candidate_count": 1,
+            },
+        )["body"]
+        reply = call(
+            "saved_diagram",
+            {
+                "kind": "tile",
+                "name": "Wall",
+                "surface_data": {"width": 900, "height": 600, "cutouts": []},
+                "layout_result": tiles["candidates"][0],
+            },
+        )
+        assert reply["status"] == 200 and reply["body"]["image"], reply
+        """
     )
 
     assert result.returncode == 0, result.stderr.strip().splitlines()[-1]

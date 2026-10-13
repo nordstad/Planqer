@@ -1,5 +1,4 @@
 import json
-import logging
 from datetime import datetime
 from uuid import UUID
 
@@ -11,12 +10,11 @@ from sqlmodel import select
 from planqer.auth import get_current_user
 from planqer.database import User, UserProject, get_session
 from planqer.routes.project_groups import _get_owned_group
+from planqer.saved_diagrams import render_saved_board_diagram
 from planqer.saved_project_adapters import load_saved_json, update_saved_image
 from planqer.schemas.product import ProductSnapshot
-from planqer.svg_visualization import generate_saved_diagram
 
 router = APIRouter(prefix="/projects", tags=["user-projects"])
-logger = logging.getLogger("planqer.routes.projects")
 
 
 class ProjectResponse(BaseModel):
@@ -72,39 +70,6 @@ class ProjectUpdateRequest(BaseModel):
     board_costs: dict | None = None
     product: ProductSnapshot | None = None
     optimization_result: dict | None = None
-
-
-def _render_saved_diagram(
-    optimization_result: dict, saw_blade_width: float, name: str
-) -> str | None:
-    """Redraw the plan's diagram, now captioned with the name the user gave it.
-
-    Drawn here rather than taken from the browser, and drawn from the submitted
-    plan rather than by solving again: the genetic algorithm is not
-    deterministic, so a second solve could store a different plan than the one
-    the user approved on screen.
-    """
-    cut_list = optimization_result.get("cut_list")
-    if not cut_list:
-        return None
-
-    board_lengths_used = optimization_result.get(
-        "board_lengths_used"
-    ) or optimization_result.get("optimal_board_length")
-    if not board_lengths_used:
-        return None
-
-    try:
-        return generate_saved_diagram(
-            cut_list,
-            board_lengths_used,
-            saw_blade_width=saw_blade_width,
-            project_name=name,
-        )
-    except Exception as e:
-        # A missing diagram is worth far less than a lost plan — keep the save.
-        logger.warning(f"Failed to render diagram for saved project '{name}': {e}")
-        return None
 
 
 def project_to_response(project: UserProject) -> ProjectResponse:
@@ -186,7 +151,7 @@ async def create_project(
     if project_data.project_group_id is not None:
         await _get_owned_group(project_data.project_group_id, current_user, session)
 
-    svg_data_url = _render_saved_diagram(
+    svg_data_url = render_saved_board_diagram(
         project_data.optimization_result,
         project_data.saw_blade_width,
         project_data.name,
@@ -281,7 +246,7 @@ async def update_project(
             if project.optimization_result
             else None
         )
-        svg_data_url = _render_saved_diagram(
+        svg_data_url = render_saved_board_diagram(
             current_result,
             update_data.saw_blade_width
             if update_data.saw_blade_width is not None
