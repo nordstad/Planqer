@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import CatalogPage from './CatalogPage';
 import { useAuth } from '../contexts/AuthContext';
-import { isStaticMode } from '../utils/mode';
+import { FULL_VERSION_URL, isStaticMode } from '../utils/mode';
 import UserProjectsContent from './UserProjectsContent';
 import UserSettings from './UserSettings';
 import TileCutListTable from './TileCutListTable';
@@ -77,6 +77,12 @@ const UserDashboard = () => {
     <CatalogPage>
       {!inProject && (
         <>
+          {isStaticMode() && (
+            <p className="synthetic" role="note" style={{ marginBottom: '14px' }}>
+              {t('demo.fullVersionNote.text')}{' '}
+              <a href={FULL_VERSION_URL} target="_blank" rel="noopener noreferrer">{t('demo.fullVersionNote.cta')}</a>
+            </p>
+          )}
           {!isStaticMode() && (
             <dl className="job-block">
               <div className="job-cell" style={{ flex: '1 1 260px' }}>

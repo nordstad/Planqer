@@ -476,6 +476,10 @@ Object.assign(locale, {
     saveLocalHint: "Behåll ”{{text}}” som en produkt alla på den här instansen kan söka efter.",
   },
   demo: {
+    fullVersionNote: {
+      text: "Konton, synkronisering mellan enheter, REST-API och MCP finns i fullversionen.",
+      cta: "Skaffa fullversionen",
+    },
     banner: {
       region: "Demomeddelande",
       message: "Du använder Planqer-demon, lättversionen. För konton, projekt på din egen server, API och MCP, kör fullversionen.",

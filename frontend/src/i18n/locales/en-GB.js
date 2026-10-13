@@ -396,6 +396,10 @@ Object.assign(locale, {
     saveLocalHint: "Keep “{{text}}” as a product everyone on this instance can search for.",
   },
   demo: {
+    fullVersionNote: {
+      text: "Accounts, syncing between devices, the REST API and MCP are available in the full version.",
+      cta: "Get the full version",
+    },
     banner: {
       region: "Demo notice",
       message: "You are using the Planqer demo, the light version. For accounts, projects on your own server, the API and MCP, run the full version.",
