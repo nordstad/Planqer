@@ -14,6 +14,9 @@ const TileOptimizer = lazy(() => import('./components/TileOptimizer'));
 const ModelCutlistOptimizer = lazy(() => import('./components/ModelCutlistOptimizer'));
 const HelpPage = lazy(() => import('./components/Help'));
 const UserDashboard = lazy(() => import('./components/UserDashboard'));
+// Compared inline, not through isStaticMode(): only a literal comparison lets
+// the bundler drop the runtime from a normal build.
+const SolverStatus = import.meta.env.VITE_PLANQER_MODE === 'static' ? lazy(() => import('./components/SolverStatus')) : null;
 
 const App = () => {
   const demo = isStaticMode();
@@ -41,6 +44,7 @@ const App = () => {
             {!demo && <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />}
             </Routes>
           </Suspense>
+          {demo && <Suspense fallback={null}><SolverStatus /></Suspense>}
         </Router>
       </AuthProvider>
     </LanguageProvider>

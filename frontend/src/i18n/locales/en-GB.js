@@ -395,6 +395,15 @@ Object.assign(locale, {
     saveLocal: "Save to local catalogue",
     saveLocalHint: "Keep “{{text}}” as a product everyone on this instance can search for.",
   },
+  demo: {
+    solver: {
+      loadingEngine: "Loading the calculation engine. This happens once and can take a moment.",
+      loadingModels: "Loading 3D model support. This happens once and can take a moment.",
+      calculating: "Calculating… {{seconds}} s",
+      cancel: "Cancel",
+      cancelled: "Cancelled",
+    },
+  },
 });
 
 export default locale;

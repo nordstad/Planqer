@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 
 vi.mock('./utils/api', async () => ({
   ...(await vi.importActual('./utils/api')),
@@ -31,4 +31,14 @@ it('has no sign-in or sign-out controls', async () => {
 it('has no admin page', async () => {
   await renderAtHash('#/admin');
   expect(screen.queryByRole('heading', { name: /admin/i })).not.toBeInTheDocument();
+});
+
+it('shows the calculation bar while the solver works', async () => {
+  await renderAtHash('#/');
+  await screen.findByRole('heading', { level: 1 });
+  const { solverStatus } = await import('./runtime/solverStatus');
+
+  act(() => { solverStatus.start(); solverStatus.progress('solving', { elapsedMs: 2000 }); });
+  expect(await screen.findByText('Calculating… 2 s')).toBeInTheDocument();
+  act(() => solverStatus.finish());
 });

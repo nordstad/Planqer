@@ -473,6 +473,15 @@ Object.assign(locale, {
     saveLocal: "Lagre i lokal katalog",
     saveLocalHint: "Behold «{{text}}» som et produkt alle på denne instansen kan søke etter.",
   },
+  demo: {
+    solver: {
+      loadingEngine: "Laster beregningsmotoren. Dette skjer bare én gang og kan ta litt tid.",
+      loadingModels: "Laster støtte for 3D-modeller. Dette skjer bare én gang og kan ta litt tid.",
+      calculating: "Beregner… {{seconds}} s",
+      cancel: "Avbryt",
+      cancelled: "Avbrutt",
+    },
+  },
 });
 
 export default locale;
