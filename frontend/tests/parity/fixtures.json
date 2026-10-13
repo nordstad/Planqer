@@ -1,0 +1,365 @@
+[
+  {
+    "name": "board_first_fit_decreasing",
+    "op": "cutting_plan",
+    "seed": 1,
+    "payload": {
+      "parts": {
+        "2400": 3,
+        "1800": 4,
+        "1200": 6,
+        "900": 5,
+        "600": 8,
+        "450": 6,
+        "300": 10
+      },
+      "available_board_lengths": [
+        2400,
+        3000,
+        3600
+      ],
+      "saw_blade_width": 3,
+      "algorithm": "first_fit_decreasing"
+    }
+  },
+  {
+    "name": "board_best_fit",
+    "op": "cutting_plan",
+    "seed": 1,
+    "payload": {
+      "parts": {
+        "2400": 3,
+        "1800": 4,
+        "1200": 6,
+        "900": 5,
+        "600": 8,
+        "450": 6,
+        "300": 10
+      },
+      "available_board_lengths": [
+        2400,
+        3000,
+        3600
+      ],
+      "saw_blade_width": 3,
+      "algorithm": "best_fit"
+    }
+  },
+  {
+    "name": "board_best_fit_decreasing",
+    "op": "cutting_plan",
+    "seed": 1,
+    "payload": {
+      "parts": {
+        "2400": 3,
+        "1800": 4,
+        "1200": 6,
+        "900": 5,
+        "600": 8,
+        "450": 6,
+        "300": 10
+      },
+      "available_board_lengths": [
+        2400,
+        3000,
+        3600
+      ],
+      "saw_blade_width": 3,
+      "algorithm": "best_fit_decreasing"
+    }
+  },
+  {
+    "name": "board_genetic",
+    "op": "cutting_plan",
+    "seed": 1,
+    "payload": {
+      "parts": {
+        "2400": 3,
+        "1800": 4,
+        "1200": 6,
+        "900": 5,
+        "600": 8,
+        "450": 6,
+        "300": 10
+      },
+      "available_board_lengths": [
+        2400,
+        3000,
+        3600
+      ],
+      "saw_blade_width": 3,
+      "algorithm": "genetic"
+    }
+  },
+  {
+    "name": "board_branch_bound",
+    "op": "cutting_plan",
+    "seed": 1,
+    "payload": {
+      "parts": {
+        "600": 2,
+        "400": 3,
+        "300": 2,
+        "200": 3
+      },
+      "available_board_lengths": [
+        2400,
+        3000,
+        3600
+      ],
+      "saw_blade_width": 3,
+      "algorithm": "branch_bound"
+    }
+  },
+  {
+    "name": "sheet_bottom_left_fill",
+    "op": "sheet_optimization",
+    "seed": 3,
+    "payload": {
+      "parts": {
+        "side": {
+          "width": 600,
+          "height": 400,
+          "quantity": 6
+        },
+        "shelf": {
+          "width": 800,
+          "height": 300,
+          "quantity": 5
+        },
+        "back": {
+          "width": 900,
+          "height": 700,
+          "quantity": 2
+        },
+        "rail": {
+          "width": 1200,
+          "height": 90,
+          "quantity": 4
+        }
+      },
+      "sheet_width": 2440,
+      "sheet_height": 1220,
+      "algorithm": "bottom_left_fill"
+    }
+  },
+  {
+    "name": "sheet_best_fit_2d",
+    "op": "sheet_optimization",
+    "seed": 3,
+    "payload": {
+      "parts": {
+        "side": {
+          "width": 600,
+          "height": 400,
+          "quantity": 6
+        },
+        "shelf": {
+          "width": 800,
+          "height": 300,
+          "quantity": 5
+        },
+        "back": {
+          "width": 900,
+          "height": 700,
+          "quantity": 2
+        },
+        "rail": {
+          "width": 1200,
+          "height": 90,
+          "quantity": 4
+        }
+      },
+      "sheet_width": 2440,
+      "sheet_height": 1220,
+      "algorithm": "best_fit_2d"
+    }
+  },
+  {
+    "name": "sheet_guillotine_cut",
+    "op": "sheet_optimization",
+    "seed": 3,
+    "payload": {
+      "parts": {
+        "side": {
+          "width": 600,
+          "height": 400,
+          "quantity": 6
+        },
+        "shelf": {
+          "width": 800,
+          "height": 300,
+          "quantity": 5
+        },
+        "back": {
+          "width": 900,
+          "height": 700,
+          "quantity": 2
+        },
+        "rail": {
+          "width": 1200,
+          "height": 90,
+          "quantity": 4
+        }
+      },
+      "sheet_width": 2440,
+      "sheet_height": 1220,
+      "algorithm": "guillotine_cut"
+    }
+  },
+  {
+    "name": "sheet_genetic_2d",
+    "op": "sheet_optimization",
+    "seed": 3,
+    "payload": {
+      "parts": {
+        "side": {
+          "width": 600,
+          "height": 400,
+          "quantity": 6
+        },
+        "shelf": {
+          "width": 800,
+          "height": 300,
+          "quantity": 5
+        },
+        "back": {
+          "width": 900,
+          "height": 700,
+          "quantity": 2
+        },
+        "rail": {
+          "width": 1200,
+          "height": 90,
+          "quantity": 4
+        }
+      },
+      "sheet_width": 2440,
+      "sheet_height": 1220,
+      "algorithm": "genetic_2d"
+    }
+  },
+  {
+    "name": "tile_stack",
+    "op": "tile_layout",
+    "seed": 7,
+    "payload": {
+      "surface_width": 2500,
+      "surface_height": 3000,
+      "tile": {
+        "width": 600,
+        "height": 300
+      },
+      "candidate_count": 2,
+      "bond": {
+        "pattern": "stack"
+      }
+    }
+  },
+  {
+    "name": "tile_running",
+    "op": "tile_layout",
+    "seed": 7,
+    "payload": {
+      "surface_width": 2500,
+      "surface_height": 3000,
+      "tile": {
+        "width": 600,
+        "height": 300
+      },
+      "candidate_count": 2,
+      "bond": {
+        "pattern": "running"
+      }
+    }
+  },
+  {
+    "name": "tile_herringbone",
+    "op": "tile_layout",
+    "seed": 7,
+    "payload": {
+      "surface_width": 2500,
+      "surface_height": 3000,
+      "tile": {
+        "width": 600,
+        "height": 300
+      },
+      "candidate_count": 2,
+      "bond": {
+        "pattern": "herringbone"
+      }
+    }
+  },
+  {
+    "name": "tile_diagonal",
+    "op": "tile_layout",
+    "seed": 7,
+    "payload": {
+      "surface_width": 2500,
+      "surface_height": 3000,
+      "tile": {
+        "width": 600,
+        "height": 300
+      },
+      "candidate_count": 2,
+      "bond": {
+        "pattern": "diagonal"
+      }
+    }
+  },
+  {
+    "name": "catalogue_se",
+    "op": "catalogue",
+    "seed": 0,
+    "payload": {
+      "country": "SE"
+    }
+  },
+  {
+    "name": "catalogue_search",
+    "op": "catalogue_search",
+    "seed": 0,
+    "payload": {
+      "q": "regel",
+      "country": "SE",
+      "limit": 5
+    }
+  },
+  {
+    "name": "model_stl",
+    "op": "cutlist_3d",
+    "seed": 0,
+    "payload": {
+      "filename": "cabinet.stl"
+    },
+    "file": "cabinet.stl"
+  },
+  {
+    "name": "model_step",
+    "op": "cutlist_step",
+    "seed": 0,
+    "payload": {
+      "filename": "frame.step"
+    },
+    "file": "frame.step"
+  },
+  {
+    "name": "error_validation",
+    "op": "cutting_plan",
+    "seed": 0,
+    "payload": {
+      "parts": {
+        "100": 1
+      }
+    }
+  },
+  {
+    "name": "error_not_a_step_file",
+    "op": "cutlist_step",
+    "seed": 0,
+    "payload": {
+      "filename": "x.step"
+    },
+    "file": "cabinet.stl"
+  }
+]

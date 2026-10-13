@@ -19,6 +19,7 @@
     "start": "vite",
     "build": "vite build",
     "test": "vitest run",
+    "test:parity": "vitest run --config vitest.parity.config.mjs",
     "dev": "vite",
     "test:e2e": "playwright test"
   },
