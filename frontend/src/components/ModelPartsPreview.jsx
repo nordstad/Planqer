@@ -2,6 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import ViewCube from './ViewCube';
+import NavigationHint from './NavigationHint';
+import { createCameraNavigator } from '../utils/cameraNavigator';
 import {
   colourForModelGroup,
   formatModelDimensions,
@@ -31,12 +34,14 @@ const ModelPartsPreview = ({ groups, selectedIds, highlightedGroupId }) => {
   const meshesRef = useRef([]);
   const [open, setOpen] = useState(true);
   const [unavailable, setUnavailable] = useState(false);
+  const [viewNavigator, setViewNavigator] = useState(null);
   const layout = useMemo(() => layoutModelParts(groups), [groups]);
 
   useEffect(() => {
     let scene;
     let renderer;
     let controls;
+    let navigator;
     let animationFrame;
     let resizeObserver;
     let resizeHandler;
@@ -47,6 +52,7 @@ const ModelPartsPreview = ({ groups, selectedIds, highlightedGroupId }) => {
     const cleanup = () => {
       cancelled = true;
       if (animationFrame) cancelAnimationFrame(animationFrame);
+      navigator?.dispose();
       resizeObserver?.disconnect();
       if (resizeHandler) window.removeEventListener('resize', resizeHandler);
       controls?.dispose();
@@ -58,6 +64,7 @@ const ModelPartsPreview = ({ groups, selectedIds, highlightedGroupId }) => {
 
     if (!open || !host || layout.items.length === 0) return cleanup;
 
+    setViewNavigator(null);
     try {
       scene = new THREE.Scene();
       scene.background = new THREE.Color(0xf2efe6);
@@ -116,6 +123,12 @@ const ModelPartsPreview = ({ groups, selectedIds, highlightedGroupId }) => {
       controls.target.set(0, 0, 0);
       controls.listenToKeyEvents(renderer.domElement);
       controls.update();
+      navigator = createCameraNavigator({
+        camera,
+        controls,
+        panBindings: { mouse: THREE.MOUSE.PAN, touch: THREE.TOUCH.PAN },
+      });
+      setViewNavigator(navigator);
 
       const resize = () => {
         if (!renderer || !host) return;
@@ -144,6 +157,7 @@ const ModelPartsPreview = ({ groups, selectedIds, highlightedGroupId }) => {
       setUnavailable(false);
     } catch {
       cleanup();
+      setViewNavigator(null);
       setUnavailable(true);
     }
 
@@ -169,19 +183,21 @@ const ModelPartsPreview = ({ groups, selectedIds, highlightedGroupId }) => {
           <p className="step-lede" style={{ marginBottom: '12px' }}>
             {t('modelUi.partsPreviewDescription')}
           </p>
-          <div
-            ref={hostRef}
-            role="img"
-            aria-label={t('modelUi.partsPreviewCanvasAria')}
-            style={{
-              height: `${PREVIEW_HEIGHT}px`,
-              border: '1px solid var(--ink-4)',
-              borderRadius: '14px',
-              overflow: 'hidden',
-              background: 'var(--ground-2)',
-              position: 'relative',
-            }}
-          />
+          <div style={{ position: 'relative' }}>
+            <div
+              ref={hostRef}
+              role="img"
+              aria-label={t('modelUi.partsPreviewCanvasAria')}
+              style={{
+                height: `${PREVIEW_HEIGHT}px`,
+                border: '1px solid var(--ink-4)',
+                borderRadius: '14px',
+                overflow: 'hidden',
+                background: 'var(--ground-2)',
+              }}
+            />
+            <ViewCube navigator={viewNavigator} />
+          </div>
           <p className="synthetic" role="status" style={{ margin: '8px 0 0' }}>
             {unavailable
               ? t('modelUi.partsPreviewUnavailable')
@@ -198,6 +214,7 @@ const ModelPartsPreview = ({ groups, selectedIds, highlightedGroupId }) => {
           <p className="synthetic" style={{ margin: '4px 0 0' }}>
             {t('modelUi.partsPreviewDimensions', { dimensions: formatModelDimensions(layout.size) })}
           </p>
+          {!unavailable && <NavigationHint />}
         </>
       )}
     </section>

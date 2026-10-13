@@ -1005,6 +1005,54 @@
     max-width: 46ch; margin: 0 auto 18px; text-wrap: balance;
   }
   .proj-blank b { color: var(--ink); font-weight: 700; }
+
+  /* ── the 3D view cube: faces, edges and corners are all places to look from ── */
+  .view-nav {
+    position: absolute; top: 8px; right: 8px; width: 152px; height: 152px;
+    user-select: none; -webkit-user-select: none;
+    /* The viewport behind the cube is the same light paper in both themes, so
+       the cube keeps the light palette too. Following the page theme made it
+       a dark cube with dim lettering on a light canvas. */
+    --card: #ffffff; --ground-2: #f2efe6; --ink-2: #5c594c; --ink-4: #d6d2c2;
+    --accent: #a34f18; --accent-ink: #ffffff;
+  }
+  .view-nav-scene {
+    position: absolute; left: 45px; top: 45px; width: 62px; height: 62px;
+    perspective: 310px;
+  }
+  .view-nav-cube {
+    position: relative; width: 100%; height: 100%; transform-style: preserve-3d;
+  }
+  .view-nav-face {
+    position: absolute; inset: 0; display: grid; gap: 1px;
+    grid-template-columns: .5fr 2fr .5fr; grid-template-rows: .5fr 2fr .5fr;
+    background: var(--ink-4); border: 1px solid var(--ink-4);
+    backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  }
+  .view-nav-cell {
+    display: flex; align-items: center; justify-content: center;
+    min-width: 0; padding: 0; border: 0; cursor: pointer;
+    background: var(--card); color: var(--ink-2);
+    font-size: 7.5px; font-weight: 700; line-height: 1; letter-spacing: .02em; text-transform: uppercase;
+    overflow: hidden;
+  }
+  .view-nav-cell.is-edge, .view-nav-cell.is-corner { background: var(--ground-2); }
+  .view-nav-cell:hover { background: var(--accent); color: var(--accent-ink); }
+  .view-nav-btn {
+    position: absolute; width: 22px; height: 22px; padding: 0;
+    display: flex; align-items: center; justify-content: center;
+    border: 0; border-radius: 50%; cursor: pointer;
+    background: var(--card); color: var(--ink-2);
+    box-shadow: inset 0 0 0 1px var(--ink-4);
+  }
+  .view-nav-btn:hover { background: var(--accent); color: var(--accent-ink); box-shadow: none; }
+  .view-nav-btn.is-up { top: 0; left: 65px; }
+  .view-nav-btn.is-down { bottom: 0; left: 65px; }
+  .view-nav-btn.is-left { left: 0; top: 65px; }
+  .view-nav-btn.is-right { right: 0; top: 65px; }
+  .view-nav-btn.is-home { top: 0; right: 0; width: 20px; height: 20px; }
+  .view-nav-btn.is-pan { bottom: 0; right: 0; width: 20px; height: 20px; }
+  .view-nav-btn[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); box-shadow: none; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

@@ -72,6 +72,35 @@ formats, with one colour per cutlist. The lineup is arranged for inspection;
 it does not preserve assembly placement or reconstruct the assembled CAD model
 in the browser.
 
+### Navigating the view
+
+Both previews can be turned with the mouse: drag to rotate, scroll to zoom, and
+Shift-drag or right-drag to pan. On a touch screen, one finger rotates and two
+fingers pan and zoom. A hint under the preview reminds you of this. A
+navigation cube in the top-right corner shows which way the model is turned and
+gives you quicker ways to move it:
+
+- Click a **face** of the cube to look from the front, back, left, right, top or
+  bottom. Click an **edge** or **corner** to look from between two or three
+  faces. The view flies there instead of jumping.
+- The **arrows** turn the model a quarter turn in the direction they point, the
+  same way as dragging it.
+- The **pan** button (four arrows) makes a plain drag move the model instead of
+  turning it, which helps on a trackpad where right-drag is awkward. Press it
+  again to go back to rotating.
+- The **house** returns to the starting angle, zoom and position, undoing any
+  panning.
+
+The cube keeps its light colours in dark mode, because the 3D view behind it is
+light in both themes.
+
+From a face-on view, the neighbouring faces are edge-on and cannot be clicked.
+Use the cube's edges, the arrows, or the house to move on.
+
+STL files are treated as Z-up, as CAD programs export them, so the front, top
+and side views match your CAD program. The size under the preview is X × Y × Z
+as stored in the file.
+
 !!! note "Uploading doesn't need an account"
     Reading and extracting a model works without signing in. Planning and
     saving the resulting cutlist does.

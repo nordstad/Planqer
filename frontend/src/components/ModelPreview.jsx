@@ -3,6 +3,9 @@ import { useTranslation } from 'react-i18next';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+import ViewCube from './ViewCube';
+import NavigationHint from './NavigationHint';
+import { createCameraNavigator } from '../utils/cameraNavigator';
 import {
   formatModelDimensions,
   inspectStlBuffer,
@@ -24,6 +27,7 @@ const ModelPreview = ({ file }) => {
   const { t } = useTranslation();
   const hostRef = useRef(null);
   const [status, setStatus] = useState({ kind: 'loading' });
+  const [viewNavigator, setViewNavigator] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -31,6 +35,7 @@ const ModelPreview = ({ file }) => {
     let scene;
     let controls;
     let geometry;
+    let navigator;
     let animationFrame;
     let resizeObserver;
     let resizeHandler;
@@ -38,6 +43,7 @@ const ModelPreview = ({ file }) => {
     const cleanup = () => {
       cancelled = true;
       if (animationFrame) cancelAnimationFrame(animationFrame);
+      navigator?.dispose();
       resizeObserver?.disconnect();
       if (resizeHandler) window.removeEventListener('resize', resizeHandler);
       controls?.dispose();
@@ -49,6 +55,7 @@ const ModelPreview = ({ file }) => {
 
     const load = async () => {
       setStatus({ kind: 'loading' });
+      setViewNavigator(null);
       try {
         const buffer = await file.arrayBuffer();
         if (cancelled) return;
@@ -71,8 +78,15 @@ const ModelPreview = ({ file }) => {
         }
 
         geometry.computeBoundingBox();
+        if (!geometry.boundingBox) throw new Error('no-bounds');
+        // Reported as X × Y × Z of the file, whatever way up it is drawn.
+        const fileSize = geometry.boundingBox.getSize(new THREE.Vector3());
+
+        // STL and CAD files are Z-up; the scene is Y-up. Without this a
+        // bench is drawn lying on its side.
+        geometry.rotateX(-Math.PI / 2);
+        geometry.computeBoundingBox();
         const bounds = geometry.boundingBox;
-        if (!bounds) throw new Error('no-bounds');
         const size = bounds.getSize(new THREE.Vector3());
         const center = bounds.getCenter(new THREE.Vector3());
         geometry.translate(-center.x, -center.y, -center.z);
@@ -121,6 +135,12 @@ const ModelPreview = ({ file }) => {
         controls.target.set(0, 0, 0);
         controls.listenToKeyEvents(renderer.domElement);
         controls.update();
+        navigator = createCameraNavigator({
+          camera,
+          controls,
+          panBindings: { mouse: THREE.MOUSE.PAN, touch: THREE.TOUCH.PAN },
+        });
+        setViewNavigator(navigator);
 
         const resize = () => {
           if (!renderer || !host) return;
@@ -146,10 +166,11 @@ const ModelPreview = ({ file }) => {
           animationFrame = requestAnimationFrame(render);
         };
         render();
-        setStatus({ kind: 'ready', dimensions: formatModelDimensions(size) });
+        setStatus({ kind: 'ready', dimensions: formatModelDimensions(fileSize) });
       } catch {
         if (!cancelled) {
           cleanup();
+          setViewNavigator(null);
           setStatus({ kind: 'unavailable' });
         }
       }
@@ -170,26 +191,29 @@ const ModelPreview = ({ file }) => {
 
   return (
     <section aria-label={t('modelUi.previewTitle')} style={{ marginTop: '20px' }}>
-      <div
-        ref={hostRef}
-        role="img"
-        aria-label={status.kind === 'ready'
-          ? t('modelUi.previewCanvasWithDimensions', { dimensions: status.dimensions })
-          : t('modelUi.previewCanvasAria')}
-        style={{
-          height: `${PREVIEW_HEIGHT}px`,
-          border: '1px solid var(--ink-4)',
-          borderRadius: '14px',
-          overflow: 'hidden',
-          background: 'var(--ground-2)',
-          position: 'relative',
-        }}
-      />
+      <div style={{ position: 'relative' }}>
+        <div
+          ref={hostRef}
+          role="img"
+          aria-label={status.kind === 'ready'
+            ? t('modelUi.previewCanvasWithDimensions', { dimensions: status.dimensions })
+            : t('modelUi.previewCanvasAria')}
+          style={{
+            height: `${PREVIEW_HEIGHT}px`,
+            border: '1px solid var(--ink-4)',
+            borderRadius: '14px',
+            overflow: 'hidden',
+            background: 'var(--ground-2)',
+          }}
+        />
+        <ViewCube navigator={viewNavigator} />
+      </div>
       <p className="synthetic" role="status" style={{ margin: '8px 0 0' }}>
         {status.kind === 'ready'
           ? t('modelUi.previewDimensions', { dimensions: status.dimensions })
           : statusMessage}
       </p>
+      {status.kind === 'ready' && <NavigationHint />}
     </section>
   );
 };
