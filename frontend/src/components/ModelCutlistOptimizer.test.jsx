@@ -29,10 +29,11 @@ vi.mock('../contexts/AuthContext', () => ({
 vi.mock('./CatalogPage', () => ({ default: ({ children }) => <div>{children}</div> }));
 
 vi.mock('./ModelPartsPreview', () => ({
-  default: ({ highlightedGroupId, selectedIds }) => (
+  default: ({ highlightedGroupId, highlightedPartKey, selectedIds }) => (
     <div
       data-testid="model-parts-preview"
       data-highlighted-group={highlightedGroupId || ''}
+      data-highlighted-part={highlightedPartKey || ''}
       data-selected-count={selectedIds.size}
     />
   ),
@@ -231,6 +232,36 @@ describe('model preview', () => {
 
     fireEvent.click(within(row).getByRole('checkbox'));
     expect(screen.getByTestId('model-parts-preview')).toHaveAttribute('data-selected-count', '2');
+  });
+
+  it('shades each length in a cutlist and highlights just those parts on hover', async () => {
+    await readBench();
+    fireEvent.click(screen.getAllByRole('button', { name: 'Show lengths' })[0]);
+
+    const breakdown = screen.getByTestId(/^breakdown-board/);
+    const swatches = within(breakdown).getAllByTestId('model-part-swatch');
+    expect(swatches).toHaveLength(2);
+    expect(swatches[0].style.background).not.toBe(swatches[1].style.background);
+
+    const length = within(breakdown).getByText(/1.800 mm × 2/);
+    fireEvent.mouseEnter(length);
+    const preview = screen.getByTestId('model-parts-preview');
+    expect(preview).toHaveAttribute('data-highlighted-group', 'board||95x45');
+    expect(preview).toHaveAttribute('data-highlighted-part', '1800');
+
+    fireEvent.mouseLeave(length);
+    expect(preview).toHaveAttribute('data-highlighted-group', '');
+    expect(preview).toHaveAttribute('data-highlighted-part', '');
+  });
+
+  it('highlights a length from the keyboard too', async () => {
+    await readBench();
+    fireEvent.click(screen.getAllByRole('button', { name: 'Show lengths' })[0]);
+    const length = within(screen.getByTestId(/^breakdown-board/)).getByText(/500 mm × 4/);
+    fireEvent.focus(length);
+    expect(screen.getByTestId('model-parts-preview')).toHaveAttribute('data-highlighted-part', '500');
+    fireEvent.blur(length);
+    expect(screen.getByTestId('model-parts-preview')).toHaveAttribute('data-highlighted-part', '');
   });
 
   it('explains that STEP geometry preview is not available yet', async () => {

@@ -51,7 +51,7 @@ import {
   applySettingsToAll, validateGroupConfig, standaloneHandoff,
 } from '../utils/modelGroups';
 import { loadCatalogue, buildSnapshot } from '../utils/catalogue';
-import { colourForModelGroup } from '../utils/modelPreview';
+import { colourForModelGroup, colourForModelPart, partKey } from '../utils/modelPreview';
 
 const ModelPreview = lazy(() => import('./ModelPreview'));
 const ModelPartsPreview = lazy(() => import('./ModelPartsPreview'));
@@ -94,6 +94,8 @@ const ModelCutlistOptimizer = () => {
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [expandedIds, setExpandedIds] = useState(new Set());
   const [highlightedGroupId, setHighlightedGroupId] = useState(null);
+  // One length within the highlighted cutlist, from its "Show lengths" list.
+  const [highlightedPartKey, setHighlightedPartKey] = useState(null);
   // id -> that cutlist's own name, material, stock, kerf and prices
   const [configs, setConfigs] = useState({});
   const [defaults, setDefaults] = useState({});
@@ -168,6 +170,7 @@ const ModelCutlistOptimizer = () => {
     setSelectedIds(new Set());
     setExpandedIds(new Set());
     setHighlightedGroupId(null);
+    setHighlightedPartKey(null);
     setConfigs({});
     setStatuses({});
     setStatusMessages({});
@@ -248,6 +251,15 @@ const ModelCutlistOptimizer = () => {
   };
   const toggleGroup = toggleIn(setSelectedIds);
   const toggleExpanded = toggleIn(setExpandedIds);
+
+  const highlightPart = (groupId, key) => {
+    setHighlightedGroupId(groupId);
+    setHighlightedPartKey(key);
+  };
+  const clearHighlight = () => {
+    setHighlightedGroupId(null);
+    setHighlightedPartKey(null);
+  };
 
   const updateConfig = (id, patch) => {
     setConfigs((prev) => ({ ...prev, [id]: { ...prev[id], ...patch } }));
@@ -519,6 +531,7 @@ const ModelCutlistOptimizer = () => {
               groups={groups}
               selectedIds={selectedIds}
               highlightedGroupId={highlightedGroupId}
+              highlightedPartKey={highlightedPartKey}
             />
           </Suspense>
 
@@ -615,13 +628,35 @@ const ModelCutlistOptimizer = () => {
                         <td />
                         <td colSpan={4} style={{ textAlign: 'left' }}>
                           <ul className="synthetic" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-                            {group.kind === 'board'
-                              ? group.lengths.map((l) => (
-                                <li key={l.length}>{spaced(l.length)} mm × {l.qty}</li>
-                              ))
-                              : group.sizes.map((sz) => (
-                                <li key={`${sz.length}x${sz.width}`}>{spaced(sz.length)} × {spaced(sz.width)} mm × {sz.qty}</li>
-                              ))}
+                            {(group.kind === 'board' ? group.lengths : group.sizes).map((entry, index, entries) => {
+                              const key = partKey(group, entry);
+                              return (
+                                <li
+                                  key={key}
+                                  tabIndex={0}
+                                  onMouseEnter={() => highlightPart(group.id, key)}
+                                  onMouseLeave={clearHighlight}
+                                  onFocus={() => highlightPart(group.id, key)}
+                                  onBlur={clearHighlight}
+                                >
+                                  <span
+                                    aria-hidden="true"
+                                    data-testid="model-part-swatch"
+                                    style={{
+                                      display: 'inline-block',
+                                      width: '9px',
+                                      height: '9px',
+                                      borderRadius: '2px',
+                                      background: colourForModelPart(group.id, index, entries.length),
+                                      marginRight: '7px',
+                                    }}
+                                  />
+                                  {group.kind === 'board'
+                                    ? <>{spaced(entry.length)} mm × {entry.qty}</>
+                                    : <>{spaced(entry.length)} × {spaced(entry.width)} mm × {entry.qty}</>}
+                                </li>
+                              );
+                            })}
                           </ul>
                         </td>
                       </tr>

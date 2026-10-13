@@ -6,16 +6,16 @@ import ViewCube from './ViewCube';
 import NavigationHint from './NavigationHint';
 import { createCameraNavigator } from '../utils/cameraNavigator';
 import {
-  colourForModelGroup,
   formatModelDimensions,
   layoutModelParts,
 } from '../utils/modelPreview';
 
 const PREVIEW_HEIGHT = 360;
 
-const opacityFor = (groupId, selectedIds, highlightedGroupId) => {
-  if (!selectedIds.has(groupId)) return 0.12;
-  if (highlightedGroupId && highlightedGroupId !== groupId) return 0.24;
+const opacityFor = (part, selectedIds, highlightedGroupId, highlightedPartKey) => {
+  if (!selectedIds.has(part.groupId)) return 0.12;
+  if (highlightedGroupId && highlightedGroupId !== part.groupId) return 0.24;
+  if (highlightedPartKey && highlightedGroupId === part.groupId && highlightedPartKey !== part.key) return 0.3;
   return 1;
 };
 
@@ -28,7 +28,7 @@ const disposeScene = (scene) => {
   });
 };
 
-const ModelPartsPreview = ({ groups, selectedIds, highlightedGroupId }) => {
+const ModelPartsPreview = ({ groups, selectedIds, highlightedGroupId, highlightedPartKey = null }) => {
   const { t } = useTranslation();
   const hostRef = useRef(null);
   const meshesRef = useRef([]);
@@ -87,7 +87,7 @@ const ModelPartsPreview = ({ groups, selectedIds, highlightedGroupId }) => {
       layout.items.forEach((item) => {
         const geometry = new THREE.BoxGeometry(item.length, item.thickness, item.width);
         const material = new THREE.MeshStandardMaterial({
-          color: colourForModelGroup(item.groupId),
+          color: item.colour,
           roughness: 0.72,
           metalness: 0.04,
           transparent: true,
@@ -99,7 +99,7 @@ const ModelPartsPreview = ({ groups, selectedIds, highlightedGroupId }) => {
           item.position.z - center.z,
         );
         scene.add(mesh);
-        meshes.push({ mesh, groupId: item.groupId });
+        meshes.push({ mesh, groupId: item.groupId, key: item.key });
       });
       meshesRef.current = meshes;
 
@@ -165,10 +165,10 @@ const ModelPartsPreview = ({ groups, selectedIds, highlightedGroupId }) => {
   }, [groups, layout, open, t]);
 
   useEffect(() => {
-    meshesRef.current.forEach(({ mesh, groupId }) => {
-      mesh.material.opacity = opacityFor(groupId, selectedIds, highlightedGroupId);
+    meshesRef.current.forEach(({ mesh, groupId, key }) => {
+      mesh.material.opacity = opacityFor({ groupId, key }, selectedIds, highlightedGroupId, highlightedPartKey);
     });
-  }, [highlightedGroupId, selectedIds]);
+  }, [highlightedGroupId, highlightedPartKey, selectedIds]);
 
   return (
     <section aria-label={t('modelUi.partsPreviewTitle')} style={{ marginBottom: '24px' }}>

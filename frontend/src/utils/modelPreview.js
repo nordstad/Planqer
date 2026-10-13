@@ -73,18 +73,51 @@ export const colourForModelGroup = (groupId) => {
   return MODEL_GROUP_COLOURS[hash % MODEL_GROUP_COLOURS.length];
 };
 
+const mixHex = (hex, toward, amount) => {
+  const channel = (colour, shift) => (colour >> shift) & 255;
+  const from = parseInt(hex.slice(1), 16);
+  const mixed = [16, 8, 0].map((shift) => {
+    const a = channel(from, shift);
+    return Math.round(a + (channel(toward, shift) - a) * amount);
+  });
+  return `#${mixed.map((value) => value.toString(16).padStart(2, '0')).join('')}`;
+};
+
+/* A part's colour: its cutlist's hue, shaded by length within that cutlist.
+   Parts of the same length share a shade, and different lengths separate,
+   without needing more hues than people can tell apart. Index 0 is the
+   longest and darkest. A cutlist with a single length keeps its plain hue, the
+   one on its row in the table. */
+export const colourForModelPart = (groupId, shadeIndex = 0, shadeCount = 1) => {
+  const base = colourForModelGroup(groupId);
+  if (shadeCount <= 1) return base;
+  const offset = -0.3 + (shadeIndex / (shadeCount - 1)) * 0.7;
+  return offset < 0 ? mixHex(base, 0x000000, -offset) : mixHex(base, 0xffffff, offset);
+};
+
+/* What makes two entries of a cutlist the same part. */
+export const partKey = (group, entry) => (
+  group.kind === 'board' ? String(entry.length) : `${entry.length}x${entry.width}`
+);
+
 const dimensionsOf = (group, entry) => ({
   length: Number(entry.length),
   width: Number(group.kind === 'board' ? group.width : entry.width),
   thickness: Number(group.thickness),
 });
 
-const entriesOf = (group) => (group.kind === 'board' ? group.lengths : group.sizes)
-  .map((entry) => ({
-    ...dimensionsOf(group, entry),
-    quantity: Math.max(0, Math.floor(Number(entry.qty) || 0)),
-  }))
-  .filter((entry) => entry.length > 0 && entry.width > 0 && entry.thickness > 0 && entry.quantity > 0);
+const entriesOf = (group) => {
+  const entries = group.kind === 'board' ? group.lengths : group.sizes;
+  return entries
+    .map((entry, index) => ({
+      ...dimensionsOf(group, entry),
+      quantity: Math.max(0, Math.floor(Number(entry.qty) || 0)),
+      key: partKey(group, entry),
+      shadeIndex: index,
+      shadeCount: entries.length,
+    }))
+    .filter((entry) => entry.length > 0 && entry.width > 0 && entry.thickness > 0 && entry.quantity > 0);
+};
 
 export const layoutModelParts = (
   groups,
@@ -108,6 +141,7 @@ export const layoutModelParts = (
         instance: index,
         displayedQuantity: source.quantity,
         aggregated,
+        colour: colourForModelPart(source.groupId, source.shadeIndex, source.shadeCount),
       });
     }
   });
