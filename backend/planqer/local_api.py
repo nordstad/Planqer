@@ -17,8 +17,15 @@ from collections.abc import Callable
 from pydantic import ValidationError
 
 from planqer.errors import PlanqerError
-from planqer.schemas import PlanqerRequest, PlanqerResponse
+from planqer.schemas import (
+    PlanqerRequest,
+    PlanqerResponse,
+    SheetOptimizationRequest,
+    TileLayoutRequest,
+)
 from planqer.services import normalize_optimization_options, run_optimization
+from planqer.sheet_services import run_sheet_optimization
+from planqer.tile_services import run_tile_layout
 
 logger = logging.getLogger("planqer.local_api")
 
@@ -49,8 +56,32 @@ def _cutting_plan(payload: dict) -> dict:
     return result.model_dump(mode="json")
 
 
+def _sheet_optimization(payload: dict) -> dict:
+    request = SheetOptimizationRequest.model_validate(payload)
+    try:
+        result = run_sheet_optimization(request)
+    except PlanqerError:
+        raise
+    except Exception as exc:
+        raise PlanqerError(400, f"Sheet optimization failed: {exc!s}") from exc
+    return result.model_dump(mode="json")
+
+
+def _tile_layout(payload: dict) -> dict:
+    request = TileLayoutRequest.model_validate(payload)
+    try:
+        result = run_tile_layout(request)
+    except ValueError as exc:
+        raise PlanqerError(400, str(exc)) from exc
+    except Exception as exc:
+        raise PlanqerError(400, f"Tile layout failed: {exc!s}") from exc
+    return result.model_dump(mode="json")
+
+
 OPERATIONS: dict[str, Callable[[dict], dict]] = {
     "cutting_plan": _cutting_plan,
+    "sheet_optimization": _sheet_optimization,
+    "tile_layout": _tile_layout,
 }
 
 

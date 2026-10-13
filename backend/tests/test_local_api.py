@@ -116,3 +116,83 @@ def test_an_unknown_operation_is_reported_not_raised():
 
     assert status == 404
     assert "make_coffee" in body["detail"]
+
+
+SHEET_REQUEST = {
+    "parts": {
+        "side": {"width": 600, "height": 400, "quantity": 4},
+        "shelf": {"width": 800, "height": 300, "quantity": 3},
+        "back": {"width": 500, "height": 500, "quantity": 2},
+    },
+    "sheet_width": 2440,
+    "sheet_height": 1220,
+    "kerf_width": 3.0,
+    "material_type": "plywood",
+    "project_name": "Cabinet",
+}
+
+
+@pytest.mark.api
+@pytest.mark.parametrize("algorithm", ["bottom_left_fill", "guillotine_cut"])
+def test_sheet_optimization_matches_the_http_endpoint(algorithm):
+    payload = {**SHEET_REQUEST, "algorithm": algorithm}
+
+    http = client.post("/api/sheet-optimization", json=payload)
+    status, body = call("sheet_optimization", payload)
+
+    assert status == http.status_code == 200
+    assert body["sheet_visualizations"]
+    assert without_timing(body) == without_timing(http.json())
+
+
+@pytest.mark.api
+def test_sheet_optimization_errors_match_the_http_endpoint():
+    payload = {
+        **SHEET_REQUEST,
+        "parts": {"huge": {"width": 4000, "height": 4000, "quantity": 1}},
+        "algorithm": "bottom_left_fill",
+    }
+
+    http = client.post("/api/sheet-optimization", json=payload)
+    status, body = call("sheet_optimization", payload)
+
+    assert status == http.status_code == 400
+    assert body == http.json()
+
+
+TILE_REQUEST = {
+    "surface_width": 1500,
+    "surface_height": 1200,
+    "tile": {"width": 600, "height": 300, "allow_rotation": True},
+    "joint": {"joint_width": 3, "perimeter_gap": 5},
+    "bond": {"pattern": "running", "offset_fraction": 0.5},
+    "candidate_count": 3,
+    "project_name": "Bathroom",
+}
+
+
+@pytest.mark.api
+@pytest.mark.parametrize("pattern", ["stack", "running", "herringbone"])
+def test_tile_layout_matches_the_http_endpoint(pattern):
+    payload = {**TILE_REQUEST, "bond": {"pattern": pattern, "offset_fraction": 0.5}}
+
+    http = client.post("/api/tile-layout", json=payload)
+    status, body = call("tile_layout", payload)
+
+    assert status == http.status_code == 200
+    assert body["candidates"]
+    assert without_timing(body) == without_timing(http.json())
+
+
+@pytest.mark.api
+def test_tile_layout_errors_match_the_http_endpoint():
+    payload = {
+        **TILE_REQUEST,
+        "cutouts": [{"x": 0, "y": 0, "width": 1500, "height": 1200}],
+    }
+
+    http = client.post("/api/tile-layout", json=payload)
+    status, body = call("tile_layout", payload)
+
+    assert status == http.status_code == 400
+    assert body == http.json()

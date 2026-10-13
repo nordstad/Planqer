@@ -93,3 +93,45 @@ def test_a_cutting_plan_runs_without_the_server_stack():
     )
 
     assert result.returncode == 0, result.stderr.strip().splitlines()[-1]
+
+
+def test_a_sheet_plan_runs_without_the_server_stack():
+    result = run_without_the_server_stack(
+        """
+        import json
+        from planqer.local_api import handle
+
+        request = {
+            "parts": {"side": {"width": 600, "height": 400, "quantity": 2}},
+            "sheet_width": 2440,
+            "sheet_height": 1220,
+            "algorithm": "guillotine_cut",
+        }
+        reply = json.loads(handle("sheet_optimization", json.dumps(request)))
+        assert reply["status"] == 200, reply
+        assert reply["body"]["total_sheets"] == 1
+        """
+    )
+
+    assert result.returncode == 0, result.stderr.strip().splitlines()[-1]
+
+
+def test_a_tile_layout_runs_without_the_server_stack():
+    result = run_without_the_server_stack(
+        """
+        import json
+        from planqer.local_api import handle
+
+        request = {
+            "surface_width": 1500,
+            "surface_height": 1200,
+            "tile": {"width": 600, "height": 300},
+            "candidate_count": 2,
+        }
+        reply = json.loads(handle("tile_layout", json.dumps(request)))
+        assert reply["status"] == 200, reply
+        assert reply["body"]["candidates"]
+        """
+    )
+
+    assert result.returncode == 0, result.stderr.strip().splitlines()[-1]
