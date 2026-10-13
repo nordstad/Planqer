@@ -113,6 +113,8 @@ def main() -> None:
     database = Path(tempfile.mkdtemp()) / "contract.db"
     os.environ["DATABASE_URL"] = f"sqlite+aiosqlite:///{database}"
     os.environ["PLANQER_SETUP_SECRET"] = "test-setup-secret"
+    # Without this the app writes data/.secret_key into the working directory.
+    os.environ["SECRET_KEY"] = "contract-transcripts-throwaway-key-not-a-secret"
     sys.path.insert(0, str(ROOT / "backend"))
 
     from fastapi.testclient import TestClient
