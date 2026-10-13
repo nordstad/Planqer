@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import CatalogPage from './CatalogPage';
 import { BoardIcon, SheetIcon, CubeIcon, TileIcon, ArrowRight } from './icons';
 import { getHealth, getLatestRelease } from '../utils/api';
-import { demoContext } from '../utils/mode';
+import { demoContext, isStaticMode } from '../utils/mode';
 import packageJson from '../../package.json';
 
 // Compares two dotted version strings, e.g. isNewer('0.2.0', '0.1.0') -> true
@@ -152,7 +152,7 @@ const HomePage = () => {
       </div>
     </div>
 
-    <footer className="hp-footer">
+    {!isStaticMode() && <footer className="hp-footer">
       <div>
          <Link to="/help">{t('home.helpDocumentation')}</Link>
         <a href="https://github.com/nordstad/Planqer" target="_blank" rel="noopener noreferrer">
@@ -173,7 +173,7 @@ const HomePage = () => {
           </>
         )}
       </span>
-    </footer>
+    </footer>}
   </CatalogPage>
   );
 };

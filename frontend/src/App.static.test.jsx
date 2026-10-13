@@ -7,6 +7,7 @@ vi.mock('./utils/api', async () => ({
 }));
 
 const renderAtHash = async (hash) => {
+  localStorage.setItem('planqer.demo.welcomed', '1');
   vi.stubEnv('VITE_PLANQER_MODE', 'static');
   window.history.pushState({}, '', '/');
   window.location.hash = hash;
@@ -48,4 +49,11 @@ it('talks about this browser, not an account or an instance', async () => {
   await screen.findByRole('heading', { level: 1 });
   expect(screen.getByText(/saved in this browser/i)).toBeInTheDocument();
   expect(screen.queryByText(/local account|this instance/i)).not.toBeInTheDocument();
+});
+
+it('wraps the app in the demo notice and footer', async () => {
+  await renderAtHash('#/');
+  await screen.findByRole('heading', { level: 1 });
+  expect(screen.getByRole('region', { name: 'Demo notice' })).toBeInTheDocument();
+  expect(screen.getAllByRole('contentinfo')).toHaveLength(1);
 });

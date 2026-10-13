@@ -474,6 +474,27 @@ Object.assign(locale, {
     saveLocalHint: "Behold «{{text}}» som et produkt alle på denne instansen kan søke etter.",
   },
   demo: {
+    banner: {
+      region: "Demomelding",
+      message: "Du bruker Planqer-demoen, lettversjonen. For kontoer, prosjekter på din egen server, API og MCP, kjør fullversjonen.",
+      cta: "Få fullversjonen",
+      dismiss: "Lukk",
+    },
+    welcome: {
+      title: "Velkommen til Planqer-demoen",
+      light: "Dette er lettversjonen av Planqer. Den kjører helt i nettleseren din. For alle funksjoner (kontoer, lagrede prosjekter på din egen server, MCP, API), kjør fullversjonen med Docker Compose.",
+      data: "Prosjektene dine lagres bare i denne nettleseren på denne enheten. De lastes ikke opp noe sted. Hvis du sletter nettleserdata, forsvinner de.",
+      phones: "Demoen er laget for datamaskiner. Den kan være treg eller begrenset på mobil.",
+      cta: "Få fullversjonen",
+      start: "Greit",
+    },
+    footer: {
+      label: "Planqer-demo · lettversjon",
+      about: "Om denne demoen",
+      full: "Fullversjon",
+      docs: "Dokumentasjon",
+      source: "Kildekode på GitHub",
+    },
     solver: {
       loadingEngine: "Laster beregningsmotoren. Dette skjer bare én gang og kan ta litt tid.",
       loadingModels: "Laster støtte for 3D-modeller. Dette skjer bare én gang og kan ta litt tid.",

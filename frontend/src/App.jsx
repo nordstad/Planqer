@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { Fragment, lazy, Suspense } from 'react';
 import { Navigate, Route, BrowserRouter, HashRouter, Routes } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { LanguageProvider } from './contexts/LanguageContext';
@@ -16,6 +16,7 @@ const HelpPage = lazy(() => import('./components/Help'));
 const UserDashboard = lazy(() => import('./components/UserDashboard'));
 // Compared inline, not through isStaticMode(): only a literal comparison lets
 // the bundler drop the runtime from a normal build.
+const DemoShell = import.meta.env.VITE_PLANQER_MODE === 'static' ? lazy(() => import('./components/demo/DemoShell')) : null;
 const SolverStatus = import.meta.env.VITE_PLANQER_MODE === 'static' ? lazy(() => import('./components/SolverStatus')) : null;
 
 const App = () => {
@@ -23,11 +24,13 @@ const App = () => {
   // GitHub Pages cannot rewrite a reloaded deep link to index.html, so the demo
   // keeps its route after the # where the server never sees it.
   const Router = demo ? HashRouter : BrowserRouter;
+  const Shell = demo ? DemoShell : Fragment;
   return (
     <LanguageProvider>
       <AuthProvider>
         <Router>
           <Suspense fallback={<div>Loading…</div>}>
+            <Shell>
             <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/cutting" element={<ProtectedRoute fallbackMessage="access.board"><CuttingOptimizer /></ProtectedRoute>} />
@@ -43,6 +46,7 @@ const App = () => {
             <Route path="/dashboard/project/:groupId" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
             {!demo && <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />}
             </Routes>
+            </Shell>
           </Suspense>
           {demo && <Suspense fallback={null}><SolverStatus /></Suspense>}
         </Router>

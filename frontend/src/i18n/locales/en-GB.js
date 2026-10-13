@@ -396,6 +396,27 @@ Object.assign(locale, {
     saveLocalHint: "Keep “{{text}}” as a product everyone on this instance can search for.",
   },
   demo: {
+    banner: {
+      region: "Demo notice",
+      message: "You are using the Planqer demo, the light version. For accounts, projects on your own server, the API and MCP, run the full version.",
+      cta: "Get the full version",
+      dismiss: "Dismiss",
+    },
+    welcome: {
+      title: "Welcome to the Planqer demo",
+      light: "This is the light version of Planqer. It runs entirely in your browser. For all features (accounts, saved projects on your own server, MCP, API), run the full version with Docker Compose.",
+      data: "Your projects are saved only in this browser on this device. They are not uploaded anywhere. Clearing browser data deletes them.",
+      phones: "The demo is designed for computers. It may be slow or limited on phones.",
+      cta: "Get the full version",
+      start: "Got it",
+    },
+    footer: {
+      label: "Planqer demo · light version",
+      about: "About this demo",
+      full: "Full version",
+      docs: "Documentation",
+      source: "Source on GitHub",
+    },
     solver: {
       loadingEngine: "Loading the calculation engine. This happens once and can take a moment.",
       loadingModels: "Loading 3D model support. This happens once and can take a moment.",
