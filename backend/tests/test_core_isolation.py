@@ -36,14 +36,13 @@ CORE_MODULES = [
     "planqer.services",
     "planqer.threed_cutlist",
     "planqer.step_cutlist",
+    "planqer.local_api",
 ]
 
 
-@pytest.mark.parametrize("module", CORE_MODULES)
-def test_core_module_imports_without_the_server_stack(module):
+def run_without_the_server_stack(code: str) -> subprocess.CompletedProcess:
     script = textwrap.dedent(
         f"""
-        import importlib
         import importlib.abc
         import sys
 
@@ -55,16 +54,42 @@ def test_core_module_imports_without_the_server_stack(module):
                     raise ImportError("server-only module imported: " + name)
 
         sys.meta_path.insert(0, BlockServerStack())
-        importlib.import_module({module!r})
         """
-    )
+    ) + textwrap.dedent(code)
 
-    result = subprocess.run(
+    return subprocess.run(
         [sys.executable, "-c", script],
         cwd=BACKEND_DIR,
         capture_output=True,
         text=True,
         check=False,
+    )
+
+
+@pytest.mark.parametrize("module", CORE_MODULES)
+def test_core_module_imports_without_the_server_stack(module):
+    result = run_without_the_server_stack(
+        f"import importlib; importlib.import_module({module!r})"
+    )
+
+    assert result.returncode == 0, result.stderr.strip().splitlines()[-1]
+
+
+def test_a_cutting_plan_runs_without_the_server_stack():
+    result = run_without_the_server_stack(
+        """
+        import json
+        from planqer.local_api import handle
+
+        request = {
+            "parts": {"100": 2, "50": 2},
+            "available_board_lengths": [200],
+            "algorithm": "first_fit_decreasing",
+        }
+        reply = json.loads(handle("cutting_plan", json.dumps(request)))
+        assert reply["status"] == 200, reply
+        assert reply["body"]["optimal_board_length"] == 200
+        """
     )
 
     assert result.returncode == 0, result.stderr.strip().splitlines()[-1]

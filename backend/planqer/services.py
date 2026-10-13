@@ -5,10 +5,15 @@ from collections import Counter
 from contextlib import contextmanager
 from dataclasses import dataclass
 
-from planqer.algorithms import OptimizationAlgorithm, optimize_cutting
+from planqer.algorithms import (
+    OptimizationAlgorithm,
+    get_algorithm_recommendation,
+    optimize_cutting,
+)
 from planqer.cache import get_cached_optimization
 from planqer.cost_calculator import apply_bulk_discount, calculate_cost_analysis
 from planqer.errors import PlanqerError
+from planqer.schemas import PlanqerRequest
 from planqer.svg_visualization import generate_cut_list_image
 
 
@@ -202,6 +207,52 @@ def _calculate_plan_cost(board_plans: list[BoardPlan], board_costs: dict) -> flo
             * quantity
         )
     return total_cost
+
+
+def normalize_optimization_options(planqer_request: PlanqerRequest):
+    """Normalize solver options once for sync and background execution."""
+    algorithm = (
+        OptimizationAlgorithm(planqer_request.algorithm)
+        if planqer_request.algorithm
+        else get_algorithm_recommendation(planqer_request.parts)
+    )
+    if planqer_request.cost_analysis and planqer_request.cost_analysis.get("enabled"):
+        analysis = planqer_request.cost_analysis
+        costs = {
+            float(length): {
+                "price_per_board": data.get("price_per_board", 0.0),
+                "supplier": "default",
+                "bulk_discount": 0.0,
+                "minimum_quantity": 1,
+            }
+            for length, data in (
+                analysis.get("board_costs", {}) or analysis.get("boardCosts", {})
+            ).items()
+        }
+        return (
+            algorithm,
+            costs,
+            analysis.get("currency", "SEK"),
+            True,
+            analysis.get("optimizeFor", "waste"),
+        )
+
+    costs = {
+        float(key): {
+            "price_per_board": value.price_per_board,
+            "supplier": value.supplier,
+            "bulk_discount": value.bulk_discount,
+            "minimum_quantity": value.minimum_quantity,
+        }
+        for key, value in planqer_request.board_costs.items()
+    }
+    return (
+        algorithm,
+        costs,
+        planqer_request.currency,
+        planqer_request.enable_cost_analysis,
+        "waste",
+    )
 
 
 def run_optimization(
