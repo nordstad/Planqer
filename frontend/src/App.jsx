@@ -17,6 +17,7 @@ const UserDashboard = lazy(() => import('./components/UserDashboard'));
 // Compared inline, not through isStaticMode(): only a literal comparison lets
 // the bundler drop the runtime from a normal build.
 const DemoShell = import.meta.env.VITE_PLANQER_MODE === 'static' ? lazy(() => import('./components/demo/DemoShell')) : null;
+const DemoCatalogue = import.meta.env.VITE_PLANQER_MODE === 'static' ? lazy(() => import('./components/demo/DemoCatalogue')) : null;
 const SolverStatus = import.meta.env.VITE_PLANQER_MODE === 'static' ? lazy(() => import('./components/SolverStatus')) : null;
 
 const App = () => {
@@ -44,6 +45,7 @@ const App = () => {
             {/* A project is a place, so it gets an address: back, refresh and a
                 shared link all land where the user was. */}
             <Route path="/dashboard/project/:groupId" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
+            {DemoCatalogue && <Route path="/catalogue" element={<DemoCatalogue />} />}
             {!demo && <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />}
             </Routes>
             </Shell>

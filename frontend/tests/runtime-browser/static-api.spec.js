@@ -141,3 +141,71 @@ test("deleting a group in the browser removes its projects, and a missing one sa
   expect(outcome.remaining).toBe(0);
   expect(outcome.message).toBe("Project not found");
 });
+
+test("the user's own catalogue entries are edited, kept and shown in the picker", async ({ page }) => {
+  const result = await page.evaluate(async () => {
+    const { api } = window;
+    // As if the user had chosen Sweden in the catalogue selector.
+    localStorage.setItem("planqer-catalogue-country-v1", "SE");
+    const ids = (list) => list.data.products.map((product) => product.id);
+    const entry = {
+      type: "regel", thickness: 48, width: 98, lengths: [2400, 3000], grades: ["C24"],
+      species: ["spruce"], sources: ["https://www.traguiden.se/example"], note: "Local stock",
+    };
+
+    const before = ids(await api.getCatalogue(undefined, "SE"));
+    const created = await api.createCatalogueEntry(entry);
+    const afterAdd = ids(await api.getCatalogue(undefined, "SE"));
+
+    const duplicate = await api.createCatalogueEntry(entry).then(() => null, (error) => error.message);
+    const builtIn = await api
+      .createCatalogueEntry({ ...entry, thickness: 45, width: 95 })
+      .then(() => null, (error) => error.message);
+
+    await api.hideCatalogueEntry("se:regel:45x95");
+    const hidden = ids(await api.getCatalogue(undefined, "SE"));
+    const listed = (await api.getAdminCatalogue()).find((item) => item.product.id === "se:regel:45x95");
+
+    await api.resetCatalogueEntry("se:regel:45x95");
+    await api.resetCatalogueEntry(created.product.id);
+    const afterReset = ids(await api.getCatalogue(undefined, "SE"));
+
+    return { before, created, afterAdd, duplicate, builtIn, hidden, listedHidden: listed.hidden, afterReset };
+  });
+
+  expect(result.created).toMatchObject({ origin: "local", hidden: false });
+  expect(result.created.product.id).toBe("local:regel:48x98");
+  expect(result.afterAdd).toContain("local:regel:48x98");
+  expect(result.afterAdd.length).toBe(result.before.length + 1);
+  expect(result.duplicate).toBe("This product already exists; edit it instead");
+  expect(result.builtIn).toBe("This product is already built in; edit it instead");
+  expect(result.hidden).not.toContain("se:regel:45x95");
+  expect(result.listedHidden).toBe(true);
+  expect(result.afterReset).toEqual(result.before);
+});
+
+test("the user's own catalogue entries survive a reload and are in the backup", async ({ page }) => {
+  await page.evaluate(() => {
+    localStorage.setItem("planqer-catalogue-country-v1", "SE");
+    return window.api.createCatalogueEntry({
+      type: "regel", thickness: 48, width: 98, lengths: [2400], grades: ["C24"],
+      species: ["spruce"], sources: ["https://www.traguiden.se/example"],
+    });
+  });
+
+  await page.reload();
+  await page.waitForFunction(() => window.apiReady === true);
+
+  const result = await page.evaluate(async () => {
+    const { backupExport } = await import("/src/runtime/localBackend.js");
+    const list = await window.api.getAdminCatalogue();
+    const backup = await backupExport();
+    return {
+      local: list.filter((item) => item.origin === "local").map((item) => item.product.id),
+      inBackup: backup.stores.catalogue_entries.map((entry) => entry.product_id),
+    };
+  });
+
+  expect(result.local).toEqual(["local:regel:48x98"]);
+  expect(result.inBackup).toEqual(["local:regel:48x98"]);
+});

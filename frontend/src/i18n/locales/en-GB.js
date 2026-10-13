@@ -340,7 +340,7 @@ Object.assign(locale, {
   },
   catalogueAdmin: {
     tab: { users: "Users", catalogue: "Catalogue" },
-    intro: "The product catalogue this instance serves ({{country}}). Changes here are stored in this instance only; the built-in data is never edited, and hidden or changed built-in entries can be restored.",
+    intro: "The product catalogue this instance serves ({{country}}). Changes here are stored in this instance only; the built-in data is never edited, and hidden or changed built-in entries can be restored.", intro_demo: "The product catalogue the demo shows ({{country}}). Changes here are saved in this browser only; the built-in data is never edited, and hidden or changed built-in entries can be restored.",
     genericCountry: "generic",
     search: "Search products",
     show: "Show",
@@ -356,7 +356,7 @@ Object.assign(locale, {
     suggest: "Suggest to Planqer",
     empty: "No products match.",
     narrow: "Showing the first 200 matches. Narrow the search to see others.",
-    deleteConfirm: "Delete {{name}} from this instance's catalogue? Saved plans keep their own copy.",
+    deleteConfirm: "Delete {{name}} from this instance's catalogue? Saved plans keep their own copy.", deleteConfirm_demo: "Delete {{name}} from your catalogue? Saved plans keep their own copy.",
     revertConfirm: "Revert {{name}} to the built-in data and show it again?",
     addTitle: "Add product",
     editTitle: "Edit product",
@@ -393,9 +393,12 @@ Object.assign(locale, {
     sourceRequired: "Add an https:// link to where this product is documented, so it can be checked.",
     sourceFromType: "Taken from the built-in {{type}} products.",
     saveLocal: "Save to local catalogue",
-    saveLocalHint: "Keep “{{text}}” as a product everyone on this instance can search for.",
+    saveLocalHint: "Keep “{{text}}” as a product everyone on this instance can search for.", saveLocalHint_demo: "Keep “{{text}}” as a product you can search for in this browser.",
   },
   demo: {
+    catalogue: {
+      title: "My products",
+    },
     backup: {
       title: "Back up your projects",
       intro: "Your projects are stored only in this browser on this device. Export a backup file to keep them safe, or to move them to another browser.",

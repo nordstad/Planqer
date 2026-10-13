@@ -8,6 +8,7 @@ import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createCatalogueEntry } from '../utils/api';
 import { FREE_TEXT_TYPE, labelIn, typesOfKind } from '../utils/catalogue';
+import { demoContext } from '../utils/mode';
 
 const finite = (value) => (Number.isFinite(value) ? String(value) : '');
 
@@ -55,7 +56,7 @@ const SaveToCatalogue = ({ catalogue, kind, dims, text, onSaved }) => {
   const types = typesOfKind(catalogue, kind).filter((entry) => entry.key !== FREE_TEXT_TYPE[kind]);
   return (
     <div className="synthetic" role="group" aria-label={t('catalogueAdmin.saveLocal')} style={{ marginTop: '8px', display: 'grid', gap: '8px', whiteSpace: 'normal' }}>
-      <p>{t('catalogueAdmin.saveLocalHint', { text })}</p>
+      <p>{t('catalogueAdmin.saveLocalHint', { text, ...demoContext() })}</p>
       <div style={{ display: 'grid', gap: '8px', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))' }}>
         <div>
           <label className="form-label" htmlFor={`${idBase}-type`}>{t('catalogueAdmin.type')}</label>

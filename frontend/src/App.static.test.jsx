@@ -3,6 +3,8 @@ import { act, render, screen } from '@testing-library/react';
 vi.mock('./utils/api', async () => ({
   ...(await vi.importActual('./utils/api')),
   getUserSettings: vi.fn().mockResolvedValue({}),
+  getAdminCatalogue: vi.fn().mockResolvedValue([]),
+  getCatalogue: vi.fn().mockResolvedValue({ data: { types: [], details: { species: [], treatment: [], profile: [] }, products: [] } }),
   updateUserSettings: vi.fn().mockResolvedValue({}),
 }));
 
@@ -68,4 +70,17 @@ it('wraps the app in the demo notice and footer', async () => {
 it('offers a backup on the project page', async () => {
   await renderAtHash('#/dashboard');
   expect(await screen.findByRole('button', { name: 'Export backup' })).toBeInTheDocument();
+});
+
+it('links to the user\'s own products instead of an admin page', async () => {
+  await renderAtHash('#/');
+  await screen.findByRole('heading', { level: 1 });
+  expect(screen.getByRole('link', { name: 'My products' })).toHaveAttribute('href', expect.stringContaining('/catalogue'));
+  expect(screen.queryByRole('link', { name: 'Admin' })).not.toBeInTheDocument();
+});
+
+it('lets the user edit the catalogue, in words about this browser', async () => {
+  await renderAtHash('#/catalogue');
+  expect(await screen.findByText(/saved in this browser only/i)).toBeInTheDocument();
+  expect(screen.queryByText(/this instance/i)).not.toBeInTheDocument();
 });

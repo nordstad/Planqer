@@ -418,7 +418,7 @@ Object.assign(locale, {
   },
   catalogueAdmin: {
     tab: { users: "Brukere", catalogue: "Katalog" },
-    intro: "Produktkatalogen denne instansen viser ({{country}}). Endringer lagres bare på denne instansen; de innebygde dataene endres aldri, og skjulte eller endrede innebygde oppføringer kan gjenopprettes.",
+    intro: "Produktkatalogen denne instansen viser ({{country}}). Endringer lagres bare på denne instansen; de innebygde dataene endres aldri, og skjulte eller endrede innebygde oppføringer kan gjenopprettes.", intro_demo: "Produktkatalogen demoen viser ({{country}}). Endringer her lagres bare i denne nettleseren; de innebygde dataene endres aldri, og skjulte eller endrede innebygde oppføringer kan gjenopprettes.",
     genericCountry: "generisk",
     search: "Søk i produkter",
     show: "Vis",
@@ -434,7 +434,7 @@ Object.assign(locale, {
     suggest: "Foreslå til Planqer",
     empty: "Ingen produkter samsvarer.",
     narrow: "Viser de første 200 treffene. Snevre inn søket for å se flere.",
-    deleteConfirm: "Slette {{name}} fra denne instansens katalog? Lagrede planer beholder sin egen kopi.",
+    deleteConfirm: "Slette {{name}} fra denne instansens katalog? Lagrede planer beholder sin egen kopi.", deleteConfirm_demo: "Slette {{name}} fra katalogen din? Lagrede planer beholder sin egen kopi.",
     revertConfirm: "Tilbakestille {{name}} til innebygde data og vise den igjen?",
     addTitle: "Legg til produkt",
     editTitle: "Rediger produkt",
@@ -471,9 +471,12 @@ Object.assign(locale, {
     sourceRequired: "Legg til en https://-lenke til der produktet er beskrevet, slik at det kan kontrolleres.",
     sourceFromType: "Hentet fra de innebygde produktene av typen {{type}}.",
     saveLocal: "Lagre i lokal katalog",
-    saveLocalHint: "Behold «{{text}}» som et produkt alle på denne instansen kan søke etter.",
+    saveLocalHint: "Behold «{{text}}» som et produkt alle på denne instansen kan søke etter.", saveLocalHint_demo: "Behold «{{text}}» som et produkt du kan søke etter i denne nettleseren.",
   },
   demo: {
+    catalogue: {
+      title: "Mine produkter",
+    },
     backup: {
       title: "Sikkerhetskopier prosjektene dine",
       intro: "Prosjektene dine lagres bare i denne nettleseren på denne enheten. Eksporter en sikkerhetskopi for å holde dem trygge, eller for å flytte dem til en annen nettleser.",

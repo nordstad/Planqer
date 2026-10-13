@@ -47,9 +47,11 @@ const CatalogPage = ({ children }) => {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const demo = isStaticMode();
 
-  const navLinks = user?.is_admin
-    ? [...BASE_NAV_LINKS, { path: '/admin', label: 'common.admin' }]
-    : BASE_NAV_LINKS;
+  const navLinks = demo
+    ? [...BASE_NAV_LINKS, { path: '/catalogue', label: 'demo.catalogue.title' }]
+    : user?.is_admin
+      ? [...BASE_NAV_LINKS, { path: '/admin', label: 'common.admin' }]
+      : BASE_NAV_LINKS;
 
   return (
     <div className="cat-page">
