@@ -14,6 +14,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from alembic import command as alembic_command
 from planqer import __version__
 from planqer.async_processing import start_periodic_cleanup
+from planqer.errors import PlanqerError
 from planqer.helpers import load_config
 from planqer.logging_config import configure_structured_logging, get_logger
 from planqer.routes import (
@@ -129,6 +130,11 @@ async def custom_rate_limit_exceeded_handler(
             else 60,
         },
     )
+
+
+@app.exception_handler(PlanqerError)
+async def planqer_error_handler(_: Request, exc: PlanqerError) -> JSONResponse:
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):

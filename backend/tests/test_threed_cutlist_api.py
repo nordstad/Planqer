@@ -292,3 +292,50 @@ def test_3d_cutlist_project_name_sanitization(client):
         assert (
             "Test" in result["project_name"] and "Project" in result["project_name"]
         )  # Safe content preserved
+
+
+@pytest.mark.parametrize(
+    ("url", "filename", "content", "status", "detail"),
+    [
+        (
+            "/api/3d-cutlist",
+            "notes.txt",
+            b"x",
+            400,
+            "File must be an STL file (.stl extension)",
+        ),
+        (
+            "/api/3d-cutlist",
+            "broken.stl",
+            b"this is not an stl",
+            400,
+            "Failed to load STL file: STL file contains empty mesh",
+        ),
+        (
+            "/api/step-cutlist",
+            "notes.txt",
+            b"x",
+            400,
+            "File must be a STEP file (.step or .stp extension)",
+        ),
+        (
+            "/api/step-cutlist",
+            "broken.step",
+            b"this is not a step file",
+            400,
+            (
+                "That file has no ISO-10303-21 header, so it is not a STEP file. "
+                "Export it again as STEP (.step or .stp) from your CAD tool."
+            ),
+        ),
+    ],
+)
+def test_rejected_model_uploads_keep_their_status_and_message(
+    client, url, filename, content, status, detail
+):
+    files = {"file": (filename, content, "application/octet-stream")}
+
+    response = client.post(url, files=files)
+
+    assert response.status_code == status
+    assert response.json() == {"detail": detail}

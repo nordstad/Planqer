@@ -209,3 +209,42 @@ def test_async_task_progress_is_sent_over_websocket():
     assert progress["task_id"] == task_id
     assert progress["status"] == "completed"
     task_manager._tasks.pop(task_id, None)
+
+
+@pytest.mark.parametrize(
+    ("extra", "message"),
+    [
+        (
+            {"available_board_lengths": [300], "parts": {"500": 1}},
+            "No board is long enough for the largest part.",
+        ),
+        (
+            {
+                "cost_analysis": {
+                    "enabled": True,
+                    "optimizeFor": "cost",
+                    "boardCosts": {},
+                }
+            },
+            "Prices are required when optimizing for cost.",
+        ),
+    ],
+)
+def test_calculation_errors_keep_their_status_and_message(extra, message):
+    payload = {
+        "parts": {"100": 1},
+        "available_board_lengths": [200],
+        "saw_blade_width": 3.0,
+        **extra,
+    }
+
+    sync = client.post("/api/cutting-plans", json=payload)
+    started = client.post("/api/cutting-plans/async", json=payload)
+
+    assert sync.status_code == 400
+    assert sync.json() == {"detail": message}
+    assert started.status_code == 200
+    task = client.get(started.json()["progress_url"]).json()
+    assert task["status"] == "failed"
+    assert task["error_message"] == f"400: {message}"
+    task_manager._tasks.pop(started.json()["task_id"], None)

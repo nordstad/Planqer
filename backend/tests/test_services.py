@@ -1,9 +1,9 @@
 import logging
 
 import pytest
-from fastapi import HTTPException
 
 from planqer.algorithms import OptimizationAlgorithm
+from planqer.errors import PlanqerError
 from planqer.schemas import PlanqerResponse
 from planqer.services import (
     BoardPlan,
@@ -67,7 +67,7 @@ def test_cost_mode_can_choose_longer_cheaper_stock():
 
 
 def test_cost_mode_rejects_eligible_stock_without_price():
-    with pytest.raises(HTTPException, match="Every eligible board length"):
+    with pytest.raises(PlanqerError, match="Every eligible board length"):
         _compute_optimization(
             parts={100.0: 1},
             boards=[100.0, 200.0],

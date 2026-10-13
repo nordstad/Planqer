@@ -1,23 +1,11 @@
 import asyncio
-import time
 
 from fastapi import APIRouter, HTTPException
 from starlette.requests import Request
 
-from planqer.schemas import (
-    SheetLayoutInfo,
-    SheetOptimizationRequest,
-    SheetOptimizationResponse,
-)
-from planqer.sheet_optimization import (
-    SheetOptimizationAlgorithm,
-    get_sheet_algorithm_recommendation,
-    optimize_sheet_cutting,
-)
-from planqer.sheet_visualization import (
-    generate_sheet_cutting_visualization,
-    generate_single_sheet_visualization,
-)
+from planqer.errors import PlanqerError
+from planqer.schemas import SheetOptimizationRequest, SheetOptimizationResponse
+from planqer.sheet_services import run_sheet_optimization
 
 router = APIRouter(prefix="/sheet-optimization", tags=["Sheet Material Optimization"])
 from .common import limiter
@@ -34,83 +22,19 @@ OPTIMIZATION_TIMEOUT_SECONDS = 30.0
 async def create_sheet_optimization(
     request: Request, sheet_request: SheetOptimizationRequest
 ):
-    started = time.time()
     try:
-        parts = {
-            k: {"width": v.width, "height": v.height, "quantity": v.quantity}
-            for k, v in sheet_request.parts.items()
-        }
-        algorithm = (
-            SheetOptimizationAlgorithm(sheet_request.algorithm)
-            if sheet_request.algorithm
-            else get_sheet_algorithm_recommendation(parts)
-        )
         # A timed-out worker thread may finish in the background; input budgets
         # keep that bounded while preventing it from blocking this event loop.
-        result = await asyncio.wait_for(
-            asyncio.to_thread(
-                optimize_sheet_cutting,
-                parts=parts,
-                sheet_width=sheet_request.sheet_width,
-                sheet_height=sheet_request.sheet_height,
-                kerf_width=sheet_request.kerf_width,
-                material_type=sheet_request.material_type,
-                algorithm=algorithm,
-                allow_rotation=sheet_request.allow_rotation,
-            ),
+        return await asyncio.wait_for(
+            asyncio.to_thread(run_sheet_optimization, sheet_request),
             timeout=OPTIMIZATION_TIMEOUT_SECONDS,
-        )
-        sheets = [
-            SheetLayoutInfo(
-                sheet_width=s.sheet_width,
-                sheet_height=s.sheet_height,
-                used_area=s.used_area,
-                waste_area=s.waste_area,
-                efficiency=s.efficiency,
-                parts_count=len(s.parts),
-                parts=[
-                    {
-                        "part_id": p.part_id,
-                        "width": p.width,
-                        "height": p.height,
-                        "x": p.x,
-                        "y": p.y,
-                        "rotated": p.rotated,
-                    }
-                    for p in s.parts
-                ],
-            )
-            for s in result.sheets
-        ]
-        visualization = generate_sheet_cutting_visualization(
-            {
-                "sheets": sheets,
-                "overall_efficiency": result.overall_efficiency,
-                "total_waste_area": result.total_waste_area,
-            },
-            sheet_request.project_name,
-        )
-        sheet_visualizations = [
-            generate_single_sheet_visualization(sheet.model_dump(), sheet_index)
-            for sheet_index, sheet in enumerate(sheets)
-        ]
-        return SheetOptimizationResponse(
-            total_sheets=result.total_sheets,
-            total_waste_area=result.total_waste_area,
-            overall_efficiency=result.overall_efficiency,
-            sheets=sheets,
-            algorithm_used=result.algorithm_used.value,
-            computation_time=time.time() - started,
-            material_type=sheet_request.material_type,
-            visualization=visualization,
-            sheet_visualizations=sheet_visualizations,
         )
     except TimeoutError as exc:
         raise HTTPException(
             status_code=504,
             detail="Sheet optimization exceeded the 30 second time limit",
         ) from exc
-    except HTTPException:
+    except (HTTPException, PlanqerError):
         raise
     except Exception as exc:
         raise HTTPException(

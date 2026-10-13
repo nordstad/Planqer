@@ -6,13 +6,13 @@ from fastapi import APIRouter, BackgroundTasks, HTTPException
 from starlette.requests import Request
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
-from planqer.algorithms import OptimizationAlgorithm, get_algorithm_recommendation
 from planqer.async_processing import (
     generate_task_id,
     get_task_progress,
     process_optimization_async,
     task_manager,
 )
+from planqer.errors import PlanqerError
 from planqer.logging_config import (
     log_error,
     log_websocket_event,
@@ -23,7 +23,7 @@ from planqer.metrics import (
     track_websocket_connection,
 )
 from planqer.schemas import PlanqerRequest, PlanqerResponse
-from planqer.services import run_optimization
+from planqer.services import normalize_optimization_options, run_optimization
 
 from .common import limiter
 
@@ -31,52 +31,6 @@ router = APIRouter(prefix="/cutting-plans", tags=["Cutting Plans"])
 task_router = APIRouter()
 logger = logging.getLogger("planqer.api")
 OPTIMIZATION_TIMEOUT_SECONDS = 30.0
-
-
-def normalize_optimization_options(planqer_request: PlanqerRequest):
-    """Normalize solver options once for sync and background execution."""
-    algorithm = (
-        OptimizationAlgorithm(planqer_request.algorithm)
-        if planqer_request.algorithm
-        else get_algorithm_recommendation(planqer_request.parts)
-    )
-    if planqer_request.cost_analysis and planqer_request.cost_analysis.get("enabled"):
-        analysis = planqer_request.cost_analysis
-        costs = {
-            float(length): {
-                "price_per_board": data.get("price_per_board", 0.0),
-                "supplier": "default",
-                "bulk_discount": 0.0,
-                "minimum_quantity": 1,
-            }
-            for length, data in (
-                analysis.get("board_costs", {}) or analysis.get("boardCosts", {})
-            ).items()
-        }
-        return (
-            algorithm,
-            costs,
-            analysis.get("currency", "SEK"),
-            True,
-            analysis.get("optimizeFor", "waste"),
-        )
-
-    costs = {
-        float(key): {
-            "price_per_board": value.price_per_board,
-            "supplier": value.supplier,
-            "bulk_discount": value.bulk_discount,
-            "minimum_quantity": value.minimum_quantity,
-        }
-        for key, value in planqer_request.board_costs.items()
-    }
-    return (
-        algorithm,
-        costs,
-        planqer_request.currency,
-        planqer_request.enable_cost_analysis,
-        "waste",
-    )
 
 
 @router.post(
@@ -130,7 +84,7 @@ async def create_cutting_plan(request: Request, planqer_request: PlanqerRequest)
             status_code=504,
             detail="Optimization exceeded the 30 second time limit",
         ) from exc
-    except HTTPException:
+    except (HTTPException, PlanqerError):
         raise
     except Exception as exc:
         track_optimization_metrics(

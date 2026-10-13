@@ -5,11 +5,15 @@ from collections import Counter
 from contextlib import contextmanager
 from dataclasses import dataclass
 
-from fastapi import HTTPException
-
-from planqer.algorithms import OptimizationAlgorithm, optimize_cutting
+from planqer.algorithms import (
+    OptimizationAlgorithm,
+    get_algorithm_recommendation,
+    optimize_cutting,
+)
 from planqer.cache import get_cached_optimization
 from planqer.cost_calculator import apply_bulk_discount, calculate_cost_analysis
+from planqer.errors import PlanqerError
+from planqer.schemas import PlanqerRequest
 from planqer.svg_visualization import generate_cut_list_image
 
 
@@ -96,7 +100,7 @@ def _select_best_candidate(
             raise RuntimeError(f"Error optimizing for board length {bl}: {e}") from e
 
     if not candidates:
-        raise HTTPException(
+        raise PlanqerError(
             status_code=400, detail="No valid cut list candidates found."
         )
 
@@ -116,12 +120,12 @@ def _compute_optimization(
     max_part = max(parts.keys())
     valid_boards = [bl for bl in boards if bl >= max_part]
     if not valid_boards:
-        raise HTTPException(
+        raise PlanqerError(
             status_code=400, detail="No board is long enough for the largest part."
         )
     if optimize_for == "cost":
         if not board_costs:
-            raise HTTPException(
+            raise PlanqerError(
                 status_code=400,
                 detail="Prices are required when optimizing for cost.",
             )
@@ -132,7 +136,7 @@ def _compute_optimization(
             or board_costs[length].get("price_per_board") is None
         ]
         if missing_prices:
-            raise HTTPException(
+            raise PlanqerError(
                 status_code=400,
                 detail="Every eligible board length needs a price when optimizing for cost.",
             )
@@ -205,6 +209,52 @@ def _calculate_plan_cost(board_plans: list[BoardPlan], board_costs: dict) -> flo
     return total_cost
 
 
+def normalize_optimization_options(planqer_request: PlanqerRequest):
+    """Normalize solver options once for sync and background execution."""
+    algorithm = (
+        OptimizationAlgorithm(planqer_request.algorithm)
+        if planqer_request.algorithm
+        else get_algorithm_recommendation(planqer_request.parts)
+    )
+    if planqer_request.cost_analysis and planqer_request.cost_analysis.get("enabled"):
+        analysis = planqer_request.cost_analysis
+        costs = {
+            float(length): {
+                "price_per_board": data.get("price_per_board", 0.0),
+                "supplier": "default",
+                "bulk_discount": 0.0,
+                "minimum_quantity": 1,
+            }
+            for length, data in (
+                analysis.get("board_costs", {}) or analysis.get("boardCosts", {})
+            ).items()
+        }
+        return (
+            algorithm,
+            costs,
+            analysis.get("currency", "SEK"),
+            True,
+            analysis.get("optimizeFor", "waste"),
+        )
+
+    costs = {
+        float(key): {
+            "price_per_board": value.price_per_board,
+            "supplier": value.supplier,
+            "bulk_discount": value.bulk_discount,
+            "minimum_quantity": value.minimum_quantity,
+        }
+        for key, value in planqer_request.board_costs.items()
+    }
+    return (
+        algorithm,
+        costs,
+        planqer_request.currency,
+        planqer_request.enable_cost_analysis,
+        "waste",
+    )
+
+
 def run_optimization(
     parts,
     boards,
@@ -220,11 +270,11 @@ def run_optimization(
 ):
     if not boards:
         logger.error("No board lengths provided in request.")
-        raise HTTPException(status_code=400, detail="No board lengths provided.")
+        raise PlanqerError(status_code=400, detail="No board lengths provided.")
 
     if not parts:
         logger.error("No parts provided in request.")
-        raise HTTPException(status_code=400, detail="No parts provided.")
+        raise PlanqerError(status_code=400, detail="No parts provided.")
 
     # Create a wrapper function that includes the algorithm and cost parameters
     def optimization_func(parts, boards, kerf):

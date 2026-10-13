@@ -10,7 +10,7 @@ built-in couldn't.
 import logging
 import re
 from collections.abc import Iterable
-from typing import Literal
+from typing import Literal, Protocol
 from urllib.parse import quote, urlencode
 
 import yaml
@@ -20,8 +20,10 @@ from planqer.catalogue.loader import (
     check_group,
     configured_country,
     expand_group,
+    get_catalogue,
     load_details,
     load_types,
+    resolve_country,
 )
 from planqer.catalogue.schema import (
     Catalogue,
@@ -30,7 +32,6 @@ from planqer.catalogue.schema import (
     SheetFormat,
     Strict,
 )
-from planqer.database import CatalogueEntry
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +44,19 @@ _COUNTRY = re.compile(r"^[A-Z]{2}$")
 _PLACEHOLDER_SOURCE = "https://example.invalid/local"
 
 Origin = Literal["builtin", "modified", "local"]
+
+
+class StoredEntry(Protocol):
+    """One stored change to a catalogue product, however it is kept.
+
+    The server keeps these as database rows; the browser keeps them in its own
+    storage. Only these three fields are read, so neither needs to import the
+    other's storage.
+    """
+
+    product_id: str
+    hidden: bool
+    data: str | None
 
 
 class ProductDetails(Strict):
@@ -176,7 +190,7 @@ def details_of(product: Product) -> ProductDetails:
 
 
 def _stored(
-    entries: Iterable[CatalogueEntry],
+    entries: Iterable[StoredEntry],
 ) -> dict[str, tuple[bool, Product | None]]:
     result: dict[str, tuple[bool, Product | None]] = {}
     for entry in entries:
@@ -192,7 +206,7 @@ def _stored(
     return result
 
 
-def admin_items(base: Catalogue, entries: Iterable[CatalogueEntry]) -> list[AdminItem]:
+def admin_items(base: Catalogue, entries: Iterable[StoredEntry]) -> list[AdminItem]:
     """Every built-in and local product with its state, hidden ones included."""
     stored = _stored(entries)
     items: list[AdminItem] = []
@@ -212,10 +226,17 @@ def admin_items(base: Catalogue, entries: Iterable[CatalogueEntry]) -> list[Admi
     return items
 
 
-def merge_local(base: Catalogue, entries: Iterable[CatalogueEntry]) -> Catalogue:
+def merge_local(base: Catalogue, entries: Iterable[StoredEntry]) -> Catalogue:
     """The catalogue clients see: built-ins with this instance's changes."""
     products = [item.product for item in admin_items(base, entries) if not item.hidden]
     return base.model_copy(update={"products": products})
+
+
+def layered_catalogue(
+    entries: Iterable[StoredEntry], country: str | None = None
+) -> Catalogue:
+    """The catalogue for a country with the given stored changes applied."""
+    return merge_local(get_catalogue(resolve_country(country)), entries)
 
 
 def build_suggestion(
