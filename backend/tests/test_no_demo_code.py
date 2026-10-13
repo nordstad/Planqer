@@ -84,7 +84,10 @@ def test_the_command_fails_on_a_leak_and_succeeds_when_clean(tmp_path):
 
     def run(folder):
         return subprocess.run(
-            [sys.executable, str(SCRIPT), str(folder)], capture_output=True, text=True
+            [sys.executable, str(SCRIPT), str(folder)],
+            capture_output=True,
+            text=True,
+            check=False,
         )
 
     assert run(clean).returncode == 0
