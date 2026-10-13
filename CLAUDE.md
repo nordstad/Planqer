@@ -220,3 +220,5 @@ The core optimization logic is in `/backend/planqer/cutting.py` with the main fu
 - Always update every locale file when adding or changing translation keys; do not rely on English fallback strings.
 - Don't import `Dict`, `List`, `Tuple` from `typing` — use the built-in
   `dict`, `list`, `tuple` generics instead.
+- This repository is hosted on GitHub: use `gh` for pull requests, issues and
+  releases.
