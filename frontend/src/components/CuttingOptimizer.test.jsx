@@ -172,13 +172,12 @@ describe('CuttingOptimizer', () => {
     await waitFor(() => expect(optimizeCutting).toHaveBeenCalled());
   });
 
-  it('takes a product\'s dimensions and stock lengths when the user asks, and shows it in the plan', async () => {
+  it('fills in thickness and width as soon as a product with a size is picked, and takes stock lengths when asked', async () => {
     getCatalogue.mockResolvedValue({ data: catalogue, etag: '"x"' });
     renderOptimizer();
     await screen.findByRole('heading', { name: /Required parts/i });
 
     await pickProduct('regel 45x95', 'Framing timber / studs 45 × 95 mm');
-    fireEvent.click(screen.getByRole('button', { name: 'Use 45 × 95 mm' }));
     expect(screen.getByLabelText('Thickness (mm)')).toHaveValue(45);
     expect(screen.getByLabelText('Width (mm)')).toHaveValue(95);
     expect(screen.queryByRole('button', { name: 'Use 45 × 95 mm' })).not.toBeInTheDocument();
@@ -196,7 +195,6 @@ describe('CuttingOptimizer', () => {
     renderOptimizer();
     await screen.findByRole('heading', { name: /Required parts/i });
     await pickProduct('regel 45x95', 'Framing timber / studs 45 × 95 mm');
-    fireEvent.click(screen.getByRole('button', { name: 'Use 45 × 95 mm' }));
     fireEvent.click(screen.getByRole('button', { name: /Details/ }));
     fireEvent.change(screen.getByLabelText(/^Grade/), { target: { value: 'C24' } });
     fireEvent.change(screen.getByLabelText(/^Species/), { target: { value: 'spruce' } });

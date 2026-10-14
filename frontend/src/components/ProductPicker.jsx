@@ -217,6 +217,9 @@ const ProductPicker = ({
     commit(row.kind === 'free'
       ? freeTextSelection(kind, text)
       : typeSelection(row.type, row.kind === 'product' ? row.product : null));
+    // A product is a size: choosing one fills in thickness and width instead of
+    // leaving empty fields and a button to press.
+    if (row.kind === 'product') onUseDimensions?.(row.product);
     setQuery('');
     setOpen(false);
     setChanging(false);

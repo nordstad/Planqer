@@ -232,6 +232,21 @@ describe('suggestions', () => {
     expect(screen.getByTestId('product-summary')).toHaveTextContent('Decking 28 × 120 mm');
   });
 
+  it('applies the size of a picked product at once, but not a whole type or the user\'s own words', async () => {
+    const onUseDimensions = vi.fn();
+    await show(<Harness onUseDimensions={onUseDimensions} />);
+
+    fireEvent.change(box(), { target: { value: 'regel 45x95' } });
+    fireEvent.mouseDown(screen.getByRole('option', { name: /^Framing timber 45 × 95 mm/ }));
+    expect(onUseDimensions).toHaveBeenCalledTimes(1);
+    expect(onUseDimensions).toHaveBeenCalledWith(expect.objectContaining({ id: 'se:regel:45x95', thickness: 45, width: 95 }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Change — Product' }));
+    fireEvent.change(box(), { target: { value: 'Oak beam' } });
+    fireEvent.mouseDown(screen.getByRole('option', { name: 'Use “Oak beam” as my own product' }));
+    expect(onUseDimensions).toHaveBeenCalledTimes(1);
+  });
+
   it('offers a product\'s size and lengths as buttons that change nothing until pressed', async () => {
     const onUseDimensions = vi.fn();
     const onUseLengths = vi.fn();
