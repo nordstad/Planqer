@@ -19,7 +19,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { optimizeCutting, saveProject, getProjectGroups, createProjectGroup, getUserProjects, getUserSettings } from '../utils/api';
 import { materialLabel } from '../utils/materialLabel';
 import { boardPartCount, restoreBoardParts } from '../utils/boardParts';
@@ -68,6 +68,8 @@ const EXAMPLE_PARTS = [
 const CuttingOptimizer = () => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [step, setStep] = useState(STEP_PARTS);
 
   const [parts, setParts] = useState([]);
@@ -165,7 +167,7 @@ const CuttingOptimizer = () => {
 
   // A cutlist handed over from an uploaded model lands here as the starting parts
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
+    const urlParams = new URLSearchParams(location.search);
     if (urlParams.get('import') !== '3d') return;
     const importData = localStorage.getItem('planqer-3d-import');
     if (!importData) return;
@@ -182,12 +184,12 @@ const CuttingOptimizer = () => {
         if (data.boardThickness != null) setBoardThickness(String(data.boardThickness));
         if (data.boardWidth != null) setBoardWidth(String(data.boardWidth));
         localStorage.removeItem('planqer-3d-import');
-        window.history.replaceState({}, document.title, '/cutting');
+        navigate(location.pathname, { replace: true });
       }
     } catch (err) {
       console.error('Failed to import 3D cutlist data:', err);
     }
-  }, []);
+  }, [location.pathname, location.search, navigate]);
 
   /* ── a plan belongs to its inputs ──────────────────────────────────────
      Anything that changes what gets cut retires the plan and the save that
@@ -319,13 +321,13 @@ const CuttingOptimizer = () => {
   };
 
   useEffect(() => {
-    const editId = new URLSearchParams(window.location.search).get('edit');
+    const editId = new URLSearchParams(location.search).get('edit');
     if (!editId || !userProjects.length) return;
     const project = userProjects.find((item) => String(item.id) === editId);
     if (!project) return;
     loadProject(project);
-    window.history.replaceState({}, document.title, window.location.pathname);
-  }, [userProjects]);
+    navigate(location.pathname, { replace: true });
+  }, [location.pathname, location.search, navigate, userProjects]);
 
   /* ── derived facts ─────────────────────────────────────────────────────── */
   const currentPartErrors = parts.map((part) => validatePartFields(part, t));

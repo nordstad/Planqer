@@ -29,9 +29,9 @@ vi.mock('../contexts/AuthContext', async () => ({
   useAuth: () => ({ user: { id: 'user-1' } }),
 }));
 
-const renderOptimizer = ({ loadExample = true } = {}) => {
+const renderOptimizer = ({ loadExample = true, initialEntries = ['/cutting'] } = {}) => {
   const result = render(
-    <MemoryRouter initialEntries={['/cutting']}>
+    <MemoryRouter initialEntries={initialEntries}>
       <AuthProvider>
         <CuttingOptimizer />
       </AuthProvider>
@@ -301,9 +301,7 @@ describe('CuttingOptimizer', () => {
       board_lengths: [300],
       saw_blade_width: 4,
     }]);
-    window.history.replaceState({}, '', '/cutting?edit=board-1');
-
-    renderOptimizer();
+    renderOptimizer({ initialEntries: ['/cutting?edit=board-1'] });
 
     expect(await screen.findByDisplayValue('100')).toBeInTheDocument();
     expect(screen.getByDisplayValue('300')).toBeInTheDocument();
@@ -319,9 +317,7 @@ describe('CuttingOptimizer', () => {
       board_lengths: [300],
       saw_blade_width: 4,
     }]);
-    window.history.replaceState({}, '', '/cutting?edit=board-1');
-
-    renderOptimizer();
+    renderOptimizer({ initialEntries: ['/cutting?edit=board-1'] });
 
     expect(await screen.findByDisplayValue('Front rail')).toBeInTheDocument();
     expect(screen.getByDisplayValue('100')).toBeInTheDocument();
@@ -337,14 +333,12 @@ describe('CuttingOptimizer', () => {
         details: { species: 'spruce', grade: 'C24' }, suggested: false,
       },
     }]);
-    window.history.replaceState({}, '', '/cutting?edit=board-1');
-    const { unmount } = renderOptimizer();
+    const { unmount } = renderOptimizer({ initialEntries: ['/cutting?edit=board-1'] });
     await waitFor(() => expect(screen.getByTestId('product-summary')).toHaveTextContent('Framing timber / studs 45 × 95 mm'));
     unmount();
 
     getUserProjects.mockResolvedValue([{ ...base, id: 'board-2', name: 'Old', material_type: 'oak', product: null }]);
-    window.history.replaceState({}, '', '/cutting?edit=board-2');
-    renderOptimizer();
+    renderOptimizer({ initialEntries: ['/cutting?edit=board-2'] });
     await waitFor(() => expect(screen.getByTestId('product-summary')).toHaveTextContent('Oak'));
   });
 
@@ -357,9 +351,7 @@ describe('CuttingOptimizer', () => {
       board_lengths: [300],
       saw_blade_width: 4,
     }]);
-    window.history.replaceState({}, '', '/cutting?edit=board-1');
-
-    renderOptimizer();
+    renderOptimizer({ initialEntries: ['/cutting?edit=board-1'] });
     await screen.findByDisplayValue('100');
     fillMaterial();
     fireEvent.click(screen.getByRole('button', { name: /Plan the cuts/i }));

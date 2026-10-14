@@ -12,7 +12,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SAW_KERF_MIN, SAW_KERF_MAX } from '../utils/validators';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import CatalogPage from './CatalogPage';
 import ConfirmDialog from './ConfirmDialog';
 import { optimizeSheetCutting, saveSheetProject, getProjectGroups, createProjectGroup, getUserSheetProjects, getUserSettings } from '../utils/api';
@@ -78,6 +78,8 @@ const validateSheetParts = (parts, t) => parts.map((part) => {
 const SheetOptimizer = () => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [step, setStep] = useState(STEP_PARTS);
 
   const [parts, setParts] = useState([]);
@@ -159,7 +161,7 @@ const SheetOptimizer = () => {
 
   // Sheet parts handed over from an uploaded model land here as the starting parts
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
+    const urlParams = new URLSearchParams(location.search);
     if (urlParams.get('import') !== '3d') return;
     const importData = localStorage.getItem('planqer-3d-sheet-import');
     if (!importData) return;
@@ -177,12 +179,12 @@ const SheetOptimizer = () => {
         if (data.product?.type) setProductSel(data.product);
         if (data.sheetThickness != null) setSheetThickness(String(data.sheetThickness));
         localStorage.removeItem('planqer-3d-sheet-import');
-        window.history.replaceState({}, document.title, '/sheet-cutting');
+        navigate(location.pathname, { replace: true });
       }
     } catch (err) {
       console.error('Failed to import 3D sheet cutlist data:', err);
     }
-  }, []);
+  }, [location.pathname, location.search, navigate]);
 
   /* ── a layout belongs to its inputs ────────────────────────────────────── */
   const retireLayout = () => {
@@ -249,13 +251,13 @@ const SheetOptimizer = () => {
   };
 
   useEffect(() => {
-    const editId = new URLSearchParams(window.location.search).get('edit');
+    const editId = new URLSearchParams(location.search).get('edit');
     if (!editId || !userProjects.length) return;
     const project = userProjects.find((item) => String(item.id) === editId);
     if (!project) return;
     loadProject(project);
-    window.history.replaceState({}, document.title, window.location.pathname);
-  }, [userProjects]);
+    navigate(location.pathname, { replace: true });
+  }, [location.pathname, location.search, navigate, userProjects]);
 
   /* ── derived facts ─────────────────────────────────────────────────────── */
   const currentPartErrors = validateSheetParts(parts, t);
