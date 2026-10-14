@@ -5,10 +5,10 @@ fabrication projects. It turns part lists or CAD files (STL/STEP) into
 practical, kerf-aware cutting plans with visual diagrams and local project
 storage.
 
+[![Try it in your browser](https://img.shields.io/badge/Try-in%20your%20browser-orange.svg)](https://nordstad.github.io/Planqer/app/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Docker Compose](https://img.shields.io/badge/Docker%20Compose-supported-2496ED.svg)](docker-compose.yml)
-[![Python](https://img.shields.io/badge/Python-3.12-blue.svg)](backend/pyproject.toml)
-[![React](https://img.shields.io/badge/React-19-61DAFB.svg)](frontend/package.json)
+[![Latest release](https://img.shields.io/github/v/release/nordstad/Planqer)](https://github.com/nordstad/Planqer/releases)
+[![Self-hosted: Docker Compose](https://img.shields.io/badge/Self--hosted-Docker%20Compose-2496ED.svg)](https://nordstad.github.io/Planqer/getting-started/)
 
 ---
 
@@ -19,7 +19,9 @@ storage.
 - **CAD File Support**: Upload STL or STEP files to automatically generate
   cutlists.
 - **Self-Hosted & Private**: Local accounts and data stay entirely on your
-  server.
+  server. Self-hosted Planqer contains no analytics. Only the public demo and
+  docs site use anonymous, cookie-free usage counting; see the
+  [privacy page](https://nordstad.github.io/Planqer/privacy/).
 - **AI Assistant Integration**: Includes an MCP (Model Context Protocol) server
   for Claude Desktop and compatible clients.
 
@@ -44,6 +46,15 @@ controls, candidate ranking, and the REST API example:
 [Tile layout documentation](docs/guide/tile-layout.md).
 
 ---
+
+## Try it in your browser
+
+**[Open the Planqer demo](https://nordstad.github.io/Planqer/app/)** to try it
+with nothing to install and no account. It is the light version: it runs
+entirely in your browser, saves projects only in that browser, and has no
+accounts, REST API or MCP server. See
+[demo or full version](https://nordstad.github.io/Planqer/demo-vs-full/).
+Running your own server (below) is the full version.
 
 ## Quick Start
 
@@ -154,3 +165,5 @@ instructions are available in the documentation site.
 ## License
 
 [MIT](LICENSE)
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/E8B328RXDO)

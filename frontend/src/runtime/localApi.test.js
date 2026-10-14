@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { createLocalApi } from "./localApi";
 import { createMemoryDb } from "./memoryDb";
+import { track } from "../utils/analytics";
+
+vi.mock("../utils/analytics", () => ({ track: vi.fn() }));
 
 // The save rules and diagrams run in Python; the real ones are exercised by
 // tests/parity/contract.parity.test.js. Here they are stood in for.
@@ -209,5 +212,31 @@ describe("local api: the user's own catalogue entries", () => {
     const { api } = catalogueSetup(() => put("se:regel:45x95", { hidden: true, data: null }));
     await api.handle("POST", "/admin/catalogue/se%3Aregel%3A45x95/hide");
     expect(await api.entries()).toEqual([{ product_id: "se:regel:45x95", hidden: true, data: null }]);
+  });
+});
+
+describe("local api analytics", () => {
+  it.each([
+    ["/projects", "board"],
+    ["/sheet-projects", "sheet"],
+    ["/tile-projects", "tile"],
+  ])("counts a saved %s project by tool, nothing else", async (path, tool) => {
+    const { api } = setup();
+    track.mockClear();
+
+    await api.handle("POST", path, { name: "Kitchen", optimization_result: {} });
+
+    expect(track).toHaveBeenCalledTimes(1);
+    expect(track).toHaveBeenCalledWith("project_saved", { tool });
+  });
+
+  it("does not count a rejected save", async () => {
+    const { api, call } = setup();
+    call.mockResolvedValueOnce({ status: 422, body: { detail: [] } });
+    track.mockClear();
+
+    await api.handle("POST", "/projects", {});
+
+    expect(track).not.toHaveBeenCalled();
   });
 });

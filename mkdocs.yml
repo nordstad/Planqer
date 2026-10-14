@@ -38,12 +38,12 @@ theme:
     repo: fontawesome/brands/github
 
 extra:
-  analytics:
-    provider: google
-    property: G-BNSPCXE3LW
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/nordstad/Planqer
+
+extra_javascript:
+  - assets/umami.js
 
 markdown_extensions:
   - admonition
@@ -66,6 +66,7 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Getting started: getting-started.md
+  - Demo or full version: demo-vs-full.md
   - Guide:
       - Board cutting: guide/board-cutting.md
       - Sheet cutting: guide/sheet-cutting.md
@@ -78,6 +79,7 @@ nav:
       - Configuration: reference/configuration.md
       - REST API: reference/api.md
   - Troubleshooting: troubleshooting.md
+  - Privacy: privacy.md
   - Contributing: contributing.md
   - Releasing: releasing.md
 

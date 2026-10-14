@@ -120,14 +120,15 @@ jobs:
         run: python3 scripts/check-versions.py --tag "$GITHUB_REF_NAME"
 
       # The same release always builds the same demo, so a docs-only push reuses
-      # it instead of rebuilding. Bump -v1 to force a rebuild.
+      # it instead of rebuilding. Bump the -vN suffix to force a rebuild, which is
+      # needed whenever a build-time setting such as the Umami id changes.
       - name: Reuse the demo if this release was built before
         id: cache
         if: steps.detect.outputs.supported == 'true'
         uses: actions/cache@v6
         with:
           path: app-out
-          key: demo-${{ steps.ref.outputs.sha }}-v1
+          key: demo-${{ steps.ref.outputs.sha }}-v2
 
       - uses: actions/setup-node@v7
         if: steps.detect.outputs.supported == 'true' && steps.cache.outputs.cache-hit != 'true'
@@ -136,8 +137,13 @@ jobs:
           cache: "npm"
           cache-dependency-path: src/frontend/package-lock.json
 
+      # The Umami website id is public (it is in every page that loads the
+      # tracker). Only this published demo gets it: CI builds and every Docker
+      # image have none, so they contain no analytics.
       - name: Build the demo
         if: steps.detect.outputs.supported == 'true' && steps.cache.outputs.cache-hit != 'true'
+        env:
+          VITE_PLANQER_UMAMI_ID: "325f5fce-eb47-46fb-bad7-da1137224c33"
         run: |
           npm ci --prefix src/frontend
           python3 src/scripts/build-demo.py --out "$GITHUB_WORKSPACE/app-out" --check-budget

@@ -5,12 +5,17 @@ fabrication projects. Give it a part list — or a 3D model you already
 designed — and it works out the fewest boards or sheets to buy, and exactly
 where every cut goes.
 
+**[Try it in your browser](https://nordstad.github.io/Planqer/app/)** with
+nothing to install. It is the light version; see
+[Demo or full version](demo-vs-full.md).
+
 ![Planqer homepage](assets/screenshots/homepage.png)
 
 ## Why Planqer
 
 - **Self-hosted and private.** Runs on your own machine or homelab via Docker
-  Compose. No cloud account, no analytics, no tracking.
+  Compose. No cloud account, and the self-hosted app has no analytics or
+  tracking (see [Privacy](privacy.md)).
 - **Kerf-aware.** Every plan subtracts the material your saw blade actually
   removes, so the numbers hold up at the saw.
 - **Five ways in.** Plan board cuts, sheet layouts, or tile layouts, or upload

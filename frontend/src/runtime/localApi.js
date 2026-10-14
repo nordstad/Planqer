@@ -10,6 +10,8 @@
 //
 // `db` has list/get/put/delete(store, ...); `call(op, payload)` is the solver's.
 
+import { track } from "../utils/analytics";
+
 const LOCAL_USER_ID = "00000000-0000-4000-8000-000000000001";
 const SETTINGS_ID = "00000000-0000-4000-8000-000000000002";
 const NOT_FOUND = "Project not found";
@@ -290,6 +292,7 @@ export function createLocalApi({
       record.has_svg_image = Boolean(record.cutlist_image);
       record.created_at = record.updated_at = now();
       await db.put(spec.store, record);
+      track("project_saved", { tool: kind });
       return reply(200, record);
     }
 

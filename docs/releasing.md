@@ -50,6 +50,7 @@ npx playwright install chromium firefox webkit   # once
 npm run test:demo
 npm run test:parity
 npm run test:runtime-browser
+npm run test:analytics
 ```
 
 The first command builds the demo as GitHub Pages serves it and fails if a
@@ -60,6 +61,12 @@ pull request that touches the app, the Python it runs, or the scripts.
 
 If the size budget fails because of a change you meant to make, raise the
 limit in `BUDGET_KB` in `scripts/build-demo.py` in the same pull request.
+
+`test:analytics` builds the app with the Umami website id and checks, in
+Chromium with the tracker stood in for, that only allow-listed events are sent
+and nothing is sent after an opt-out or with Do Not Track. Run
+`npm run test:runtime-browser` on a Mac before a release: Playwright's Linux
+WebKit cannot load scipy, so CI leaves out the STL import there.
 
 Do not continue with the release if any check fails.
 
@@ -161,6 +168,15 @@ If the demo build fails, the run fails and nothing is deployed, so the live
 site is never replaced by a half-built one. A release tag that predates the
 demo has no `scripts/build-demo.py`; the workflow then publishes the docs alone.
 
+### Analytics on the demo
+
+Only this workflow builds the demo with `VITE_PLANQER_UMAMI_ID` (the public
+Umami website id), so only the published demo counts visits. CI builds and the
+Docker images have no id and contain no analytics, which
+`scripts/check-no-demo-code.py` enforces. The demo is cached per commit, so
+when the id or another build-time setting changes, bump the `-vN` suffix of the
+cache key (`demo-<sha>-vN`) in `pages.yml`, or the old build is reused.
+
 ### One-time setting: let tags deploy
 
 The `github-pages` environment normally only accepts deployments from `main`,
@@ -207,3 +223,5 @@ gh run list --workflow=pages.yml --limit=1
 - The docs are at the root and the demo at `/app/`.
 - Open a deep link under `/app/`, such as `/app/#/tile-layout`, and reload it.
 - The footer's version matches the tag.
+- The footer shows "Analytics: on", and a visit shows up in Umami. With
+  Do Not Track set, the browser loads no request to `cloud.umami.is`.

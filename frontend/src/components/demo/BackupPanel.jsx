@@ -4,6 +4,7 @@ import { backupExport, backupImport, hasSavedWork } from '../../runtime/localBac
 import {
   getStorageStatus, markExported, needsBackupReminder, readLastExported, requestPersistence,
 } from '../../runtime/dataSafety';
+import { track } from '../../utils/analytics';
 
 const BACKUP_ERRORS = ['notBackup', 'tooNew', 'invalid'];
 
@@ -39,6 +40,7 @@ const BackupPanel = () => {
       const backup = await backupExport();
       download(`planqer-backup-${new Date().toISOString().slice(0, 10)}.json`, backup);
       markExported();
+      track('project_exported');
       setLastExported(readLastExported());
       setFeedback({ text: t('demo.backup.exported') });
     } catch {
