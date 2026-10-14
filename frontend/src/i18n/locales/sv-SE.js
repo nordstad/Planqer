@@ -517,7 +517,7 @@ Object.assign(locale, {
       title: "Välkommen till Planqer-demon",
       light: "Det här är lättversionen av Planqer. Den körs helt i din webbläsare. För alla funktioner (konton, sparade projekt på din egen server, MCP, API), kör fullversionen med Docker Compose.",
       data: "Dina projekt sparas bara i den här webbläsaren på den här enheten. De laddas inte upp någonstans. Om du rensar webbläsardata försvinner de, så exportera en säkerhetskopia från Mina projekt för att behålla dem.",
-      phones: "Demon är gjord för datorer. Den kan vara långsam eller begränsad på mobil.",
+      phones: "Planqer är gjort för datorer, där det finns mer plats att arbeta på. Den fungerar även på mobilen: testad på en nyare iPhone, andra mobiler är inte testade.",
       cta: "Skaffa fullversionen",
       start: "Uppfattat",
     },

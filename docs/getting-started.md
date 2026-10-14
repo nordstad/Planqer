@@ -12,7 +12,8 @@ what you want.
 [Planqer demo](https://nordstad.github.io/Planqer/app/). Nothing to install and
 no account. It runs in your browser, so projects are saved only in that browser
 on that device, and clearing browser data deletes them. Export a backup to keep
-them. It is built for computers and may be slow or limited on phones. See
+them. Planqer is built for computers, where there is more room to work. It
+also runs on phones: tested on a recent iPhone, other phones are untested. See
 [Demo or full version](demo-vs-full.md) for what is different.
 
 **Run your own server (full version, recommended).** Accounts, projects on your

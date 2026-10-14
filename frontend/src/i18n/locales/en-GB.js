@@ -437,7 +437,7 @@ Object.assign(locale, {
       title: "Welcome to the Planqer demo",
       light: "This is the light version of Planqer. It runs entirely in your browser. For all features (accounts, saved projects on your own server, MCP, API), run the full version with Docker Compose.",
       data: "Your projects are saved only in this browser on this device. They are not uploaded anywhere. Clearing browser data deletes them, so export a backup from My projects to keep them.",
-      phones: "The demo is designed for computers. It may be slow or limited on phones.",
+      phones: "Planqer is built for computers, where there is more room to work. It also runs on phones: tested on a recent iPhone, other phones are untested.",
       cta: "Get the full version",
       start: "Got it",
     },
