@@ -5,7 +5,7 @@ import CatalogPage from './CatalogPage';
 import { BoardIcon, SheetIcon, CubeIcon, TileIcon, ArrowRight } from './icons';
 import { getHealth, getLatestRelease } from '../utils/api';
 import { demoContext, isStaticMode } from '../utils/mode';
-import packageJson from '../../package.json';
+import { version as appVersion } from '../../package.json';
 
 // Compares two dotted version strings, e.g. isNewer('0.2.0', '0.1.0') -> true
 const isNewer = (latest, current) => {
@@ -92,7 +92,7 @@ const CutPlanPreview = ({ t }) => (
 
 const HomePage = () => {
   const { t } = useTranslation();
-  const [version, setVersion] = useState(packageJson.version);
+  const [version, setVersion] = useState(appVersion);
   const [latestVersion, setLatestVersion] = useState(null);
 
   useEffect(() => {

@@ -53,6 +53,7 @@ import {
 } from '../utils/modelGroups';
 import { loadCatalogue, buildSnapshot } from '../utils/catalogue';
 import { colourForModelGroup, colourForModelPart, partKey } from '../utils/modelPreview';
+import { VISUALLY_HIDDEN } from '../utils/visuallyHidden';
 
 const ModelPreview = lazy(() => import('./ModelPreview'));
 const ModelPartsPreview = lazy(() => import('./ModelPartsPreview'));
@@ -485,13 +486,12 @@ const ModelCutlistOptimizer = () => {
                 <p className="synthetic" style={{ margin: '0 auto 16px' }}>
                    {t('modelUi.acceptedModelFiles')}
                 </p>
-                <label className="btn-primary" style={{ cursor: 'pointer' }}>
+                <label className="btn-primary" style={{ cursor: 'pointer', position: 'relative' }}>
                   <input
                     type="file"
                     accept=".stl,.step,.stp"
                     onChange={(e) => acceptFile(e.target.files?.[0])}
-                    className="hidden"
-                    style={{ display: 'none' }}
+                    style={VISUALLY_HIDDEN}
                   />
                   {t('workflow.browseFiles')}
                 </label>
