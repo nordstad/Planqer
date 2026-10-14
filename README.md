@@ -58,63 +58,67 @@ Running your own server (below) is the full version.
 
 ## Quick Start
 
-The easiest way to run Planqer is with Docker Compose. Two ways to do it:
+Planqer runs with Docker Compose. The recommended route pulls the published
+release images, so there is nothing to build.
 
-- **Pull published images (recommended)** — uses `docker-compose.release.yml`,
-  published images from GitHub Container Registry, no build step. Defaults to
-  `latest`; set `PLANQER_VERSION` to pin a specific release:
+```bash
+curl -O https://raw.githubusercontent.com/nordstad/Planqer/main/docker-compose.release.yml
+docker compose -f docker-compose.release.yml up -d
+```
 
-  ```bash
-  curl -O https://raw.githubusercontent.com/nordstad/Planqer/main/docker-compose.release.yml
-  docker compose -f docker-compose.release.yml up -d
-  ```
+Then open:
 
-  Works with no further setup for `localhost`. To customize anything (pin a
-  version, allow a LAN/DNS address, or set an explicit `SECRET_KEY`), fetch
-  [`.env.example`](.env.example) and rename it to `.env` in the same
-  directory — Compose reads it automatically:
+| | |
+| --- | --- |
+| **Frontend** | <http://localhost:3001> |
+| **Backend API docs** | <http://localhost:8002/docs> |
+| **Health check** | <http://localhost:8002/health> |
 
-  ```bash
-   curl -o .env https://raw.githubusercontent.com/nordstad/Planqer/main/.env.example
-   ```
+The first account created on a fresh instance becomes the administrator.
 
-  To upgrade an existing release installation, set `PLANQER_VERSION` in
-  `.env`, then pull and recreate the containers:
+### Configuration
 
-  ```bash
-  docker compose -f docker-compose.release.yml pull
-  docker compose -f docker-compose.release.yml up -d
-  ```
+No setup is needed for `localhost`. To pin a version, allow a LAN or DNS
+address, or set an explicit `SECRET_KEY`, download
+[`.env.example`](.env.example) as `.env` in the same directory. Compose reads
+it automatically:
 
-  For a one-off upgrade without editing `.env`, prefix both commands with
-  `PLANQER_VERSION=0.8.2`.
+```bash
+curl -o .env https://raw.githubusercontent.com/nordstad/Planqer/main/.env.example
+```
 
-  Run these commands from the directory containing both files. The Compose
-  volume preserves local accounts and saved projects across upgrades.
+See [Configuration](docs/reference/configuration.md) for what each variable
+does.
 
-  See [Configuration](docs/reference/configuration.md) for what each variable
-   does.
+### Upgrading
 
-- **Build from source** — uses `docker-compose.yml`:
+Set `PLANQER_VERSION` in `.env`, then pull and recreate the containers:
 
-  ```bash
-  git clone https://github.com/nordstad/Planqer.git
-  cd planqer
-  docker compose up -d --build
-  ```
+```bash
+docker compose -f docker-compose.release.yml pull
+docker compose -f docker-compose.release.yml up -d
+```
 
-Once started, open:
+For a one-off upgrade without editing `.env`, prefix both commands with
+`PLANQER_VERSION=0.8.2`. Run them from the directory containing both files.
+The Compose volume preserves local accounts and saved projects across upgrades.
 
-- **Frontend**: <http://localhost:3001>
-- **Backend API Docs**: <http://localhost:8002/docs>
-- **Health Check**: <http://localhost:8002/health>
+### Build from source
 
-*Note: The first account created on a fresh instance becomes the administrator.*
+Use `docker-compose.yml` to build the images yourself:
 
-*Accessing Planqer from another device on your network (e.g.
-`http://192.168.1.50:3001`) instead of `localhost`? Set
-`PLANQER_CORS_ORIGINS` to that address before starting, or sign-in and
-registration will silently fail as CORS-blocked requests:*
+```bash
+git clone https://github.com/nordstad/Planqer.git
+cd Planqer
+docker compose up -d --build
+```
+
+### Using another device on your network
+
+If you open Planqer from another device (for example
+`http://192.168.1.50:3001`) instead of `localhost`, set `PLANQER_CORS_ORIGINS`
+to that address before starting. Otherwise sign-in and registration fail
+silently as CORS-blocked requests:
 
 ```bash
 PLANQER_CORS_ORIGINS=http://192.168.1.50:3001 docker compose up -d --build
