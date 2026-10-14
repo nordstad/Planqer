@@ -1,7 +1,7 @@
 // The demo's whole backend in the browser: the solver worker plus the local
 // store. api.js in static mode reaches it through the local transport.
 
-import packageJson from "../../package.json";
+import { version as appVersion } from "../../package.json";
 import { exportBackup, importBackup } from "./backup";
 import { createLocalApi } from "./localApi";
 import { openDatabase } from "./indexedDb";
@@ -34,7 +34,7 @@ export const handle = (method, path, body, config) =>
 export const entries = () => localApi().then((ready) => ready.entries());
 
 export const backupExport = () =>
-  db().then((ready) => exportBackup(ready, { appVersion: packageJson.version }));
+  db().then((ready) => exportBackup(ready, { appVersion }));
 
 export const backupImport = (content) => db().then((ready) => importBackup(ready, content));
 

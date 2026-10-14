@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import { FULL_VERSION_URL, PRIVACY_URL } from '../../utils/mode';
 import { analyticsState, setAnalyticsEnabled, startAnalytics, track } from '../../utils/analytics';
-import packageJson from '../../../package.json';
+import { version as appVersion } from '../../../package.json';
 
 const WELCOMED_KEY = 'planqer.demo.welcomed';
 const BANNER_DISMISSED_KEY = 'planqer.demo.bannerDismissed';
@@ -127,7 +127,7 @@ const DemoShell = ({ children }) => {
           padding: '16px', borderTop: '1px solid var(--rule)', color: 'var(--ink-3)', fontSize: '13px',
         }}
       >
-        <span>{t('demo.footer.label')} · v{packageJson.version}</span>
+        <span>{t('demo.footer.label')} · v{appVersion}</span>
         <button type="button" className="app-nav-link" style={{ background: 'none', border: 0, font: 'inherit', cursor: 'pointer' }} onClick={() => setWelcomeOpen(true)}>
           {t('demo.footer.about')}
         </button>
