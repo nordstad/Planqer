@@ -47,6 +47,15 @@ controls, candidate ranking, and the REST API example:
 
 ---
 
+## Try it in your browser
+
+**[Open the Planqer demo](https://nordstad.github.io/Planqer/app/)** to try it
+with nothing to install and no account. It is the light version: it runs
+entirely in your browser, saves projects only in that browser, and has no
+accounts, REST API or MCP server. See
+[demo or full version](https://nordstad.github.io/Planqer/demo-vs-full/).
+Running your own server (below) is the full version.
+
 ## Quick Start
 
 The easiest way to run Planqer is with Docker Compose. Two ways to do it:

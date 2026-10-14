@@ -6,6 +6,19 @@ not need to build the frontend, backend, or MCP server locally. Running from
 source is a contributor path — see [Contributing](contributing.md) if that's
 what you want.
 
+## Two ways to use Planqer
+
+**Try it in your browser (light version).** Open the
+[Planqer demo](https://nordstad.github.io/Planqer/app/). Nothing to install and
+no account. It runs in your browser, so projects are saved only in that browser
+on that device, and clearing browser data deletes them. Export a backup to keep
+them. It is built for computers and may be slow or limited on phones. See
+[Demo or full version](demo-vs-full.md) for what is different.
+
+**Run your own server (full version, recommended).** Accounts, projects on your
+own server, the REST API and the MCP server for AI assistants. The rest of this
+page covers it.
+
 ## Prerequisites
 
 - [Docker](https://docs.docker.com/get-docker/)

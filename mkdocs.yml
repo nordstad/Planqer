@@ -66,6 +66,7 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Getting started: getting-started.md
+  - Demo or full version: demo-vs-full.md
   - Guide:
       - Board cutting: guide/board-cutting.md
       - Sheet cutting: guide/sheet-cutting.md

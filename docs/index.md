@@ -5,6 +5,10 @@ fabrication projects. Give it a part list — or a 3D model you already
 designed — and it works out the fewest boards or sheets to buy, and exactly
 where every cut goes.
 
+**[Try it in your browser](https://nordstad.github.io/Planqer/app/)** with
+nothing to install. It is the light version; see
+[Demo or full version](demo-vs-full.md).
+
 ![Planqer homepage](assets/screenshots/homepage.png)
 
 ## Why Planqer
