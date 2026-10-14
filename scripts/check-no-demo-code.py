@@ -29,6 +29,8 @@ MARKERS = (
     ("umami.track", True),
     ("data-website-id", True),
     ("VITE_PLANQER_UMAMI", True),
+    ("googletagmanager", True),
+    ("325f5fce-eb47-46fb-bad7-da1137224c33", True),
 )
 
 

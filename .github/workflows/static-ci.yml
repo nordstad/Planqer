@@ -39,8 +39,12 @@ jobs:
           cache: "npm"
           cache-dependency-path: frontend/package-lock.json
 
+      # The Umami id is set on purpose: even if it leaked into this build's
+      # environment, the self-hosted app must still contain no analytics.
       - name: Build the self-hosted app
         working-directory: frontend
+        env:
+          VITE_PLANQER_UMAMI_ID: "325f5fce-eb47-46fb-bad7-da1137224c33"
         run: |
           npm ci
           npm run build

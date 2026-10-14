@@ -42,6 +42,8 @@ def test_a_clean_build_passes(guard, tmp_path):
         "umami.track",
         "data-website-id",
         "VITE_PLANQER_UMAMI",
+        "googletagmanager",
+        "325f5fce-eb47-46fb-bad7-da1137224c33",
     ],
 )
 def test_each_demo_marker_is_caught(guard, tmp_path, marker):
