@@ -3,7 +3,7 @@
 // it calls the page's data-before-send hook and sends only what that returns.
 // So this tests our loading rules, our allow-list and our hook, not Umami.
 //
-// Needs the static app built WITH an id:  npm run test:analytics
+// Run it with:  npm run test:analytics (it builds the app with an id first)
 
 import { expect, test } from "@playwright/test";
 
