@@ -11,3 +11,4 @@ export const LOCAL_USER = Object.freeze({ id: 'local', email: '', is_admin: true
 export const demoContext = () => (isStaticMode() ? { context: 'demo' } : {});
 
 export const FULL_VERSION_URL = 'https://nordstad.github.io/Planqer/getting-started/';
+export const PRIVACY_URL = 'https://nordstad.github.io/Planqer/privacy/';

@@ -441,6 +441,17 @@ Object.assign(locale, {
       cta: "Get the full version",
       start: "Got it",
     },
+    analytics: {
+      sentence: "This demo counts visits anonymously to learn what is used and what breaks. It uses no cookies and never sees your projects, measurements or files.",
+      off: "Analytics is off.",
+      privacy: "Privacy",
+      turnOffDialog: "Turn off analytics",
+      on: "Analytics: on",
+      offFooter: "Analytics: off",
+      browser: "Analytics: off (your browser asks not to be tracked)",
+      turnOff: "Turn off",
+      turnOn: "Turn on",
+    },
     footer: {
       label: "Planqer demo · light version",
       about: "About this demo",

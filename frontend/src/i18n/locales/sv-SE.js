@@ -521,6 +521,17 @@ Object.assign(locale, {
       cta: "Skaffa fullversionen",
       start: "Uppfattat",
     },
+    analytics: {
+      sentence: "Den här demon räknar besök anonymt för att lära sig vad som används och vad som går sönder. Den använder inga cookies och ser aldrig dina projekt, mått eller filer.",
+      off: "Analys är avstängd.",
+      privacy: "Integritet",
+      turnOffDialog: "Stäng av analys",
+      on: "Analys: på",
+      offFooter: "Analys: av",
+      browser: "Analys: av (webbläsaren ber om att inte bli spårad)",
+      turnOff: "Stäng av",
+      turnOn: "Slå på",
+    },
     footer: {
       label: "Planqer-demo · lättversion",
       about: "Om den här demon",

@@ -4,6 +4,9 @@ import '../../i18n';
 import BackupPanel from './BackupPanel';
 import { backupExport, backupImport, hasSavedWork } from '../../runtime/localBackend';
 import { getStorageStatus, requestPersistence } from '../../runtime/dataSafety';
+import { track } from '../../utils/analytics';
+
+vi.mock('../../utils/analytics', () => ({ track: vi.fn() }));
 
 vi.mock('../../runtime/localBackend', () => ({
   backupExport: vi.fn(),
@@ -130,4 +133,17 @@ describe('storage', () => {
     expect(screen.getByText(/cannot tell whether/i)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Ask the browser/ })).not.toBeInTheDocument();
   });
+});
+
+it('counts an export, and only a successful one', async () => {
+  await renderPanel();
+  await userEvent.click(screen.getByRole('button', { name: 'Export backup' }));
+  await screen.findByText(/Backup saved/);
+  expect(track).toHaveBeenCalledWith('project_exported');
+
+  track.mockClear();
+  backupExport.mockRejectedValue(new Error('no'));
+  await userEvent.click(screen.getByRole('button', { name: 'Export backup' }));
+  await screen.findByText(/Could not create/);
+  expect(track).not.toHaveBeenCalled();
 });

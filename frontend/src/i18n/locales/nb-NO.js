@@ -519,6 +519,17 @@ Object.assign(locale, {
       cta: "Få fullversjonen",
       start: "Greit",
     },
+    analytics: {
+      sentence: "Denne demoen teller besøk anonymt for å lære hva som brukes og hva som svikter. Den bruker ingen informasjonskapsler og ser aldri prosjektene, målene eller filene dine.",
+      off: "Analyse er slått av.",
+      privacy: "Personvern",
+      turnOffDialog: "Slå av analyse",
+      on: "Analyse: på",
+      offFooter: "Analyse: av",
+      browser: "Analyse: av (nettleseren ber om å ikke bli sporet)",
+      turnOff: "Slå av",
+      turnOn: "Slå på",
+    },
     footer: {
       label: "Planqer-demo · lettversjon",
       about: "Om denne demoen",
