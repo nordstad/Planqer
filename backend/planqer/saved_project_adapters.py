@@ -36,8 +36,7 @@ def load_saved_json(
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=(
-                f"Saved {field} must be a {expected_name}, "
-                f"not {type(decoded).__name__}"
+                f"Saved {field} must be a {expected_name}, not {type(decoded).__name__}"
             ),
         )
     return decoded
