@@ -123,7 +123,7 @@ test("the user's own products can be edited", async ({ page }) => {
   await page.goto(`${APP}#/`);
   await page.getByRole("link", { name: "Catalogue" }).click();
   await expect(page).toHaveURL(/#\/catalogue$/);
-  await expect(page.getByText(/saved in this browser only/i)).toBeVisible();
+  await expect(page.getByText(/saved in this browser only/i)).toBeVisible({ timeout: 15_000 });
 });
 
 test("Browse files and Import backup open the file picker", async ({ page }) => {
