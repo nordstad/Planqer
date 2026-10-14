@@ -268,6 +268,42 @@ describe('suggestions', () => {
   });
 });
 
+describe('choosing a size after choosing a type', () => {
+  const regel = () => typeSelection(catalogue.types[0]);
+
+  it('lists the type\'s sizes so one can be picked without searching, and applies it', async () => {
+    const onUseDimensions = vi.fn();
+    await show(<Harness initial={regel()} onUseDimensions={onUseDimensions} />);
+
+    const size = screen.getByRole('combobox', { name: 'Size' });
+    expect([...size.options].map((option) => option.textContent)).toEqual(['any size', '45 × 70 mm', '45 × 95 mm']);
+
+    fireEvent.change(size, { target: { value: 'se:regel:45x70' } });
+    expect(onUseDimensions).toHaveBeenCalledWith(expect.objectContaining({ id: 'se:regel:45x70' }));
+    expect(screen.getByTestId('product-summary')).toHaveTextContent('Framing timber 45 × 70 mm');
+    expect(screen.queryByRole('combobox', { name: 'Size' })).not.toBeInTheDocument();
+  });
+
+  it('keeps any size when the user does not choose one', async () => {
+    await show(<Harness initial={regel()} />);
+    expect(screen.getByRole('combobox', { name: 'Size' })).toHaveValue('');
+    expect(screen.getByTestId('product-summary')).toHaveTextContent('Framing timber');
+  });
+
+  it('is not shown for a product, the user\'s own words, or a type with no sizes', async () => {
+    const { unmount } = await show(<Harness initial={suggestSelection(catalogue, 'board', { thickness: 45, width: 95 })} />);
+    expect(screen.queryByRole('combobox', { name: 'Size' })).not.toBeInTheDocument();
+    unmount();
+
+    const own = await show(<Harness initial={freeTextSelection('board', 'Oak beam')} />);
+    expect(screen.queryByRole('combobox', { name: 'Size' })).not.toBeInTheDocument();
+    own.unmount();
+
+    await show(<Harness initial={typeSelection(catalogue.types[2])} />);
+    expect(screen.queryByRole('combobox', { name: 'Size' })).not.toBeInTheDocument();
+  });
+});
+
 describe('details', () => {
   it('keeps details folded and optional, and records what is chosen', async () => {
     const onSelect = vi.fn();
@@ -457,7 +493,7 @@ describe('ProductPicker: choosing the catalogue country', () => {
   it('prompts for a country while the generic catalogue is showing, and reloads on a choice', async () => {
     getCatalogue.mockResolvedValue({ data: generic, etag: '"g"' });
     await show(<Harness />);
-    expect(screen.getByText(/Only generic sizes are shown/)).toBeInTheDocument();
+    expect(screen.getByText(/No country is selected, so no standard timber sizes are shown/)).toBeInTheDocument();
 
     getCatalogue.mockResolvedValue({ data: catalogue, etag: '"se"' });
     await act(async () => {
@@ -466,8 +502,38 @@ describe('ProductPicker: choosing the catalogue country', () => {
 
     expect(getCatalogue).toHaveBeenLastCalledWith(undefined, 'SE');
     expect(localStorage.getItem('planqer-catalogue-country-v1')).toBe('SE');
-    expect(screen.queryByText(/Only generic sizes are shown/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/No country is selected/)).not.toBeInTheDocument();
     expect(updateUserSettings).not.toHaveBeenCalled();
+  });
+
+  it('offers Norway and Sweden as buttons while no country is selected, and one click picks it', async () => {
+    getCatalogue.mockResolvedValue({ data: generic, etag: '"g"' });
+    await show(<Harness />);
+    const prompt = screen.getByTestId('generic-catalogue-prompt');
+    expect(within(prompt).getByRole('button', { name: 'Norway' })).toBeInTheDocument();
+
+    getCatalogue.mockResolvedValue({ data: catalogue, etag: '"se"' });
+    await act(async () => {
+      fireEvent.click(within(prompt).getByRole('button', { name: 'Sweden' }));
+    });
+
+    expect(getCatalogue).toHaveBeenLastCalledWith(undefined, 'SE');
+    expect(localStorage.getItem('planqer-catalogue-country-v1')).toBe('SE');
+    expect(screen.queryByTestId('generic-catalogue-prompt')).not.toBeInTheDocument();
+  });
+
+  it('tells people in other countries how to ask for theirs', async () => {
+    getCatalogue.mockResolvedValue({ data: generic, etag: '"g"' });
+    await show(<Harness />);
+    const link = within(screen.getByTestId('generic-catalogue-prompt')).getByRole('link', { name: 'Ask for it' });
+    expect(link).toHaveAttribute('href', 'https://github.com/nordstad/Planqer/issues/new/choose');
+    expect(link).toHaveAttribute('target', '_blank');
+  });
+
+  it('says sheet sizes in the sheet picker', async () => {
+    getCatalogue.mockResolvedValue({ data: generic, etag: '"g"' });
+    await show(<Harness kind="sheet" />);
+    expect(screen.getByTestId('generic-catalogue-prompt')).toHaveTextContent(/standard sheet sizes/);
   });
 
   it('keeps the choice in the account when signed in', async () => {

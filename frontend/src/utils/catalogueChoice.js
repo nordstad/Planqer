@@ -14,6 +14,7 @@
 import i18n from '../i18n';
 
 export const CATALOGUE_COUNTRIES = ['SE', 'NO'];
+export const REQUEST_COUNTRY_URL = 'https://github.com/nordstad/Planqer/issues/new/choose';
 const CHOICE_KEY = 'planqer-catalogue-country-v1';
 const LANGUAGE_COUNTRY = { sv: 'SE', nb: 'NO', nn: 'NO', no: 'NO' };
 const listeners = new Set();

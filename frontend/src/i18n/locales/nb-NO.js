@@ -385,6 +385,7 @@ Object.assign(locale, {
     noResults: "Ingen matchende produkt. Du kan likevel bruke egne ord.",
     useAsOwn: "Bruk «{{text}}» som eget produkt",
     anySize: "valgfritt mål",
+    size: "Størrelse",
     noneChosen: "Ingen produkt valgt. Du kan planlegge uten.",
     loadFailed: "Produktkatalogen kunne ikke lastes. Du kan likevel skrive et eget produkt.",
     suggested: "Forslag",
@@ -414,7 +415,7 @@ Object.assign(locale, {
     automatic: "Automatisk",
     automaticWith: "Automatisk ({{country}})",
     generic: "Generisk (uten land)",
-    genericHint: "Bare generiske mål vises. Velg et land for standardmål på trelast.", genericSheetHint: "Bare generiske platetyper vises. Velg et land for standardmål på plater.",
+    genericPrompt: "Ingen land er valgt, så det vises ingen standardmål for trelast. Velg ett:", genericSheetPrompt: "Ingen land er valgt, så det vises ingen standardmål for plater. Velg ett:", otherCountry: "Et annet land?", requestCountry: "Be om det",
   },
   catalogueAdmin: {
     tab: { users: "Brukere", catalogue: "Katalog" },

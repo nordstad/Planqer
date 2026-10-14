@@ -307,6 +307,7 @@ Object.assign(locale, {
     noResults: "No matching product. You can still use your own words.",
     useAsOwn: "Use “{{text}}” as my own product",
     anySize: "any size",
+    size: "Size",
     noneChosen: "No product chosen. You can plan without one.",
     loadFailed: "The product catalogue could not be loaded. You can still type your own product.",
     suggested: "Suggested",
@@ -336,7 +337,7 @@ Object.assign(locale, {
     automatic: "Automatic",
     automaticWith: "Automatic ({{country}})",
     generic: "Generic (no country)",
-    genericHint: "Only generic sizes are shown. Choose a country for standard timber sizes.", genericSheetHint: "Only generic sheet types are shown. Choose a country for standard sheet sizes.",
+    genericPrompt: "No country is selected, so no standard timber sizes are shown. Choose one:", genericSheetPrompt: "No country is selected, so no standard sheet sizes are shown. Choose one:", otherCountry: "Another country?", requestCountry: "Ask for it",
   },
   catalogueAdmin: {
     tab: { users: "Users", catalogue: "Catalogue" },

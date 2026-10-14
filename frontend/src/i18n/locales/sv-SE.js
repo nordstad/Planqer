@@ -387,6 +387,7 @@ Object.assign(locale, {
     noResults: "Ingen matchande produkt. Du kan ändå skriva egna ord.",
     useAsOwn: "Använd ”{{text}}” som egen produkt",
     anySize: "valfritt mått",
+    size: "Storlek",
     noneChosen: "Ingen produkt vald. Du kan planera utan.",
     loadFailed: "Produktkatalogen kunde inte läsas in. Du kan ändå skriva en egen produkt.",
     suggested: "Förslag",
@@ -416,7 +417,7 @@ Object.assign(locale, {
     automatic: "Automatiskt",
     automaticWith: "Automatiskt ({{country}})",
     generic: "Generisk (inget land)",
-    genericHint: "Bara generiska mått visas. Välj ett land för standardmått på virke.", genericSheetHint: "Bara generiska skivtyper visas. Välj ett land för standardmått på skivor.",
+    genericPrompt: "Inget land är valt, så inga standardmått för virke visas. Välj ett:", genericSheetPrompt: "Inget land är valt, så inga standardmått för skivor visas. Välj ett:", otherCountry: "Ett annat land?", requestCountry: "Be om det",
   },
   catalogueAdmin: {
     tab: { users: "Användare", catalogue: "Katalog" },

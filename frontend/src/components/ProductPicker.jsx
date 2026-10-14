@@ -18,6 +18,7 @@ import SaveToCatalogue from './SaveToCatalogue';
 import { AuthContext } from '../contexts/authState';
 import CatalogueCountrySelect from './CatalogueCountrySelect';
 import { useCatalogueChoice } from '../hooks/useCatalogueChoice';
+import { CATALOGUE_COUNTRIES, REQUEST_COUNTRY_URL, countryName } from '../utils/catalogueChoice';
 import {
   DETAIL_FIELDS, browseTypes, detailLabel, detailOptions, emptySelection, findType,
   freeTextSelection, isEmptySelection, labelIn, loadCatalogue, rememberChoice, resetCatalogueCache, searchProducts,
@@ -37,7 +38,26 @@ const CatalogueLine = ({ catalogue, idBase, kind }) => {
         style={{ width: 'auto', minWidth: '160px', padding: '4px 28px 4px 8px' }}
         onChange={(next) => setChoice(next === 'auto' ? null : next)}
       />
-      {catalogue && !catalogue.country && <span>{t(kind === 'sheet' ? 'catalogueCountry.genericSheetHint' : 'catalogueCountry.genericHint')}</span>}
+    </p>
+  );
+};
+
+/* With no country there are no standard sizes, which looks like an empty
+   catalogue. Say so, offer the countries there is data for, and say how to ask
+   for another. */
+const GenericPrompt = ({ kind }) => {
+  const { t, i18n } = useTranslation();
+  const { setChoice } = useCatalogueChoice();
+  return (
+    <p className="synthetic" style={{ marginTop: '6px', whiteSpace: 'normal' }} data-testid="generic-catalogue-prompt">
+      {t(kind === 'sheet' ? 'catalogueCountry.genericSheetPrompt' : 'catalogueCountry.genericPrompt')}{' '}
+      {CATALOGUE_COUNTRIES.map((code) => (
+        <button key={code} type="button" className="btn btn-sm" style={{ marginRight: '6px' }} onClick={() => setChoice(code)}>
+          {countryName(code, i18n.language)}
+        </button>
+      ))}
+      {t('catalogueCountry.otherCountry')}{' '}
+      <a href={REQUEST_COUNTRY_URL} target="_blank" rel="noopener noreferrer">{t('catalogueCountry.requestCountry')}</a>
     </p>
   );
 };
@@ -270,6 +290,20 @@ const ProductPicker = ({
   const summary = selectionSummary(selection, i18n.language, dims, catalogue);
   const source = selection.product?.sources?.[0];
 
+  // A type chosen without a size would otherwise leave the sizes hidden until
+  // the user searched for them: offer them right here.
+  const sizes = useMemo(() => (hasSelection && !changing && !free && !selection.product && catalogue
+    ? catalogue.products
+      .filter((product) => product.type === selection.type)
+      .sort((a, b) => a.thickness - b.thickness || (a.width ?? 0) - (b.width ?? 0))
+    : []), [hasSelection, changing, free, selection.product, selection.type, catalogue]);
+
+  const chooseSize = (product) => {
+    if (!product) return;
+    commit(typeSelection(findType(catalogue, product.type), product));
+    onUseDimensions?.(product);
+  };
+
   return (
     <div
       ref={wrapper}
@@ -356,7 +390,23 @@ const ProductPicker = ({
         </div>
       )}
 
+      {sizes.length > 0 && (
+        <p style={{ marginTop: '6px' }}>
+          <select
+            className="form-select"
+            aria-label={t('productUi.size')}
+            style={{ width: 'auto', minWidth: '160px' }}
+            value=""
+            onChange={(e) => chooseSize(sizes.find((product) => product.id === e.target.value))}
+          >
+            <option value="">{t('productUi.anySize')}</option>
+            {sizes.map((product) => <option key={product.id} value={product.id}>{sizeLabel(product)}</option>)}
+          </select>
+        </p>
+      )}
+
       {showSearch && <CatalogueLine catalogue={catalogue} idBase={idBase} kind={kind} />}
+      {showSearch && catalogue && !catalogue.country && <GenericPrompt kind={kind} />}
 
       {isAdmin && free && catalogue && (
         <SaveToCatalogue
