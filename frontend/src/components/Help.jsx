@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { demoContext } from '../utils/mode';
 import CatalogPage from './CatalogPage';
@@ -22,7 +22,15 @@ const FullDocsLink = ({ t }) => (
 
 const HelpPage = () => {
   const { t } = useTranslation();
-  const [activeSection, setActiveSection] = useState('getting-started');
+  const location = useLocation();
+  const requestedSection = location.hash.slice(1);
+  const activeSection = sections.some(({ id }) => id === requestedSection)
+    ? requestedSection
+    : 'getting-started';
+
+  useEffect(() => {
+    document.getElementById(activeSection)?.scrollIntoView?.();
+  }, [activeSection]);
 
   return (
     <CatalogPage>
@@ -34,16 +42,15 @@ const HelpPage = () => {
           </div>
           <nav aria-label={t('help.contents')}>
             {sections.map((section) => (
-              <a
+              <Link
                 key={section.id}
-                href={`#${section.id}`}
+                to={`/help#${section.id}`}
                 className="help-entry"
                 data-current={activeSection === section.id ? 'true' : undefined}
-                onClick={() => setActiveSection(section.id)}
               >
                 <span className="help-entry-no">{section.no}</span>
                 <span className="help-entry-title">{t(section.title)}</span>
-              </a>
+              </Link>
             ))}
           </nav>
           <p className="synthetic" style={{ marginTop: '14px' }}>

@@ -512,19 +512,8 @@ Object.assign(locale, {
       cta: "Få fullversjonen",
       dismiss: "Lukk",
     },
-    welcome: {
-      title: "Velkommen til Planqer-demoen",
-      light: "Dette er lettversjonen av Planqer. Den kjører helt i nettleseren din. For alle funksjoner (kontoer, lagrede prosjekter på din egen server, MCP, API), kjør fullversjonen med Docker Compose.",
-      data: "Prosjektene dine lagres bare i denne nettleseren på denne enheten. De lastes ikke opp noe sted. Hvis du sletter nettleserdata, forsvinner de, så eksporter en sikkerhetskopi fra Mine prosjekter for å beholde dem.",
-      phones: "Planqer er laget for datamaskiner, der det er mer plass å jobbe på. Den fungerer også på mobil: testet på en nyere iPhone, andre mobiler er ikke testet.",
-      cta: "Få fullversjonen",
-      start: "Greit",
-    },
     analytics: {
-      sentence: "Denne demoen teller besøk anonymt for å lære hva som brukes og hva som svikter. Den bruker ingen informasjonskapsler og ser aldri prosjektene, målene eller filene dine.",
-      off: "Analyse er slått av.",
       privacy: "Personvern",
-      turnOffDialog: "Slå av analyse",
       on: "Analyse: på",
       offFooter: "Analyse: av",
       browser: "Analyse: av (nettleseren ber om å ikke bli sporet)",
@@ -533,7 +522,6 @@ Object.assign(locale, {
     },
     footer: {
       label: "Planqer-demo · lettversjon",
-      about: "Om denne demoen",
       full: "Fullversjon",
       docs: "Dokumentasjon",
       source: "Kildekode på GitHub",

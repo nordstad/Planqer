@@ -33,17 +33,10 @@ anything you type, your name or email address, or your IP address as a stored
 value. Sizes are grouped into coarse ranges such as "6 to 20 parts", never
 exact values. The demo has no accounts, so nothing can be linked to a person.
 
-**Your choices.** Switch analytics off at any time, here or from the demo's
-footer. One choice covers the demo and these docs. We also respect your
-browser's Do Not Track and Global Privacy Control settings, and when either is
-set nothing is loaded at all.
-
-<!-- markdownlint-disable MD033 -->
-<p>
-  <button type="button" class="md-button" data-analytics-toggle>Turn analytics off</button>
-  <span data-analytics-status></span>
-</p>
-<!-- markdownlint-enable MD033 -->
+**Turn it off.** In the [demo](https://nordstad.github.io/Planqer/app/), select
+**Turn off** next to **Analytics: on** in the footer. That choice also covers
+these docs. We also respect your browser's Do Not Track and Global Privacy
+Control settings, and when either is set nothing is loaded at all.
 
 The choice is stored only in your browser and is never sent anywhere. Clearing
 browser data resets it.

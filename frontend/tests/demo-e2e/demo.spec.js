@@ -7,10 +7,6 @@ import { expect, test } from "@playwright/test";
 
 const APP = "/Planqer/app/";
 
-// The welcome dialog is covered by its own test; the others start without it.
-const skipWelcome = (page) =>
-  page.addInitScript(() => localStorage.setItem("planqer.demo.welcomed", "1"));
-
 const watchRequests = (page) => {
   const seen = { outside: [], failed: [] };
   const origin = new URL(page.url() === "about:blank" ? "http://127.0.0.1:3003" : page.url()).origin;
@@ -24,25 +20,17 @@ const watchRequests = (page) => {
   return seen;
 };
 
-test("a first visit explains the demo, then gets out of the way", async ({ page }) => {
+test("a first visit shows the demo without interrupting it", async ({ page }) => {
   await page.goto(APP);
 
-  const dialog = page.getByRole("dialog", { name: /welcome to the planqer demo/i });
-  await expect(dialog).toContainText(/light version/i);
-  await expect(dialog).toContainText(/only in this browser/i);
-  await dialog.getByRole("button", { name: "Got it" }).click();
-  await expect(dialog).toBeHidden();
-
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(page.getByRole("region", { name: "Demo notice" })).toBeVisible();
   await expect(page.getByRole("contentinfo")).toContainText(/demo · light version/i);
+  await expect(page.getByRole("button", { name: "About this demo" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Admin" })).toHaveCount(0);
-
-  await page.reload();
-  await expect(dialog).toBeHidden();
 });
 
 test("a plan is solved in the browser, saved, and still there after a reload", async ({ page }) => {
-  await skipWelcome(page);
   await page.goto(APP);
   const seen = watchRequests(page);
 
@@ -79,7 +67,6 @@ test("a plan is solved in the browser, saved, and still there after a reload", a
 });
 
 test("a deep link survives a reload", async ({ page }) => {
-  await skipWelcome(page);
   await page.goto(`${APP}#/tile-layout`);
   await expect(page.getByRole("link", { name: "Tile layout" }).first()).toHaveAttribute("aria-current", "page");
 
@@ -89,8 +76,25 @@ test("a deep link survives a reload", async ({ page }) => {
   await expect(page.getByRole("link", { name: "Tile layout" }).first()).toHaveAttribute("aria-current", "page");
 });
 
+test("Help contents links stay on the Help page", async ({ page }) => {
+  await page.goto(`${APP}#/help`);
+
+  for (const [name, section] of [
+    ["Choose a tool", "choose-tool"],
+    ["Read your result", "results"],
+    ["Troubleshooting", "troubleshooting"],
+  ]) {
+    await page.getByRole("link", { name }).click();
+    await expect(page).toHaveURL(new RegExp(`#\\/help#${section}$`));
+    await expect(page.locator(`#${section}`)).toBeInViewport();
+  }
+
+  await page.goto(`${APP}#/results`);
+  await expect(page).toHaveURL(/#\/help#results$/);
+  await expect(page.locator("#results")).toBeVisible();
+});
+
 test("a backup of what was saved can be downloaded", async ({ page }) => {
-  await skipWelcome(page);
   await page.goto(`${APP}#/cutting`);
   await page.getByRole("button", { name: /try an example/i }).click();
   await page.getByRole("combobox", { name: "Product" }).fill("Pine");
@@ -119,7 +123,6 @@ test("a backup of what was saved can be downloaded", async ({ page }) => {
 });
 
 test("the user's own products can be edited", async ({ page }) => {
-  await skipWelcome(page);
   await page.goto(`${APP}#/`);
   await page.getByRole("link", { name: "Catalogue" }).click();
   await expect(page).toHaveURL(/#\/catalogue$/);
@@ -127,7 +130,6 @@ test("the user's own products can be edited", async ({ page }) => {
 });
 
 test("Browse files and Import backup open the file picker", async ({ page }) => {
-  await skipWelcome(page);
   await page.goto(`${APP}#/model-cutlist`);
   const chooser = page.waitForEvent("filechooser");
   await page.getByText("Browse files").click();
@@ -140,7 +142,6 @@ test("Browse files and Import backup open the file picker", async ({ page }) => 
 });
 
 test("a visitor with no country picks one, then browses to a product size, and the numbers fill in", async ({ page }) => {
-  await skipWelcome(page);
   await page.goto(`${APP}#/cutting`);
 
   const prompt = page.getByTestId("generic-catalogue-prompt");
