@@ -165,3 +165,5 @@ instructions are available in the documentation site.
 ## License
 
 [MIT](LICENSE)
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/E8B328RXDO)
