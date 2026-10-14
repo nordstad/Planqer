@@ -434,19 +434,8 @@ Object.assign(locale, {
       cta: "Get the full version",
       dismiss: "Dismiss",
     },
-    welcome: {
-      title: "Welcome to the Planqer demo",
-      light: "This is the light version of Planqer. It runs entirely in your browser. For all features (accounts, saved projects on your own server, MCP, API), run the full version with Docker Compose.",
-      data: "Your projects are saved only in this browser on this device. They are not uploaded anywhere. Clearing browser data deletes them, so export a backup from My projects to keep them.",
-      phones: "Planqer is built for computers, where there is more room to work. It also runs on phones: tested on a recent iPhone, other phones are untested.",
-      cta: "Get the full version",
-      start: "Got it",
-    },
     analytics: {
-      sentence: "This demo counts visits anonymously to learn what is used and what breaks. It uses no cookies and never sees your projects, measurements or files.",
-      off: "Analytics is off.",
       privacy: "Privacy",
-      turnOffDialog: "Turn off analytics",
       on: "Analytics: on",
       offFooter: "Analytics: off",
       browser: "Analytics: off (your browser asks not to be tracked)",
@@ -455,7 +444,6 @@ Object.assign(locale, {
     },
     footer: {
       label: "Planqer demo · light version",
-      about: "About this demo",
       full: "Full version",
       docs: "Documentation",
       source: "Source on GitHub",

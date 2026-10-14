@@ -35,33 +35,5 @@
     document.head.appendChild(el);
   }
 
-  // The switch on the privacy page. Pages arrive without a reload (instant
-  // navigation), so it is looked for again after every page.
-  function refresh() {
-    var toggle = document.querySelector("[data-analytics-toggle]");
-    var status = document.querySelector("[data-analytics-status]");
-    if (!toggle) return;
-    var blocked = browserSaysNo();
-    toggle.disabled = blocked;
-    toggle.textContent = enabled() ? "Turn analytics off" : "Turn analytics on";
-    if (status) {
-      status.textContent = blocked
-        ? "Analytics is off because your browser asks not to be tracked."
-        : enabled() ? "Analytics is on." : "Analytics is off.";
-    }
-  }
-
-  document.addEventListener("click", function (event) {
-    var toggle = event.target.closest && event.target.closest("[data-analytics-toggle]");
-    if (!toggle || browserSaysNo()) return;
-    try {
-      if (optedOut()) localStorage.removeItem(KEY); else localStorage.setItem(KEY, "1");
-    } catch (e) { /* the choice then lasts until reload */ }
-    if (enabled()) load(); else if (script()) script().remove();
-    refresh();
-  });
-
   load();
-  refresh();
-  if (window.document$ && window.document$.subscribe) window.document$.subscribe(refresh);
 })();

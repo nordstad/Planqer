@@ -41,6 +41,9 @@ const App = () => {
             <Route path="/3d-cutlist" element={<Navigate to="/model-cutlist" replace />} />
             <Route path="/step-cutlist" element={<Navigate to="/model-cutlist" replace />} />
             <Route path="/help" element={<HelpPage />} />
+            <Route path="/choose-tool" element={<Navigate to="/help#choose-tool" replace />} />
+            <Route path="/results" element={<Navigate to="/help#results" replace />} />
+            <Route path="/troubleshooting" element={<Navigate to="/help#troubleshooting" replace />} />
             <Route path="/dashboard" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
             {/* A project is a place, so it gets an address: back, refresh and a
                 shared link all land where the user was. */}

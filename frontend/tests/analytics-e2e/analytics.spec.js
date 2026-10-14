@@ -44,7 +44,6 @@ const named = (seen) => seen.sent.filter((payload) => payload.name);
 test("counts the pageview and the tool, and nothing outside the allow-list", async ({ page }) => {
   const seen = await watchUmami(page);
   await page.goto(APP);
-  await page.getByRole("button", { name: "Got it" }).click();
   await page.goto(`${APP}#/cutting`);
 
   await expect.poll(() => named(seen)).toContainEqual({ name: "tool_opened", data: { tool: "board" } });
@@ -62,22 +61,21 @@ test("counts the pageview and the tool, and nothing outside the allow-list", asy
   expect(named(seen).map((p) => p.name)).not.toContain("project_named");
 });
 
-test("counts a click on the full-version link by where it was", async ({ page }) => {
+test("counts a click on the footer's full-version link", async ({ page }) => {
   const seen = await watchUmami(page);
   await page.goto(APP);
-  await page.getByRole("dialog").getByRole("link", { name: "Get the full version" }).click({ modifiers: [] });
+  await page.getByRole("contentinfo").getByRole("link", { name: "Full version" }).click({ modifiers: [] });
 
-  await expect.poll(() => named(seen)).toContainEqual({ name: "docker_cta_clicked", data: { where: "dialog" } });
+  await expect.poll(() => named(seen)).toContainEqual({ name: "docker_cta_clicked", data: { where: "footer" } });
 });
 
-test("one click in the first-run dialog turns it off, and it stays off", async ({ page }) => {
+test("one click in the footer turns analytics off, and it stays off", async ({ page }) => {
   const seen = await watchUmami(page);
   await page.goto(APP);
   await expect.poll(() => seen.scripts).toBe(1);
 
-  await page.getByRole("button", { name: "Turn off analytics" }).click();
-  await expect(page.getByText("Analytics is off.")).toBeVisible();
-  await page.getByRole("button", { name: "Got it" }).click();
+  await page.getByRole("contentinfo").getByRole("button", { name: "Turn off" }).click();
+  await expect(page.getByRole("contentinfo")).toContainText("Analytics: off");
   const before = seen.sent.length;
   await page.goto(`${APP}#/tile-layout`);
   await page.waitForTimeout(500);
@@ -97,7 +95,6 @@ for (const signal of ["doNotTrack", "globalPrivacyControl"]) {
       Object.defineProperty(navigator, name, { value: name === "doNotTrack" ? "1" : true });
     }, signal);
     await page.goto(APP);
-    await page.getByRole("button", { name: "Got it" }).click();
     await page.goto(`${APP}#/cutting`);
     await page.waitForTimeout(500);
 

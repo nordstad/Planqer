@@ -1,4 +1,5 @@
 import { act, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
 vi.mock('./utils/api', async () => ({
   ...(await vi.importActual('./utils/api')),
@@ -16,7 +17,6 @@ vi.mock('./runtime/localBackend', () => ({
 }));
 
 const renderAtHash = async (hash) => {
-  localStorage.setItem('planqer.demo.welcomed', '1');
   vi.stubEnv('VITE_PLANQER_MODE', 'static');
   window.history.pushState({}, '', '/');
   window.location.hash = hash;
@@ -84,3 +84,25 @@ it('lets the user edit the catalogue, in words about this browser', async () => 
   expect(await screen.findByText(/saved in this browser only/i)).toBeInTheDocument();
   expect(screen.queryByText(/this instance/i)).not.toBeInTheDocument();
 });
+
+it.each([
+  ['Choose a tool', 'choose-tool'],
+  ['Read your result', 'results'],
+  ['Troubleshooting', 'troubleshooting'],
+])('keeps the Help page open when navigating to %s', async (linkName, sectionId) => {
+  await renderAtHash('#/help');
+  await userEvent.click(await screen.findByRole('link', { name: new RegExp(linkName, 'i') }));
+
+  expect(window.location.hash).toBe(`#/help#${sectionId}`);
+  expect(document.getElementById(sectionId)).toBeInTheDocument();
+});
+
+it.each(['choose-tool', 'results', 'troubleshooting'])(
+  'redirects the old #%s address to its Help section',
+  async (sectionId) => {
+    await renderAtHash(`#/${sectionId}`);
+
+    expect(await screen.findByRole('heading', { level: 1 })).toBeInTheDocument();
+    expect(window.location.hash).toBe(`#/help#${sectionId}`);
+  },
+);
