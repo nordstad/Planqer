@@ -29,9 +29,9 @@ vi.mock('../contexts/AuthContext', async () => ({
   useAuth: () => ({ user: { id: 'user-1' } }),
 }));
 
-const renderOptimizer = ({ loadExample = true } = {}) => {
+const renderOptimizer = ({ loadExample = true, initialEntries = ['/cutting'] } = {}) => {
   const result = render(
-    <MemoryRouter initialEntries={['/cutting']}>
+    <MemoryRouter initialEntries={initialEntries}>
       <AuthProvider>
         <CuttingOptimizer />
       </AuthProvider>
@@ -103,6 +103,56 @@ describe('CuttingOptimizer', () => {
     renderOptimizer();
     expect(await screen.findByRole('heading', { name: /Required parts/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Plan the cuts/i })).toBeInTheDocument();
+  });
+
+  it('steps board thickness and width in whole millimetres', async () => {
+    renderOptimizer();
+    await screen.findByRole('heading', { name: /Required parts/i });
+
+    expect(screen.getByLabelText('Thickness (mm)')).toHaveAttribute('step', '1');
+    expect(screen.getByLabelText('Width (mm)')).toHaveAttribute('step', '1');
+  });
+
+  it('keeps new part rows stable and attaches errors to the correct field', async () => {
+    renderOptimizer({ loadExample: false });
+    await screen.findByRole('heading', { name: /Required parts/i });
+
+    fireEvent.click(screen.getByRole('button', { name: /Add part/i }));
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    expect(screen.queryByText(/must be a positive/i)).not.toBeInTheDocument();
+
+    const length = screen.getByLabelText(/Part length in millimetres, item 1/i);
+    const quantity = screen.getByLabelText(/Quantity, item 1/i);
+    expect(length.closest('form')).toHaveAttribute('novalidate');
+    expect(length).toHaveAttribute('min', '1');
+    expect(length).toHaveAttribute('step', '1');
+    expect(length).toHaveClass('is-required-empty');
+    expect(quantity).toHaveClass('is-required-empty');
+    expect(length).not.toHaveAttribute('placeholder');
+    expect(quantity).not.toHaveAttribute('placeholder');
+    expect(screen.getByLabelText(/Name, item 1/i)).toHaveAttribute('placeholder', 'Optional');
+    expect(screen.getByLabelText(/Name, item 1/i)).not.toHaveClass('is-required-empty');
+    fireEvent.change(length, { target: { value: '60' } });
+    fireEvent.change(quantity, { target: { value: '5' } });
+    expect(length).not.toHaveClass('is-required-empty');
+    expect(quantity).not.toHaveClass('is-required-empty');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+
+    fireEvent.change(quantity, { target: { value: '1.5' } });
+    expect(screen.getByRole('alert')).toHaveTextContent('Quantity must be a positive whole number');
+    expect(screen.getByRole('alert').closest('tr')).toHaveClass('part-error-row');
+    expect(length).toHaveAttribute('aria-invalid', 'false');
+    expect(quantity).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('states the actual maximum board length in the limits', async () => {
+    renderOptimizer();
+    await screen.findByRole('heading', { name: /Required parts/i });
+
+    fireEvent.click(screen.getByRole('button', { name: /What this page returns, and its limits/i }));
+
+    expect(screen.getByText(/≤ 15.?000 mm/)).toBeInTheDocument();
+    expect(screen.queryByText(/≤ 6.?000 mm/)).not.toBeInTheDocument();
   });
 
   it('shows optional stock prices and keeps lowest cost disabled until complete', async () => {
@@ -251,13 +301,26 @@ describe('CuttingOptimizer', () => {
       board_lengths: [300],
       saw_blade_width: 4,
     }]);
-    window.history.replaceState({}, '', '/cutting?edit=board-1');
-
-    renderOptimizer();
+    renderOptimizer({ initialEntries: ['/cutting?edit=board-1'] });
 
     expect(await screen.findByDisplayValue('100')).toBeInTheDocument();
     expect(screen.getByDisplayValue('300')).toBeInTheDocument();
     expect(screen.getByDisplayValue('4')).toBeInTheDocument();
+  });
+
+  it('restores named board parts while remaining compatible with old projects', async () => {
+    getUserProjects.mockResolvedValue([{
+      id: 'board-1',
+      name: 'Saved board',
+      project_group_id: null,
+      parts_data: [{ name: 'Front rail', length: 100, quantity: 2 }],
+      board_lengths: [300],
+      saw_blade_width: 4,
+    }]);
+    renderOptimizer({ initialEntries: ['/cutting?edit=board-1'] });
+
+    expect(await screen.findByDisplayValue('Front rail')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('100')).toBeInTheDocument();
   });
 
   it('restores the product snapshot a plan was saved with, and keeps an old plan\'s material as the user\'s own words', async () => {
@@ -270,14 +333,12 @@ describe('CuttingOptimizer', () => {
         details: { species: 'spruce', grade: 'C24' }, suggested: false,
       },
     }]);
-    window.history.replaceState({}, '', '/cutting?edit=board-1');
-    const { unmount } = renderOptimizer();
+    const { unmount } = renderOptimizer({ initialEntries: ['/cutting?edit=board-1'] });
     await waitFor(() => expect(screen.getByTestId('product-summary')).toHaveTextContent('Framing timber / studs 45 × 95 mm'));
     unmount();
 
     getUserProjects.mockResolvedValue([{ ...base, id: 'board-2', name: 'Old', material_type: 'oak', product: null }]);
-    window.history.replaceState({}, '', '/cutting?edit=board-2');
-    renderOptimizer();
+    renderOptimizer({ initialEntries: ['/cutting?edit=board-2'] });
     await waitFor(() => expect(screen.getByTestId('product-summary')).toHaveTextContent('Oak'));
   });
 
@@ -290,9 +351,7 @@ describe('CuttingOptimizer', () => {
       board_lengths: [300],
       saw_blade_width: 4,
     }]);
-    window.history.replaceState({}, '', '/cutting?edit=board-1');
-
-    renderOptimizer();
+    renderOptimizer({ initialEntries: ['/cutting?edit=board-1'] });
     await screen.findByDisplayValue('100');
     fillMaterial();
     fireEvent.click(screen.getByRole('button', { name: /Plan the cuts/i }));

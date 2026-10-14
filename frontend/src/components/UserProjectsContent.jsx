@@ -28,6 +28,7 @@ import { svgBlobToPngBlob } from '../utils/svgToPng';
 import { printProjectPlans } from '../utils/printProject';
 import { buildMaterialListHtml, buildMaterialCsv, isPlanPriced } from '../utils/materialList';
 import { materialLabel, cleanMaterial } from '../utils/materialLabel';
+import { restoreBoardParts } from '../utils/boardParts';
 import { buildCutListHtml } from '../utils/tileCutList';
 import { useAuth } from '../contexts/AuthContext';
 import { demoContext } from '../utils/mode';
@@ -81,11 +82,9 @@ const planFacts = (project, t) => {
       stock: `${materialLabel(project.tile_data?.material_type || 'tile', t)} · ${project.tile_data?.thickness || '—'}×${project.tile_data.width}×${project.tile_data.height}mm`,
     };
   }
-  const partEntries = project.parts_data && typeof project.parts_data === 'object'
-    ? Object.entries(project.parts_data)
-    : [];
-  const count = partEntries.reduce((sum, [, qty]) => sum + qty, 0);
-  const demand = partEntries.reduce((sum, [length, qty]) => sum + parseFloat(length) * qty, 0);
+  const parts = restoreBoardParts(project.parts_data);
+  const count = parts.reduce((sum, part) => sum + (parseInt(part.quantity, 10) || 0), 0);
+  const demand = parts.reduce((sum, part) => sum + (parseFloat(part.length) || 0) * (parseInt(part.quantity, 10) || 0), 0);
   return {
     type: t('common.boardCutting'),
     count: t(count === 1 ? 'workflow.partsSummary_one' : 'workflow.partsSummary', {

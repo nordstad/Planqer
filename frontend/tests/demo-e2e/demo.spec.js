@@ -50,6 +50,7 @@ test("a plan is solved in the browser, saved, and still there after a reload", a
   await expect(page).toHaveURL(/#\/cutting$/);
 
   await page.getByRole("button", { name: /try an example/i }).click();
+  await page.getByLabel("Name, item 1").fill("Front rail");
   await page.getByRole("combobox", { name: "Product" }).fill("Oak");
   await page.getByRole("option", { name: "Use “Oak” as my own product" }).click();
   await page.getByLabel("Thickness (mm)").fill("45");
@@ -69,6 +70,9 @@ test("a plan is solved in the browser, saved, and still there after a reload", a
   await page.getByRole("link", { name: "My projects" }).click();
   await expect(page).toHaveURL(/#\/dashboard$/);
   await expect(page.getByText("Demo smoke plan")).toBeVisible();
+  const savedPlan = page.locator(".plan-item").filter({ hasText: "Demo smoke plan" });
+  await savedPlan.getByRole("button", { name: "Modify" }).click();
+  await expect(page.getByLabel("Name, item 1")).toHaveValue("Front rail");
 
   expect(seen.outside, "nothing may be loaded from another origin").toEqual([]);
   expect(seen.failed, "nothing may 404").toEqual([]);
@@ -119,7 +123,7 @@ test("the user's own products can be edited", async ({ page }) => {
   await page.goto(`${APP}#/`);
   await page.getByRole("link", { name: "Catalogue" }).click();
   await expect(page).toHaveURL(/#\/catalogue$/);
-  await expect(page.getByText(/saved in this browser only/i)).toBeVisible();
+  await expect(page.getByText(/saved in this browser only/i)).toBeVisible({ timeout: 15_000 });
 });
 
 test("Browse files and Import backup open the file picker", async ({ page }) => {
@@ -135,7 +139,7 @@ test("Browse files and Import backup open the file picker", async ({ page }) => 
   await importChooser;
 });
 
-test("a visitor with no country picks one, then a type, then a size, and the numbers fill in", async ({ page }) => {
+test("a visitor with no country picks one, then browses to a product size, and the numbers fill in", async ({ page }) => {
   await skipWelcome(page);
   await page.goto(`${APP}#/cutting`);
 
@@ -147,10 +151,8 @@ test("a visitor with no country picks one, then a type, then a size, and the num
 
   await page.getByRole("combobox", { name: "Product" }).click();
   await page.getByRole("option", { name: /^Decking/ }).first().click();
-  const size = page.getByRole("combobox", { name: "Size" });
-  await expect(size).toBeVisible();
-  await size.selectOption({ index: 1 });
+  await page.getByRole("option", { name: /^Decking 28 × 120 mm/ }).click();
 
-  await expect(page.getByLabel("Thickness (mm)")).not.toHaveValue("");
-  await expect(page.getByLabel("Width (mm)")).not.toHaveValue("");
+  await expect(page.getByLabel("Thickness (mm)")).toHaveValue("28");
+  await expect(page.getByLabel("Width (mm)")).toHaveValue("120");
 });

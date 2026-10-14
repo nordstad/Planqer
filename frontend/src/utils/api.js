@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { normalizeBoardParts } from './boardParts';
 import { resolveCatalogueCountry } from './catalogueChoice';
 import { createLocalTransport } from '../runtime/localTransport';
 
@@ -204,12 +205,8 @@ export const getUserProjects = async () => {
 
 export const serializeBoardParts = (parts) => {
   const payload = {};
-  parts.forEach((part) => {
-    const length = parseFloat(part.length);
-    const quantity = parseInt(part.quantity, 10);
-    if (Number.isFinite(length) && Number.isFinite(quantity)) {
-      payload[length] = (payload[length] || 0) + quantity;
-    }
+  normalizeBoardParts(parts).forEach(({ length, quantity }) => {
+    payload[length] = (payload[length] || 0) + quantity;
   });
   return payload;
 };
@@ -269,7 +266,7 @@ export const saveProject = async ({ id, name, projectGroupId, parts, boards, saw
     const payload = {
       name,
       project_group_id: projectGroupId || null,
-      parts_data: serializeBoardParts(parts),
+      parts_data: normalizeBoardParts(parts),
       board_lengths: serializeBoardLengths(boards),
       saw_blade_width: parseFloat(sawKerf),
       material_type: materialType,

@@ -11,7 +11,7 @@
 */
 
 import { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   optimizeTileLayout, getProjectGroups, createProjectGroup,
@@ -91,6 +91,8 @@ const validateTileInputs = (values, t) => ({
 const TileOptimizer = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [step, setStep] = useState(STEP_SURFACE);
 
   const [surfaceWidth, setSurfaceWidth] = useState('2400');
@@ -251,13 +253,13 @@ const TileOptimizer = () => {
   };
 
   useEffect(() => {
-    const editId = new URLSearchParams(window.location.search).get('edit');
+    const editId = new URLSearchParams(location.search).get('edit');
     if (!editId || !userProjects.length) return;
     const project = userProjects.find((item) => String(item.id) === editId);
     if (!project) return;
     loadProject(project);
-    window.history.replaceState({}, document.title, window.location.pathname);
-  }, [userProjects]);
+    navigate(location.pathname, { replace: true });
+  }, [location.pathname, location.search, navigate, userProjects]);
 
   /* ── derived facts ─────────────────────────────────────────────────────── */
   const hasErrors = inputErrors.cutouts.some(Boolean)

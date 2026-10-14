@@ -2,8 +2,11 @@
 
 ## Self-hosted Planqer
 
-Self-hosted Planqer (Docker) contains no analytics and sends nothing anywhere.
-Your data stays on your server.
+Self-hosted Planqer (Docker) contains no analytics. Its home page checks
+GitHub's public API for the newest release number so it can show an update
+notice. Like any web request, this exposes the visitor's IP address to GitHub,
+but no account, project or usage data is sent. Your project data stays on your
+server.
 
 ## The demo
 

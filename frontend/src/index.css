@@ -612,6 +612,25 @@
     padding: 2px 4px; min-height: 30px; font-variant-numeric: tabular-nums; border-radius: 4px;
   }
   .cell-input:focus { outline: none; background: var(--accent-bg); color: var(--ink); }
+  .cell-input.is-required-empty {
+    background: var(--accent-bg);
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+  }
+  .cell-input.is-required-empty:focus { border-color: var(--accent); }
+  .parts-table { table-layout: fixed; }
+  .parts-table .part-item-col { width: 44px; }
+  .parts-table .part-size-col { width: 172px; }
+  .parts-table .part-quantity-col { width: 72px; }
+  .parts-table .part-remove-col { width: 34px; }
+  .parts-table th:nth-child(3), .parts-table td:nth-child(3) { padding-left: 12px; }
+  .parts-table th:nth-child(4), .parts-table td:nth-child(4) { padding-left: 12px; }
+  .board-part-length .cell-input { width: 96px; margin-left: auto; }
+  .sheet-part-size { width: 172px; }
+  .sheet-part-dimensions { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+  .sheet-part-dimension { width: 72px; flex: 0 0 72px; }
+  .cat-table .part-error-row td, .cat-table .sheet-part-error-row td { padding-top: 0; text-align: left; }
+  .part-error-row p, .sheet-part-error-row p { margin: 0; padding: 0 0 6px; }
   .stock-table-wrap .stock-price-input {
     width: 112px; background: var(--card); border: 1px solid var(--rule-hair); border-radius: 6px; padding: 4px 6px;
   }

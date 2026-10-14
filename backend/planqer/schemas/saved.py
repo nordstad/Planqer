@@ -24,7 +24,7 @@ class ProjectCreateRequest(BaseModel):
 
     name: str = Field(min_length=1, max_length=200)
     project_group_id: UUID | None = None
-    parts_data: dict
+    parts_data: dict | list[dict]
     board_lengths: list[float]
     saw_blade_width: float
     material_type: str = ""
@@ -43,7 +43,7 @@ class ProjectCreateRequest(BaseModel):
 class ProjectUpdateRequest(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=200)
     project_group_id: UUID | None = None
-    parts_data: dict | None = None
+    parts_data: dict | list[dict] | None = None
     board_lengths: list[float] | None = None
     saw_blade_width: float | None = None
     material_type: str | None = None

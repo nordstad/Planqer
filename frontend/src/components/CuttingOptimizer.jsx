@@ -19,17 +19,20 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { optimizeCutting, saveProject, getProjectGroups, createProjectGroup, getUserProjects, getUserSettings } from '../utils/api';
 import { materialLabel } from '../utils/materialLabel';
+import { boardPartCount, restoreBoardParts } from '../utils/boardParts';
 import ProductPicker from './ProductPicker';
 import {
   emptySelection, selectionName, buildSnapshot, selectionFromSnapshot, selectionFromLegacyMaterial,
 } from '../utils/catalogue';
 import {
+  MAX_BOARD_LENGTH,
   SAW_KERF_MAX,
   SAW_KERF_MIN,
   validateBoards,
+  validatePartFields,
   validateParts,
 } from '../utils/validators';
 import { useDebounce } from '../hooks/useDebounce';
@@ -56,15 +59,17 @@ const STEP_SAVE = 2;
 const DEFAULT_CURRENCY = 'SEK';
 
 const EXAMPLE_PARTS = [
-  { length: "80", quantity: "10" },
-  { length: "150", quantity: "10" },
-  { length: "1550", quantity: "8" },
-  { length: "2000", quantity: "2" },
+  { length: "80", quantity: "10", name: "" },
+  { length: "150", quantity: "10", name: "" },
+  { length: "1550", quantity: "8", name: "" },
+  { length: "2000", quantity: "2", name: "" },
 ];
 
 const CuttingOptimizer = () => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [step, setStep] = useState(STEP_PARTS);
 
   const [parts, setParts] = useState([]);
@@ -80,7 +85,7 @@ const CuttingOptimizer = () => {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState("");
-  const [inputErrors, setInputErrors] = useState({ parts: [], boards: [], sawKerf: "" });
+  const [inputErrors, setInputErrors] = useState({ boards: [], sawKerf: "" });
 
   const [limitsOpen, setLimitsOpen] = useState(false);
   const [costOpen, setCostOpen] = useState(false);
@@ -118,14 +123,12 @@ const CuttingOptimizer = () => {
   // reads as the page scolding the user for its own toggle.
   const stockSectionRef = useRef(null);
 
-  const debouncedParts = useDebounce(parts, 300);
   const debouncedBoards = useDebounce(boards, 300);
   const debouncedSawKerf = useDebounce(sawKerf, 300);
 
   useEffect(() => {
     const kerfValue = parseFloat(debouncedSawKerf);
     setInputErrors({
-      parts: validateParts(debouncedParts, t),
       boards: validateBoards(debouncedBoards, t),
       sawKerf: !debouncedSawKerf || kerfValue < SAW_KERF_MIN
         ? "A kerf of zero would plan cuts that lose no material"
@@ -133,7 +136,7 @@ const CuttingOptimizer = () => {
           ? t('auditUi.kerfWide')
           : "",
     });
-  }, [debouncedParts, debouncedBoards, debouncedSawKerf]);
+  }, [debouncedBoards, debouncedSawKerf]);
 
   // This page requires sign-in, so project groups and saved plans are always available.
   // Loaded defaults are also applied once so the user settings act as the real starting state.
@@ -164,7 +167,7 @@ const CuttingOptimizer = () => {
 
   // A cutlist handed over from an uploaded model lands here as the starting parts
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
+    const urlParams = new URLSearchParams(location.search);
     if (urlParams.get('import') !== '3d') return;
     const importData = localStorage.getItem('planqer-3d-import');
     if (!importData) return;
@@ -172,6 +175,7 @@ const CuttingOptimizer = () => {
       const data = JSON.parse(importData);
       if (data.parts && data.source === 'model-cutlist') {
         setParts(Object.entries(data.parts).map(([length, quantity]) => ({
+          name: '',
           length,
           quantity: quantity.toString(),
         })));
@@ -180,12 +184,12 @@ const CuttingOptimizer = () => {
         if (data.boardThickness != null) setBoardThickness(String(data.boardThickness));
         if (data.boardWidth != null) setBoardWidth(String(data.boardWidth));
         localStorage.removeItem('planqer-3d-import');
-        window.history.replaceState({}, document.title, '/cutting');
+        navigate(location.pathname, { replace: true });
       }
     } catch (err) {
       console.error('Failed to import 3D cutlist data:', err);
     }
-  }, []);
+  }, [location.pathname, location.search, navigate]);
 
   /* ── a plan belongs to its inputs ──────────────────────────────────────
      Anything that changes what gets cut retires the plan and the save that
@@ -236,7 +240,7 @@ const CuttingOptimizer = () => {
     e.preventDefault();
     const rows = text.split('\n').map(line => line.trim()).filter(Boolean).map(line => {
       const [length, quantity] = line.split(/[,\t]|\s+/).filter(Boolean);
-      return { length: length || '', quantity: quantity || '1' };
+      return { length: length || '', quantity: quantity || '1', name: '' };
     });
     if (!rows.length) return;
     retirePlan();
@@ -261,7 +265,7 @@ const CuttingOptimizer = () => {
     ));
   };
 
-  const addPart = () => { retirePlan(); setParts([...parts, { length: "", quantity: "" }]); };
+  const addPart = () => { retirePlan(); setParts([...parts, { length: "", quantity: "", name: "" }]); };
   const loadExample = () => { retirePlan(); setParts(EXAMPLE_PARTS.map((part) => ({ ...part }))); };
   const removePart = (index) => {
     if (parts.length <= 1) return;
@@ -286,10 +290,7 @@ const CuttingOptimizer = () => {
 
   const loadProject = (project) => {
     retirePlan();
-    setParts(Object.entries(project.parts_data).map(([length, quantity]) => ({
-      length,
-      quantity: quantity.toString(),
-    })));
+    setParts(restoreBoardParts(project.parts_data));
     setBoards(project.board_lengths.map(String));
     setSawKerf(project.saw_blade_width.toString());
     setProductSel(project.product
@@ -320,21 +321,28 @@ const CuttingOptimizer = () => {
   };
 
   useEffect(() => {
-    const editId = new URLSearchParams(window.location.search).get('edit');
+    const editId = new URLSearchParams(location.search).get('edit');
     if (!editId || !userProjects.length) return;
     const project = userProjects.find((item) => String(item.id) === editId);
     if (!project) return;
     loadProject(project);
-    window.history.replaceState({}, document.title, window.location.pathname);
-  }, [userProjects]);
+    navigate(location.pathname, { replace: true });
+  }, [location.pathname, location.search, navigate, userProjects]);
 
   /* ── derived facts ─────────────────────────────────────────────────────── */
+  const currentPartErrors = parts.map((part) => validatePartFields(part, t));
+  const visiblePartError = (part, index) => {
+    const errors = currentPartErrors[index];
+    if (!errors) return null;
+    const visible = Object.fromEntries(Object.entries(errors).filter(([field]) => part[field] !== ''));
+    return Object.keys(visible).length > 0 ? visible : null;
+  };
   const partCount = parts.reduce((n, p) => n + (parseInt(p.quantity, 10) || 0), 0);
   const demand = parts.reduce(
     (sum, p) => sum + (parseFloat(p.length) || 0) * (parseFloat(p.quantity) || 0), 0);
   const sectionDims = { thickness: parseFloat(boardThickness), width: parseFloat(boardWidth) };
   const material = selectionName(productSel, i18n.language, sectionDims);
-  const hasErrors = parts.length === 0 || inputErrors.parts.some(Boolean) || inputErrors.boards.some(Boolean) || !!inputErrors.sawKerf
+  const hasErrors = parts.length === 0 || currentPartErrors.some(Boolean) || inputErrors.boards.some(Boolean) || !!inputErrors.sawKerf
     || !parseFloat(boardThickness) || !parseFloat(boardWidth);
   const validBoards = boards.filter(b => b && !isNaN(parseFloat(b)));
   const uniqueValidBoards = [...new Set(validBoards.map((board) => parseFloat(board)))];
@@ -463,15 +471,15 @@ const CuttingOptimizer = () => {
 
   const handlePlanSubmit = (e) => {
     e.preventDefault();
+    const currentParts = validateParts(parts, t);
     const currentErrors = {
-      parts: validateParts(parts, t),
       boards: validateBoards(boards, t),
       sawKerf: !sawKerf || parseFloat(sawKerf) < SAW_KERF_MIN
         ? t('workflow.kerfHint')
         : parseFloat(sawKerf) > SAW_KERF_MAX ? t('auditUi.kerfWide') : '',
     };
     setInputErrors(currentErrors);
-    if (currentErrors.parts.some(Boolean) || currentErrors.boards.some(Boolean) || currentErrors.sawKerf) return;
+    if (currentParts.some(Boolean) || currentErrors.boards.some(Boolean) || currentErrors.sawKerf) return;
     runPlan(pricingComplete);
   };
 
@@ -591,7 +599,7 @@ const CuttingOptimizer = () => {
 
       {/* ── 01 · what needs cutting ───────────────────────────────────────── */}
       {step === STEP_PARTS && (
-        <form className="step-view is-form" onSubmit={handlePlanSubmit}>
+        <form className="step-view is-form" onSubmit={handlePlanSubmit} noValidate>
           <div className="step-head">
             <div>
               <h1 className="step-h1">{t('workflow.requiredParts')}</h1>
@@ -604,9 +612,16 @@ const CuttingOptimizer = () => {
             </button>
           </div>
 
-          <table className="cat-table">
+          <table className="cat-table parts-table">
+            <colgroup>
+              <col className="part-item-col" />
+              <col className="part-size-col" />
+              <col className="part-quantity-col" />
+              <col />
+              <col className="part-remove-col" />
+            </colgroup>
             <thead>
-              <tr><th>{t('workflow.item')}</th><th>{t('workflow.lengthMm')}</th><th>{t('workflow.qty')}</th><th>{t('workflow.total')}</th><th aria-label={t('common.remove')} /></tr>
+              <tr><th>{t('workflow.item')}</th><th>{t('workflow.lengthMm')}</th><th>{t('workflow.qty')}</th><th>{t('workflow.name')}</th><th aria-label={t('common.remove')} /></tr>
             </thead>
             <tbody>
               {parts.map((part, index) => (
@@ -617,13 +632,13 @@ const CuttingOptimizer = () => {
                   handlePartChange={handlePartChange}
                   handlePartsPaste={handlePartsPaste}
                   removePart={removePart}
-                  error={inputErrors.parts[index]}
+                  error={visiblePartError(part, index)}
                   canRemove={parts.length > 1}
                 />
               ))}
               {parts.length > 0 ? (
                 <tr className="is-sum">
-                  <td>Σ</td><td /><td>{partCount}</td><td>{mm(demand)}</td><td />
+                  <td>Σ</td><td>{mm(demand)}</td><td>{partCount}</td><td /><td />
                 </tr>
               ) : (
                 <tr>
@@ -700,11 +715,11 @@ const CuttingOptimizer = () => {
             <div className="grid gap-x-8 gap-y-5 md:grid-cols-2">
               <div>
                 <label className="form-label" htmlFor="board-thickness">{t('workflow.thicknessMm')}</label>
-                <input id="board-thickness" type="number" min="0.1" step="0.1" value={boardThickness} onChange={(e) => { retirePlan(); setBoardThickness(e.target.value); }} className="form-input" required />
+                <input id="board-thickness" type="number" min="1" step="1" value={boardThickness} onChange={(e) => { retirePlan(); setBoardThickness(e.target.value); }} className="form-input" required />
               </div>
               <div>
                 <label className="form-label" htmlFor="board-width">{t('workflow.widthMm')}</label>
-                <input id="board-width" type="number" min="0.1" step="0.1" value={boardWidth} onChange={(e) => { retirePlan(); setBoardWidth(e.target.value); }} className="form-input" required />
+                <input id="board-width" type="number" min="1" step="1" value={boardWidth} onChange={(e) => { retirePlan(); setBoardWidth(e.target.value); }} className="form-input" required />
               </div>
             </div>
             {(!parseFloat(boardThickness) || !parseFloat(boardWidth)) && <p className="text-danger text-[12.5px] font-semibold" style={{ marginTop: '10px' }}>{t('productUi.dimensionsRequired')}</p>}
@@ -844,7 +859,7 @@ const CuttingOptimizer = () => {
                 </table>
                 <table className="cat-table is-reference">
                   <tbody>
-                    <tr><td>{t('workflow.lengthMm')}</td><td>≤ 6 000 mm</td></tr>
+                    <tr><td>{t('workflow.lengthMm')}</td><td>≤ {mm(MAX_BOARD_LENGTH)} mm</td></tr>
                     <tr><td>{t('workflow.parts')}</td><td>≤ 1 000</td></tr>
                     <tr><td>{t('help.kerf')}</td><td>{t('legacy.unitsDeclared')}</td></tr>
                     <tr><td>{t('common.units')}</td><td>{t('common.units')}</td></tr>
@@ -1113,7 +1128,7 @@ const CuttingOptimizer = () => {
                       const projectRow = (project) => (
                         <tr key={project.id}>
                           <td style={{ textAlign: 'left', color: 'var(--ink)', fontSize: '13px' }}>{project.name}</td>
-                          <td>{Object.values(project.parts_data).reduce((sum, qty) => sum + qty, 0)}</td>
+                          <td>{boardPartCount(project.parts_data)}</td>
                           <td style={{ width: '90px' }}>
                             <button className="btn" style={{ padding: '5px 10px', minHeight: 0 }} onClick={() => loadProject(project)}>
                                {t('ui.load')}

@@ -12,7 +12,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SAW_KERF_MIN, SAW_KERF_MAX } from '../utils/validators';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import CatalogPage from './CatalogPage';
 import ConfirmDialog from './ConfirmDialog';
 import { optimizeSheetCutting, saveSheetProject, getProjectGroups, createProjectGroup, getUserSheetProjects, getUserSettings } from '../utils/api';
@@ -78,6 +78,8 @@ const validateSheetParts = (parts, t) => parts.map((part) => {
 const SheetOptimizer = () => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [step, setStep] = useState(STEP_PARTS);
 
   const [parts, setParts] = useState([]);
@@ -96,7 +98,7 @@ const SheetOptimizer = () => {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState("");
-  const [inputErrors, setInputErrors] = useState({ parts: [], sheetWidth: "", sheetHeight: "", kerfWidth: "", sheetThickness: "" });
+  const [inputErrors, setInputErrors] = useState({ sheetWidth: "", sheetHeight: "", kerfWidth: "", sheetThickness: "" });
   const [sheetFieldsTouched, setSheetFieldsTouched] = useState(false);
 
   const [strategyOpen, setStrategyOpen] = useState(false);
@@ -118,7 +120,6 @@ const SheetOptimizer = () => {
   const [loadModalOpen, setLoadModalOpen] = useState(false);
   const inputRevision = useRef(0);
 
-  const debouncedParts = useDebounce(parts, 300);
   const debouncedSheetWidth = useDebounce(sheetWidth, 300);
   const debouncedSheetHeight = useDebounce(sheetHeight, 300);
   const debouncedKerfWidth = useDebounce(kerfWidth, 300);
@@ -136,7 +137,6 @@ const SheetOptimizer = () => {
     const kerf = parseFloat(debouncedKerfWidth);
 
      setInputErrors({
-       parts: validateSheetParts(debouncedParts, t),
        sheetWidth: !debouncedSheetWidth || isNaN(width) || width < 100
          ? t('tileUi.positiveWidth')
          : width > 10000 ? t('tileUi.cannotExceed', { label: t('workflow.width'), max: '10 000 mm' }) : "",
@@ -149,7 +149,7 @@ const SheetOptimizer = () => {
         sheetThickness: sheetFieldsTouched && (!sheetThickness || isNaN(parseFloat(sheetThickness)) || parseFloat(sheetThickness) <= 0)
           ? t('auditUi.sheetThicknessRequired') : "",
       });
-    }, [debouncedParts, debouncedSheetWidth, debouncedSheetHeight, debouncedKerfWidth, sheetFieldsTouched, sheetThickness, t]);
+    }, [debouncedSheetWidth, debouncedSheetHeight, debouncedKerfWidth, sheetFieldsTouched, sheetThickness, t]);
 
   // This page requires sign-in, so project groups and saved plans are always available
   useEffect(() => {
@@ -161,7 +161,7 @@ const SheetOptimizer = () => {
 
   // Sheet parts handed over from an uploaded model land here as the starting parts
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
+    const urlParams = new URLSearchParams(location.search);
     if (urlParams.get('import') !== '3d') return;
     const importData = localStorage.getItem('planqer-3d-sheet-import');
     if (!importData) return;
@@ -179,12 +179,12 @@ const SheetOptimizer = () => {
         if (data.product?.type) setProductSel(data.product);
         if (data.sheetThickness != null) setSheetThickness(String(data.sheetThickness));
         localStorage.removeItem('planqer-3d-sheet-import');
-        window.history.replaceState({}, document.title, '/sheet-cutting');
+        navigate(location.pathname, { replace: true });
       }
     } catch (err) {
       console.error('Failed to import 3D sheet cutlist data:', err);
     }
-  }, []);
+  }, [location.pathname, location.search, navigate]);
 
   /* ── a layout belongs to its inputs ────────────────────────────────────── */
   const retireLayout = () => {
@@ -251,17 +251,24 @@ const SheetOptimizer = () => {
   };
 
   useEffect(() => {
-    const editId = new URLSearchParams(window.location.search).get('edit');
+    const editId = new URLSearchParams(location.search).get('edit');
     if (!editId || !userProjects.length) return;
     const project = userProjects.find((item) => String(item.id) === editId);
     if (!project) return;
     loadProject(project);
-    window.history.replaceState({}, document.title, window.location.pathname);
-  }, [userProjects]);
+    navigate(location.pathname, { replace: true });
+  }, [location.pathname, location.search, navigate, userProjects]);
 
   /* ── derived facts ─────────────────────────────────────────────────────── */
+  const currentPartErrors = validateSheetParts(parts, t);
+  const visiblePartError = (part, index) => {
+    const errors = currentPartErrors[index];
+    if (!errors) return null;
+    const visible = Object.fromEntries(Object.entries(errors).filter(([field]) => part[field] !== ''));
+    return Object.keys(visible).length > 0 ? visible : null;
+  };
   const partCount = parts.reduce((n, p) => n + (parseInt(p.quantity, 10) || 0), 0);
-  const hasErrors = parts.length === 0 || inputErrors.parts.some(Boolean)
+  const hasErrors = parts.length === 0 || currentPartErrors.some(Boolean)
     || !!inputErrors.sheetWidth || !!inputErrors.sheetHeight || !!inputErrors.kerfWidth
     || !!inputErrors.sheetThickness || !sheetThickness;
   const sheetError = inputErrors.sheetWidth || inputErrors.sheetHeight || inputErrors.sheetThickness;
@@ -277,7 +284,6 @@ const SheetOptimizer = () => {
      const currentHeight = parseFloat(sheetHeight);
      const currentKerf = parseFloat(kerfWidth);
      const currentErrors = {
-       parts: currentParts,
        sheetWidth: !sheetWidth || isNaN(currentWidth) || currentWidth < 100 || currentWidth > 10000 ? t('tileUi.positiveWidth') : '',
        sheetHeight: !sheetHeight || isNaN(currentHeight) || currentHeight < 100 || currentHeight > 10000 ? t('tileUi.positiveHeight') : '',
        kerfWidth: !kerfWidth || isNaN(currentKerf) || currentKerf < SAW_KERF_MIN || currentKerf > SAW_KERF_MAX ? t('modelUi.kerfZero') : '',
@@ -407,7 +413,7 @@ const SheetOptimizer = () => {
 
       {/* ── 01 · what needs cutting ───────────────────────────────────────── */}
       {step === STEP_PARTS && (
-        <form className="step-view is-form" onSubmit={handleLayoutSubmit}>
+        <form className="step-view is-form" onSubmit={handleLayoutSubmit} noValidate>
           <div className="step-head">
             <div>
               <h1 className="step-h1">{t('workflow.partsToCut')}</h1>
@@ -420,7 +426,14 @@ const SheetOptimizer = () => {
             </button>
           </div>
 
-          <table className="cat-table">
+          <table className="cat-table parts-table">
+            <colgroup>
+              <col className="part-item-col" />
+              <col className="part-size-col" />
+              <col className="part-quantity-col" />
+              <col />
+              <col className="part-remove-col" />
+            </colgroup>
             <thead>
               <tr><th>{t('workflow.item')}</th><th>{t('workflow.sizeMm')}</th><th>{t('workflow.qty')}</th><th>{t('workflow.name')}</th><th aria-label={t('common.remove')} /></tr>
             </thead>
@@ -432,7 +445,7 @@ const SheetOptimizer = () => {
                   index={index}
                   handlePartChange={handlePartChange}
                   removePart={removePart}
-                  error={inputErrors.parts[index]}
+                  error={visiblePartError(part, index)}
                   canRemove={parts.length > 1}
                 />
               ))}
@@ -506,7 +519,7 @@ const SheetOptimizer = () => {
                   <td>
                     <input
                       type="number"
-                      step="0.1"
+                      step="1"
                        min="100"
                       value={sheetWidth}
                       onChange={(e) => setSheetField(setSheetWidth)(e.target.value)}
@@ -522,7 +535,7 @@ const SheetOptimizer = () => {
                   <td>
                     <input
                       type="number"
-                      step="0.1"
+                      step="1"
                        min="100"
                       value={sheetHeight}
                       onChange={(e) => setSheetField(setSheetHeight)(e.target.value)}
@@ -536,7 +549,7 @@ const SheetOptimizer = () => {
                 <tr>
                     <td style={{ textAlign: 'left' }}>{t('workflow.thickness')}</td>
                   <td>
-                    <input id="sheet-thickness" type="number" min="0.1" step="0.1" value={sheetThickness} onChange={(e) => setSheetField(setSheetThickness)(e.target.value)} className={`cell-input ${inputErrors.sheetThickness ? 'is-error' : ''}`} required aria-describedby="sheet-stock-error" />
+                    <input id="sheet-thickness" type="number" min="1" step="1" value={sheetThickness} onChange={(e) => setSheetField(setSheetThickness)(e.target.value)} className={`cell-input ${inputErrors.sheetThickness ? 'is-error' : ''}`} required aria-describedby="sheet-stock-error" />
                   </td>
                   <td style={{ color: 'var(--ink-3)' }}>mm</td>
                 </tr>

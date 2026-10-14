@@ -234,6 +234,13 @@ const ProductPicker = ({
 
   const pick = (row) => {
     if (!row) return;
+    const hasProducts = row.kind === 'type'
+      && catalogue?.products.some((product) => product.type === row.type.key);
+    if (hasProducts && !text) {
+      setQuery(labelIn(row.type.labels, i18n.language));
+      setOpen(true);
+      return;
+    }
     commit(row.kind === 'free'
       ? freeTextSelection(kind, text)
       : typeSelection(row.type, row.kind === 'product' ? row.product : null));
@@ -289,20 +296,6 @@ const ProductPicker = ({
   const free = hasSelection && !!selection.text;
   const summary = selectionSummary(selection, i18n.language, dims, catalogue);
   const source = selection.product?.sources?.[0];
-
-  // A type chosen without a size would otherwise leave the sizes hidden until
-  // the user searched for them: offer them right here.
-  const sizes = useMemo(() => (hasSelection && !changing && !free && !selection.product && catalogue
-    ? catalogue.products
-      .filter((product) => product.type === selection.type)
-      .sort((a, b) => a.thickness - b.thickness || (a.width ?? 0) - (b.width ?? 0))
-    : []), [hasSelection, changing, free, selection.product, selection.type, catalogue]);
-
-  const chooseSize = (product) => {
-    if (!product) return;
-    commit(typeSelection(findType(catalogue, product.type), product));
-    onUseDimensions?.(product);
-  };
 
   return (
     <div
@@ -388,21 +381,6 @@ const ProductPicker = ({
           <button type="button" className="btn btn-sm" aria-label={`${t('productUi.change')} — ${label}`} onClick={() => setChanging(true)}>{t('productUi.change')}</button>
           <button type="button" className="btn btn-sm" onClick={() => commit(emptySelection())}>{t('productUi.clear')}</button>
         </div>
-      )}
-
-      {sizes.length > 0 && (
-        <p style={{ marginTop: '6px' }}>
-          <select
-            className="form-select"
-            aria-label={t('productUi.size')}
-            style={{ width: 'auto', minWidth: '160px' }}
-            value=""
-            onChange={(e) => chooseSize(sizes.find((product) => product.id === e.target.value))}
-          >
-            <option value="">{t('productUi.anySize')}</option>
-            {sizes.map((product) => <option key={product.id} value={product.id}>{sizeLabel(product)}</option>)}
-          </select>
-        </p>
       )}
 
       {showSearch && <CatalogueLine catalogue={catalogue} idBase={idBase} kind={kind} />}

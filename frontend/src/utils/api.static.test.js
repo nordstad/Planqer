@@ -104,7 +104,7 @@ it('keeps a saved project in the browser and returns the server\'s shape', async
 
   const saved = await api.saveProject({
     name: 'Shelves',
-    parts: [{ length: 100, quantity: 2 }],
+    parts: [{ name: 'Shelf', length: 100, quantity: 2 }],
     boards: [200],
     sawKerf: 3,
     result: { cut_list: [] },
@@ -114,7 +114,7 @@ it('keeps a saved project in the browser and returns the server\'s shape', async
   expect(handle).toHaveBeenCalledWith(
     'POST',
     '/projects',
-    expect.objectContaining({ name: 'Shelves', parts_data: { 100: 2 }, board_lengths: [200] }),
+    expect.objectContaining({ name: 'Shelves', parts_data: [{ name: 'Shelf', length: 100, quantity: 2 }], board_lengths: [200] }),
     undefined,
   );
   expect(axios.post).not.toHaveBeenCalled();

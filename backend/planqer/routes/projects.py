@@ -21,7 +21,7 @@ class ProjectResponse(BaseModel):
     id: UUID
     project_group_id: UUID | None = None
     name: str
-    parts_data: dict
+    parts_data: dict | list[dict]
     board_lengths: list[float]
     saw_blade_width: float
     material_type: str
@@ -38,7 +38,7 @@ class ProjectResponse(BaseModel):
 
 def project_to_response(project: UserProject) -> ProjectResponse:
     parts_data = load_saved_json(
-        project.parts_data, field="board parts", default={}, expected=dict
+        project.parts_data, field="board parts", default={}, expected=(dict, list)
     )
     board_lengths = load_saved_json(
         project.board_lengths, field="board lengths", default=[], expected=list

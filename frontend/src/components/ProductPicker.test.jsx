@@ -120,6 +120,21 @@ describe('searching and picking', () => {
     expect(box()).toHaveAttribute('aria-expanded', 'true');
   });
 
+  it('shows a type\'s catalogue products in the same picker when browsing', async () => {
+    await show(<Harness />);
+    fireEvent.focus(box());
+
+    fireEvent.mouseDown(screen.getByRole('option', { name: /^Decking/ }));
+
+    expect(box()).toHaveValue('Decking');
+    expect(screen.getByRole('option', { name: /^Decking 28 × 120 mm/ })).toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: 'Size' })).not.toBeInTheDocument();
+
+    fireEvent.mouseDown(screen.getAllByRole('option', { name: /^Decking/ })[0]);
+    expect(screen.getByTestId('product-summary')).toHaveTextContent('Decking');
+    expect(screen.queryByRole('combobox', { name: 'Size' })).not.toBeInTheDocument();
+  });
+
   it('finds a product by size and selects it with the mouse', async () => {
     const onSelect = vi.fn();
     await show(<Harness onSelect={onSelect} />);
@@ -265,42 +280,6 @@ describe('suggestions', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Use these lengths' }));
     expect(onUseLengths).toHaveBeenCalledWith([2400, 3000]);
     expect(screen.getByTestId('stock-suggestions')).toHaveTextContent(/Standard lengths: 2.400, 3.000 mm/);
-  });
-});
-
-describe('choosing a size after choosing a type', () => {
-  const regel = () => typeSelection(catalogue.types[0]);
-
-  it('lists the type\'s sizes so one can be picked without searching, and applies it', async () => {
-    const onUseDimensions = vi.fn();
-    await show(<Harness initial={regel()} onUseDimensions={onUseDimensions} />);
-
-    const size = screen.getByRole('combobox', { name: 'Size' });
-    expect([...size.options].map((option) => option.textContent)).toEqual(['any size', '45 × 70 mm', '45 × 95 mm']);
-
-    fireEvent.change(size, { target: { value: 'se:regel:45x70' } });
-    expect(onUseDimensions).toHaveBeenCalledWith(expect.objectContaining({ id: 'se:regel:45x70' }));
-    expect(screen.getByTestId('product-summary')).toHaveTextContent('Framing timber 45 × 70 mm');
-    expect(screen.queryByRole('combobox', { name: 'Size' })).not.toBeInTheDocument();
-  });
-
-  it('keeps any size when the user does not choose one', async () => {
-    await show(<Harness initial={regel()} />);
-    expect(screen.getByRole('combobox', { name: 'Size' })).toHaveValue('');
-    expect(screen.getByTestId('product-summary')).toHaveTextContent('Framing timber');
-  });
-
-  it('is not shown for a product, the user\'s own words, or a type with no sizes', async () => {
-    const { unmount } = await show(<Harness initial={suggestSelection(catalogue, 'board', { thickness: 45, width: 95 })} />);
-    expect(screen.queryByRole('combobox', { name: 'Size' })).not.toBeInTheDocument();
-    unmount();
-
-    const own = await show(<Harness initial={freeTextSelection('board', 'Oak beam')} />);
-    expect(screen.queryByRole('combobox', { name: 'Size' })).not.toBeInTheDocument();
-    own.unmount();
-
-    await show(<Harness initial={typeSelection(catalogue.types[2])} />);
-    expect(screen.queryByRole('combobox', { name: 'Size' })).not.toBeInTheDocument();
   });
 });
 
