@@ -1,4 +1,4 @@
-import { createReadStream, existsSync, readdirSync, statSync } from "node:fs";
+import { createReadStream, existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
@@ -8,6 +8,7 @@ import { defineConfig } from "vite";
 // /pyodide/ and the parity fixtures under /parity/.
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, "..");
+const { version } = JSON.parse(readFileSync(join(here, "package.json"), "utf8"));
 const TYPES = {
   ".mjs": "text/javascript",
   ".js": "text/javascript",
@@ -35,7 +36,9 @@ function serve(prefix, directory) {
 }
 
 function bundleName(directory) {
-  return readdirSync(directory).find((name) => /^planqer-.*\.zip$/.test(name));
+  const name = `planqer-${version}.zip`;
+  if (!existsSync(join(directory, name))) throw new Error(`Missing current Pyodide bundle: ${name}`);
+  return name;
 }
 
 export default defineConfig({
