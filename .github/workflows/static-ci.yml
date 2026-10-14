@@ -15,6 +15,7 @@ on:
       - "backend/tests/test_build_demo.py"
       - "backend/tests/test_no_demo_code.py"
       - "scripts/**"
+      - "docs/assets/umami.js"
       - ".github/workflows/static-ci.yml"
   pull_request:
     paths:
@@ -23,6 +24,7 @@ on:
       - "backend/tests/test_build_demo.py"
       - "backend/tests/test_no_demo_code.py"
       - "scripts/**"
+      - "docs/assets/umami.js"
       - ".github/workflows/static-ci.yml"
 
 jobs:
@@ -84,6 +86,13 @@ jobs:
       - name: Run the demo in the browsers
         working-directory: frontend
         run: npm run test:demo
+
+      # Builds the app again with an Umami id and checks what it sends, with
+      # the tracker stood in for. Chromium only: it is about our rules, not the
+      # engine.
+      - name: Check what the demo sends to analytics
+        working-directory: frontend
+        run: npm run test:analytics
 
       - name: Keep the built demo
         if: always()

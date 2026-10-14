@@ -22,6 +22,7 @@
     "test": "vitest run",
     "test:parity": "vitest run --config vitest.parity.config.mjs",
     "test:runtime-browser": "playwright test --config playwright.runtime.config.js",
+    "test:analytics": "VITE_PLANQER_UMAMI_ID=325f5fce-eb47-46fb-bad7-da1137224c33 npm run build:static && playwright test --config playwright.analytics.config.js",
     "test:demo": "playwright test --config playwright.demo.config.js",
     "dev": "vite",
     "test:e2e": "playwright test"
