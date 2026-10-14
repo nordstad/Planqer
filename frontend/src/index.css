@@ -624,6 +624,7 @@
   .parts-table .part-quantity-col { width: 72px; }
   .parts-table .part-remove-col { width: 34px; }
   .parts-table th:nth-child(3), .parts-table td:nth-child(3) { padding-left: 12px; }
+  .parts-table th:nth-child(4), .parts-table td:nth-child(4) { padding-left: 12px; }
   .board-part-length .cell-input { width: 96px; margin-left: auto; }
   .sheet-part-size { width: 172px; }
   .sheet-part-dimensions { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
