@@ -477,7 +477,7 @@ Object.assign(locale, {
   },
   demo: {
     catalogue: {
-      title: "Mina produkter",
+      title: "Produktkatalog",
     },
     backup: {
       title: "Säkerhetskopiera dina projekt",

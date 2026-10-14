@@ -22,7 +22,7 @@ catalogue search, and STEP and STL cutlists.
 | Data loss risk | Clearing browser data deletes projects; Safari can clear unused storage after about seven days | Your server's own backups (`planqer backup`) |
 | MCP server for AI assistants | Not available | Included |
 | REST API and Swagger docs | Not available | Included |
-| Custom catalogue entries | "My products", stored in this browser | Edited by the instance admin |
+| Custom catalogue entries | The Catalogue page, stored in this browser | Edited by the instance admin |
 | Speed | About 2.5 times slower than native on a desktop; large diagonal tile layouts can take 10 to 20 seconds | Native speed |
 | First load | A one-off download of about 6 MB, cached afterwards | Nothing to download |
 | STL import | An extra one-off download of about 18.5 MB on first use, and it needs a lot of memory | No extra download |

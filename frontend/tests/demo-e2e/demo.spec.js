@@ -117,7 +117,7 @@ test("a backup of what was saved can be downloaded", async ({ page }) => {
 test("the user's own products can be edited", async ({ page }) => {
   await skipWelcome(page);
   await page.goto(`${APP}#/`);
-  await page.getByRole("link", { name: "My products" }).click();
+  await page.getByRole("link", { name: "Catalogue" }).click();
   await expect(page).toHaveURL(/#\/catalogue$/);
   await expect(page.getByText(/saved in this browser only/i)).toBeVisible();
 });
