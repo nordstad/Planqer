@@ -105,6 +105,16 @@ describe('CuttingOptimizer', () => {
     expect(screen.getByRole('button', { name: /Plan the cuts/i })).toBeInTheDocument();
   });
 
+  it('states the actual maximum board length in the limits', async () => {
+    renderOptimizer();
+    await screen.findByRole('heading', { name: /Required parts/i });
+
+    fireEvent.click(screen.getByRole('button', { name: /What this page returns, and its limits/i }));
+
+    expect(screen.getByText(/≤ 15.?000 mm/)).toBeInTheDocument();
+    expect(screen.queryByText(/≤ 6.?000 mm/)).not.toBeInTheDocument();
+  });
+
   it('shows optional stock prices and keeps lowest cost disabled until complete', async () => {
     renderOptimizer();
     await screen.findByRole('heading', { name: /Required parts/i });

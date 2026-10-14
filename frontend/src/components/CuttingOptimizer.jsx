@@ -27,6 +27,7 @@ import {
   emptySelection, selectionName, buildSnapshot, selectionFromSnapshot, selectionFromLegacyMaterial,
 } from '../utils/catalogue';
 import {
+  MAX_BOARD_LENGTH,
   SAW_KERF_MAX,
   SAW_KERF_MIN,
   validateBoards,
@@ -844,7 +845,7 @@ const CuttingOptimizer = () => {
                 </table>
                 <table className="cat-table is-reference">
                   <tbody>
-                    <tr><td>{t('workflow.lengthMm')}</td><td>≤ 6 000 mm</td></tr>
+                    <tr><td>{t('workflow.lengthMm')}</td><td>≤ {mm(MAX_BOARD_LENGTH)} mm</td></tr>
                     <tr><td>{t('workflow.parts')}</td><td>≤ 1 000</td></tr>
                     <tr><td>{t('help.kerf')}</td><td>{t('legacy.unitsDeclared')}</td></tr>
                     <tr><td>{t('common.units')}</td><td>{t('common.units')}</td></tr>
