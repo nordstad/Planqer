@@ -5,6 +5,7 @@ import {
   getStorageStatus, markExported, needsBackupReminder, readLastExported, requestPersistence,
 } from '../../runtime/dataSafety';
 import { track } from '../../utils/analytics';
+import { VISUALLY_HIDDEN } from '../../utils/visuallyHidden';
 
 const BACKUP_ERRORS = ['notBackup', 'tooNew', 'invalid'];
 
@@ -86,7 +87,7 @@ const BackupPanel = () => {
       <div className="flex flex-wrap items-center gap-2" style={{ marginBottom: '10px' }}>
         <button type="button" className="btn btn-primary" onClick={exportNow}>{t('demo.backup.export')}</button>
         <button type="button" className="btn" onClick={() => fileInput.current.click()}>{t('demo.backup.import')}</button>
-        <input ref={fileInput} type="file" accept="application/json,.json" hidden onChange={importFile} />
+        <input ref={fileInput} type="file" accept="application/json,.json" style={VISUALLY_HIDDEN} onChange={importFile} />
         <span style={{ color: 'var(--ink-3)', fontSize: '13px' }}>
           {lastExported
             ? t('demo.backup.lastExported', { date: new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium' }).format(lastExported) })

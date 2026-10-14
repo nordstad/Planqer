@@ -121,3 +121,16 @@ test("the user's own products can be edited", async ({ page }) => {
   await expect(page).toHaveURL(/#\/catalogue$/);
   await expect(page.getByText(/saved in this browser only/i)).toBeVisible();
 });
+
+test("Browse files and Import backup open the file picker", async ({ page }) => {
+  await skipWelcome(page);
+  await page.goto(`${APP}#/model-cutlist`);
+  const chooser = page.waitForEvent("filechooser");
+  await page.getByText("Browse files").click();
+  expect((await chooser).isMultiple()).toBe(false);
+
+  await page.goto(`${APP}#/dashboard`);
+  const importChooser = page.waitForEvent("filechooser");
+  await page.getByRole("button", { name: "Import backup" }).click();
+  await importChooser;
+});

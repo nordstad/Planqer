@@ -147,3 +147,10 @@ it('counts an export, and only a successful one', async () => {
   await screen.findByText(/Could not create/);
   expect(track).not.toHaveBeenCalled();
 });
+
+it('keeps the import file input rendered, so Import backup works on iOS Safari', async () => {
+  await renderPanel();
+  const input = document.querySelector('input[type="file"]');
+  expect(input).not.toHaveAttribute('hidden');
+  expect(input.style.display).not.toBe('none');
+});

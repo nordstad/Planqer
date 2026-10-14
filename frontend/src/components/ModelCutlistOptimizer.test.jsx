@@ -94,6 +94,16 @@ const renderFlow = async () => {
   return view;
 };
 
+// iOS Safari does not open the picker for a file input that is display: none,
+// so the input is hidden visually but stays rendered.
+it('keeps the model file input rendered, so the Browse files button works on iOS Safari', async () => {
+  const { container } = await renderFlow();
+  const input = container.querySelector('input[type="file"]');
+  expect(input).not.toHaveAttribute('hidden');
+  expect(input.style.display).not.toBe('none');
+  expect(input.closest('label')).toHaveTextContent('Browse files');
+});
+
 const readBench = async () => {
   const { container } = await renderFlow();
   const input = container.querySelector('input[type="file"]');
