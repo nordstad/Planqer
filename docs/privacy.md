@@ -46,7 +46,7 @@ The choice is stored only in your browser and is never sent anywhere. Clearing
 browser data resets it.
 
 **Retention.** Usage data is kept for up to six months. The provider is Umami
-Software, Inc.
+Software, Inc., and the data is stored in Umami Cloud's EU region.
 
 **Contact.** Questions or requests about this page: open an issue on
 [GitHub](https://github.com/nordstad/Planqer/issues).
