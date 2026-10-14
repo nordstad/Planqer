@@ -40,7 +40,10 @@ uv run planqer-mcp-server
 ## Contributing catalogue data
 
 The built-in product catalogue (`backend/planqer/catalogue/data/<country>.yaml`)
-grows through suggestions. If your instance is missing a product:
+is optimized for Norway and Sweden and grows through suggestions. Want another
+country? Say which one by opening
+[an issue](https://github.com/nordstad/Planqer/issues/new/choose).
+If your instance is missing a product:
 
 1. Add it for your own instance first: **Admin → Catalogue → Add product**.
 2. Choose **Suggest to Planqer** on that row. The button is on local additions

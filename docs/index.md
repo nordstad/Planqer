@@ -16,6 +16,9 @@ nothing to install. It is the light version; see
 - **Self-hosted and private.** Runs on your own machine or homelab via Docker
   Compose. No cloud account, and the self-hosted app has no analytics or
   tracking (see [Privacy](privacy.md)).
+- **Made for Norway and Sweden.** The built-in product catalogue covers Norway
+  and Sweden, and the interface is in English, Norwegian and Swedish. Need
+  another country or language? [Open an issue](https://github.com/nordstad/Planqer/issues/new/choose).
 - **Kerf-aware.** Every plan subtracts the material your saw blade actually
   removes, so the numbers hold up at the saw.
 - **Five ways in.** Plan board cuts, sheet layouts, or tile layouts, or upload

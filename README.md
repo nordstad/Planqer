@@ -18,6 +18,9 @@ storage.
   grids that account for joints, openings, bond patterns, edge cuts, and waste.
 - **CAD File Support**: Upload STL or STEP files to automatically generate
   cutlists.
+- **Norway & Sweden**: The built-in product catalogue covers Norway and
+  Sweden, and the interface is available in English, Norwegian and Swedish.
+  Need another country or language? [Open an issue](https://github.com/nordstad/Planqer/issues/new/choose).
 - **Self-Hosted & Private**: Local accounts and data stay entirely on your
   server. Self-hosted Planqer contains no analytics. Only the public demo and
   docs site use anonymous, cookie-free usage counting; see the
