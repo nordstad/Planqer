@@ -19,6 +19,8 @@ describe('PartInputRow', () => {
       </table>
     );
     expect(screen.getByLabelText(/Part length in millimetres, item 1/i)).toHaveValue(100);
+    expect(screen.getByLabelText(/Part length in millimetres, item 1/i)).toHaveAttribute('min', '1');
+    expect(screen.getByLabelText(/Part length in millimetres, item 1/i)).toHaveAttribute('step', '1');
     expect(screen.getByLabelText(/Quantity, item 1/i)).toHaveValue(2);
     expect(screen.getByLabelText(/Name, item 1/i)).toHaveValue('Front rail');
     expect(screen.getByLabelText(/Part length in millimetres, item 1/i)).not.toHaveAttribute('placeholder');
@@ -45,5 +47,8 @@ describe('PartInputRow', () => {
     expect(screen.getByRole('alert').closest('tr')).toHaveClass('part-error-row');
     expect(screen.getByLabelText(/Quantity, item 1/i)).toHaveAttribute('aria-invalid', 'true');
     expect(screen.getByLabelText(/Part length in millimetres, item 1/i)).toHaveAttribute('aria-invalid', 'false');
+    expect(screen.getByLabelText(/Part length in millimetres, item 1/i)).toHaveClass('is-required-empty');
+    expect(screen.getByLabelText(/Quantity, item 1/i)).toHaveClass('is-error');
+    expect(screen.getByLabelText(/Name, item 1/i)).not.toHaveClass('is-required-empty');
   });
 });

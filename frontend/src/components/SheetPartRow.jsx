@@ -23,7 +23,7 @@ const SheetPartRow = ({ part, index, handlePartChange, removePart, error, canRem
             step="1"
             value={part.width}
             onChange={(e) => handlePartChange(index, 'width', e.target.value)}
-            className={`cell-input sheet-part-dimension ${error?.width ? 'is-error' : ''}`}
+            className={`cell-input sheet-part-dimension ${part.width === '' ? 'is-required-empty' : ''} ${error?.width ? 'is-error' : ''}`}
             aria-invalid={!!error?.width}
             aria-describedby={error?.width ? errorId : undefined}
             required
@@ -36,7 +36,7 @@ const SheetPartRow = ({ part, index, handlePartChange, removePart, error, canRem
             step="1"
             value={part.height}
             onChange={(e) => handlePartChange(index, 'height', e.target.value)}
-            className={`cell-input sheet-part-dimension ${error?.height ? 'is-error' : ''}`}
+            className={`cell-input sheet-part-dimension ${part.height === '' ? 'is-required-empty' : ''} ${error?.height ? 'is-error' : ''}`}
             aria-invalid={!!error?.height}
             aria-describedby={error?.height ? errorId : undefined}
             required
@@ -51,7 +51,7 @@ const SheetPartRow = ({ part, index, handlePartChange, removePart, error, canRem
           step="1"
           value={part.quantity}
           onChange={(e) => handlePartChange(index, 'quantity', e.target.value)}
-          className={`cell-input ${error?.quantity ? 'is-error' : ''}`}
+          className={`cell-input ${part.quantity === '' ? 'is-required-empty' : ''} ${error?.quantity ? 'is-error' : ''}`}
           aria-invalid={!!error?.quantity}
           aria-describedby={error?.quantity ? errorId : undefined}
           required

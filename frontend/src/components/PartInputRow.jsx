@@ -21,11 +21,11 @@ const PartInputRow = ({ part, index, handlePartChange, handlePartsPaste, removeP
           id={`length-${index}`}
           aria-label={text('ui.partLengthAria', { item: index + 1 })}
           type="number"
-          step="any"
+          step="1"
           value={part.length}
           onChange={(e) => handlePartChange(index, 'length', e.target.value)}
           onPaste={(e) => handlePartsPaste(index, e)}
-          className={`cell-input ${error?.length ? 'is-error' : ''}`}
+          className={`cell-input ${part.length === '' ? 'is-required-empty' : ''} ${error?.length ? 'is-error' : ''}`}
           aria-invalid={!!error?.length}
           aria-describedby={error?.length ? errorId : undefined}
           required
@@ -40,7 +40,7 @@ const PartInputRow = ({ part, index, handlePartChange, handlePartsPaste, removeP
           step="1"
           value={part.quantity}
           onChange={(e) => handlePartChange(index, 'quantity', e.target.value)}
-          className={`cell-input ${error?.quantity ? 'is-error' : ''}`}
+          className={`cell-input ${part.quantity === '' ? 'is-required-empty' : ''} ${error?.quantity ? 'is-error' : ''}`}
           aria-invalid={!!error?.quantity}
           aria-describedby={error?.quantity ? errorId : undefined}
           required

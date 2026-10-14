@@ -128,10 +128,18 @@ it('keeps a new part row clean until a field is touched and shows errors below t
 
   expect(screen.queryByText('Width must be a positive number')).not.toBeInTheDocument();
   expect(screen.queryByText('Height must be a positive number')).not.toBeInTheDocument();
-  expect(screen.getByLabelText('Part length in millimetres, item 1')).not.toHaveAttribute('placeholder');
-  expect(screen.getAllByLabelText('Sheet height in millimetres')[0]).not.toHaveAttribute('placeholder');
-  expect(screen.getByLabelText('Quantity, item 1')).not.toHaveAttribute('placeholder');
+  const width = screen.getByLabelText('Part length in millimetres, item 1');
+  const height = screen.getAllByLabelText('Sheet height in millimetres')[0];
+  const quantity = screen.getByLabelText('Quantity, item 1');
+  expect(width.closest('form')).toHaveAttribute('novalidate');
+  expect(width).not.toHaveAttribute('placeholder');
+  expect(height).not.toHaveAttribute('placeholder');
+  expect(quantity).not.toHaveAttribute('placeholder');
+  expect(width).toHaveClass('is-required-empty');
+  expect(height).toHaveClass('is-required-empty');
+  expect(quantity).toHaveClass('is-required-empty');
   expect(screen.getByLabelText('Name, item 1')).toHaveAttribute('placeholder', 'Optional');
+  expect(screen.getByLabelText('Name, item 1')).not.toHaveClass('is-required-empty');
 
   fireEvent.change(screen.getByLabelText('Quantity, item 1'), { target: { value: '0' } });
   const error = await screen.findByText('Qty must be a number');

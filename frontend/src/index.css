@@ -612,6 +612,12 @@
     padding: 2px 4px; min-height: 30px; font-variant-numeric: tabular-nums; border-radius: 4px;
   }
   .cell-input:focus { outline: none; background: var(--accent-bg); color: var(--ink); }
+  .cell-input.is-required-empty {
+    background: var(--accent-bg);
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+  }
+  .cell-input.is-required-empty:focus { border-color: var(--accent); }
   .parts-table { table-layout: fixed; }
   .parts-table .part-item-col { width: 44px; }
   .parts-table .part-size-col { width: 172px; }

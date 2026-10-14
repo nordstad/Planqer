@@ -411,7 +411,7 @@ const SheetOptimizer = () => {
 
       {/* ── 01 · what needs cutting ───────────────────────────────────────── */}
       {step === STEP_PARTS && (
-        <form className="step-view is-form" onSubmit={handleLayoutSubmit}>
+        <form className="step-view is-form" onSubmit={handleLayoutSubmit} noValidate>
           <div className="step-head">
             <div>
               <h1 className="step-h1">{t('workflow.partsToCut')}</h1>

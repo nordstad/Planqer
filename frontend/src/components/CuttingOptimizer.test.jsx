@@ -123,11 +123,19 @@ describe('CuttingOptimizer', () => {
 
     const length = screen.getByLabelText(/Part length in millimetres, item 1/i);
     const quantity = screen.getByLabelText(/Quantity, item 1/i);
+    expect(length.closest('form')).toHaveAttribute('novalidate');
+    expect(length).toHaveAttribute('min', '1');
+    expect(length).toHaveAttribute('step', '1');
+    expect(length).toHaveClass('is-required-empty');
+    expect(quantity).toHaveClass('is-required-empty');
     expect(length).not.toHaveAttribute('placeholder');
     expect(quantity).not.toHaveAttribute('placeholder');
     expect(screen.getByLabelText(/Name, item 1/i)).toHaveAttribute('placeholder', 'Optional');
+    expect(screen.getByLabelText(/Name, item 1/i)).not.toHaveClass('is-required-empty');
     fireEvent.change(length, { target: { value: '60' } });
     fireEvent.change(quantity, { target: { value: '5' } });
+    expect(length).not.toHaveClass('is-required-empty');
+    expect(quantity).not.toHaveClass('is-required-empty');
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
 
     fireEvent.change(quantity, { target: { value: '1.5' } });

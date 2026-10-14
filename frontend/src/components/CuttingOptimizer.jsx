@@ -597,7 +597,7 @@ const CuttingOptimizer = () => {
 
       {/* ── 01 · what needs cutting ───────────────────────────────────────── */}
       {step === STEP_PARTS && (
-        <form className="step-view is-form" onSubmit={handlePlanSubmit}>
+        <form className="step-view is-form" onSubmit={handlePlanSubmit} noValidate>
           <div className="step-head">
             <div>
               <h1 className="step-h1">{t('workflow.requiredParts')}</h1>
