@@ -8,6 +8,7 @@ import {
   saveSheetProject,
   serializeBoardParts,
 } from './api';
+import { restoreBoardParts } from './boardParts';
 
 vi.mock('axios', () => {
   const mockAxios = {
@@ -36,6 +37,17 @@ it('aggregates duplicate board part lengths without losing quantity', () => {
     { length: '120.5', quantity: '2' },
     { length: '120.5', quantity: '3' },
   ])).toEqual({ '120.5': 5 });
+});
+
+it('restores named board rows and legacy length maps', () => {
+  expect(restoreBoardParts([
+    { name: 'Front rail', length: 120, quantity: 2 },
+  ])).toEqual([
+    { name: 'Front rail', length: '120', quantity: '2' },
+  ]);
+  expect(restoreBoardParts({ 120: 2 })).toEqual([
+    { name: '', length: '120', quantity: '2' },
+  ]);
 });
 
 it('sends the optional first-run setup code as a request header', async () => {
@@ -70,8 +82,8 @@ it('keeps sheet row identity separate from repeated display names', () => {
 
 it('uses lossless board serialization for optimization and save', async () => {
   const parts = [
-    { length: '120.5', quantity: '2' },
-    { length: '120.5', quantity: '3' },
+    { name: 'Front rail', length: '120.5', quantity: '2' },
+    { name: 'Back rail', length: '120.5', quantity: '3' },
   ];
 
   await optimizeCutting(parts, ['300.5', '300.5'], '2.5');
@@ -92,7 +104,10 @@ it('uses lossless board serialization for optimization and save', async () => {
     result: { cut_list: [] },
   });
   expect(axios.post.mock.calls[1][1]).toEqual(expect.objectContaining({
-    parts_data: { '120.5': 5 },
+    parts_data: [
+      { name: 'Front rail', length: 120.5, quantity: 2 },
+      { name: 'Back rail', length: 120.5, quantity: 3 },
+    ],
     board_lengths: [300.5],
     saw_blade_width: 2.5,
     material_type: 'oak',

@@ -90,6 +90,23 @@ def test_a_valid_save_comes_back_as_the_endpoint_stores_it(client, headers, kind
         assert saved[field] == value, field
 
 
+def test_board_parts_can_keep_names_without_breaking_legacy_saves(client, headers):
+    named = {
+        **BOARD,
+        "parts_data": [
+            {"name": "Front rail", "length": 100, "quantity": 2},
+            {"name": "Back rail", "length": 100, "quantity": 1},
+        ],
+    }
+
+    saved = client.post(ENDPOINTS["board"], json=named, headers=headers).json()
+    status, body = call("board", "create", named)
+
+    assert saved["parts_data"] == named["parts_data"]
+    assert status == 200
+    assert body["values"]["parts_data"] == named["parts_data"]
+
+
 def test_a_partial_update_returns_only_what_was_sent():
     status, body = call(
         "board", "update", {"name": "Renamed", "project_group_id": None}

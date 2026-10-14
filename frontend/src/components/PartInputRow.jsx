@@ -8,7 +8,6 @@ import { translateWithFallback } from '../i18n/translate';
 import { MIN_PART_LENGTH, MAX_PART_QUANTITY } from '../utils/validators';
 
 const PartInputRow = ({ part, index, handlePartChange, handlePartsPaste, removePart, error, canRemove }) => {
-  const total = (parseFloat(part.length) || 0) * (parseFloat(part.quantity) || 0);
   const { t } = useTranslation();
   const text = (key, vars) => translateWithFallback(t, key, vars);
   const messages = [...new Set(Object.values(error || {}))];
@@ -23,7 +22,6 @@ const PartInputRow = ({ part, index, handlePartChange, handlePartsPaste, removeP
           aria-label={text('ui.partLengthAria', { item: index + 1 })}
           type="number"
           step="any"
-          placeholder="1000"
           value={part.length}
           onChange={(e) => handlePartChange(index, 'length', e.target.value)}
           onPaste={(e) => handlePartsPaste(index, e)}
@@ -40,7 +38,6 @@ const PartInputRow = ({ part, index, handlePartChange, handlePartsPaste, removeP
           aria-label={text('ui.quantityAria', { item: index + 1 })}
           type="number"
           step="1"
-          placeholder="5"
           value={part.quantity}
           onChange={(e) => handlePartChange(index, 'quantity', e.target.value)}
           className={`cell-input ${error?.quantity ? 'is-error' : ''}`}
@@ -51,8 +48,16 @@ const PartInputRow = ({ part, index, handlePartChange, handlePartsPaste, removeP
           max={MAX_PART_QUANTITY}
         />
       </td>
-      <td style={{ width: '86px', color: 'var(--ink-3)' }}>
-        {total ? total.toLocaleString('sv-SE') : '—'}
+      <td>
+        <input
+          aria-label={`${text('workflow.name')}, ${text('workflow.item').toLowerCase()} ${index + 1}`}
+          type="text"
+          placeholder={text('ui.optional')}
+          value={part.name || ''}
+          onChange={(e) => handlePartChange(index, 'name', e.target.value)}
+          className="cell-input"
+          style={{ textAlign: 'left' }}
+        />
       </td>
       <td style={{ width: '34px' }}>
         {canRemove && (

@@ -22,6 +22,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { optimizeCutting, saveProject, getProjectGroups, createProjectGroup, getUserProjects, getUserSettings } from '../utils/api';
 import { materialLabel } from '../utils/materialLabel';
+import { boardPartCount, restoreBoardParts } from '../utils/boardParts';
 import ProductPicker from './ProductPicker';
 import {
   emptySelection, selectionName, buildSnapshot, selectionFromSnapshot, selectionFromLegacyMaterial,
@@ -58,10 +59,10 @@ const STEP_SAVE = 2;
 const DEFAULT_CURRENCY = 'SEK';
 
 const EXAMPLE_PARTS = [
-  { length: "80", quantity: "10" },
-  { length: "150", quantity: "10" },
-  { length: "1550", quantity: "8" },
-  { length: "2000", quantity: "2" },
+  { length: "80", quantity: "10", name: "" },
+  { length: "150", quantity: "10", name: "" },
+  { length: "1550", quantity: "8", name: "" },
+  { length: "2000", quantity: "2", name: "" },
 ];
 
 const CuttingOptimizer = () => {
@@ -172,6 +173,7 @@ const CuttingOptimizer = () => {
       const data = JSON.parse(importData);
       if (data.parts && data.source === 'model-cutlist') {
         setParts(Object.entries(data.parts).map(([length, quantity]) => ({
+          name: '',
           length,
           quantity: quantity.toString(),
         })));
@@ -236,7 +238,7 @@ const CuttingOptimizer = () => {
     e.preventDefault();
     const rows = text.split('\n').map(line => line.trim()).filter(Boolean).map(line => {
       const [length, quantity] = line.split(/[,\t]|\s+/).filter(Boolean);
-      return { length: length || '', quantity: quantity || '1' };
+      return { length: length || '', quantity: quantity || '1', name: '' };
     });
     if (!rows.length) return;
     retirePlan();
@@ -261,7 +263,7 @@ const CuttingOptimizer = () => {
     ));
   };
 
-  const addPart = () => { retirePlan(); setParts([...parts, { length: "", quantity: "" }]); };
+  const addPart = () => { retirePlan(); setParts([...parts, { length: "", quantity: "", name: "" }]); };
   const loadExample = () => { retirePlan(); setParts(EXAMPLE_PARTS.map((part) => ({ ...part }))); };
   const removePart = (index) => {
     if (parts.length <= 1) return;
@@ -286,10 +288,7 @@ const CuttingOptimizer = () => {
 
   const loadProject = (project) => {
     retirePlan();
-    setParts(Object.entries(project.parts_data).map(([length, quantity]) => ({
-      length,
-      quantity: quantity.toString(),
-    })));
+    setParts(restoreBoardParts(project.parts_data));
     setBoards(project.board_lengths.map(String));
     setSawKerf(project.saw_blade_width.toString());
     setProductSel(project.product
@@ -620,7 +619,7 @@ const CuttingOptimizer = () => {
               <col className="part-remove-col" />
             </colgroup>
             <thead>
-              <tr><th>{t('workflow.item')}</th><th>{t('workflow.lengthMm')}</th><th>{t('workflow.qty')}</th><th>{t('workflow.total')}</th><th aria-label={t('common.remove')} /></tr>
+              <tr><th>{t('workflow.item')}</th><th>{t('workflow.lengthMm')}</th><th>{t('workflow.qty')}</th><th>{t('workflow.name')}</th><th aria-label={t('common.remove')} /></tr>
             </thead>
             <tbody>
               {parts.map((part, index) => (
@@ -637,7 +636,7 @@ const CuttingOptimizer = () => {
               ))}
               {parts.length > 0 ? (
                 <tr className="is-sum">
-                  <td>Σ</td><td /><td>{partCount}</td><td>{mm(demand)}</td><td />
+                  <td>Σ</td><td>{mm(demand)}</td><td>{partCount}</td><td /><td />
                 </tr>
               ) : (
                 <tr>
@@ -1127,7 +1126,7 @@ const CuttingOptimizer = () => {
                       const projectRow = (project) => (
                         <tr key={project.id}>
                           <td style={{ textAlign: 'left', color: 'var(--ink)', fontSize: '13px' }}>{project.name}</td>
-                          <td>{Object.values(project.parts_data).reduce((sum, qty) => sum + qty, 0)}</td>
+                          <td>{boardPartCount(project.parts_data)}</td>
                           <td style={{ width: '90px' }}>
                             <button className="btn" style={{ padding: '5px 10px', minHeight: 0 }} onClick={() => loadProject(project)}>
                                {t('ui.load')}

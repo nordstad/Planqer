@@ -12,7 +12,11 @@ from fastapi.responses import Response
 
 
 def load_saved_json(
-    value: str | None, *, field: str, default: object, expected: type
+    value: str | None,
+    *,
+    field: str,
+    default: object,
+    expected: type | tuple[type, ...],
 ) -> object:
     if value is None:
         return default
@@ -24,10 +28,15 @@ def load_saved_json(
             detail=f"Saved {field} is not valid JSON",
         ) from exc
     if not isinstance(decoded, expected):
+        expected_name = (
+            " or ".join(item.__name__ for item in expected)
+            if isinstance(expected, tuple)
+            else expected.__name__
+        )
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=(
-                f"Saved {field} must be a {expected.__name__}, "
+                f"Saved {field} must be a {expected_name}, "
                 f"not {type(decoded).__name__}"
             ),
         )

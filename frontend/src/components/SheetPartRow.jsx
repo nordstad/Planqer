@@ -2,8 +2,8 @@
   One line item in the PARTS TO CUT table. Mirrors PartInputRow's ruled-cell
   grammar. Width and height share one "Size" cell — a genuine 2D-vs-1D
   difference from board parts, not a style choice — so the column count
-  matches PartInputRow's (Item/Size/Qty/Name/Remove = 5, same as
-  Item/Length/Qty/Total/Remove) and Name keeps a real column width.
+  matches PartInputRow's (Item/Size/Qty/Name/Remove = 5, alongside
+  Item/Length/Qty/Name/Remove) and Name keeps a real column width.
 */
 import { Strike } from './icons';
 import { useTranslation } from 'react-i18next';
@@ -21,7 +21,6 @@ const SheetPartRow = ({ part, index, handlePartChange, removePart, error, canRem
             aria-label={t('ui.partLengthAria', { item: index + 1 })}
             type="number"
             step="1"
-            placeholder="800"
             value={part.width}
             onChange={(e) => handlePartChange(index, 'width', e.target.value)}
             className={`cell-input sheet-part-dimension ${error?.width ? 'is-error' : ''}`}
@@ -35,7 +34,6 @@ const SheetPartRow = ({ part, index, handlePartChange, removePart, error, canRem
             aria-label={t('ui.sheetHeightAria')}
             type="number"
             step="1"
-            placeholder="400"
             value={part.height}
             onChange={(e) => handlePartChange(index, 'height', e.target.value)}
             className={`cell-input sheet-part-dimension ${error?.height ? 'is-error' : ''}`}
@@ -51,7 +49,6 @@ const SheetPartRow = ({ part, index, handlePartChange, removePart, error, canRem
           aria-label={t('ui.quantityAria', { item: index + 1 })}
           type="number"
           step="1"
-          placeholder="2"
           value={part.quantity}
           onChange={(e) => handlePartChange(index, 'quantity', e.target.value)}
           className={`cell-input ${error?.quantity ? 'is-error' : ''}`}

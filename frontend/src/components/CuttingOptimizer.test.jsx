@@ -123,6 +123,9 @@ describe('CuttingOptimizer', () => {
 
     const length = screen.getByLabelText(/Part length in millimetres, item 1/i);
     const quantity = screen.getByLabelText(/Quantity, item 1/i);
+    expect(length).not.toHaveAttribute('placeholder');
+    expect(quantity).not.toHaveAttribute('placeholder');
+    expect(screen.getByLabelText(/Name, item 1/i)).toHaveAttribute('placeholder', 'Optional');
     fireEvent.change(length, { target: { value: '60' } });
     fireEvent.change(quantity, { target: { value: '5' } });
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
@@ -297,6 +300,23 @@ describe('CuttingOptimizer', () => {
     expect(await screen.findByDisplayValue('100')).toBeInTheDocument();
     expect(screen.getByDisplayValue('300')).toBeInTheDocument();
     expect(screen.getByDisplayValue('4')).toBeInTheDocument();
+  });
+
+  it('restores named board parts while remaining compatible with old projects', async () => {
+    getUserProjects.mockResolvedValue([{
+      id: 'board-1',
+      name: 'Saved board',
+      project_group_id: null,
+      parts_data: [{ name: 'Front rail', length: 100, quantity: 2 }],
+      board_lengths: [300],
+      saw_blade_width: 4,
+    }]);
+    window.history.replaceState({}, '', '/cutting?edit=board-1');
+
+    renderOptimizer();
+
+    expect(await screen.findByDisplayValue('Front rail')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('100')).toBeInTheDocument();
   });
 
   it('restores the product snapshot a plan was saved with, and keeps an old plan\'s material as the user\'s own words', async () => {
