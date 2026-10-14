@@ -103,7 +103,7 @@ docker compose -f docker-compose.release.yml up -d
 ```
 
 For a one-off upgrade without editing `.env`, prefix both commands with
-`PLANQER_VERSION=0.9.1`. Run them from the directory containing both files.
+`PLANQER_VERSION=0.9.2`. Run them from the directory containing both files.
 The Compose volume preserves local accounts and saved projects across upgrades.
 
 ### Build from source

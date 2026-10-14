@@ -77,7 +77,7 @@ docker compose -f docker-compose.release.yml up -d
 To pin a release, set the version in `.env` before running the commands:
 
 ```dotenv
-PLANQER_VERSION=0.9.1
+PLANQER_VERSION=0.9.2
 ```
 
 Verify that the running containers use the requested images:
@@ -87,7 +87,7 @@ docker compose -f docker-compose.release.yml ps
 docker inspect planqer-web-backend --format '{{.Config.Image}}'
 ```
 
-The output should include `ghcr.io/nordstad/planqer-backend:0.9.1` (and the
+The output should include `ghcr.io/nordstad/planqer-backend:0.9.2` (and the
 corresponding frontend tag). The named `backend_data` volume is preserved by
 this procedure, so local accounts and saved projects remain available. Keep
 using the same directory and Compose project name for future upgrades: Docker
