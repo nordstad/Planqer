@@ -54,6 +54,7 @@ import {
 import { loadCatalogue, buildSnapshot } from '../utils/catalogue';
 import { colourForModelGroup, colourForModelPart, partKey } from '../utils/modelPreview';
 import { VISUALLY_HIDDEN } from '../utils/visuallyHidden';
+import { modelFileAccept } from '../utils/modelFileAccept';
 
 const ModelPreview = lazy(() => import('./ModelPreview'));
 const ModelPartsPreview = lazy(() => import('./ModelPartsPreview'));
@@ -489,7 +490,7 @@ const ModelCutlistOptimizer = () => {
                 <label className="btn-primary" style={{ cursor: 'pointer', position: 'relative' }}>
                   <input
                     type="file"
-                    accept=".stl,.step,.stp"
+                    accept={modelFileAccept()}
                     onChange={(e) => acceptFile(e.target.files?.[0])}
                     style={VISUALLY_HIDDEN}
                   />

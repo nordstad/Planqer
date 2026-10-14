@@ -104,6 +104,17 @@ it('keeps the model file input rendered, so the Browse files button works on iOS
   expect(input.closest('label')).toHaveTextContent('Browse files');
 });
 
+it('filters the picker to model files, except where iOS would grey them all out', async () => {
+  const { container, unmount } = await renderFlow();
+  expect(container.querySelector('input[type="file"]')).toHaveAttribute('accept', '.stl,.step,.stp');
+  unmount();
+
+  const platform = vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)');
+  const phone = await renderFlow();
+  expect(phone.container.querySelector('input[type="file"]')).not.toHaveAttribute('accept');
+  platform.mockRestore();
+});
+
 const readBench = async () => {
   const { container } = await renderFlow();
   const input = container.querySelector('input[type="file"]');
