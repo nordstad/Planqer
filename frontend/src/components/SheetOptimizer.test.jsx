@@ -105,6 +105,35 @@ it('starts empty and loads named example parts on request', async () => {
   expect(screen.getByDisplayValue('Shelf bottom')).toBeInTheDocument();
 });
 
+it('steps sheet and part dimensions in whole millimetres', () => {
+  window.history.replaceState({}, '', '/sheet-cutting');
+  renderSheetOptimizer();
+
+  const dimensions = [
+    ...screen.getAllByLabelText(/Part length in millimetres/i),
+    screen.getByLabelText('Sheet width in millimetres'),
+    ...screen.getAllByLabelText('Sheet height in millimetres'),
+    document.getElementById('sheet-thickness'),
+  ];
+
+  dimensions.forEach((input) => expect(input).toHaveAttribute('step', '1'));
+});
+
+it('keeps a new part row clean until a field is touched and shows errors below the row', async () => {
+  window.history.replaceState({}, '', '/sheet-cutting');
+  renderSheetOptimizer({ loadExample: false, initialEntries: ['/sheet-cutting'] });
+
+  fireEvent.click(screen.getByRole('button', { name: /Add part/i }));
+  await new Promise((resolve) => setTimeout(resolve, 350));
+
+  expect(screen.queryByText('Width must be a positive number')).not.toBeInTheDocument();
+  expect(screen.queryByText('Height must be a positive number')).not.toBeInTheDocument();
+
+  fireEvent.change(screen.getByLabelText('Quantity, item 1'), { target: { value: '0' } });
+  const error = await screen.findByText('Qty must be a number');
+  expect(error.closest('tr')).toHaveClass('sheet-part-error-row');
+});
+
 it('shows the sheet material cost using the configured VAT basis', async () => {
   window.history.replaceState({}, '', '/sheet-cutting');
   renderSheetOptimizer();

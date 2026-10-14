@@ -4,6 +4,7 @@ import {
   MAX_PART_QUANTITY,
   MIN_PART_LENGTH,
   validateBoards,
+  validatePartFields,
   validateParts,
 } from './validators';
 
@@ -27,6 +28,12 @@ test('rejects zero, fractional quantities, and values over API limits', () => {
     { length: '10', quantity: '1.5' },
     { length: String(MAX_PART_LENGTH + 0.1), quantity: '1' },
   ], t).every(Boolean)).toBe(true);
+});
+
+test('identifies which part field is invalid', () => {
+  expect(validatePartFields({ length: '60', quantity: '1.5' }, t)).toEqual({
+    quantity: 'validation.positiveQuantity:',
+  });
 });
 
 test('board and part lengths reach 15 m while the limits still reject beyond it', () => {

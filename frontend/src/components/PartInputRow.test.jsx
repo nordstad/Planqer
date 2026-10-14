@@ -12,7 +12,7 @@ describe('PartInputRow', () => {
             handlePartChange={() => {}}
             handlePartsPaste={() => {}}
             removePart={() => {}}
-            error=""
+            error={null}
             canRemove
           />
         </tbody>
@@ -33,12 +33,15 @@ describe('PartInputRow', () => {
             handlePartChange={() => {}}
             handlePartsPaste={() => {}}
             removePart={() => {}}
-            error="Required"
+            error={{ quantity: 'Required' }}
             canRemove
           />
         </tbody>
       </table>
     );
-    expect(screen.getByText('Required')).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent('Required');
+    expect(screen.getByRole('alert').closest('tr')).toHaveClass('part-error-row');
+    expect(screen.getByLabelText(/Quantity, item 1/i)).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByLabelText(/Part length in millimetres, item 1/i)).toHaveAttribute('aria-invalid', 'false');
   });
 });

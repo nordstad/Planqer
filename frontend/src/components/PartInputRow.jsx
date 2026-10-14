@@ -11,11 +11,13 @@ const PartInputRow = ({ part, index, handlePartChange, handlePartsPaste, removeP
   const total = (parseFloat(part.length) || 0) * (parseFloat(part.quantity) || 0);
   const { t } = useTranslation();
   const text = (key, vars) => translateWithFallback(t, key, vars);
+  const messages = [...new Set(Object.values(error || {}))];
+  const errorId = messages.length > 0 ? `board-part-${index}-error` : undefined;
 
-  return (
-    <tr>
+  return [
+    <tr key="part" className={errorId ? 'is-error-row' : undefined}>
       <td>{String(index + 1).padStart(2, '0')}</td>
-      <td>
+      <td className="board-part-length">
         <input
           id={`length-${index}`}
           aria-label={text('ui.partLengthAria', { item: index + 1 })}
@@ -25,13 +27,14 @@ const PartInputRow = ({ part, index, handlePartChange, handlePartsPaste, removeP
           value={part.length}
           onChange={(e) => handlePartChange(index, 'length', e.target.value)}
           onPaste={(e) => handlePartsPaste(index, e)}
-          className={`cell-input ${error ? 'is-error' : ''}`}
+          className={`cell-input ${error?.length ? 'is-error' : ''}`}
+          aria-invalid={!!error?.length}
+          aria-describedby={error?.length ? errorId : undefined}
           required
           min={MIN_PART_LENGTH}
         />
-        {error && <p className="text-danger text-[11px] font-semibold text-right">{error}</p>}
       </td>
-      <td style={{ width: '72px' }}>
+      <td>
         <input
           id={`quantity-${index}`}
           aria-label={text('ui.quantityAria', { item: index + 1 })}
@@ -40,7 +43,9 @@ const PartInputRow = ({ part, index, handlePartChange, handlePartsPaste, removeP
           placeholder="5"
           value={part.quantity}
           onChange={(e) => handlePartChange(index, 'quantity', e.target.value)}
-          className="cell-input"
+          className={`cell-input ${error?.quantity ? 'is-error' : ''}`}
+          aria-invalid={!!error?.quantity}
+          aria-describedby={error?.quantity ? errorId : undefined}
           required
           min="1"
           max={MAX_PART_QUANTITY}
@@ -62,8 +67,16 @@ const PartInputRow = ({ part, index, handlePartChange, handlePartsPaste, removeP
           </button>
         )}
       </td>
-    </tr>
-  );
+    </tr>,
+    errorId ? (
+      <tr key="error" className="part-error-row">
+        <td />
+        <td colSpan="4">
+          <p id={errorId} role="alert" className="text-danger text-[11px] font-semibold">{messages.join(' · ')}</p>
+        </td>
+      </tr>
+    ) : null,
+  ];
 };
 
 export default PartInputRow;

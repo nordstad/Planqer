@@ -105,6 +105,35 @@ describe('CuttingOptimizer', () => {
     expect(screen.getByRole('button', { name: /Plan the cuts/i })).toBeInTheDocument();
   });
 
+  it('steps board thickness and width in whole millimetres', async () => {
+    renderOptimizer();
+    await screen.findByRole('heading', { name: /Required parts/i });
+
+    expect(screen.getByLabelText('Thickness (mm)')).toHaveAttribute('step', '1');
+    expect(screen.getByLabelText('Width (mm)')).toHaveAttribute('step', '1');
+  });
+
+  it('keeps new part rows stable and attaches errors to the correct field', async () => {
+    renderOptimizer({ loadExample: false });
+    await screen.findByRole('heading', { name: /Required parts/i });
+
+    fireEvent.click(screen.getByRole('button', { name: /Add part/i }));
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    expect(screen.queryByText(/must be a positive/i)).not.toBeInTheDocument();
+
+    const length = screen.getByLabelText(/Part length in millimetres, item 1/i);
+    const quantity = screen.getByLabelText(/Quantity, item 1/i);
+    fireEvent.change(length, { target: { value: '60' } });
+    fireEvent.change(quantity, { target: { value: '5' } });
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+
+    fireEvent.change(quantity, { target: { value: '1.5' } });
+    expect(screen.getByRole('alert')).toHaveTextContent('Quantity must be a positive whole number');
+    expect(screen.getByRole('alert').closest('tr')).toHaveClass('part-error-row');
+    expect(length).toHaveAttribute('aria-invalid', 'false');
+    expect(quantity).toHaveAttribute('aria-invalid', 'true');
+  });
+
   it('states the actual maximum board length in the limits', async () => {
     renderOptimizer();
     await screen.findByRole('heading', { name: /Required parts/i });

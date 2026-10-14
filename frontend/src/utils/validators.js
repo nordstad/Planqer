@@ -11,26 +11,28 @@ export const SAW_KERF_MAX = 100;
 
 const message = (t, key, vars) => (t ? t(key, vars) : key);
 
-export const validateParts = (parts, t) => {
-  return parts.map(part => {
-    const length = parseFloat(part.length);
-    const quantity = parseInt(part.quantity, 10);
-    
-    if (isNaN(length) || length < MIN_PART_LENGTH) {
-      return message(t, 'validation.positiveLength');
-    }
-    if (length > MAX_PART_LENGTH) {
-      return message(t, 'validation.maxLength', { max: MAX_PART_LENGTH });
-    }
-    if (isNaN(quantity) || !Number.isInteger(Number(part.quantity)) || quantity < 1) {
-      return message(t, 'validation.positiveQuantity');
-    }
-    if (quantity > MAX_PART_QUANTITY) {
-      return message(t, 'validation.maxQuantity', { max: MAX_PART_QUANTITY });
-    }
-    return null;
-  });
+export const validatePartFields = (part, t) => {
+  const errors = {};
+  const length = parseFloat(part.length);
+  const quantity = parseInt(part.quantity, 10);
+
+  if (isNaN(length) || length < MIN_PART_LENGTH) {
+    errors.length = message(t, 'validation.positiveLength');
+  } else if (length > MAX_PART_LENGTH) {
+    errors.length = message(t, 'validation.maxLength', { max: MAX_PART_LENGTH });
+  }
+  if (isNaN(quantity) || !Number.isInteger(Number(part.quantity)) || quantity < 1) {
+    errors.quantity = message(t, 'validation.positiveQuantity');
+  } else if (quantity > MAX_PART_QUANTITY) {
+    errors.quantity = message(t, 'validation.maxQuantity', { max: MAX_PART_QUANTITY });
+  }
+  return Object.keys(errors).length > 0 ? errors : null;
 };
+
+export const validateParts = (parts, t) => parts.map((part) => {
+  const errors = validatePartFields(part, t);
+  return errors ? Object.values(errors)[0] : null;
+});
 
 export const validateBoards = (boards, t) => {
   return boards.map(board => {

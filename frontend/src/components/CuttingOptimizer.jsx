@@ -31,6 +31,7 @@ import {
   SAW_KERF_MAX,
   SAW_KERF_MIN,
   validateBoards,
+  validatePartFields,
   validateParts,
 } from '../utils/validators';
 import { useDebounce } from '../hooks/useDebounce';
@@ -81,7 +82,7 @@ const CuttingOptimizer = () => {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState("");
-  const [inputErrors, setInputErrors] = useState({ parts: [], boards: [], sawKerf: "" });
+  const [inputErrors, setInputErrors] = useState({ boards: [], sawKerf: "" });
 
   const [limitsOpen, setLimitsOpen] = useState(false);
   const [costOpen, setCostOpen] = useState(false);
@@ -119,14 +120,12 @@ const CuttingOptimizer = () => {
   // reads as the page scolding the user for its own toggle.
   const stockSectionRef = useRef(null);
 
-  const debouncedParts = useDebounce(parts, 300);
   const debouncedBoards = useDebounce(boards, 300);
   const debouncedSawKerf = useDebounce(sawKerf, 300);
 
   useEffect(() => {
     const kerfValue = parseFloat(debouncedSawKerf);
     setInputErrors({
-      parts: validateParts(debouncedParts, t),
       boards: validateBoards(debouncedBoards, t),
       sawKerf: !debouncedSawKerf || kerfValue < SAW_KERF_MIN
         ? "A kerf of zero would plan cuts that lose no material"
@@ -134,7 +133,7 @@ const CuttingOptimizer = () => {
           ? t('auditUi.kerfWide')
           : "",
     });
-  }, [debouncedParts, debouncedBoards, debouncedSawKerf]);
+  }, [debouncedBoards, debouncedSawKerf]);
 
   // This page requires sign-in, so project groups and saved plans are always available.
   // Loaded defaults are also applied once so the user settings act as the real starting state.
@@ -330,12 +329,19 @@ const CuttingOptimizer = () => {
   }, [userProjects]);
 
   /* ── derived facts ─────────────────────────────────────────────────────── */
+  const currentPartErrors = parts.map((part) => validatePartFields(part, t));
+  const visiblePartError = (part, index) => {
+    const errors = currentPartErrors[index];
+    if (!errors) return null;
+    const visible = Object.fromEntries(Object.entries(errors).filter(([field]) => part[field] !== ''));
+    return Object.keys(visible).length > 0 ? visible : null;
+  };
   const partCount = parts.reduce((n, p) => n + (parseInt(p.quantity, 10) || 0), 0);
   const demand = parts.reduce(
     (sum, p) => sum + (parseFloat(p.length) || 0) * (parseFloat(p.quantity) || 0), 0);
   const sectionDims = { thickness: parseFloat(boardThickness), width: parseFloat(boardWidth) };
   const material = selectionName(productSel, i18n.language, sectionDims);
-  const hasErrors = parts.length === 0 || inputErrors.parts.some(Boolean) || inputErrors.boards.some(Boolean) || !!inputErrors.sawKerf
+  const hasErrors = parts.length === 0 || currentPartErrors.some(Boolean) || inputErrors.boards.some(Boolean) || !!inputErrors.sawKerf
     || !parseFloat(boardThickness) || !parseFloat(boardWidth);
   const validBoards = boards.filter(b => b && !isNaN(parseFloat(b)));
   const uniqueValidBoards = [...new Set(validBoards.map((board) => parseFloat(board)))];
@@ -464,15 +470,15 @@ const CuttingOptimizer = () => {
 
   const handlePlanSubmit = (e) => {
     e.preventDefault();
+    const currentParts = validateParts(parts, t);
     const currentErrors = {
-      parts: validateParts(parts, t),
       boards: validateBoards(boards, t),
       sawKerf: !sawKerf || parseFloat(sawKerf) < SAW_KERF_MIN
         ? t('workflow.kerfHint')
         : parseFloat(sawKerf) > SAW_KERF_MAX ? t('auditUi.kerfWide') : '',
     };
     setInputErrors(currentErrors);
-    if (currentErrors.parts.some(Boolean) || currentErrors.boards.some(Boolean) || currentErrors.sawKerf) return;
+    if (currentParts.some(Boolean) || currentErrors.boards.some(Boolean) || currentErrors.sawKerf) return;
     runPlan(pricingComplete);
   };
 
@@ -605,7 +611,14 @@ const CuttingOptimizer = () => {
             </button>
           </div>
 
-          <table className="cat-table">
+          <table className="cat-table parts-table">
+            <colgroup>
+              <col className="part-item-col" />
+              <col className="part-size-col" />
+              <col className="part-quantity-col" />
+              <col />
+              <col className="part-remove-col" />
+            </colgroup>
             <thead>
               <tr><th>{t('workflow.item')}</th><th>{t('workflow.lengthMm')}</th><th>{t('workflow.qty')}</th><th>{t('workflow.total')}</th><th aria-label={t('common.remove')} /></tr>
             </thead>
@@ -618,7 +631,7 @@ const CuttingOptimizer = () => {
                   handlePartChange={handlePartChange}
                   handlePartsPaste={handlePartsPaste}
                   removePart={removePart}
-                  error={inputErrors.parts[index]}
+                  error={visiblePartError(part, index)}
                   canRemove={parts.length > 1}
                 />
               ))}
@@ -701,11 +714,11 @@ const CuttingOptimizer = () => {
             <div className="grid gap-x-8 gap-y-5 md:grid-cols-2">
               <div>
                 <label className="form-label" htmlFor="board-thickness">{t('workflow.thicknessMm')}</label>
-                <input id="board-thickness" type="number" min="0.1" step="0.1" value={boardThickness} onChange={(e) => { retirePlan(); setBoardThickness(e.target.value); }} className="form-input" required />
+                <input id="board-thickness" type="number" min="1" step="1" value={boardThickness} onChange={(e) => { retirePlan(); setBoardThickness(e.target.value); }} className="form-input" required />
               </div>
               <div>
                 <label className="form-label" htmlFor="board-width">{t('workflow.widthMm')}</label>
-                <input id="board-width" type="number" min="0.1" step="0.1" value={boardWidth} onChange={(e) => { retirePlan(); setBoardWidth(e.target.value); }} className="form-input" required />
+                <input id="board-width" type="number" min="1" step="1" value={boardWidth} onChange={(e) => { retirePlan(); setBoardWidth(e.target.value); }} className="form-input" required />
               </div>
             </div>
             {(!parseFloat(boardThickness) || !parseFloat(boardWidth)) && <p className="text-danger text-[12.5px] font-semibold" style={{ marginTop: '10px' }}>{t('productUi.dimensionsRequired')}</p>}

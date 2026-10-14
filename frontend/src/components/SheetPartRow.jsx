@@ -10,42 +10,43 @@ import { useTranslation } from 'react-i18next';
 
 const SheetPartRow = ({ part, index, handlePartChange, removePart, error, canRemove }) => {
   const { t } = useTranslation();
-  return (
-    <tr>
+  const messages = [...new Set(Object.values(error || {}))];
+  const errorId = messages.length > 0 ? `sheet-part-${part.id}-error` : undefined;
+  return [
+    <tr key="part" className={errorId ? 'is-error-row' : undefined}>
       <td>{String(index + 1).padStart(2, '0')}</td>
-      <td style={{ width: '128px' }}>
-        <div className="flex items-center gap-1">
+      <td className="sheet-part-size">
+        <div className="sheet-part-dimensions">
           <input
             aria-label={t('ui.partLengthAria', { item: index + 1 })}
             type="number"
-            step="0.1"
+            step="1"
             placeholder="800"
             value={part.width}
             onChange={(e) => handlePartChange(index, 'width', e.target.value)}
-            className={`cell-input ${error?.width ? 'is-error' : ''}`}
-            style={{ width: '56px' }}
+            className={`cell-input sheet-part-dimension ${error?.width ? 'is-error' : ''}`}
+            aria-invalid={!!error?.width}
+            aria-describedby={error?.width ? errorId : undefined}
             required
-            min="0.1"
+            min="1"
           />
           <span style={{ color: 'var(--ink-3)' }}>×</span>
           <input
             aria-label={t('ui.sheetHeightAria')}
             type="number"
-            step="0.1"
+            step="1"
             placeholder="400"
             value={part.height}
             onChange={(e) => handlePartChange(index, 'height', e.target.value)}
-            className={`cell-input ${error?.height ? 'is-error' : ''}`}
-            style={{ width: '56px' }}
+            className={`cell-input sheet-part-dimension ${error?.height ? 'is-error' : ''}`}
+            aria-invalid={!!error?.height}
+            aria-describedby={error?.height ? errorId : undefined}
             required
-            min="0.1"
+            min="1"
           />
         </div>
-        {(error?.width || error?.height) && (
-          <p className="text-danger text-[11px] font-semibold text-right">{error.width || error.height}</p>
-        )}
       </td>
-      <td style={{ width: '52px' }}>
+      <td>
         <input
           aria-label={t('ui.quantityAria', { item: index + 1 })}
           type="number"
@@ -54,10 +55,11 @@ const SheetPartRow = ({ part, index, handlePartChange, removePart, error, canRem
           value={part.quantity}
           onChange={(e) => handlePartChange(index, 'quantity', e.target.value)}
           className={`cell-input ${error?.quantity ? 'is-error' : ''}`}
+          aria-invalid={!!error?.quantity}
+          aria-describedby={error?.quantity ? errorId : undefined}
           required
           min="1"
         />
-        {error?.quantity && <p className="text-danger text-[11px] font-semibold text-right">{error.quantity}</p>}
       </td>
       <td>
         <input
@@ -83,8 +85,16 @@ const SheetPartRow = ({ part, index, handlePartChange, removePart, error, canRem
           </button>
         )}
       </td>
-    </tr>
-  );
+    </tr>,
+    errorId ? (
+      <tr key="error" className="sheet-part-error-row">
+        <td />
+        <td colSpan="4">
+          <p id={errorId} role="alert" className="text-danger text-[11px] font-semibold">{messages.join(' · ')}</p>
+        </td>
+      </tr>
+    ) : null,
+  ];
 };
 
 export default SheetPartRow;
