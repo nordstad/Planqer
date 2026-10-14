@@ -5,10 +5,10 @@ fabrication projects. It turns part lists or CAD files (STL/STEP) into
 practical, kerf-aware cutting plans with visual diagrams and local project
 storage.
 
+[![Try it in your browser](https://img.shields.io/badge/Try-in%20your%20browser-orange.svg)](https://nordstad.github.io/Planqer/app/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Docker Compose](https://img.shields.io/badge/Docker%20Compose-supported-2496ED.svg)](docker-compose.yml)
-[![Python](https://img.shields.io/badge/Python-3.12-blue.svg)](backend/pyproject.toml)
-[![React](https://img.shields.io/badge/React-19-61DAFB.svg)](frontend/package.json)
+[![Latest release](https://img.shields.io/github/v/release/nordstad/Planqer)](https://github.com/nordstad/Planqer/releases)
+[![Self-hosted: Docker Compose](https://img.shields.io/badge/Self--hosted-Docker%20Compose-2496ED.svg)](https://nordstad.github.io/Planqer/getting-started/)
 
 ---
 
