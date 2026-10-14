@@ -99,7 +99,10 @@ Constraints:
   constraint, not an accident: one that does (cairosvg did, and was removed)
   turns installing into a per-OS problem and makes contributors' machines
   diverge from the image.
-- Free, MIT-licensed, no cloud accounts, no analytics, no data collection.
+- Free, MIT-licensed, no cloud accounts. Self-hosted Planqer contains no
+  analytics and collects no data. The public demo and docs use anonymous,
+  cookie-free usage counting with a one-click opt-out, described in the
+  [privacy page](docs/privacy.md).
   Accounts, where used, are local to the user's own self-hosted instance.
 
 ## Brand Commitments

@@ -10,7 +10,8 @@ where every cut goes.
 ## Why Planqer
 
 - **Self-hosted and private.** Runs on your own machine or homelab via Docker
-  Compose. No cloud account, no analytics, no tracking.
+  Compose. No cloud account, and the self-hosted app has no analytics or
+  tracking (see [Privacy](privacy.md)).
 - **Kerf-aware.** Every plan subtracts the material your saw blade actually
   removes, so the numbers hold up at the saw.
 - **Five ways in.** Plan board cuts, sheet layouts, or tile layouts, or upload

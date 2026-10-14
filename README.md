@@ -19,7 +19,9 @@ storage.
 - **CAD File Support**: Upload STL or STEP files to automatically generate
   cutlists.
 - **Self-Hosted & Private**: Local accounts and data stay entirely on your
-  server.
+  server. Self-hosted Planqer contains no analytics. Only the public demo and
+  docs site use anonymous, cookie-free usage counting; see the
+  [privacy page](https://nordstad.github.io/Planqer/privacy/).
 - **AI Assistant Integration**: Includes an MCP (Model Context Protocol) server
   for Claude Desktop and compatible clients.
 
