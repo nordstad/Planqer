@@ -34,7 +34,9 @@ describe('first-run dialog', () => {
     const dialog = screen.getByRole('dialog', { name: /Welcome to the Planqer demo/i });
     expect(dialog).toHaveTextContent(/light version/i);
     expect(dialog).toHaveTextContent(/only in this browser/i);
-    expect(dialog).toHaveTextContent(/phones/i);
+    expect(dialog).toHaveTextContent(/built for computers, where there is more room to work/i);
+    expect(dialog).toHaveTextContent(/tested on a recent iPhone/i);
+    expect(dialog).not.toHaveTextContent(/slow or limited/i);
     expect(within(dialog).getByRole('link', { name: /full version/i })).toHaveAttribute('href', expect.stringContaining('getting-started'));
   });
 

@@ -223,7 +223,7 @@ it('plans without any product chosen and sends no placeholder material', async (
   expect(optimizeSheetCutting.mock.calls[0][4]).toBe('');
 });
 
-it('takes a product\'s thickness and standard sheet size when the user asks', async () => {
+it('fills in a product\'s thickness when it is picked and takes its standard sheet size when asked', async () => {
   getCatalogue.mockResolvedValue({ data: catalogue, etag: '"x"' });
   window.history.replaceState({}, '', '/sheet-cutting');
   renderSheetOptimizer();
@@ -232,7 +232,7 @@ it('takes a product\'s thickness and standard sheet size when the user asks', as
   fireEvent.focus(box);
   fireEvent.change(box, { target: { value: 'plywood 15' } });
   fireEvent.mouseDown(await screen.findByRole('option', { name: /^Plywood 15 mm/ }));
-  fireEvent.click(screen.getByRole('button', { name: 'Use 15 mm' }));
+  expect(document.getElementById('sheet-thickness')).toHaveValue(15);
   fireEvent.click(screen.getByRole('button', { name: /1.200 × 2.400 mm/ }));
 
   expect(document.getElementById('sheet-thickness')).toHaveValue(15);

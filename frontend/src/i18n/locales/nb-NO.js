@@ -385,6 +385,7 @@ Object.assign(locale, {
     noResults: "Ingen matchende produkt. Du kan likevel bruke egne ord.",
     useAsOwn: "Bruk «{{text}}» som eget produkt",
     anySize: "valgfritt mål",
+    size: "Størrelse",
     noneChosen: "Ingen produkt valgt. Du kan planlegge uten.",
     loadFailed: "Produktkatalogen kunne ikke lastes. Du kan likevel skrive et eget produkt.",
     suggested: "Forslag",
@@ -414,7 +415,7 @@ Object.assign(locale, {
     automatic: "Automatisk",
     automaticWith: "Automatisk ({{country}})",
     generic: "Generisk (uten land)",
-    genericHint: "Bare generiske mål vises. Velg et land for standardmål på trelast.", genericSheetHint: "Bare generiske platetyper vises. Velg et land for standardmål på plater.",
+    genericPrompt: "Ingen land er valgt, så det vises ingen standardmål for trelast. Velg ett:", genericSheetPrompt: "Ingen land er valgt, så det vises ingen standardmål for plater. Velg ett:", otherCountry: "Et annet land?", requestCountry: "Be om det",
   },
   catalogueAdmin: {
     tab: { users: "Brukere", catalogue: "Katalog" },
@@ -475,7 +476,7 @@ Object.assign(locale, {
   },
   demo: {
     catalogue: {
-      title: "Mine produkter",
+      title: "Produktkatalog",
     },
     backup: {
       title: "Sikkerhetskopier prosjektene dine",
@@ -515,7 +516,7 @@ Object.assign(locale, {
       title: "Velkommen til Planqer-demoen",
       light: "Dette er lettversjonen av Planqer. Den kjører helt i nettleseren din. For alle funksjoner (kontoer, lagrede prosjekter på din egen server, MCP, API), kjør fullversjonen med Docker Compose.",
       data: "Prosjektene dine lagres bare i denne nettleseren på denne enheten. De lastes ikke opp noe sted. Hvis du sletter nettleserdata, forsvinner de, så eksporter en sikkerhetskopi fra Mine prosjekter for å beholde dem.",
-      phones: "Demoen er laget for datamaskiner. Den kan være treg eller begrenset på mobil.",
+      phones: "Planqer er laget for datamaskiner, der det er mer plass å jobbe på. Den fungerer også på mobil: testet på en nyere iPhone, andre mobiler er ikke testet.",
       cta: "Få fullversjonen",
       start: "Greit",
     },

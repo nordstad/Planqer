@@ -72,10 +72,10 @@ it('offers a backup on the project page', async () => {
   expect(await screen.findByRole('button', { name: 'Export backup' })).toBeInTheDocument();
 });
 
-it('links to the user\'s own products instead of an admin page', async () => {
+it('links to the catalogue instead of an admin page', async () => {
   await renderAtHash('#/');
   await screen.findByRole('heading', { level: 1 });
-  expect(screen.getByRole('link', { name: 'My products' })).toHaveAttribute('href', expect.stringContaining('/catalogue'));
+  expect(screen.getByRole('link', { name: 'Catalogue' })).toHaveAttribute('href', expect.stringContaining('/catalogue'));
   expect(screen.queryByRole('link', { name: 'Admin' })).not.toBeInTheDocument();
 });
 

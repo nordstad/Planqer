@@ -3,6 +3,15 @@
 Planqer supports English, Swedish, and Norwegian Bokmal. The locale codes are
 `en-GB`, `sv-SE`, and `nb-NO`.
 
+## Countries and languages
+
+The built-in product catalogue is optimized for Norway and Sweden, and the
+interface is available in English, Swedish and Norwegian Bokmal. Another
+country or language is welcome. Say which one by opening
+[an issue](https://github.com/nordstad/Planqer/issues/new/choose).
+A country's catalogue is data you can help build, see
+[Contributing catalogue data](contributing.md#contributing-catalogue-data).
+
 ## Decisions
 
 - First-time visitors use a supported browser language when available, with

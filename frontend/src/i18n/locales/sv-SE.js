@@ -387,6 +387,7 @@ Object.assign(locale, {
     noResults: "Ingen matchande produkt. Du kan ändå skriva egna ord.",
     useAsOwn: "Använd ”{{text}}” som egen produkt",
     anySize: "valfritt mått",
+    size: "Storlek",
     noneChosen: "Ingen produkt vald. Du kan planera utan.",
     loadFailed: "Produktkatalogen kunde inte läsas in. Du kan ändå skriva en egen produkt.",
     suggested: "Förslag",
@@ -416,7 +417,7 @@ Object.assign(locale, {
     automatic: "Automatiskt",
     automaticWith: "Automatiskt ({{country}})",
     generic: "Generisk (inget land)",
-    genericHint: "Bara generiska mått visas. Välj ett land för standardmått på virke.", genericSheetHint: "Bara generiska skivtyper visas. Välj ett land för standardmått på skivor.",
+    genericPrompt: "Inget land är valt, så inga standardmått för virke visas. Välj ett:", genericSheetPrompt: "Inget land är valt, så inga standardmått för skivor visas. Välj ett:", otherCountry: "Ett annat land?", requestCountry: "Be om det",
   },
   catalogueAdmin: {
     tab: { users: "Användare", catalogue: "Katalog" },
@@ -477,7 +478,7 @@ Object.assign(locale, {
   },
   demo: {
     catalogue: {
-      title: "Mina produkter",
+      title: "Produktkatalog",
     },
     backup: {
       title: "Säkerhetskopiera dina projekt",
@@ -517,7 +518,7 @@ Object.assign(locale, {
       title: "Välkommen till Planqer-demon",
       light: "Det här är lättversionen av Planqer. Den körs helt i din webbläsare. För alla funktioner (konton, sparade projekt på din egen server, MCP, API), kör fullversionen med Docker Compose.",
       data: "Dina projekt sparas bara i den här webbläsaren på den här enheten. De laddas inte upp någonstans. Om du rensar webbläsardata försvinner de, så exportera en säkerhetskopia från Mina projekt för att behålla dem.",
-      phones: "Demon är gjord för datorer. Den kan vara långsam eller begränsad på mobil.",
+      phones: "Planqer är gjort för datorer, där det finns mer plats att arbeta på. Den fungerar även på mobilen: testad på en nyare iPhone, andra mobiler är inte testade.",
       cta: "Skaffa fullversionen",
       start: "Uppfattat",
     },

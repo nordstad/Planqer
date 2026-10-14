@@ -307,6 +307,7 @@ Object.assign(locale, {
     noResults: "No matching product. You can still use your own words.",
     useAsOwn: "Use “{{text}}” as my own product",
     anySize: "any size",
+    size: "Size",
     noneChosen: "No product chosen. You can plan without one.",
     loadFailed: "The product catalogue could not be loaded. You can still type your own product.",
     suggested: "Suggested",
@@ -336,7 +337,7 @@ Object.assign(locale, {
     automatic: "Automatic",
     automaticWith: "Automatic ({{country}})",
     generic: "Generic (no country)",
-    genericHint: "Only generic sizes are shown. Choose a country for standard timber sizes.", genericSheetHint: "Only generic sheet types are shown. Choose a country for standard sheet sizes.",
+    genericPrompt: "No country is selected, so no standard timber sizes are shown. Choose one:", genericSheetPrompt: "No country is selected, so no standard sheet sizes are shown. Choose one:", otherCountry: "Another country?", requestCountry: "Ask for it",
   },
   catalogueAdmin: {
     tab: { users: "Users", catalogue: "Catalogue" },
@@ -397,7 +398,7 @@ Object.assign(locale, {
   },
   demo: {
     catalogue: {
-      title: "My products",
+      title: "Catalogue",
     },
     backup: {
       title: "Back up your projects",
@@ -437,7 +438,7 @@ Object.assign(locale, {
       title: "Welcome to the Planqer demo",
       light: "This is the light version of Planqer. It runs entirely in your browser. For all features (accounts, saved projects on your own server, MCP, API), run the full version with Docker Compose.",
       data: "Your projects are saved only in this browser on this device. They are not uploaded anywhere. Clearing browser data deletes them, so export a backup from My projects to keep them.",
-      phones: "The demo is designed for computers. It may be slow or limited on phones.",
+      phones: "Planqer is built for computers, where there is more room to work. It also runs on phones: tested on a recent iPhone, other phones are untested.",
       cta: "Get the full version",
       start: "Got it",
     },

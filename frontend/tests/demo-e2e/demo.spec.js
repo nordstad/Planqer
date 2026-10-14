@@ -117,7 +117,7 @@ test("a backup of what was saved can be downloaded", async ({ page }) => {
 test("the user's own products can be edited", async ({ page }) => {
   await skipWelcome(page);
   await page.goto(`${APP}#/`);
-  await page.getByRole("link", { name: "My products" }).click();
+  await page.getByRole("link", { name: "Catalogue" }).click();
   await expect(page).toHaveURL(/#\/catalogue$/);
   await expect(page.getByText(/saved in this browser only/i)).toBeVisible();
 });
@@ -133,4 +133,24 @@ test("Browse files and Import backup open the file picker", async ({ page }) => 
   const importChooser = page.waitForEvent("filechooser");
   await page.getByRole("button", { name: "Import backup" }).click();
   await importChooser;
+});
+
+test("a visitor with no country picks one, then a type, then a size, and the numbers fill in", async ({ page }) => {
+  await skipWelcome(page);
+  await page.goto(`${APP}#/cutting`);
+
+  const prompt = page.getByTestId("generic-catalogue-prompt");
+  await expect(prompt).toContainText(/no country is selected/i);
+  await expect(prompt.getByRole("link", { name: "Ask for it" })).toBeVisible();
+  await prompt.getByRole("button", { name: "Sweden" }).click();
+  await expect(prompt).toBeHidden();
+
+  await page.getByRole("combobox", { name: "Product" }).click();
+  await page.getByRole("option", { name: /^Decking/ }).first().click();
+  const size = page.getByRole("combobox", { name: "Size" });
+  await expect(size).toBeVisible();
+  await size.selectOption({ index: 1 });
+
+  await expect(page.getByLabel("Thickness (mm)")).not.toHaveValue("");
+  await expect(page.getByLabel("Width (mm)")).not.toHaveValue("");
 });
