@@ -2,6 +2,7 @@
 // the solver client and the real worker, in each browser.
 
 import { expect, test } from "@playwright/test";
+import { cannotLoadScipy, SCIPY_NOTE } from "./platform.js";
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/tests/runtime-browser/api.html");
@@ -10,8 +11,11 @@ test.beforeEach(async ({ page }) => {
 
 test("the api functions solve in the browser and return the server's shapes", async ({
   page,
-}) => {
-  const results = await page.evaluate(async () => {
+  browserName,
+}, info) => {
+  const skipStl = cannotLoadScipy(browserName);
+  if (skipStl) info.annotations.push({ type: "note", description: SCIPY_NOTE });
+  const results = await page.evaluate(async (skipStl) => {
     const { api } = window;
     const board = await api.optimizeCutting(
       [{ length: 100, quantity: 2 }, { length: 50, quantity: 2 }],
@@ -30,8 +34,11 @@ test("the api functions solve in the browser and return the server's shapes", as
       minEdgeCut: "", reuseOffcuts: true, wastePercent: 10, candidateCount: 2,
     });
     const catalogue = await api.getCatalogue(undefined, "SE");
-    const stl = new Uint8Array(await (await fetch("/parity/files/cabinet.stl")).arrayBuffer());
-    const model = await api.process3DCutlist(new File([stl], "cabinet.stl"), "mm", 1, "Cabinet");
+    let model = { board_count: null };
+    if (!skipStl) {
+      const stl = new Uint8Array(await (await fetch("/parity/files/cabinet.stl")).arrayBuffer());
+      model = await api.process3DCutlist(new File([stl], "cabinet.stl"), "mm", 1, "Cabinet");
+    }
     return {
       board: board.optimal_board_length,
       sheets: sheet.total_sheets,
@@ -40,14 +47,14 @@ test("the api functions solve in the browser and return the server's shapes", as
       etag: catalogue.etag ?? null,
       boards: model.board_count,
     };
-  });
+  }, skipStl);
 
   expect(results.board).toBe(200);
   expect(results.sheets).toBeGreaterThanOrEqual(1);
   expect(results.candidates).toBeGreaterThanOrEqual(1);
   expect(results.products).toBeGreaterThan(0);
   expect(results.etag).toBeNull();
-  expect(results.boards).toBeGreaterThanOrEqual(1);
+  if (!skipStl) expect(results.boards).toBeGreaterThanOrEqual(1);
 });
 
 test("a rejected request fails with the endpoint's own message", async ({ page }) => {

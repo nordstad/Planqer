@@ -2,7 +2,9 @@
 
 Planqer releases are published by pushing a semantic-version tag in the form
 `vX.Y.Z`. The `Publish images` GitHub Actions workflow builds and publishes the
-backend, frontend, and MCP server images to GHCR.
+backend, frontend, and MCP server images to GHCR. The same tag also updates the
+GitHub Pages site: the docs, and the browser demo built from that tag (see
+[The Pages site](#the-pages-site)).
 
 ## Pre-release checks
 
@@ -39,6 +41,26 @@ uv sync --frozen --group dev
 npm run test:all
 ```
 
+### Browser demo
+
+```bash
+python3 scripts/build-demo.py --check-budget
+cd frontend
+npx playwright install chromium firefox webkit   # once
+npm run test:demo
+npm run test:parity
+npm run test:runtime-browser
+```
+
+The first command builds the demo as GitHub Pages serves it and fails if a
+runtime file is missing, the bundled Python is a different version from the
+app, or the demo has grown past its size budget. `test:demo` runs it in three
+browser engines. The `Static demo CI` workflow runs the same checks on every
+pull request that touches the app, the Python it runs, or the scripts.
+
+If the size budget fails because of a change you meant to make, raise the
+limit in `BUDGET_KB` in `scripts/build-demo.py` in the same pull request.
+
 Do not continue with the release if any check fails.
 
 ## Version and tag
@@ -56,6 +78,11 @@ Update the release version consistently in:
 - `mcp-server/src/index.ts`
 - `mcp-server/src/planqer_mcp_server/server.py`
 - `mcp-server/uv.lock`
+
+The demo shows the version from `frontend/package.json` in its footer, and the
+Python it runs is stamped with `backend/planqer/__init__.py`.
+`scripts/build-demo.py` fails if the two differ, so the demo cannot ship a
+mismatched pair.
 
 The same version is also written in the documentation's examples, which users
 copy to pin a release. Update these too:
@@ -89,7 +116,8 @@ git push
 git push origin vX.Y.Z
 ```
 
-Pushing the tag triggers `.github/workflows/publish-images.yml`.
+Pushing the tag triggers `.github/workflows/publish-images.yml` and
+`.github/workflows/pages.yml`.
 
 ## GitHub Release
 
@@ -106,3 +134,76 @@ Verify the release and published image workflow before announcing the release:
 gh release view vX.Y.Z
 gh run list --workflow=publish-images.yml --limit=1
 ```
+
+## The Pages site
+
+`https://nordstad.github.io/Planqer/` is one site with one publisher
+(`.github/workflows/pages.yml`):
+
+- the docs are at the root;
+- the browser demo is at `/app/`.
+
+Every deploy replaces the whole site, so both are always built and published
+together. The workflow has three jobs: `docs` (MkDocs, as before), `app` (the
+demo) and `deploy`.
+
+When it runs:
+
+- Push of a `vX.Y.Z` tag: docs and demo are rebuilt and published. This is the
+  update on release, with no extra step.
+- Merge to `main` touching `docs/**`, `mkdocs.yml` or the workflow: the docs are
+  rebuilt. The demo is reused from the latest release tag, so unreleased app
+  code is never published.
+- Manual run (`workflow_dispatch`): rebuilds both. Also the way to roll back.
+- Pull request: nothing is deployed.
+
+If the demo build fails, the run fails and nothing is deployed, so the live
+site is never replaced by a half-built one. A release tag that predates the
+demo has no `scripts/build-demo.py`; the workflow then publishes the docs alone.
+
+### One-time setting: let tags deploy
+
+The `github-pages` environment normally only accepts deployments from `main`,
+and a deploy started by a `v*` tag is rejected ("Tag ... is not allowed to
+deploy to github-pages") even though the workflow is correct. Allow release
+tags once:
+
+1. In the repository, open Settings, Environments, `github-pages`.
+2. Under "Deployment branches and tags", keep the `main` rule and add a rule of
+   type Tag with the pattern `v*.*.*`.
+3. Check that Settings, Pages, Source is "GitHub Actions".
+
+This is a repository setting, so it cannot be changed in a pull request. Do it
+before the first release that includes the demo. A manual run from `main` works
+without it, which makes it the way to try the demo before a release.
+
+### Try it before a release
+
+Run the workflow by hand from `main` and build the demo from `main`:
+
+```bash
+gh workflow run pages.yml --ref main -f app_ref=main
+gh run watch
+```
+
+Then open `https://nordstad.github.io/Planqer/app/`. Run it again with no
+`app_ref` to go back to the latest release.
+
+### Roll back
+
+Run the workflow by hand and give the previous release tag. The docs are
+rebuilt from the branch you run it on; the demo from the tag:
+
+```bash
+gh workflow run pages.yml --ref main -f app_ref=vX.Y.Z
+```
+
+### Check it after a release
+
+```bash
+gh run list --workflow=pages.yml --limit=1
+```
+
+- The docs are at the root and the demo at `/app/`.
+- Open a deep link under `/app/`, such as `/app/#/tile-layout`, and reload it.
+- The footer's version matches the tag.

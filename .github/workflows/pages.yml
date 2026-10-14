@@ -1,0 +1,175 @@
+name: Deploy site
+
+# One GitHub Pages site, one publisher: the docs at the root and the browser
+# demo at /app/. Every deploy replaces the whole site, so both are always built
+# and published together.
+#
+# The demo is built from a release tag, never from whatever is on main, so a
+# docs-only commit cannot publish unreleased app code. A tag that predates the
+# demo (no scripts/build-demo.py) publishes the docs alone.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - "mkdocs.yml"
+      - ".github/workflows/pages.yml"
+    # Path filters are not evaluated for tags: every release tag deploys.
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+    inputs:
+      app_ref:
+        description: >-
+          Tag, branch or commit to build the demo from. Leave empty for the
+          latest release tag. To roll back, give the previous tag.
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Install MkDocs Material
+        run: pip install -r docs/requirements.txt
+
+      - name: Build site
+        run: mkdocs build --strict
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: docs-site
+          path: site
+          retention-days: 1
+
+  app:
+    runs-on: ubuntu-latest
+    outputs:
+      has_demo: ${{ steps.detect.outputs.supported }}
+    steps:
+      # Only to find the release: the demo itself is built from `src` below.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Choose the release to build the demo from
+        id: ref
+        env:
+          APP_REF: ${{ inputs.app_ref }}
+        run: |
+          set -euo pipefail
+          ref=""
+          if [ -n "$APP_REF" ]; then
+            ref="$APP_REF"
+          elif [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            ref="$GITHUB_REF_NAME"
+          else
+            ref="$(git describe --tags --abbrev=0 --match 'v*.*.*' 2>/dev/null || true)"
+          fi
+          if [ -z "$ref" ]; then
+            echo "No release tag exists yet, so there is no demo to build."
+            echo "sha=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          sha="$(git rev-parse --verify --quiet "${ref}^{commit}" \
+            || git rev-parse --verify --quiet "origin/${ref}^{commit}")" || {
+            echo "::error::'$ref' is not a tag, branch or commit"
+            exit 1
+          }
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v7
+        if: steps.ref.outputs.sha != ''
+        with:
+          ref: ${{ steps.ref.outputs.sha }}
+          path: src
+
+      - name: Does that release have a demo?
+        id: detect
+        env:
+          REF: ${{ steps.ref.outputs.ref }}
+          SHA: ${{ steps.ref.outputs.sha }}
+        run: |
+          if [ -n "$SHA" ] && [ -f src/scripts/build-demo.py ] && grep -q '"build:static"' src/frontend/package.json 2>/dev/null; then
+            echo "supported=true" >> "$GITHUB_OUTPUT"
+            echo "Building the demo from $REF ($SHA)." | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "supported=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::'${REF:-no release}' has no browser demo; publishing the docs alone."
+          fi
+
+      - name: Check a release tag matches every hard-coded version
+        if: steps.detect.outputs.supported == 'true' && github.ref_type == 'tag'
+        working-directory: src
+        run: python3 scripts/check-versions.py --tag "$GITHUB_REF_NAME"
+
+      # The same release always builds the same demo, so a docs-only push reuses
+      # it instead of rebuilding. Bump -v1 to force a rebuild.
+      - name: Reuse the demo if this release was built before
+        id: cache
+        if: steps.detect.outputs.supported == 'true'
+        uses: actions/cache@v6
+        with:
+          path: app-out
+          key: demo-${{ steps.ref.outputs.sha }}-v1
+
+      - uses: actions/setup-node@v7
+        if: steps.detect.outputs.supported == 'true' && steps.cache.outputs.cache-hit != 'true'
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: src/frontend/package-lock.json
+
+      - name: Build the demo
+        if: steps.detect.outputs.supported == 'true' && steps.cache.outputs.cache-hit != 'true'
+        run: |
+          npm ci --prefix src/frontend
+          python3 src/scripts/build-demo.py --out "$GITHUB_WORKSPACE/app-out" --check-budget
+
+      - uses: actions/upload-artifact@v7
+        if: steps.detect.outputs.supported == 'true'
+        with:
+          name: demo-app
+          path: app-out
+          retention-days: 1
+
+  deploy:
+    needs: [docs, app]
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: docs-site
+          path: site
+
+      - uses: actions/download-artifact@v8
+        if: needs.app.outputs.has_demo == 'true'
+        with:
+          name: demo-app
+          path: site/app
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+
+      - id: deployment
+        uses: actions/deploy-pages@v5

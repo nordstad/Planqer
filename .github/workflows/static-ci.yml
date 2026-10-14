@@ -1,0 +1,136 @@
+name: Static demo CI
+
+# Checks the browser demo, and that the self-hosted app stays free of it.
+# New and not required to merge yet: see docs/releasing.md.
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "frontend/**"
+      - "backend/planqer/**"
+      - "backend/tests/test_build_demo.py"
+      - "backend/tests/test_no_demo_code.py"
+      - "scripts/**"
+      - ".github/workflows/static-ci.yml"
+  pull_request:
+    paths:
+      - "frontend/**"
+      - "backend/planqer/**"
+      - "backend/tests/test_build_demo.py"
+      - "backend/tests/test_no_demo_code.py"
+      - "scripts/**"
+      - ".github/workflows/static-ci.yml"
+
+jobs:
+  self-hosted-is-clean:
+    # The image users run must contain none of the demo: no Pyodide runtime, no
+    # worker, no demo screens, nothing that loads analytics.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build the self-hosted app
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Check it contains no demo code
+        run: python3 scripts/check-no-demo-code.py frontend/build
+
+  demo:
+    # The demo as GitHub Pages serves it, in three browser engines.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Cache the pinned Pyodide runtime
+        uses: actions/cache@v6
+        with:
+          path: build/pyodide/runtime
+          key: pyodide-${{ hashFiles('frontend/src/runtime/manifest.json') }}
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build the demo and check its size
+        run: python3 scripts/build-demo.py --check-budget
+
+      - name: Install browsers
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium firefox webkit
+
+      - name: Run the demo in the browsers
+        working-directory: frontend
+        run: npm run test:demo
+
+      - name: Keep the built demo
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: demo
+          path: build/demo
+          retention-days: 7
+
+  runtime-parity:
+    # Pyodide and native Python must give the same answers, in Node and in the
+    # browsers. Native is the Python the Docker image uses.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "latest"
+          enable-cache: true
+
+      - name: Set up Python and the backend
+        working-directory: backend
+        run: |
+          uv python install 3.12
+          uv sync --frozen
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Cache the pinned Pyodide runtime
+        uses: actions/cache@v6
+        with:
+          path: build/pyodide/runtime
+          key: pyodide-${{ hashFiles('frontend/src/runtime/manifest.json') }}
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Compare Pyodide with native Python
+        working-directory: frontend
+        run: npm run test:parity
+
+      - name: Install browsers
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium firefox webkit
+
+      - name: Run the solver and store in the browsers
+        working-directory: frontend
+        run: npm run test:runtime-browser
