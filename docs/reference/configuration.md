@@ -151,7 +151,7 @@ docker compose --profile mcp up -d
 
 ```bash
 # Backend
-PLANQER_VERSION=0.9.2
+PLANQER_VERSION=0.9.3
 # Optional when using a single backend with the persistent data volume.
 SECRET_KEY=<random-32-byte-hex>
 PLANQER_SETUP_SECRET=<random-32-byte-hex>
