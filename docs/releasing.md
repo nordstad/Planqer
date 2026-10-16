@@ -6,6 +6,16 @@ backend, frontend, and MCP server images to GHCR. The same tag also updates the
 GitHub Pages site: the docs, and the browser demo built from that tag (see
 [The Pages site](#the-pages-site)).
 
+## One release, two deployment paths
+
+A release tag starts two independent GitHub Actions workflows. One publishes
+versioned Docker images to GitHub Container Registry; the other builds the
+documentation and browser demo for GitHub Pages. Publishing images does not
+update a running server automatically, and a failure in one workflow does not
+replace the other deployment.
+
+![Release and deployment flow: one release tag publishes Docker images and the GitHub Pages documentation and browser demo through separate workflows.](assets/diagrams/multi-deploy.png)
+
 ## Pre-release checks
 
 Run all checks from a clean working tree before changing any version numbers.
