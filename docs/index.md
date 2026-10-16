@@ -9,6 +9,12 @@ where every cut goes.
 nothing to install. It is the light version; see
 [Demo or full version](demo-vs-full.md).
 
+!!! warning "Early development"
+    Planqer is in beta. Features, APIs and behaviour may change between
+    releases. Found a bug, have an improvement or want to share feedback? Use
+    the [issue tracker](https://github.com/nordstad/Planqer/issues/new/choose).
+    Pull requests for code and documentation improvements are welcome.
+
 ![Planqer homepage](assets/screenshots/homepage.png)
 
 ## Why Planqer
@@ -89,4 +95,6 @@ nothing to install. It is the light version; see
 
 - Source: [github.com/nordstad/Planqer](https://github.com/nordstad/Planqer)
 - License: [MIT](https://opensource.org/licenses/MIT)
-- Issues and feature requests: use the repository's issue tracker.
+- Bugs, improvements and feedback: use the
+  [issue tracker](https://github.com/nordstad/Planqer/issues/new/choose).
+- Code and documentation improvements: [open a pull request](https://github.com/nordstad/Planqer/pulls).

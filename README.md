@@ -12,6 +12,12 @@ storage.
 
 ---
 
+> **Early development:** Planqer is still in beta and the product, APIs and
+> behaviour may change between releases. If you find a bug, have an improvement
+> or want to share feedback, please
+> [open an issue](https://github.com/nordstad/Planqer/issues/new/choose).
+> Pull requests for code and documentation improvements are welcome too.
+
 ## Features
 
 - **Board, Sheet & Tile Layouts**: Kerf-aware board and sheet cutting, plus tile
@@ -173,4 +179,4 @@ instructions are available in the documentation site.
 
 [MIT](LICENSE)
 
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/E8B328RXDO)
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/nordstad)
