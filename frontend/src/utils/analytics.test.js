@@ -204,6 +204,20 @@ describe('beforeSend, the second line of defence', () => {
     expect(sent.data).toEqual({ tool: 'sheet' });
   });
 
+  it('keeps only the safe runtime failure classification', () => {
+    const sent = beforeSend('event', {
+      ...pageview,
+      name: 'runtime_error',
+      data: {
+        reason: 'engine',
+        tool: 'tile',
+        stage: 'initialization',
+        message: 'contains implementation details',
+      },
+    });
+    expect(sent.data).toEqual({ reason: 'engine', tool: 'tile', stage: 'initialization' });
+  });
+
   it('removes empty data from an allowed event', () => {
     const sent = beforeSend('event', { ...pageview, name: 'project_exported', data: { x: 1 } });
     expect(sent).not.toHaveProperty('data');

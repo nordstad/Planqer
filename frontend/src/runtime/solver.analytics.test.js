@@ -76,13 +76,20 @@ it("counts a timeout, but not a cancel", async () => {
 it("counts an engine that cannot start", async () => {
   client.call.mockRejectedValue(new Error("boom"));
   await expect(solver.solverCall("tile_layout", {})).rejects.toThrow();
-  expect(track).toHaveBeenCalledWith("runtime_error", { reason: "engine" });
+  expect(track).toHaveBeenCalledWith("runtime_error", {
+    reason: "engine",
+    tool: "tile",
+    stage: "calculation",
+  });
 });
 
 it("counts a browser that cannot run the demo", async () => {
   vi.stubGlobal("Worker", undefined);
   await expect(solver.solverCall("tile_layout", {})).rejects.toThrow();
-  expect(track).toHaveBeenCalledWith("runtime_error", { reason: "unsupported" });
+  expect(track).toHaveBeenCalledWith("runtime_error", {
+    reason: "unsupported",
+    tool: "tile",
+  });
 });
 
 it("ignores internal calls such as drawing a saved diagram", async () => {

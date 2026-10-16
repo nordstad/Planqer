@@ -101,6 +101,16 @@ describe("solver client", () => {
     await expect(pending).rejects.toThrow("boom");
   });
 
+  it("marks an operation failure for safe analytics classification", async () => {
+    const { client } = setup();
+
+    const pending = client.call("catalogue", {});
+    await flush();
+    workers[0].emit({ id: 1, ok: false, error: "boom" });
+
+    await expect(pending).rejects.toMatchObject({ analyticsStage: "calculation" });
+  });
+
   it("terminates the worker and rejects when the time limit passes", async () => {
     const { client } = setup({ timeoutMs: 5000 });
 
@@ -214,6 +224,17 @@ describe("solver client", () => {
     await expect(second).resolves.toBeDefined();
   });
 
+  it("marks an initialization failure for safe analytics classification", async () => {
+    const { client } = setup();
+    FakeWorker.autoReady = false;
+
+    const pending = client.call("catalogue", {});
+    await flush();
+    workers[0].emit({ type: "init-failed", error: "network down" });
+
+    await expect(pending).rejects.toMatchObject({ analyticsStage: "initialization" });
+  });
+
   it("rejects when the worker crashes", async () => {
     const { client } = setup();
 
@@ -224,6 +245,16 @@ describe("solver client", () => {
 
     await outcome;
     expect(workers[0].terminate).toHaveBeenCalled();
+  });
+
+  it("marks a worker crash for safe analytics classification", async () => {
+    const { client } = setup();
+
+    const pending = client.call("catalogue", {});
+    await flush();
+    workers[0].onerror({ message: "out of memory" });
+
+    await expect(pending).rejects.toMatchObject({ analyticsStage: "worker" });
   });
 
   it("reports progress while a slow job runs, and stops when it ends", async () => {

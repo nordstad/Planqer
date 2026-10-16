@@ -65,14 +65,21 @@ function countFailure(op, error) {
     if (TOOL[op]) track("solve_failed", { tool: TOOL[op], reason: "timeout" });
     return;
   }
-  track("runtime_error", { reason: "engine" });
+  track("runtime_error", {
+    reason: "engine",
+    ...(TOOL[op] ? { tool: TOOL[op] } : {}),
+    stage: error.analyticsStage ?? "calculation",
+  });
 }
 
 const supported = () => typeof WebAssembly !== "undefined" && typeof Worker !== "undefined";
 
 export async function solverCall(op, payload, data, options) {
   if (!supported()) {
-    track("runtime_error", { reason: "unsupported" });
+    track("runtime_error", {
+      reason: "unsupported",
+      ...(TOOL[op] ? { tool: TOOL[op] } : {}),
+    });
     throw new Error(i18n.t("demo.solver.unsupported"));
   }
   solverStatus.start();

@@ -25,7 +25,11 @@ export const EVENTS = Object.freeze({
   project_saved: { tool: TOOLS },
   project_exported: {},
   docker_cta_clicked: { where: ['banner', 'footer', 'note', 'dialog'] },
-  runtime_error: { reason: ['unsupported', 'engine'] },
+  runtime_error: {
+    reason: ['unsupported', 'engine'],
+    tool: TOOLS,
+    stage: ['initialization', 'calculation', 'worker'],
+  },
 });
 
 export const partsBucket = (count) => {
