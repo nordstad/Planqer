@@ -24,8 +24,9 @@ personal information and does not follow you across websites.
 **What we collect, and why.** Which pages and tools are opened, whether an
 optimisation succeeded or failed, whether a project was saved or exported,
 whether a "full version" link was clicked, and whether the calculation engine
-could not start. Umami also records your browser, operating system, screen
-size, language and country. We use this only to learn which features are used
+failed, with the tool in use and the stage (starting up, calculating or
+crashing), but never the error text. Umami also records your browser,
+operating system, screen size, language and country. We use this only to learn which features are used
 and what is broken, so we can improve Planqer.
 
 **What we never collect.** Project names, measurements, uploaded files,

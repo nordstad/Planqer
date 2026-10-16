@@ -68,7 +68,7 @@ function countFailure(op, error) {
   track("runtime_error", {
     reason: "engine",
     ...(TOOL[op] ? { tool: TOOL[op] } : {}),
-    stage: error.analyticsStage ?? "calculation",
+    ...(error.analyticsStage ? { stage: error.analyticsStage } : {}),
   });
 }
 

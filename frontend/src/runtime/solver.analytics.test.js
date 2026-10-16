@@ -74,13 +74,19 @@ it("counts a timeout, but not a cancel", async () => {
 });
 
 it("counts an engine that cannot start", async () => {
-  client.call.mockRejectedValue(new Error("boom"));
+  client.call.mockRejectedValue(Object.assign(new Error("boom"), { analyticsStage: "calculation" }));
   await expect(solver.solverCall("tile_layout", {})).rejects.toThrow();
   expect(track).toHaveBeenCalledWith("runtime_error", {
     reason: "engine",
     tool: "tile",
     stage: "calculation",
   });
+});
+
+it("leaves the stage out when the failure did not come from the engine", async () => {
+  client.call.mockRejectedValue(new Error("not classified"));
+  await expect(solver.solverCall("tile_layout", {})).rejects.toThrow();
+  expect(track).toHaveBeenCalledWith("runtime_error", { reason: "engine", tool: "tile" });
 });
 
 it("counts a browser that cannot run the demo", async () => {
