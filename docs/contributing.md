@@ -3,6 +3,17 @@
 Docker Compose is the only supported way to *run* Planqer, but contributing
 means running the services from source.
 
+Planqer is in beta and still under active development. Features, APIs and
+behaviour may change between releases.
+
+## Bugs, improvements and feedback
+
+Please [open an issue](https://github.com/nordstad/Planqer/issues/new/choose)
+for bugs, improvement ideas, questions or other feedback. Include reproduction
+steps and relevant environment details when reporting a bug. Code and
+documentation improvements are welcome as
+[pull requests](https://github.com/nordstad/Planqer/pulls).
+
 ## Backend (Python/FastAPI)
 
 ```bash

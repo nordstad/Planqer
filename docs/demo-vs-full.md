@@ -5,6 +5,24 @@ runs in your browser with nothing to install. The full version is the Docker
 Compose deployment on your own server (see [Getting started](getting-started.md)).
 Both run the same calculation code, so the results are the same.
 
+## The browser demo
+
+The demo is a static site served by GitHub Pages. The browser loads the React
+interface, Pyodide and the bundled Python code, then runs the calculation in a
+Web Worker. Projects and settings stay in this browser's IndexedDB; no backend
+server is involved.
+
+![Architecture of the browser demo: GitHub Pages serves static files while the browser runs the Planqer calculation locally.](assets/diagrams/demo-version.png)
+
+## The full version
+
+The full version runs as a Docker Compose stack on your own server. The browser
+talks to the frontend and FastAPI backend over HTTP; the backend runs the native
+Python calculation engine and stores accounts, projects, settings and backups.
+The MCP server is optional.
+
+![Architecture of the full version: Docker Compose runs the frontend, backend and optional MCP server with server-side storage.](assets/diagrams/full-version.png)
+
 ## What is the same
 
 Board, sheet and tile optimisation, cost analysis, SVG, PNG and print output,

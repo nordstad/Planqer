@@ -21,6 +21,11 @@ export class SolverCancelledError extends Error {
 
 const PROGRESS_INTERVAL_MS = 1000;
 
+const classify = (error, analyticsStage) => {
+  error.analyticsStage = analyticsStage;
+  return error;
+};
+
 function transferable(data) {
   const whole =
     data.byteOffset === 0 && data.byteLength === data.buffer.byteLength;
@@ -58,29 +63,49 @@ export function createSolverClient({
     } else if (message.type === "ready") {
       current.resolveReady();
     } else if (message.type === "init-failed") {
-      fail(current, new Error(message.error));
+      fail(current, classify(new Error(message.error), "initialization"));
     } else if (current.pending.has(message.id)) {
       const entry = current.pending.get(message.id);
       current.pending.delete(message.id);
       stop(entry);
       if (message.ok) entry.resolve(message.result);
-      else entry.reject(new Error(message.error));
+      else entry.reject(classify(new Error(message.error), "calculation"));
     }
   }
 
   function open() {
     if (session) return session;
-    const current = { worker: createWorker(), pending: new Map(), nextId: 1 };
+    const current = {
+      worker: createWorker(),
+      pending: new Map(),
+      nextId: 1,
+      readyState: false,
+    };
     current.ready = new Promise((resolve, reject) => {
-      current.resolveReady = resolve;
+      current.resolveReady = () => {
+        current.readyState = true;
+        resolve();
+      };
       current.rejectReady = reject;
     });
     current.ready.catch(() => {});
     current.worker.onmessage = ({ data }) => receive(current, data);
     current.worker.onerror = (event) =>
-      fail(current, new Error(event.message || "The solver stopped working"));
+      fail(
+        current,
+        classify(
+          new Error(event.message || "The solver stopped working"),
+          current.readyState ? "worker" : "initialization",
+        ),
+      );
     current.worker.onmessageerror = () =>
-      fail(current, new Error("The solver sent an unreadable reply"));
+      fail(
+        current,
+        classify(
+          new Error("The solver sent an unreadable reply"),
+          current.readyState ? "worker" : "initialization",
+        ),
+      );
     session = current;
     current.worker.postMessage({ type: "init", runtimeUrl, bundleUrl });
     return current;
