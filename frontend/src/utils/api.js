@@ -807,6 +807,7 @@ export const saveWallpaper = async (payload) => (await http.post(`${API_URL}/api
 export const getWallpaperProjects = async () => (await http.get(`${API_URL}/api/wallpaper-projects/`)).data;
 export const saveWallpaperProject = async (payload) => (await http.post(`${API_URL}/api/wallpaper-projects/`, payload)).data;
 export const updateWallpaperProject = async (id, payload) => (await http.put(`${API_URL}/api/wallpaper-projects/${id}`, payload)).data;
+export const deleteWallpaperProject = async (id) => (await http.delete(`${API_URL}/api/wallpaper-projects/${id}`)).data;
 
 /**
  * Process a 3D STL file to generate a cutting list

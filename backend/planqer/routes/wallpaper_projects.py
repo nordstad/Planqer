@@ -39,6 +39,8 @@ class WallpaperProjectResponse(BaseModel):
     plan_result: dict | None
     ordered_rolls: int | None
     progress_data: dict
+    created_at: str
+    updated_at: str
 
 
 def _wallpaper_response(item: UserWallpaper) -> WallpaperResponse:
@@ -54,6 +56,8 @@ def _project_response(item: UserWallpaperProject) -> WallpaperProjectResponse:
         plan_result=load_saved_json(item.plan_result, field="wallpaper plan", default=None, expected=dict),
         ordered_rolls=item.ordered_rolls,
         progress_data=load_saved_json(item.progress_data, field="wallpaper progress", default={}, expected=dict),
+        created_at=item.created_at.isoformat(),
+        updated_at=item.updated_at.isoformat(),
     )
 
 

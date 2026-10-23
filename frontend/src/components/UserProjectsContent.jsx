@@ -21,7 +21,8 @@ import { useTranslation } from 'react-i18next';
 import {
   getUserProjects, updateProject, deleteProject,
   getUserSheetProjects, updateSheetProject, deleteSheetProject,
-  getUserTileProjects, updateTileProject, deleteTileProject,
+   getUserTileProjects, updateTileProject, deleteTileProject,
+   getWallpaperProjects, updateWallpaperProject, deleteWallpaperProject,
   downloadProjectImage, getProjectGroups, renameProjectGroup, deleteProjectGroup, getUserSettings,
 } from '../utils/api';
 import { svgBlobToPngBlob } from '../utils/svgToPng';
@@ -80,6 +81,13 @@ const planFacts = (project, t) => {
       type: t('common.tileLayout'),
       count: Number.isFinite(toBuy) ? `${toBuy} ${t('workflow.tilesToBuy')}` : '—',
       stock: `${materialLabel(project.tile_data?.material_type || 'tile', t)} · ${project.tile_data?.thickness || '—'}×${project.tile_data.width}×${project.tile_data.height}mm`,
+    };
+  }
+  if (project.projectType === 'wallpaper') {
+    return {
+      type: t('common.wallpaperPlanner'),
+      count: `${project.plan_result?.rolls_to_buy ?? '—'} rolls to buy`,
+      stock: project.wallpaper_data?.name || 'Wallpaper',
     };
   }
   const parts = restoreBoardParts(project.parts_data);
@@ -156,10 +164,11 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
       setLoading(true);
       setError('');
 
-      const [boardProjects, sheetProjects, tileProjects, projectGroups, settings] = await Promise.all([
+      const [boardProjects, sheetProjects, tileProjects, wallpaperProjects, projectGroups, settings] = await Promise.all([
         getUserProjects(),
         getUserSheetProjects(),
         getUserTileProjects(),
+        getWallpaperProjects(),
         getProjectGroups(),
         getUserSettings().catch(() => null),
       ]);
@@ -169,6 +178,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
         ...boardProjects.map((p) => ({ ...p, projectType: 'board' })),
         ...sheetProjects.map((p) => ({ ...p, projectType: 'sheet' })),
         ...tileProjects.map((p) => ({ ...p, projectType: 'tile' })),
+        ...wallpaperProjects.map((p) => ({ ...p, projectType: 'wallpaper' })),
       ].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
 
       setAllProjects(combined);
@@ -194,6 +204,8 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
             await deleteSheetProject(project.id);
           } else if (project.projectType === 'tile') {
             await deleteTileProject(project.id);
+          } else if (project.projectType === 'wallpaper') {
+            await deleteWallpaperProject(project.id);
           } else {
             await deleteProject(project.id);
           }
@@ -340,6 +352,8 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
         await updateSheetProject(project.id, { name });
       } else if (project.projectType === 'tile') {
         await updateTileProject(project.id, { name });
+      } else if (project.projectType === 'wallpaper') {
+        await updateWallpaperProject(project.id, { name });
       } else {
         await updateProject(project.id, { name });
       }
