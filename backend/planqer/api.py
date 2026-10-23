@@ -35,6 +35,7 @@ from planqer.routes.cutting import task_router
 from planqer.routes.sheet_optimization import router as sheet_router
 from planqer.routes.system import router as system_router
 from planqer.routes.tile_layout import router as tile_router
+from planqer.routes.wallpaper import router as wallpaper_router
 from planqer.schemas import (  # noqa: F401
     BoardCost,
     CostAnalysis,
@@ -190,6 +191,7 @@ for route in (
     sheet_router,
     cutlists_router,
     tile_router,
+    wallpaper_router,
     system_router,
     task_router,
 ):
