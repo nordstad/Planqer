@@ -15,11 +15,23 @@ const WallElevation = ({ wall, wallIndex, plan }) => {
   const width = numeric(wall.width_top);
   const height = Math.max(numeric(wall.height_left), numeric(wall.height_right));
   const strips = (plan?.strips || []).filter((strip) => strip.wall_index === wallIndex);
-  return <svg viewBox="0 0 720 360" className="wallpaper-wall-drawing" role="img" aria-label={`${wall.name} elevation`}>
-    <rect x="60" y="30" width="600" height="270" fill="var(--ground-2)" stroke="var(--ink)" strokeWidth="2" />
-    {strips.map((strip) => <line key={strip.number} x1={60 + (strip.x_end / width) * 600} x2={60 + (strip.x_end / width) * 600} y1="30" y2="300" stroke="var(--accent)" strokeDasharray="5 4" />)}
-    {wall.cutouts?.map((cutout, index) => <rect key={index} x={60 + (numeric(cutout.x) / width) * 600} y={300 - ((numeric(cutout.y) + numeric(cutout.height)) / height) * 270} width={(numeric(cutout.width) / width) * 600} height={(numeric(cutout.height) / height) * 270} fill="var(--card)" stroke="var(--ink)" />)}
-    <text x="60" y="330" className="wallpaper-svg-small">{width} mm · origin bottom-left</text>
+  const scaleX = (value) => 60 + (value / width) * 600;
+  const scaleY = (value) => 290 - (value / height) * 240;
+  return <svg viewBox="0 0 720 390" className="wallpaper-wall-drawing" role="img" aria-label={`${wall.name} elevation`}>
+    <defs><marker id={`wall-arrow-${wallIndex}`} markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto"><path d="M6 0L0 3L6 6" fill="none" stroke="var(--ink-3)" /></marker></defs>
+    <rect x="60" y="50" width="600" height="240" fill="var(--ground-2)" stroke="var(--ink)" strokeWidth="2" />
+    {strips.map((strip) => <g key={strip.number}><line x1={scaleX(strip.x_end)} x2={scaleX(strip.x_end)} y1="50" y2="290" stroke="var(--accent)" strokeDasharray="5 4" /><text x={(scaleX(strip.x_start) + scaleX(strip.x_end)) / 2} y="349" textAnchor="middle" className="wallpaper-svg-strip">S{strip.number} · {Math.round(strip.width)} mm</text></g>)}
+    {wall.cutouts?.map((cutout, index) => {
+      const x = scaleX(numeric(cutout.x));
+      const y = scaleY(numeric(cutout.y) + numeric(cutout.height));
+      const cutoutWidth = (numeric(cutout.width) / width) * 600;
+      const cutoutHeight = (numeric(cutout.height) / height) * 240;
+      const label = cutout.label || cutout.kind.replace('_', ' ');
+      return <g key={index}><rect x={x} y={y} width={cutoutWidth} height={cutoutHeight} fill="var(--card)" stroke="var(--ink)" /><text x={x + cutoutWidth / 2} y={y + cutoutHeight / 2 - 6} textAnchor="middle" className="wallpaper-svg-small">{label}</text><text x={x + cutoutWidth / 2} y={y + cutoutHeight / 2 + 10} textAnchor="middle" className="wallpaper-svg-small">{numeric(cutout.width)} × {numeric(cutout.height)} mm</text><text x={x + cutoutWidth / 2} y={y + cutoutHeight + 14} textAnchor="middle" className="wallpaper-svg-small">left {numeric(cutout.x)} · floor {numeric(cutout.y)}</text></g>;
+    })}
+    <line x1="60" y1="316" x2="660" y2="316" stroke="var(--ink-3)" markerStart={`url(#wall-arrow-${wallIndex})`} markerEnd={`url(#wall-arrow-${wallIndex})`} /><text x="360" y="311" textAnchor="middle" className="wallpaper-svg-small">wall width {Math.round(width)} mm</text>
+    <line x1="35" y1="50" x2="35" y2="290" stroke="var(--ink-3)" markerStart={`url(#wall-arrow-${wallIndex})`} markerEnd={`url(#wall-arrow-${wallIndex})`} /><text x="25" y="170" textAnchor="middle" transform="rotate(-90 25 170)" className="wallpaper-svg-small">wall height {Math.round(height)} mm</text>
+    <text x="60" y="375" className="wallpaper-svg-small">All opening positions are measured from this wall’s bottom-left corner.</text>
   </svg>;
 };
 
