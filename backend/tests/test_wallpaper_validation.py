@@ -1,6 +1,8 @@
 import pytest
 
 from planqer.schemas.wallpaper import (
+    Corner,
+    CornerWidths,
     Cutout,
     Room,
     Wall,
@@ -68,3 +70,32 @@ def test_validation_warns_about_ungrouped_overlap_and_wall_edges():
 
     assert any("overlap" in warning for warning in warnings)
     assert any("within 10 mm" in warning for warning in warnings)
+
+
+def test_validation_warns_about_inconsistent_corner_widths():
+    plan_request = request()
+    plan_request.room.corners = [
+        Corner(kind="inside", widths=CornerWidths(top=20, middle=60, bottom=20))
+    ]
+    plan_request.room.closed = True
+
+    warnings = validate_wallpaper_request(plan_request)
+
+    assert any("Corner widths differ" in warning for warning in warnings)
+
+
+def test_validation_warns_when_closed_room_opposite_walls_differ():
+    walls = [
+        request().room.walls[0],
+        request().room.walls[0].model_copy(update={"name": "East", "width_top": 3100}),
+    ]
+    plan_request = request()
+    plan_request.room = Room(
+        walls=walls,
+        corners=[Corner(kind="inside"), Corner(kind="inside")],
+        closed=True,
+    )
+
+    warnings = validate_wallpaper_request(plan_request)
+
+    assert any("Opposite walls differ" in warning for warning in warnings)

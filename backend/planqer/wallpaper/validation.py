@@ -22,6 +22,7 @@ def validate_wallpaper_request(request: WallpaperPlanRequest) -> list[str]:
                     f"Cutout on wall '{wall.name}' is within 10 mm of a wall edge"
                 )
         warnings.extend(_overlap_warnings(wall.name, wall.cutouts))
+    warnings.extend(_corner_warnings(request))
     return warnings
 
 
@@ -65,3 +66,23 @@ def _rectangles_overlap(
         and first_bottom < second_top
         and first_top > second_bottom
     )
+
+
+def _corner_warnings(request: WallpaperPlanRequest) -> list[str]:
+    warnings = []
+    for corner in request.room.corners:
+        if corner.widths is None:
+            continue
+        widths = (corner.widths.top, corner.widths.middle, corner.widths.bottom)
+        if max(widths) - min(widths) > 30:
+            warnings.append("Corner widths differ by more than 30 mm")
+    if request.room.closed:
+        wall_count = len(request.room.walls)
+        for index in range(wall_count // 2):
+            first = request.room.walls[index]
+            second = request.room.walls[index + wall_count // 2]
+            first_width = max(first.width_top, first.width_middle, first.width_bottom)
+            second_width = max(second.width_top, second.width_middle, second.width_bottom)
+            if abs(first_width - second_width) > 20:
+                warnings.append("Opposite walls differ by more than 20 mm")
+    return warnings
