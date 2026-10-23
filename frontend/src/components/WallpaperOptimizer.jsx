@@ -41,17 +41,32 @@ const RollDiagram = ({ roll, rollLength, pieces, wallIndex }) => <svg viewBox="0
   <text x="35" y="116" className="wallpaper-svg-small">Orange sections are pattern-alignment gaps: keep them as an offcut only when the phase is useful.</text>
 </svg>;
 
-const CutInstruction = ({ cut, piece, strip, progress, toggle }) => {
+const CutInstruction = ({ cut, piece, strip, progress, toggle, selected, onSelect }) => {
   const notches = piece.notches || [];
-  return <button className="flex w-full items-start gap-3 border-b border-[var(--rule-hair)] py-4 text-left" onClick={() => toggle('cut', cut.piece_id)}>
-    <span>{progress.includes(cut.piece_id) ? '✓' : '○'}</span>
-    <span>
+  return <div className="flex items-start gap-3 border-b border-[var(--rule-hair)] py-4"><button type="button" className="flex min-w-0 flex-1 items-start gap-3 text-left" onClick={() => onSelect(piece.id)} aria-pressed={selected}>
+    <span>{selected ? '●' : '○'}</span><span>
       <b>{cut.piece_id} · cut {Math.round(piece.length)} mm</b>
       <small className="block synthetic">Wall strip {piece.strip_number} · hang from {Math.round(piece.y_start)} to {Math.round(piece.y_end)} mm above the floor</small>
       <small className="block synthetic">Roll position {Math.round(cut.start)}–{Math.round(cut.end)} mm · phase {Math.round(cut.phase)} mm{cut.alignment_gap > 0 ? ` · leave ${Math.round(cut.alignment_gap)} mm for pattern alignment before this cut` : ''}</small>
       {notches.map((notch, index) => <small className="block synthetic" key={index}><b>{notch.mode === 'mark' ? 'Mark' : 'Cut'} opening:</b> {Math.round(notch.x_start - strip.x_start)}–{Math.round(notch.x_end - strip.x_start)} mm from this strip’s left edge; {Math.round(notch.y_start - piece.y_start)}–{Math.round(notch.y_end - piece.y_start)} mm from this piece’s lower edge.</small>)}
-    </span>
-  </button>;
+    </span></button><button type="button" className="btn" onClick={() => toggle('cut', cut.piece_id)}>{progress.includes(cut.piece_id) ? 'Cut' : 'Mark cut'}</button></div>;
+};
+
+const PieceDiagram = ({ piece, strip, repeat }) => {
+  const width = strip.width || strip.x_end - strip.x_start;
+  const scale = Math.min(230 / width, 280 / piece.length);
+  const paperWidth = width * scale;
+  const paperHeight = piece.length * scale;
+  const left = 270 - paperWidth / 2;
+  const top = 55;
+  return <svg viewBox="0 0 540 405" className="wallpaper-wall-drawing" role="img" aria-label={`${piece.id} cut diagram`}>
+    <rect x="0" y="0" width="540" height="405" fill="var(--card)" />
+    <text x="28" y="34" className="wallpaper-svg-label">{piece.id} · strip {piece.strip_number}</text><text x="478" y="34" textAnchor="end" className="wallpaper-svg-accent">UP ↑</text>
+    <rect x={left} y={top} width={paperWidth} height={paperHeight} fill="var(--ground-2)" stroke="var(--ink)" strokeWidth="2" />
+    {(piece.notches || []).map((notch, index) => { const x = left + (notch.x_start - strip.x_start) * scale; const notchWidth = (notch.x_end - notch.x_start) * scale; const notchHeight = (notch.y_end - notch.y_start) * scale; const y = top + paperHeight - (notch.y_end - piece.y_start) * scale; return <g key={index}><rect x={x} y={y} width={notchWidth} height={notchHeight} fill="var(--card)" stroke="var(--accent)" strokeWidth="2" strokeDasharray={notch.mode === 'mark' ? '5 4' : undefined} /><text x={x + notchWidth / 2} y={y + notchHeight / 2} textAnchor="middle" className="wallpaper-svg-small">{notch.mode === 'mark' ? 'MARK ON WALL' : 'TABLE CUT'}</text><text x={x + notchWidth / 2} y={y + notchHeight / 2 + 13} textAnchor="middle" className="wallpaper-svg-small">{Math.round(notch.x_end - notch.x_start)} × {Math.round(notch.y_end - notch.y_start)} mm</text></g>; })}
+    <line x1={left - 24} y1={top} x2={left - 24} y2={top + paperHeight} stroke="var(--ink-3)" /><text x={left - 32} y={top + paperHeight / 2} textAnchor="middle" transform={`rotate(-90 ${left - 32} ${top + paperHeight / 2})`} className="wallpaper-svg-small">precut {Math.round(piece.length)} mm</text>
+    <text x="28" y="354" className="wallpaper-svg-small">Finished strip width {Math.round(width)} mm · phase {Math.round(piece.phase)} mm{repeat ? ` · repeat ${Math.round(repeat)} mm` : ''}</text><text x="28" y="378" className="wallpaper-svg-small">Solid outline: safe table cut. Dashed outline: mark and trim in place.</text>
+  </svg>;
 };
 
 const WallpaperOptimizer = () => {
@@ -68,6 +83,7 @@ const WallpaperOptimizer = () => {
   const [projectGroupId, setProjectGroupId] = useState('');
   const [progress, setProgress] = useState({ cut: [], hung: [] });
   const [cutWallIndex, setCutWallIndex] = useState(0);
+  const [selectedPieceId, setSelectedPieceId] = useState(null);
   useEffect(() => { if (user) getProjectGroups().then(setProjectGroups).catch(() => {}); }, [user]);
   const updateWall = (index, field, value) => setWalls(walls.map((wall, i) => i === index ? { ...wall, [field]: value } : wall));
   const updateWallDimension = (index, dimension, value) => setWalls(walls.map((wall, current) => {
@@ -150,13 +166,14 @@ const WallpaperOptimizer = () => {
         <div className="section-rule"><h2 className="section-title">{walls[cutWallIndex].name}</h2><span className="synthetic">Origin: bottom-left corner</span></div>
         <WallElevation wall={walls[cutWallIndex]} wallIndex={cutWallIndex} plan={plan} />
       </section>
+      {(() => { const selectedPiece = plan.pieces.find((piece) => piece.id === selectedPieceId && piece.wall_index === cutWallIndex) || plan.pieces.find((piece) => piece.wall_index === cutWallIndex); const selectedStrip = selectedPiece && plan.strips.find((strip) => strip.number === selectedPiece.strip_number); return selectedPiece && selectedStrip && <section style={{ marginBottom: '24px' }}><div className="section-rule"><h2 className="section-title">Selected piece</h2><span className="synthetic">Select another piece below to update this sheet</span></div><PieceDiagram piece={selectedPiece} strip={selectedStrip} repeat={numeric(wallpaper.repeat)} /></section>; })()}
       {plan.rolls.filter((roll) => roll.cuts.some((cut) => plan.pieces.find((piece) => piece.id === cut.piece_id)?.wall_index === cutWallIndex)).map((roll) => <section key={roll.number} style={{ marginTop: '24px' }}>
         <div className="section-rule"><h2 className="section-title">Roll {roll.number}</h2></div>
         <RollDiagram roll={roll} rollLength={numeric(wallpaper.roll_length)} pieces={plan.pieces} wallIndex={cutWallIndex} />
         <div className="cat-table">{roll.cuts.filter((cut) => plan.pieces.find((piece) => piece.id === cut.piece_id)?.wall_index === cutWallIndex).map((cut) => {
           const piece = plan.pieces.find((current) => current.id === cut.piece_id);
           const strip = plan.strips.find((current) => current.number === piece.strip_number);
-          return <CutInstruction key={cut.piece_id} cut={cut} piece={piece} strip={strip} progress={progress.cut} toggle={toggle} />;
+          return <CutInstruction key={cut.piece_id} cut={cut} piece={piece} strip={strip} progress={progress.cut} toggle={toggle} selected={selectedPieceId === piece.id} onSelect={setSelectedPieceId} />;
         })}</div>
       </section>)}
       <div className="step-foot"><button className="btn-order step-foot-act" onClick={() => setStep(4)}>Save plan →</button></div>
