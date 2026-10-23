@@ -13,6 +13,7 @@ this module with it blocked.
 import json
 import logging
 from collections.abc import Callable
+from dataclasses import asdict, is_dataclass
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, TypeAdapter, ValidationError
@@ -53,9 +54,11 @@ from planqer.schemas.saved import (
     UpdateTileProjectRequest,
     UserSettingsUpdate,
 )
+from planqer.schemas.wallpaper import WallpaperPlanRequest
 from planqer.services import normalize_optimization_options, run_optimization
 from planqer.sheet_services import run_sheet_optimization
 from planqer.tile_services import run_tile_layout
+from planqer.wallpaper.plan import create_wallpaper_plan
 
 logger = logging.getLogger("planqer.local_api")
 
@@ -106,6 +109,21 @@ def _tile_layout(payload: dict) -> dict:
     except Exception as exc:
         raise PlanqerError(400, f"Tile layout failed: {exc!s}") from exc
     return result.model_dump(mode="json")
+
+
+def _wallpaper_plan(payload: dict) -> dict:
+    request = WallpaperPlanRequest.model_validate(payload)
+    try:
+        result = create_wallpaper_plan(request)
+    except ValueError as exc:
+        raise PlanqerError(400, str(exc)) from exc
+    return json.loads(json.dumps(result, default=_json_default))
+
+
+def _json_default(value):
+    if is_dataclass(value):
+        return asdict(value)
+    raise TypeError(f"Cannot encode {type(value).__name__}")
 
 
 class StoredCatalogueEntry(BaseModel):
@@ -303,6 +321,7 @@ OPERATIONS: dict[str, Callable[[dict], dict | list]] = {
     "cutting_plan": _cutting_plan,
     "sheet_optimization": _sheet_optimization,
     "tile_layout": _tile_layout,
+    "wallpaper_plan": _wallpaper_plan,
     "catalogue": _catalogue,
     "catalogue_search": _catalogue_search,
     "catalogue_admin": _catalogue_admin,
