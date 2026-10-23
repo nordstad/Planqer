@@ -41,3 +41,19 @@ def test_allocator_opens_a_new_roll_when_the_aligned_piece_does_not_fit():
 
     assert len(rolls) == 2
     assert [cut.piece_id for roll in rolls for cut in roll.cuts] == ["first", "second"]
+
+
+def test_allocator_reuses_a_phase_compatible_alignment_offcut():
+    rolls = assign_pieces_to_rolls(
+        [
+            RollPiece("long", 700, 500),
+            RollPiece("short", 100, 0),
+        ],
+        roll_length=2000,
+        repeat=600,
+    )
+
+    short = next(cut for roll in rolls for cut in roll.cuts if cut.piece_id == "short")
+    assert len(rolls) == 1
+    assert short.source_kind == "offcut"
+    assert (short.start, short.end) == (0, 100)
