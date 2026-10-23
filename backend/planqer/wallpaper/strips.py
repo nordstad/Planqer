@@ -26,6 +26,7 @@ def lay_wall_strips(
     *,
     wall_index: int = 0,
     first_strip_width: float | None = None,
+    start_number: int = 1,
 ) -> list[Strip]:
     """Lay consecutive vertical strips across one wall without dropping coverage."""
     if roll_width <= 0:
@@ -43,7 +44,7 @@ def lay_wall_strips(
 
     strips = []
     x_start = 0.0
-    for number, width in enumerate(widths, start=1):
+    for number, width in enumerate(widths, start=start_number):
         x_end = min(outline.width, x_start + width)
         top_height = outline.strip_top_height(x_start, x_end)
         strips.append(

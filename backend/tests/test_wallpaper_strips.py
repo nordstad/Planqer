@@ -47,6 +47,14 @@ def test_lay_wall_strips_uses_a_requested_first_strip_width():
     ]
 
 
+def test_lay_wall_strips_can_continue_room_wide_strip_numbering():
+    strips = lay_wall_strips(
+        wall(), roll_width=530, allowances=Allowances(), start_number=4
+    )
+
+    assert [strip.number for strip in strips] == [4, 5, 6]
+
+
 @pytest.mark.parametrize("first_strip_width", [0, 531, 600])
 def test_lay_wall_strips_rejects_invalid_first_strip_width(first_strip_width):
     with pytest.raises(ValueError, match="first_strip_width"):
