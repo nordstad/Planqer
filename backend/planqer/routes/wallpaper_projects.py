@@ -67,6 +67,22 @@ def _project_response(item: UserWallpaperProject) -> WallpaperProjectResponse:
     )
 
 
+def _ensure_project_diagram(item: UserWallpaperProject) -> bool:
+    """Backfill diagrams saved before wallpaper exports existed."""
+    if item.cutlist_image_svg or item.cutlist_image:
+        return False
+    image = render_saved_wallpaper_plan(
+        load_saved_json(item.room_data, field="wallpaper room", default={}, expected=dict),
+        load_saved_json(item.plan_result, field="wallpaper plan", default=None, expected=dict),
+        item.name,
+    )
+    if not image:
+        return False
+    item.cutlist_image = image
+    item.cutlist_image_svg = image
+    return True
+
+
 async def _owned(model, item_id: UUID, user: User, session: AsyncSession, label: str):
     item = (await session.execute(select(model).where(model.id == item_id, model.user_id == user.id))).scalar_one_or_none()
     if not item:
@@ -104,6 +120,11 @@ async def delete_wallpaper(item_id: UUID, current_user: User = Depends(get_curre
 @projects_router.get("/", response_model=list[WallpaperProjectResponse])
 async def list_projects(current_user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
     items = (await session.execute(select(UserWallpaperProject).where(UserWallpaperProject.user_id == current_user.id).order_by(UserWallpaperProject.updated_at.desc()))).scalars().all()
+    diagram_backfilled = False
+    for item in items:
+        diagram_backfilled = _ensure_project_diagram(item) or diagram_backfilled
+    if diagram_backfilled:
+        await session.commit()
     return [_project_response(item) for item in items]
 
 
@@ -118,7 +139,11 @@ async def create_project(data: WallpaperProjectRequest, current_user: User = Dep
 
 @projects_router.get("/{item_id}", response_model=WallpaperProjectResponse)
 async def get_project(item_id: UUID, current_user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
-    return _project_response(await _owned(UserWallpaperProject, item_id, current_user, session, "Wallpaper project"))
+    item = await _owned(UserWallpaperProject, item_id, current_user, session, "Wallpaper project")
+    if _ensure_project_diagram(item):
+        await session.commit()
+        await session.refresh(item)
+    return _project_response(item)
 
 
 @projects_router.put("/{item_id}", response_model=WallpaperProjectResponse)
@@ -141,6 +166,9 @@ async def update_project(item_id: UUID, data: UpdateWallpaperProjectRequest, cur
 @projects_router.get("/{item_id}/image")
 async def get_project_image(item_id: UUID, current_user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
     item = await _owned(UserWallpaperProject, item_id, current_user, session, "Wallpaper project")
+    if _ensure_project_diagram(item):
+        await session.commit()
+        await session.refresh(item)
     return update_saved_image(item.cutlist_image_svg or item.cutlist_image, project_name=item.name, diagram_label="wallpaper plan")
 
 
