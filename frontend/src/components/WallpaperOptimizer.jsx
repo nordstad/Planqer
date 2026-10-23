@@ -29,6 +29,19 @@ const RollDiagram = ({ roll, rollLength, pieces, wallIndex }) => <svg viewBox="0
   <text x="35" y="116" className="wallpaper-svg-small">Orange sections are pattern-alignment gaps: keep them as an offcut only when the phase is useful.</text>
 </svg>;
 
+const CutInstruction = ({ cut, piece, strip, progress, toggle }) => {
+  const notches = piece.notches || [];
+  return <button className="flex w-full items-start gap-3 border-b border-[var(--rule-hair)] py-4 text-left" onClick={() => toggle('cut', cut.piece_id)}>
+    <span>{progress.includes(cut.piece_id) ? '✓' : '○'}</span>
+    <span>
+      <b>{cut.piece_id} · cut {Math.round(piece.length)} mm</b>
+      <small className="block synthetic">Wall strip {piece.strip_number} · hang from {Math.round(piece.y_start)} to {Math.round(piece.y_end)} mm above the floor</small>
+      <small className="block synthetic">Roll position {Math.round(cut.start)}–{Math.round(cut.end)} mm · phase {Math.round(cut.phase)} mm{cut.alignment_gap > 0 ? ` · leave ${Math.round(cut.alignment_gap)} mm for pattern alignment before this cut` : ''}</small>
+      {notches.map((notch, index) => <small className="block synthetic" key={index}><b>{notch.mode === 'mark' ? 'Mark' : 'Cut'} opening:</b> {Math.round(notch.x_start - strip.x_start)}–{Math.round(notch.x_end - strip.x_start)} mm from this strip’s left edge; {Math.round(notch.y_start - piece.y_start)}–{Math.round(notch.y_end - piece.y_start)} mm from this piece’s lower edge.</small>)}
+    </span>
+  </button>;
+};
+
 const WallpaperOptimizer = () => {
   const { user } = useAuth();
   const [step, setStep] = useState(0);
@@ -107,7 +120,27 @@ const WallpaperOptimizer = () => {
   {cutout.kind === 'custom' && <label className="form-label" style={{ display: 'block', marginTop: '12px', maxWidth: '360px' }}>Custom name<input className="form-input" value={cutout.label || ''} onChange={(event) => updateCutout(index, cutoutIndex, 'label', event.target.value)} /></label>}
 </div>)}</div><button type="button" className="btn" style={{ marginTop: '16px' }} onClick={() => updateWall(index, 'cutouts', [...(wall.cutouts || []), { kind: 'door', x: '500', y: '0', width: '900', height: '2100', tuck_edges: [] }])}>Add opening or obstacle</button></section>)}{error && <div className="alert-danger" role="alert" style={{ marginTop: '20px' }}>{error}</div>}<div className="step-foot"><button className="btn" onClick={addWall}>Add wall</button><button className="btn-order step-foot-act" onClick={makePlan}>Create plan →</button></div></section>}
     {step === 2 && plan && <section className="step-view"><div className="step-head"><div><h1 className="step-h1">Your wallpaper plan</h1><p className="step-lede">Buy {plan.rolls_to_buy} rolls. Review every wall below before cutting or ordering.</p></div><button className="btn" onClick={() => setStep(1)}>Edit measurements</button></div><div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_250px]"><div>{walls.map((wall, index) => { const wallStrips = plan.strips.filter((strip) => strip.wall_index === index); const wallPieces = plan.pieces.filter((piece) => piece.wall_index === index); return <section key={index} style={{ marginBottom: '32px' }}><div className="section-rule"><h2 className="section-title">{wall.name}</h2><span className="synthetic">{wallStrips.length} strips · {wallPieces.length} cut pieces</span></div><WallElevation wall={wall} wallIndex={index} plan={plan} /><dl className="grid gap-3 md:grid-cols-3"><div><dt className="form-label">Measured width</dt><dd>{wall.width_top} mm</dd></div><div><dt className="form-label">Heights</dt><dd>{wall.height_left} / {wall.height_right} mm</dd></div><div><dt className="form-label">Openings</dt><dd>{(wall.cutouts || []).length || 'None'}</dd></div></dl></section>; })}{[...new Set(plan.warnings)].map((warning) => <p className="synthetic" key={warning}>{warning}</p>)}</div><section><div className="section-rule"><h2 className="section-title">Material summary</h2></div><p><b>{plan.rolls_to_buy} rolls to buy</b></p><p className="synthetic">Linear material loss: pattern is alignment skipped from a roll; allowance is the deliberate top/bottom trim; trim is removed around openings; offcut is unused roll end.</p><dl className="cat-table">{Object.entries(plan.waste).map(([name, value]) => <div className="flex justify-between border-b border-[var(--rule-hair)] py-2" key={name}><dt>{name}</dt><dd>{Math.round(value)} mm</dd></div>)}</dl></section></div><div className="step-foot"><button className="btn" onClick={() => setStep(1)}>Back to measurements</button><button className="btn-order step-foot-act" onClick={() => setStep(3)}>Prepare cut sheets →</button></div></section>}
-    {step === 3 && plan && <section className="step-view is-form"><div className="step-head"><div><h1 className="step-h1">Cut in roll order</h1><p className="step-lede">Visually align the motif to the prior strip before every patterned cut.</p></div><button className="btn" onClick={() => window.print()}>Print</button></div><div className="flex gap-2" style={{ marginBottom: '18px', flexWrap: 'wrap' }}>{walls.map((wall, index) => <button className={`btn ${cutWallIndex === index ? 'is-active' : ''}`} key={wall.name} onClick={() => setCutWallIndex(index)}>{wall.name}</button>)}</div>{plan.rolls.map((roll) => <section key={roll.number} style={{ marginTop: '24px' }}><div className="section-rule"><h2 className="section-title">Roll {roll.number}</h2></div><RollDiagram roll={roll} rollLength={numeric(wallpaper.roll_length)} pieces={plan.pieces} wallIndex={cutWallIndex} /><div className="cat-table">{roll.cuts.filter((cut) => plan.pieces.find((piece) => piece.id === cut.piece_id)?.wall_index === cutWallIndex).map((cut) => <button key={cut.piece_id} className="flex w-full items-start gap-3 border-b border-[var(--rule-hair)] py-3 text-left" onClick={() => toggle('cut', cut.piece_id)}><span>{progress.cut.includes(cut.piece_id) ? '✓' : '○'}</span><span><b>{cut.piece_id} · {Math.round(cut.end - cut.start)} mm</b><small className="block synthetic">phase {Math.round(cut.phase)} mm · alignment gap {Math.round(cut.alignment_gap)} mm</small></span></button>)}</div></section>)}<div className="step-foot"><button className="btn-order step-foot-act" onClick={() => setStep(4)}>Save plan →</button></div></section>}
+    {step === 3 && plan && <section className="step-view is-form">
+      <div className="step-head">
+        <div><h1 className="step-h1">Cut one wall at a time</h1><p className="step-lede">Select a wall, cut its labelled pieces in roll order, then use the measurements below for each opening.</p></div>
+        <button className="btn" onClick={() => window.print()}>Print</button>
+      </div>
+      <div className="flex gap-2" style={{ marginBottom: '18px', flexWrap: 'wrap' }}>{walls.map((wall, index) => <button className={`btn ${cutWallIndex === index ? 'is-active' : ''}`} key={wall.name} onClick={() => setCutWallIndex(index)}>{wall.name}</button>)}</div>
+      <section style={{ marginBottom: '24px' }}>
+        <div className="section-rule"><h2 className="section-title">{walls[cutWallIndex].name}</h2><span className="synthetic">Origin: bottom-left corner</span></div>
+        <WallElevation wall={walls[cutWallIndex]} wallIndex={cutWallIndex} plan={plan} />
+      </section>
+      {plan.rolls.filter((roll) => roll.cuts.some((cut) => plan.pieces.find((piece) => piece.id === cut.piece_id)?.wall_index === cutWallIndex)).map((roll) => <section key={roll.number} style={{ marginTop: '24px' }}>
+        <div className="section-rule"><h2 className="section-title">Roll {roll.number}</h2></div>
+        <RollDiagram roll={roll} rollLength={numeric(wallpaper.roll_length)} pieces={plan.pieces} wallIndex={cutWallIndex} />
+        <div className="cat-table">{roll.cuts.filter((cut) => plan.pieces.find((piece) => piece.id === cut.piece_id)?.wall_index === cutWallIndex).map((cut) => {
+          const piece = plan.pieces.find((current) => current.id === cut.piece_id);
+          const strip = plan.strips.find((current) => current.number === piece.strip_number);
+          return <CutInstruction key={cut.piece_id} cut={cut} piece={piece} strip={strip} progress={progress.cut} toggle={toggle} />;
+        })}</div>
+      </section>)}
+      <div className="step-foot"><button className="btn-order step-foot-act" onClick={() => setStep(4)}>Save plan →</button></div>
+    </section>}
     {step === 4 && plan && <section className="step-view is-form"><div className="step-head"><div><h1 className="step-h1">Save this plan</h1><p className="step-lede">Keep the room measurements, roll count and cut order together.</p></div></div><label className="form-label">Project name<input className="form-input" value={projectName} onChange={(event) => setProjectName(event.target.value)} /></label><label className="form-label" style={{ marginTop: '18px' }}>Project — optional<select className="form-select" value={projectGroupId} onChange={(event) => setProjectGroupId(event.target.value)}><option value="">Not in a project</option>{projectGroups.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}</select></label><div className="step-foot"><button className="btn-order step-foot-act" onClick={save}>{saved ? 'Update saved plan' : 'Save plan'}</button></div></section>}
   </CatalogPage>;
 };
