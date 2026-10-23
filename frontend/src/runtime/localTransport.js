@@ -14,6 +14,7 @@ const SOLVER_ROUTES = {
   "POST /cutting-plans": "cutting_plan",
   "POST /sheet-optimization": "sheet_optimization",
   "POST /tile-layout": "tile_layout",
+  "POST /wallpaper-plans": "wallpaper_plan",
 };
 
 const FILE_ROUTES = {

@@ -165,6 +165,7 @@ which the frontend's dev server requires or it will refuse requests with a
 - [Board cutting](guide/board-cutting.md) — 1D parts from boards, lumber, pipe.
 - [Sheet cutting](guide/sheet-cutting.md) — 2D parts nested on sheet stock.
 - [Tile layout](guide/tile-layout.md) — rectangular tile patterns on a surface.
+- [Wallpaper planning](guide/wallpaper.md) — repeat-aware room plans and cut order.
 - [3D model / STEP cutlists](guide/model-cutlist.md) — start from a model
   instead of typing a part list.
 - [Backup and restore](guide/backup-and-restore.md) — protect saved projects

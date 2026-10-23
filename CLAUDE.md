@@ -127,7 +127,7 @@ Then give the user the URL to open, and tell them to hard-refresh (⌘⇧R).
 
 ### Frontend Architecture
 
-- **Router**: React Router routes the homepage, board/sheet/tile/model-cutlist
+- **Router**: React Router routes the homepage, board/sheet/tile/wallpaper/model-cutlist
   optimizers, help, user dashboard, and admin dashboard
 - **Components**:
   - `CuttingOptimizer.jsx` - Main optimization interface

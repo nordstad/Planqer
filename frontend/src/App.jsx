@@ -61,3 +61,5 @@ const App = () => {
 };
 
 export default App;
+const WallpaperOptimizer = lazy(() => import('./components/WallpaperOptimizer'));
+            <Route path="/wallpaper" element={<ProtectedRoute fallbackMessage="access.default"><WallpaperOptimizer /></ProtectedRoute>} />

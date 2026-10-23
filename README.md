@@ -20,7 +20,8 @@ storage.
 
 ## Features
 
-- **Board, Sheet & Tile Layouts**: Kerf-aware board and sheet cutting, plus tile
+- **Board, Sheet, Tile & Wallpaper Layouts**: Kerf-aware board and sheet cutting, tile
+  layouts, and repeat-aware wallpaper room plans.
   grids that account for joints, openings, bond patterns, edge cuts, and waste.
 - **CAD File Support**: Upload STL or STEP files to automatically generate
   cutlists.
