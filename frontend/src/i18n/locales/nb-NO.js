@@ -15,6 +15,7 @@ const locale = {
      boardCutting: 'Kapping av bord', units: 'Enheter',
   sheetCutting: 'Kapping av plater',
     tileLayout: 'Flislegging',
+    wallpaperPlanner: 'Tapet',
     modelCutlist: '3D-modell',
     help: 'Hjelp',
     dayEdition: 'Dagmodus',

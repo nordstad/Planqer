@@ -15,6 +15,7 @@ const locale = {
      boardCutting: 'Board cutting', units: 'Units',
   sheetCutting: 'Sheet cutting',
     tileLayout: 'Tile layout',
+    wallpaperPlanner: 'Wallpaper',
     modelCutlist: '3D model',
     help: 'Help',
     dayEdition: 'Day edition',

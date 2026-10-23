@@ -15,6 +15,7 @@ const locale = {
      boardCutting: 'Brädkapning', units: 'Enheter',
   sheetCutting: 'Skivkapning',
     tileLayout: 'Plattlayout',
+    wallpaperPlanner: 'Tapet',
     modelCutlist: '3D-modell',
     help: 'Hjälp',
     dayEdition: 'Dagsläge',

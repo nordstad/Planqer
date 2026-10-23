@@ -20,6 +20,7 @@ const BASE_NAV_LINKS = [
   { path: '/cutting', label: 'common.boardCutting' },
   { path: '/sheet-cutting', label: 'common.sheetCutting' },
   { path: '/tile-layout', label: 'common.tileLayout' },
+  { path: '/wallpaper', label: 'common.wallpaperPlanner' },
   { path: '/model-cutlist', label: 'common.modelCutlist' },
   { path: '/help', label: 'common.help' },
 ];
