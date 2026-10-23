@@ -13,7 +13,6 @@ this module with it blocked.
 import json
 import logging
 from collections.abc import Callable
-from dataclasses import asdict, is_dataclass
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, TypeAdapter, ValidationError
@@ -117,13 +116,7 @@ def _wallpaper_plan(payload: dict) -> dict:
         result = create_wallpaper_plan(request)
     except ValueError as exc:
         raise PlanqerError(400, str(exc)) from exc
-    return json.loads(json.dumps(result, default=_json_default))
-
-
-def _json_default(value):
-    if is_dataclass(value):
-        return asdict(value)
-    raise TypeError(f"Cannot encode {type(value).__name__}")
+    return result
 
 
 class StoredCatalogueEntry(BaseModel):

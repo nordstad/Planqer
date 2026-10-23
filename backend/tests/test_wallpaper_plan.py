@@ -22,3 +22,11 @@ def test_plan_returns_every_strip_piece_and_roll_for_a_plain_wall():
     assert result["rolls_needed"] == 1
     assert result["rolls_to_buy"] == 2
     assert len(result["strips"]) == len(result["pieces"]) == 2
+    assert result["waste"] == {
+        "pattern": 0,
+        "allowance": 0,
+        "trim": 0,
+        "offcut": 5250,
+    }
+    assert result["area_estimate_rolls"] == 1
+    assert result["start_candidates"][0]["narrowest_strip"] == 530

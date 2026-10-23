@@ -15,6 +15,7 @@ class RollCut:
     end: float
     phase: float
     alignment_gap: float
+    gap_kind: str | None = None
 
 
 @dataclass
@@ -34,7 +35,23 @@ def assign_pieces_to_rolls(
     if roll_length <= 0:
         raise ValueError("roll_length must be greater than 0")
     rolls: list[WallpaperRoll] = []
-    for piece in sorted(pieces, key=lambda item: item.length, reverse=True):
+    # Trying both descending and ascending length order keeps this deliberately
+    # bounded while allowing short phase-compatible pieces to fill a gap.
+    candidates = [_allocate(order, roll_length, repeat, roll_offset) for order in (
+        sorted(pieces, key=lambda item: item.length, reverse=True),
+        sorted(pieces, key=lambda item: item.length),
+    )]
+    # Keep longest-first when candidates use the same number of rolls. This
+    # makes the cut sheet stable while still considering a short-first fallback
+    # when it saves a roll.
+    return min(candidates, key=len)
+
+
+def _allocate(
+    pieces: list[RollPiece], roll_length: float, repeat: float, roll_offset: float
+) -> list[WallpaperRoll]:
+    rolls: list[WallpaperRoll] = []
+    for piece in pieces:
         if piece.length <= 0 or piece.length > roll_length:
             raise ValueError(f"Piece '{piece.piece_id}' cannot fit on a roll")
         for roll in rolls:
@@ -55,4 +72,7 @@ def assign_pieces_to_rolls(
 def _aligned_cut(cursor: float, piece: RollPiece, repeat: float, roll_offset: float) -> RollCut:
     gap = 0 if repeat == 0 else (piece.phase - (cursor + roll_offset)) % repeat
     start = cursor + gap
-    return RollCut(piece.piece_id, start, start + piece.length, piece.phase, gap)
+    # A gap at least as long as the shortest practical strip is a separately
+    # tracked reusable offcut; smaller gaps are pattern loss.
+    gap_kind = None if gap == 0 else ("reusable_offcut" if gap >= 50 else "pattern_waste")
+    return RollCut(piece.piece_id, start, start + piece.length, piece.phase, gap, gap_kind)

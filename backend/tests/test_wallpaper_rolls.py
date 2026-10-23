@@ -14,6 +14,7 @@ def test_patterned_pieces_start_at_their_required_phase():
     assert all((cut.start + 50) % 600 == cut.phase for cut in cuts)
     assert cuts[0].alignment_gap == 50
     assert cuts[1].alignment_gap == 100
+    assert cuts[0].gap_kind == "reusable_offcut"
 
 
 def test_plain_pieces_are_adjacent_without_alignment_gaps():
@@ -28,6 +29,7 @@ def test_plain_pieces_are_adjacent_without_alignment_gaps():
         (0, 700, 0),
         (700, 1100, 0),
     ]
+    assert all(cut.gap_kind is None for cut in cuts)
 
 
 def test_allocator_opens_a_new_roll_when_the_aligned_piece_does_not_fit():
