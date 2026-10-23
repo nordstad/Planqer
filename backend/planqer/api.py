@@ -25,6 +25,8 @@ from planqer.routes import (
     settings_router,
     sheet_projects_router,
     tile_projects_router,
+    wallpaper_projects_router,
+    wallpapers_router,
 )
 from planqer.routes.admin_catalogue import router as admin_catalogue_router
 from planqer.routes.catalogue import router as catalogue_router
@@ -183,6 +185,8 @@ for route in (
     projects_router,
     sheet_projects_router,
     tile_projects_router,
+    wallpapers_router,
+    wallpaper_projects_router,
     project_groups_router,
     admin_router,
     admin_catalogue_router,

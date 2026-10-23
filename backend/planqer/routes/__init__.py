@@ -5,6 +5,8 @@ from .projects import router as projects_router
 from .settings import router as settings_router
 from .sheet_projects import router as sheet_projects_router
 from .tile_projects import router as tile_projects_router
+from .wallpaper_projects import projects_router as wallpaper_projects_router
+from .wallpaper_projects import wallpapers_router
 
 __all__ = [
     "admin_router",
@@ -14,4 +16,6 @@ __all__ = [
     "settings_router",
     "sheet_projects_router",
     "tile_projects_router",
+    "wallpaper_projects_router",
+    "wallpapers_router",
 ]

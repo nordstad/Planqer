@@ -16,6 +16,8 @@ from planqer.database import (
     UserSettings,
     UserSheetProject,
     UserTileProject,
+    UserWallpaper,
+    UserWallpaperProject,
     get_session,
 )
 
@@ -224,6 +226,8 @@ async def delete_user(
             UserProject,
             UserSheetProject,
             UserTileProject,
+            UserWallpaper,
+            UserWallpaperProject,
             ProjectGroup,
         ):
             await session.execute(delete(model).where(model.user_id == user_id))
