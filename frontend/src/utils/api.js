@@ -512,7 +512,7 @@ export const deleteProjectGroup = async (groupId) => {
    'projects' and downloading (or 404ing on) the wrong thing — a live bug the
    moment a third project type existed to fall through to. See
    .plans/tile-layout.md Decision #12. */
-const PROJECT_IMAGE_ENDPOINTS = { board: 'projects', sheet: 'sheet-projects', tile: 'tile-projects' };
+const PROJECT_IMAGE_ENDPOINTS = { board: 'projects', sheet: 'sheet-projects', tile: 'tile-projects', wallpaper: 'wallpaper-projects' };
 
 export const downloadProjectImage = async (projectId, projectType) => {
   const endpoint = PROJECT_IMAGE_ENDPOINTS[projectType];

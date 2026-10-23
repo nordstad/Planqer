@@ -1,8 +1,63 @@
-"""Small, self-contained SVG cut sheets for wallpaper plans."""
+"""Self-contained SVG output for wallpaper plan review and cutting."""
+
+import base64
 
 from xml.sax.saxutils import escape
 
 _ENTITIES = {'"': "&quot;", "'": "&apos;"}
+
+
+def render_plan_svg(room: dict, plan: dict, *, project_name: str) -> str:
+    """Render the approved room plan without re-solving it.
+
+    This compact review sheet is deliberately based on the stored strips and
+    measurements, so dashboard, export and print always show the exact plan
+    the user accepted.
+    """
+    walls = room.get("walls", [])
+    strips = plan.get("strips", [])
+    width, card_height, columns = 1000, 280, 2
+    rows = max(1, (len(walls) + columns - 1) // columns)
+    height = 100 + rows * card_height
+    cards = []
+    for index, wall in enumerate(walls):
+        card_x = 30 + (index % columns) * 480
+        card_y = 85 + (index // columns) * card_height
+        wall_width = float(wall.get("width_top", 0))
+        wall_height = max(float(wall.get("height_left", 0)), float(wall.get("height_right", 0)))
+        if wall_width <= 0 or wall_height <= 0:
+            continue
+        drawing_x, drawing_y, drawing_width, drawing_height = card_x + 45, card_y + 35, 390, 160
+        x_scale, y_scale = drawing_width / wall_width, drawing_height / wall_height
+        wall_name = escape(str(wall.get("name", f"Wall {index + 1}")), _ENTITIES)
+        card = [
+            f'<text x="{card_x}" y="{card_y + 16}" class="title">{wall_name}</text>',
+            f'<rect x="{drawing_x}" y="{drawing_y}" width="{drawing_width}" height="{drawing_height}" class="wall"/>',
+        ]
+        for strip in (item for item in strips if item.get("wall_index") == index):
+            seam = drawing_x + float(strip["x_end"]) * x_scale
+            card.append(f'<line x1="{seam:.1f}" y1="{drawing_y}" x2="{seam:.1f}" y2="{drawing_y + drawing_height}" class="seam"/>')
+        for cutout in wall.get("cutouts", []):
+            x = drawing_x + float(cutout.get("x", 0)) * x_scale
+            cutout_width = float(cutout.get("width", 0)) * x_scale
+            cutout_height = float(cutout.get("height", 0)) * y_scale
+            y = drawing_y + drawing_height - (float(cutout.get("y", 0)) * y_scale + cutout_height)
+            label = escape(str(cutout.get("label") or cutout.get("kind", "opening")).replace("_", " "), _ENTITIES)
+            card.extend((
+                f'<rect x="{x:.1f}" y="{y:.1f}" width="{cutout_width:.1f}" height="{cutout_height:.1f}" class="opening"/>',
+                f'<text x="{x + cutout_width / 2:.1f}" y="{y + cutout_height / 2:.1f}" text-anchor="middle" class="small">{label}</text>',
+                f'<text x="{x + cutout_width / 2:.1f}" y="{y + cutout_height / 2 + 13:.1f}" text-anchor="middle" class="small">{round(float(cutout.get("width", 0)))} × {round(float(cutout.get("height", 0)))} mm</text>',
+            ))
+        card.extend((
+            f'<text x="{drawing_x + drawing_width / 2}" y="{drawing_y + drawing_height + 20}" text-anchor="middle" class="small">width {round(wall_width)} mm · height {round(wall_height)} mm</text>',
+            f'<text x="{drawing_x}" y="{drawing_y + drawing_height + 39}" class="small">Origin: bottom-left</text>',
+        ))
+        cards.extend(card)
+    title = escape(project_name, _ENTITIES)
+    svg = f'''<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">
+<style>.title{{font:700 18px Arial,sans-serif;fill:#16150f}}.small{{font:12px Arial,sans-serif;fill:#5c594c}}.wall{{fill:#f2efe6;stroke:#16150f;stroke-width:2}}.opening{{fill:#fff;stroke:#16150f;stroke-width:1.5}}.seam{{stroke:#a34f18;stroke-width:1.5;stroke-dasharray:5 4}}</style>
+<rect width="100%" height="100%" fill="#fafaf7"/><text x="30" y="38" class="title">{title}</text><text x="30" y="62" class="small">{plan.get("rolls_to_buy", "—")} rolls to buy · dimensioned wall elevations</text>{''.join(cards)}</svg>'''
+    return f"data:image/svg+xml;base64,{base64.b64encode(svg.encode()).decode()}"
 
 
 def render_piece_svg(piece: dict, *, wall_name: str = "Wall", repeat: float = 0) -> str:
