@@ -24,7 +24,7 @@ def test_plan_returns_every_strip_piece_and_roll_for_a_plain_wall():
     assert len(result["strips"]) == len(result["pieces"]) == 2
     assert result["waste"] == {
         "pattern": 0,
-        "allowance": 0,
+        "allowance": 200,
         "trim": 0,
         "offcut": 5250,
     }

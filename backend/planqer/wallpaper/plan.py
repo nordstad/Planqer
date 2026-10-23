@@ -55,7 +55,6 @@ def create_wallpaper_plan(request: WallpaperPlanRequest) -> dict:
     rolls_needed = len(rolls)
     total_roll_length = rolls_needed * request.wallpaper.roll_length
     pattern_waste = sum(cut.alignment_gap for roll in rolls for cut in roll.cuts)
-    used_piece_length = sum(piece.length for piece in pieces)
     end_offcuts = sum(request.wallpaper.roll_length - roll.cursor for roll in rolls)
     covered_area = sum(
         strip.width * strip.top_height for strip in strips
@@ -89,7 +88,11 @@ def create_wallpaper_plan(request: WallpaperPlanRequest) -> dict:
         "area_estimate_rolls": area_estimate,
         "waste": {
             "pattern": pattern_waste,
-            "allowance": max(0, used_piece_length - sum(strip.top_height for strip in strips)),
+            # Allowance is deliberately cut material at the top and bottom of
+            # every strip, whether or not an opening later splits that strip.
+            "allowance": sum(
+                strip.precut_length - strip.top_height for strip in strips
+            ),
             "trim": sum(offcut.length for offcut in offcuts),
             "offcut": end_offcuts,
         },
@@ -98,7 +101,7 @@ def create_wallpaper_plan(request: WallpaperPlanRequest) -> dict:
             "direction": request.start.direction if request.start else "clockwise",
             "offset": request.start.offset if request.start else 0,
             "rolls_needed": rolls_needed,
-            "waste": total_roll_length - used_piece_length,
+            "waste": total_roll_length - sum(piece.length for piece in pieces),
             "narrowest_strip": minimum_width,
             "feasible": not seam_notes,
             "seam_notes": seam_notes,
