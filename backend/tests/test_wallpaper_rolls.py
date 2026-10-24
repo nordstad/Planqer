@@ -68,7 +68,7 @@ def test_material_summary_counts_reused_offcuts_and_net_pattern_loss():
         repeat=600,
     )
 
-    material = _material_summary(rolls, 2000)
+    material = _material_summary(rolls, 2000, 600)
 
     # The 500 mm alignment gap shrinks to 400 mm because "short" fills the first 100 mm.
     assert _unused_gaps(rolls[0]) == 400
@@ -77,5 +77,39 @@ def test_material_summary_counts_reused_offcuts_and_net_pattern_loss():
         "used_length": 800,
         "offcuts_reused_count": 1,
         "offcuts_reused_length": 100,
+        "fit": {
+            "longest_piece": 700, "full_pieces": 1, "pieces_per_roll": 2,
+            "length_for_next": 3100, "shortfall": 1100,
+        },
+        "short_pieces_count": 0,
+        "short_pieces_length": 0,
         "largest_leftover": 800,
     }
+
+
+def test_material_summary_counts_short_pieces_cut_from_a_roll_tail():
+    from planqer.wallpaper.plan import _material_summary
+
+    rolls = assign_pieces_to_rolls(
+        [RollPiece("a", 2400, 0), RollPiece("b", 2400, 0), RollPiece("band", 300, 0)],
+        roll_length=10050,
+        repeat=0,
+    )
+
+    material = _material_summary(rolls, 10050)
+
+    assert len(rolls) == 1
+    assert (material["short_pieces_count"], material["short_pieces_length"]) == (1, 300)
+
+
+def test_roll_fit_says_what_a_longer_roll_would_need():
+    from planqer.wallpaper.plan import _material_summary
+
+    pieces = [RollPiece(f"p{index}", 2400, 0) for index in range(5)]
+    rolls = assign_pieces_to_rolls(pieces, roll_length=10050, repeat=380)
+
+    fit = _material_summary(rolls, 10050, 380)["fit"]
+
+    # Each 2400 mm piece starts on a 380 mm repeat, so it advances 2660 mm: three fit,
+    # and a fourth would need 3 * 2660 + 2400 = 10380 mm.
+    assert (fit["pieces_per_roll"], fit["length_for_next"], fit["shortfall"]) == (3, 10380, 330)

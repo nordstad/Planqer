@@ -191,11 +191,18 @@ class StartPosition(WallpaperSchema):
     wall_index: int = Field(ge=0)
     offset: float = 0
     direction: Literal["clockwise", "counterclockwise"] = "clockwise"
+    # Prefer the candidate whose first strip has this visible width.
+    first_strip_width: float | None = None
 
     @field_validator("offset")
     @classmethod
     def validate_offset(cls, value: float) -> float:
         return validate_numeric_input(value, 0.0, _MAX_DIMENSION_MM)
+
+    @field_validator("first_strip_width")
+    @classmethod
+    def validate_first_strip_width(cls, value: float | None) -> float | None:
+        return None if value is None else validate_numeric_input(value, 1.0, _MAX_DIMENSION_MM)
 
 
 class WallpaperPlanRequest(WallpaperSchema):

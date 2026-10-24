@@ -68,6 +68,7 @@ MODULES = (
     "planqer/validation.py",
     "planqer/visualization_constants.py",
     "planqer/wallpaper/__init__.py",
+    "planqer/wallpaper/closure.py",
     "planqer/wallpaper/geometry.py",
     "planqer/wallpaper/pattern.py",
     "planqer/wallpaper/pieces.py",

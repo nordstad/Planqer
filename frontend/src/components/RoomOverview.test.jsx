@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import '../i18n';
 import RoomOverview from './RoomOverview';
 
 const wall = (name, width) => ({ name, width_top: width, width_middle: width, width_bottom: width });

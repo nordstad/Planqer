@@ -86,7 +86,7 @@ const planFacts = (project, t) => {
   if (project.projectType === 'wallpaper') {
     return {
       type: t('common.wallpaperPlanner'),
-      count: `${project.plan_result?.rolls_to_buy ?? '—'} rolls to buy${project.wallpaper_data?.price_per_roll != null && project.plan_result?.rolls_to_buy != null ? ` · est. ${(project.plan_result.rolls_to_buy * project.wallpaper_data.price_per_roll).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : ''}`,
+      count: `${project.plan_result?.rolls_to_buy ?? '—'} rolls to buy${project.wallpaper_data?.price_per_roll != null && project.plan_result?.rolls_to_buy != null ? ` · est. ${(project.plan_result.rolls_to_buy * project.wallpaper_data.price_per_roll).toLocaleString(undefined, { maximumFractionDigits: 2 })} ${project.wallpaper_data.currency || ''}`.trimEnd() : ''}`,
       stock: project.wallpaper_data?.name || 'Wallpaper',
     };
   }
@@ -325,7 +325,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
   };
 
   const handleModify = (project) => {
-    const routes = { board: '/cutting', sheet: '/sheet-cutting', tile: '/tile-layout' };
+    const routes = { board: '/cutting', sheet: '/sheet-cutting', tile: '/tile-layout', wallpaper: '/wallpaper' };
     const route = routes[project.projectType];
     if (route) navigate(`${route}?edit=${encodeURIComponent(project.id)}`);
   };

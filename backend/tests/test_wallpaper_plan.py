@@ -81,3 +81,22 @@ def test_sloped_requires_lower_edge_below_upper_edge():
             height_left=1000, height_middle=1000, height_right=1000,
             lower_left=1000, lower_right=0,
         )
+
+
+def test_requested_first_strip_width_is_used_when_it_is_a_candidate():
+    from planqer.schemas.wallpaper import StartPosition
+
+    def request(start=None):
+        return WallpaperPlanRequest(
+            wallpaper=WallpaperSpec(name="W", manufacturer="M", roll_width=530, roll_length=10050),
+            room=Room(walls=[Wall(
+                name="Hall", width_top=2400, width_middle=2400, width_bottom=2400,
+                height_left=2400, height_middle=2400, height_right=2400,
+            )]),
+            start=start,
+        )
+
+    chosen = create_wallpaper_plan(request(StartPosition(wall_index=0, first_strip_width=265)))
+
+    assert chosen["strips"][0]["width"] == 265
+    assert chosen["start_candidates"][0]["first_strip_widths"] == [265]

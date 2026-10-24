@@ -1,11 +1,13 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('../contexts/AuthContext', () => ({ useAuth: () => ({ user: null }) }));
 vi.mock('./CatalogPage', () => ({ default: ({ children }) => <div>{children}</div> }));
-vi.mock('../utils/api', async (importOriginal) => ({ ...(await importOriginal()), getProjectGroups: vi.fn() }));
+vi.mock('../utils/api', async (importOriginal) => ({ ...(await importOriginal()), getProjectGroups: vi.fn(), createWallpaperPlan: vi.fn() }));
 
 const { default: WallpaperOptimizer } = await import('./WallpaperOptimizer');
+const { default: i18n } = await import('../i18n');
+const { createWallpaperPlan } = await import('../utils/api');
 
 const openRoomStep = async () => {
   render(<WallpaperOptimizer />);
@@ -100,5 +102,93 @@ describe('WallpaperOptimizer room step', () => {
 
     fireEvent.change(screen.getByLabelText('Corner overlap (mm)'), { target: { value: '-3' } });
     expect(screen.getByRole('alert')).toHaveTextContent(/between 0 and 50/);
+  });
+});
+
+const planFixture = {
+  rolls_needed: 5, rolls_to_buy: 6, area_estimate_rolls: 5, warnings: [], errors: [], closure: null, corners: [],
+  waste: { pattern: 3000, allowance: 1000, trim: 4200, offcut: 13000 },
+  material: {
+    bought_length: 50250, used_length: 34000, offcuts_reused_count: 0, offcuts_reused_length: 0,
+    short_pieces_count: 2, short_pieces_length: 600, largest_leftover: 2330,
+    fit: { longest_piece: 2400, full_pieces: 12, pieces_per_roll: 3, length_for_next: 10380, shortfall: 330 },
+  },
+  start_candidates: [
+    { wall_index: 0, first_strip_widths: [405], rolls_needed: 5, narrowest_strip: 405, feasible: true },
+    { wall_index: 0, first_strip_widths: [331], rolls_needed: 6, narrowest_strip: 331, feasible: true },
+  ],
+  strips: [{ number: 1, wall_index: 0, x_start: 0, x_end: 530, width: 530, top_height: 2400, segments: [{ wall_index: 0, x_start: 0, x_end: 530, width: 530, top_height: 2400 }] }],
+  pieces: [{ id: 'piece-1', strip_number: 1, wall_index: 0, y_start: 2100, y_end: 2400, phase: 0, notches: [], segments: [{ wall_index: 0, x_start: 0, x_end: 530, notches: [] }] }],
+  rolls: [{ number: 1, cuts: [], offcut_length: 0 }],
+};
+
+describe('WallpaperOptimizer plan step', () => {
+  const openPlanStep = async () => {
+    createWallpaperPlan.mockResolvedValue(planFixture);
+    render(<WallpaperOptimizer />);
+    fireEvent.change(screen.getByLabelText(/^Name/i), { target: { value: 'Willow' } });
+    fireEvent.change(screen.getByLabelText(/Manufacturer/i), { target: { value: 'Example' } });
+    fireEvent.change(screen.getByLabelText(/Price per roll/), { target: { value: '1000' } });
+    fireEvent.click(screen.getByRole('button', { name: /Measure the room →/ }));
+    await screen.findByRole('heading', { name: 'Measure the room' });
+    fireEvent.click(screen.getByRole('button', { name: /Create plan/ }));
+    await screen.findByRole('heading', { name: 'Your wallpaper plan' });
+  };
+
+  it('explains spare rolls, the cost with its currency and the short pieces cut from leftovers', async () => {
+    await openPlanStep();
+
+    expect(screen.getByTestId('spare-rolls')).toHaveTextContent('5 needed + 1 spare (10% margin)');
+    expect(screen.getByTestId('estimated-cost')).toHaveTextContent(/6.000 SEK/);
+    expect(screen.getByTestId('offcut-reuse')).toHaveTextContent('2 pieces (600 mm) cut from leftover roll length');
+    expect(screen.getByTestId('opening-trim')).toHaveTextContent('not taken from the rolls');
+  });
+
+  it('says what a longer roll would fit and draws the short piece over the opening', async () => {
+    await openPlanStep();
+
+    expect(screen.getByTestId('roll-fit-hint')).toHaveTextContent('Only 3 full-height pieces fit on a 10050 mm roll');
+    expect(screen.getByTestId('partial-piece')).toHaveTextContent('300 mm piece');
+  });
+
+  it('re-plans with the chosen first strip width', async () => {
+    await openPlanStep();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Use' }));
+
+    await screen.findByTestId('start-options');
+    expect(createWallpaperPlan).toHaveBeenLastCalledWith(expect.objectContaining({ start: { wall_index: 0, first_strip_width: 331 } }));
+  });
+});
+
+describe('WallpaperOptimizer translations', () => {
+  const inLanguage = async (language, run) => {
+    await act(() => i18n.changeLanguage(language));
+    try { await run(); } finally { await act(() => i18n.changeLanguage('en-GB')); }
+  };
+
+  it('renders the wallpaper step in Norwegian', async () => {
+    await inLanguage('nb-NO', () => {
+      render(<WallpaperOptimizer />);
+
+      expect(screen.getByRole('heading', { name: 'Tapetdetaljer' })).toBeInTheDocument();
+      expect(screen.getByLabelText('Produsent')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Mål opp rommet →' })).toBeInTheDocument();
+    });
+  });
+
+  it('translates room step labels and measurement errors in Swedish', async () => {
+    await inLanguage('sv-SE', async () => {
+      render(<WallpaperOptimizer />);
+      fireEvent.change(screen.getByLabelText('Namn'), { target: { value: 'Willow' } });
+      fireEvent.change(screen.getByLabelText('Tillverkare'), { target: { value: 'Example' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Mät rummet →' }));
+      await screen.findByRole('heading', { name: 'Mät rummet' });
+      fireEvent.click(screen.getByRole('button', { name: 'Lägg till öppning eller hinder' }));
+      fireEvent.change(screen.getByLabelText(/^Väggshöjd|^Vägghöjd/), { target: { value: '1200' } });
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(/för hög vid höger kant/);
+      expect(screen.getByDisplayValue('Vägg A')).toBeInTheDocument();
+    });
   });
 });

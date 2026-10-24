@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 // A strip that wraps a corner keeps one colour on every wall it touches.
 const LINK_COLOURS = ['#1f7a8c', '#7b4ea3', '#3b8a4b', '#2f5fb3', '#b0457a'];
 export const linkColour = (stripNumber) => LINK_COLOURS[stripNumber % LINK_COLOURS.length];
@@ -32,6 +34,7 @@ const layOutWalls = (walls, corners) => {
 };
 
 const RoomOverview = ({ walls, corners = [], plan, closed = false, activeWallIndex = null, showStart = false }) => {
+  const { t } = useTranslation();
   const placed = layOutWalls(walls, corners);
   const closure = plan?.closure;
   const useLegend = walls.length > LEGEND_THRESHOLD;
@@ -55,8 +58,8 @@ const RoomOverview = ({ walls, corners = [], plan, closed = false, activeWallInd
     return all.filter((segment) => segment.wall_index === wallIndex).map((segment) => ({ ...segment, number: strip.number, linked: all.length > 1 }));
   });
 
-  return <figure className="wallpaper-room-overview" aria-label="Room overview" style={{ margin: '0 0 32px' }}>
-    <svg viewBox={`0 0 ${VIEW.width} ${VIEW.height}`} role="img" aria-label="Top-down overview of the walls, with seams and strips that wrap corners">
+  return <figure className="wallpaper-room-overview" aria-label={t('wallpaperUi.roomOverviewAria')} style={{ margin: '0 0 32px' }}>
+    <svg viewBox={`0 0 ${VIEW.width} ${VIEW.height}`} role="img" aria-label={t('wallpaperUi.overviewSvgAria')}>
       {placed.map((item, index) => {
         const [x1, y1] = at(item, 0);
         const [x2, y2] = at(item, item.length);
@@ -82,14 +85,14 @@ const RoomOverview = ({ walls, corners = [], plan, closed = false, activeWallInd
             ? <g><circle cx={lx} cy={ly} r="8" fill="var(--paper, #fff)" stroke="var(--ink)" /><text x={lx} y={ly} textAnchor="middle" dominantBaseline="central" className="wallpaper-svg-small" style={{ fontWeight: 700 }}>{index + 1}</text></g>
             : <g style={walls[index].skip ? { opacity: 0.6 } : undefined}>
               <text x={lx} y={ly} textAnchor={anchor} dominantBaseline="middle" className="wallpaper-svg-small" style={{ fontWeight: 700 }}>{walls[index].name}</text>
-              <text x={lx} y={ly + 13} textAnchor={anchor} dominantBaseline="middle" className="wallpaper-svg-small" data-testid="wall-length">{Math.round(item.length)} mm{walls[index].skip ? ' · no wallpaper' : ''}</text>
+              <text x={lx} y={ly + 13} textAnchor={anchor} dominantBaseline="middle" className="wallpaper-svg-small" data-testid="wall-length">{Math.round(item.length)} mm{walls[index].skip ? ` · ${t('wallpaperUi.noWallpaperShort')}` : ''}</text>
             </g>}
           {showStart && index === 0 && (() => {
             const [dx, dy] = at(item, 0, 0);
             const [ax, ay] = at(item, Math.min(item.length * 0.35, item.length), 0);
             const [bx, by] = at(item, Math.min(item.length * 0.35, item.length) - item.length * 0.08, -8);
             const [cx, cy] = at(item, Math.min(item.length * 0.35, item.length) - item.length * 0.08, 8);
-            return <g data-testid="start-marker"><circle cx={dx} cy={dy} r="6" fill="var(--accent)" /><polygon points={`${ax},${ay} ${bx},${by} ${cx},${cy}`} fill="var(--accent)" /><text x={dx} y={dy - 12} textAnchor="middle" className="wallpaper-svg-small" style={{ fill: 'var(--accent)', fontWeight: 700 }}>Start</text></g>;
+            return <g data-testid="start-marker"><circle cx={dx} cy={dy} r="6" fill="var(--accent)" /><polygon points={`${ax},${ay} ${bx},${by} ${cx},${cy}`} fill="var(--accent)" /><text x={dx} y={dy - 12} textAnchor="middle" className="wallpaper-svg-small" style={{ fill: 'var(--accent)', fontWeight: 700 }}>{t('wallpaperUi.startLabel')}</text></g>;
           })()}
         </g>;
       })}
@@ -101,8 +104,8 @@ const RoomOverview = ({ walls, corners = [], plan, closed = false, activeWallInd
         return <line data-testid="closure-gap" x1={gx1} y1={gy1} x2={gx2} y2={gy2} stroke="#c0392b" strokeWidth="3" strokeDasharray="5 4" />;
       })()}
     </svg>
-    {useLegend && <ol className="synthetic" aria-label="Wall numbers" style={{ columnCount: 2, margin: '8px 0', paddingLeft: '24px' }}>{walls.map((wall, index) => <li key={index}>{wall.name} · {Math.round(placed[index].length)} mm{wall.skip ? ' · no wallpaper' : ''}</li>)}</ol>}
-    <figcaption className="synthetic" style={{ textAlign: 'center' }}>{showStart ? 'Simplified top view, updated as you type. Walls follow your entry order with square corners; the arrow shows the clockwise direction.' : null}{showStart ? null : <>{closed ? 'Closed room' : runCount > 1 ? `${runCount} separate wall runs` : 'Open wall run'}. Simplified top view: walls are shown in entry order with square corners.{closed ? ' A dashed red line marks where the walls fail to meet.' : ''} Coloured stretches are one strip that carries round a corner.</>}</figcaption>
+    {useLegend && <ol className="synthetic" aria-label={t('wallpaperUi.wallNumbersAria')} style={{ columnCount: 2, margin: '8px 0', paddingLeft: '24px' }}>{walls.map((wall, index) => <li key={index}>{wall.name} · {Math.round(placed[index].length)} mm{wall.skip ? ` · ${t('wallpaperUi.noWallpaperShort')}` : ''}</li>)}</ol>}
+    <figcaption className="synthetic" style={{ textAlign: 'center' }}>{showStart ? t('wallpaperUi.captionStart') : null}{showStart ? null : <>{closed ? t('wallpaperUi.closedRoom') : runCount > 1 ? t('wallpaperUi.separateRuns', { runs: runCount }) : t('wallpaperUi.openRun')}. {t('wallpaperUi.captionTail')}{closed ? ` ${t('wallpaperUi.captionGap')}` : ''} {t('wallpaperUi.captionColoured')}</>}</figcaption>
   </figure>;
 };
 

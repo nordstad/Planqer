@@ -59,8 +59,10 @@ def create_wallpaper_plan(request: WallpaperPlanRequest) -> dict:
         ), minimum_corner))
         for run in runs
     )
+    preferred = request.start.first_strip_width if request.start else None
     combinations = list(dict.fromkeys(
         [per_run_best] + [tuple(width for _ in runs) for width in options]
+        + ([tuple(preferred for _ in runs)] if preferred and preferred <= roll_width else [])
     ))
 
     candidates = []
@@ -69,6 +71,8 @@ def create_wallpaper_plan(request: WallpaperPlanRequest) -> dict:
         plan = _plan_strips(request, strips, allowances)
         candidates.append((first_widths, strips, notes, narrowest, plan, narrowest_corner))
     candidates.sort(key=lambda item: (
+        # A width the user asked for wins over the automatic ranking.
+        bool(preferred) and not all(width == preferred for width in item[0]),
         bool(item[2]),
         _corner_shortfall(item[5], minimum_corner),
         item[4]["rolls_needed"],
@@ -221,7 +225,7 @@ def _plan_strips(request: WallpaperPlanRequest, strips: list[ConnectedStrip], al
             "trim": sum(offcut.length for offcut in offcuts),
             "offcut": sum(request.wallpaper.roll_length - roll.cursor for roll in rolls),
         },
-        "material": _material_summary(rolls, request.wallpaper.roll_length),
+        "material": _material_summary(rolls, request.wallpaper.roll_length, request.wallpaper.repeat),
         "candidate_waste": total_roll_length - sum(piece.length for piece in pieces),
         "strips": [_serialize_strip(strip) for strip in phased],
         "pieces": [
@@ -250,18 +254,46 @@ def _unused_gaps(roll) -> float:
     return sum(_roll_gaps(roll))
 
 
-def _material_summary(rolls, roll_length: float) -> dict:
+def _material_summary(rolls, roll_length: float, repeat: float = 0) -> dict:
     """What the user actually buys, uses and can still use from leftovers."""
     bought = len(rolls) * roll_length
     cuts = [cut for roll in rolls for cut in roll.cuts]
     reused = [cut for cut in cuts if cut.source_kind == "offcut"]
     leftovers = [gap for roll in rolls for gap in [*_roll_gaps(roll), roll_length - roll.cursor]]
+    # Pieces shorter than the longest one (for example the band above a heat pump)
+    # that follow another cut on their roll use length that would otherwise be waste.
+    longest = max((cut.end - cut.start for cut in cuts), default=0)
+    short = [
+        cut for roll in rolls
+        for cut in sorted(roll.cuts, key=lambda item: item.start)[1:]
+        if cut.end - cut.start < longest
+    ]
     return {
         "bought_length": bought,
         "used_length": sum(cut.end - cut.start for cut in cuts),
         "offcuts_reused_count": len(reused),
         "offcuts_reused_length": sum(cut.end - cut.start for cut in reused),
+        "fit": _roll_fit(cuts, roll_length, repeat, longest),
+        "short_pieces_count": len(short),
+        "short_pieces_length": sum(cut.end - cut.start for cut in short),
         "largest_leftover": max(leftovers, default=0),
+    }
+
+
+def _roll_fit(cuts, roll_length: float, repeat: float, longest: float) -> dict | None:
+    """How many full-length pieces fit on one roll, and what one more would need."""
+    full = sum(1 for cut in cuts if cut.end - cut.start >= longest - 1e-6)
+    if longest <= 0 or longest > roll_length:
+        return None
+    step = longest if repeat <= 0 else ceil(longest / repeat) * repeat
+    per_roll = int((roll_length - longest) // step) + 1
+    needed = per_roll * step + longest
+    return {
+        "longest_piece": longest,
+        "full_pieces": full,
+        "pieces_per_roll": per_roll,
+        "length_for_next": needed,
+        "shortfall": needed - roll_length,
     }
 
 

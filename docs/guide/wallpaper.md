@@ -51,14 +51,29 @@ so the planner prefers a layout that leaves room.
 
 ## Read the cut plan
 
-The Plan step shows rolls needed, the safety-margin purchase count and the
-roll length lost to pattern matching, roll ends and top/bottom allowance.
-Pattern loss is net of offcuts: a gap that a later piece fills counts as reused,
-not lost, and the summary names the largest leftover piece. Enter an optional
-price per roll on the Wallpaper step to see an estimated cost on the Plan step,
-the Save step and the saved project card. Strips are labelled S1, S2 and so on
-in hanging order across the whole room, and a wall marked as having no wallpaper
-is shown as such and uses no material. The Cut step lists
+The Plan step shows the rolls needed, the spare rolls added by your spare margin
+and the roll length lost to pattern matching, roll ends and top/bottom allowance.
+The spare margin starts from the default on your Defaults tab and can be changed
+on the Wallpaper step.
+
+Pattern loss is net of reuse. A short piece, such as the band above a heat pump,
+is cut from leftover roll length when it fits, and a pattern gap that a later
+piece fills counts as reused, not lost. The summary lists both and names the
+largest leftover piece. When a slightly longer roll would fit one more
+full-height piece on every roll, it says how much longer.
+
+Enter an optional price per roll on the Wallpaper step to see an estimated cost
+on the Plan step, the Save step and the saved project card. The cost uses the
+currency and VAT basis from your Defaults tab.
+
+The planner tries several widths for the first strip and picks the best. The
+"Where to start" list shows the alternatives with their roll counts; choose one
+to re-plan. Strips are labelled S1, S2 and so on in hanging order across the
+whole room, and a wall marked as having no wallpaper is shown as such and uses
+no material. Use Modify on a saved wallpaper plan to reopen it with its start
+choice, margin and prices.
+
+The Cut step lists
 pieces in chronological roll order. Mark a piece cut only after table cutting;
 then mark it hung once it is on the wall.
 
