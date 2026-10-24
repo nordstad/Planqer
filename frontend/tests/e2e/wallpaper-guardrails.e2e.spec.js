@@ -97,6 +97,13 @@ test.describe('Wallpaper planner guardrails', () => {
     await createPlan(page);
 
     await expect(page.getByTestId('corner-quality')).toContainText(/Smallest corner piece: \d+ mm \(minimum 100 mm\)/);
+
+    // The cut sheets draw the same carried strips and used to crash on them.
+    const pageErrors = [];
+    page.on('pageerror', (error) => pageErrors.push(error.message));
+    await page.getByRole('button', { name: 'Prepare cut sheets →' }).click();
+    await expect(page.getByRole('heading', { name: 'Cut one wall at a time' })).toBeVisible();
+    expect(pageErrors).toEqual([]);
   });
 
   test('an opening that does not fit is explained beside the field and blocks the plan', async ({ page }) => {
