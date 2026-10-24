@@ -579,7 +579,7 @@ Object.assign(locale, {
     spareMarginPct: "Reservemargin (%)",
     spareMarginHelp: "Ekstra ruller som legges til det du kjøper, rundet opp. Standardverdien din settes under fanen Standardverdier.",
     hasRepeat: "Denne tapeten har et repeterende mønster",
-    repeatMm: "Rapport (mm)",
+    repeatMm: "Rapport (mønsterhøyde, mm)",
     match: "Matching",
     matchStraight: "Rett rapport",
     matchHalfDrop: "Forskjøvet rapport",
