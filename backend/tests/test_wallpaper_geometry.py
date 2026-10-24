@@ -52,6 +52,19 @@ def test_over_stairs_outline_has_a_level_top_and_sloped_lower_edge():
     assert outline.usable_height_at(3010) == 2400
 
 
+def test_double_slope_outline_interpolates_both_boundaries():
+    outline = wall_outline(wall(
+        profile="double_slope", height_left=2600, height_middle=2300, height_right=2000,
+        lower_left=700, lower_right=200,
+    ))
+
+    assert outline.vertices == ((0, 700), (3010, 200), (3010, 2000), (0, 2600))
+    assert outline.usable_height_at(0) == 1900
+    assert outline.usable_height_at(3010) == 1800
+    assert outline.strip_top_height(0, 530) == 2600
+    assert outline.strip_bottom_height(2480, 3010) == 200
+
+
 def test_cutout_bounds_are_a_bottom_left_rectangle():
     cutout = Cutout(kind="window", x=400, y=800, width=1000, height=900)
 

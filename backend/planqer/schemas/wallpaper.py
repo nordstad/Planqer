@@ -107,7 +107,12 @@ class Cutout(WallpaperSchema):
 class Wall(WallpaperSchema):
     name: str = Field(min_length=1, max_length=100)
     profile: Literal[
-        "rectangle", "sloped_ceiling", "under_stairs", "over_stairs", "advanced"
+        "rectangle",
+        "sloped_ceiling",
+        "under_stairs",
+        "over_stairs",
+        "double_slope",
+        "advanced",
     ] = "rectangle"
     stair_direction: Literal["rising_left", "rising_right"] | None = None
     width_top: float
@@ -116,6 +121,8 @@ class Wall(WallpaperSchema):
     height_left: float
     height_middle: float
     height_right: float
+    lower_left: float = 0
+    lower_right: float = 0
     allowances: Allowances | None = None
     minimum_strip_width: float | None = None
     cutouts: list[Cutout] = Field(default_factory=list, max_length=_MAX_CUTOUTS_PER_WALL)
@@ -133,6 +140,11 @@ class Wall(WallpaperSchema):
     @classmethod
     def validate_dimensions(cls, value: float) -> float:
         return validate_numeric_input(value, 1.0, _MAX_DIMENSION_MM)
+
+    @field_validator("lower_left", "lower_right")
+    @classmethod
+    def validate_lower_edge(cls, value: float) -> float:
+        return validate_numeric_input(value, 0.0, _MAX_DIMENSION_MM)
 
     @field_validator("minimum_strip_width")
     @classmethod
@@ -158,6 +170,11 @@ class Wall(WallpaperSchema):
             rises_left = self.height_left <= self.height_right
             if (self.stair_direction == "rising_left") != rises_left:
                 raise ValueError("over-stairs heights do not match the stair direction")
+        if self.profile == "double_slope":
+            if self.lower_left >= self.height_left or self.lower_right >= self.height_right:
+                raise ValueError("double-slope lower edge must be below the upper edge")
+        elif self.lower_left or self.lower_right:
+            raise ValueError("lower edge measurements are only valid for a double-slope wall")
         return self
 
 

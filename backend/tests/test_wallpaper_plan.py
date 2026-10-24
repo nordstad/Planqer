@@ -67,3 +67,53 @@ def test_over_stairs_profiles_keep_coverage_phase_and_roll_allocation(
     allocated = {cut["piece_id"] for roll in result["rolls"] for cut in roll["cuts"]}
     assert allocated == {piece["id"] for piece in result["pieces"]}
     assert all(segment["local_stair_edge"] for strip in result["strips"] for segment in strip["segments"])
+
+
+@pytest.mark.parametrize(
+    ("upper", "lower"),
+    [((2600, 2000), (700, 200)), ((2000, 2600), (200, 700))],
+)
+@pytest.mark.parametrize("with_cutout", [False, True])
+def test_double_slope_keeps_coverage_phase_and_roll_allocation(upper, lower, with_cutout):
+    cutouts = [Cutout(kind="window", x=700, y=300, width=400, height=500)] if with_cutout else []
+    request = WallpaperPlanRequest(
+        wallpaper=WallpaperSpec(
+            name="Willow", manufacturer="Example", roll_width=530, roll_length=10050,
+            repeat=300, match="straight",
+        ),
+        room=Room(walls=[Wall(
+            name="Gable", profile="double_slope",
+            width_top=1800, width_middle=1800, width_bottom=1800,
+            height_left=upper[0], height_middle=2000, height_right=upper[1],
+            lower_left=lower[0], lower_right=lower[1],
+            cutouts=cutouts,
+        )]),
+    )
+
+    result = create_wallpaper_plan(request)
+
+    assert len(result["strips"]) == 4
+    assert {piece["strip_number"] for piece in result["pieces"]} == {
+        strip["number"] for strip in result["strips"]
+    }
+    allocated = {cut["piece_id"] for roll in result["rolls"] for cut in roll["cuts"]}
+    assert allocated == {piece["id"] for piece in result["pieces"]}
+    datum = max(upper)
+    pieces = {piece["strip_number"]: piece for piece in result["pieces"]}
+    for strip in result["strips"]:
+        segment = strip["segments"][0]
+        assert segment["local_stair_edge"]
+        piece = pieces[strip["number"]]
+        assert piece["phase"] == pytest.approx((datum - segment["top_height"]) % 300)
+        assert piece["y_start"] <= segment["bottom_height"]
+        assert piece["y_end"] >= segment["top_height"]
+
+
+def test_double_slope_requires_lower_edge_below_upper_edge():
+    with pytest.raises(ValueError, match="below the upper edge"):
+        Wall(
+            name="Gable", profile="double_slope",
+            width_top=1800, width_middle=1800, width_bottom=1800,
+            height_left=1000, height_middle=1000, height_right=1000,
+            lower_left=1000, lower_right=0,
+        )
