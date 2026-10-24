@@ -37,24 +37,9 @@ def test_wall_outline_uses_the_high_edge_for_a_strip():
     assert outline.strip_top_height(2480, 3010) == 2600
 
 
-def test_over_stairs_outline_has_a_level_top_and_sloped_lower_edge():
+def test_sloped_outline_interpolates_both_boundaries():
     outline = wall_outline(wall(
-        profile="over_stairs",
-        stair_direction="rising_left",
-        height_left=1800,
-        height_middle=2100,
-        height_right=2400,
-    ))
-
-    assert outline.vertices == ((0, 600), (3010, 0), (3010, 2400), (0, 2400))
-    assert outline.top_height_at(0) == outline.top_height_at(3010) == 2400
-    assert outline.usable_height_at(0) == 1800
-    assert outline.usable_height_at(3010) == 2400
-
-
-def test_double_slope_outline_interpolates_both_boundaries():
-    outline = wall_outline(wall(
-        profile="double_slope", height_left=2600, height_middle=2300, height_right=2000,
+        profile="sloped", height_left=2600, height_middle=2300, height_right=2000,
         lower_left=700, lower_right=200,
     ))
 

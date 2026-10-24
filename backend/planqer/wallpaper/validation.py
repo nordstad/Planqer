@@ -1,5 +1,5 @@
 from planqer.schemas.wallpaper import Cutout, WallpaperPlanRequest
-from planqer.wallpaper.geometry import LOCAL_EDGE_PROFILES, cutout_bounds, wall_outline
+from planqer.wallpaper.geometry import cutout_bounds, wall_outline
 
 
 def validate_wallpaper_request(request: WallpaperPlanRequest) -> list[str]:
@@ -9,12 +9,10 @@ def validate_wallpaper_request(request: WallpaperPlanRequest) -> list[str]:
     for wall in request.room.walls:
         outline = wall_outline(wall)
         allowances = wall.allowances or request.allowances
-        if wall.profile == "double_slope":
+        if wall.profile == "sloped":
             tallest_piece = max(wall.height_left, wall.height_right) - min(
                 wall.lower_left, wall.lower_right
             )
-        elif wall.profile in {"under_stairs", "over_stairs"}:
-            tallest_piece = max(wall.height_left, wall.height_right)
         else:
             tallest_piece = max(wall.height_left, wall.height_middle, wall.height_right)
         tallest_piece += allowances.top + allowances.bottom
@@ -23,7 +21,7 @@ def validate_wallpaper_request(request: WallpaperPlanRequest) -> list[str]:
                 f"Wallpaper roll is shorter than the tallest piece on wall '{wall.name}'"
             )
         for cutout in wall.cutouts:
-            _validate_cutout_inside_wall(cutout, wall.name, outline, wall.profile)
+            _validate_cutout_inside_wall(cutout, wall.name, outline)
             if _is_near_wall_edge(cutout, outline.width, max(outline.height_left, outline.height_right)):
                 warnings.append(
                     f"Cutout on wall '{wall.name}' is within 10 mm of a wall edge"
@@ -38,16 +36,13 @@ def _validate_roll(request: WallpaperPlanRequest) -> None:
         raise ValueError("Wallpaper repeat cannot be longer than the roll")
 
 
-def _validate_cutout_inside_wall(cutout: Cutout, wall_name: str, outline, profile: str) -> None:
+def _validate_cutout_inside_wall(cutout: Cutout, wall_name: str, outline) -> None:
     left, bottom, right, top = cutout_bounds(cutout)
     if left < 0 or bottom < 0 or right > outline.width:
         raise ValueError(f"Cutout is outside wall '{wall_name}'")
     available_height = min(outline.usable_height_at(left), outline.usable_height_at(right))
-    if profile in LOCAL_EDGE_PROFILES:
-        # Local-edge openings are measured upward from the local lower edge.
-        if top > available_height:
-            raise ValueError(f"Cutout is outside wall '{wall_name}'")
-    elif top > min(outline.top_height_at(left), outline.top_height_at(right)):
+    # Openings are measured upward from the wall's local lower edge.
+    if top > available_height:
         raise ValueError(f"Cutout is outside wall '{wall_name}'")
 
 

@@ -125,8 +125,7 @@ def _segment_cutouts(
     blocks = []
     notches = []
     for cutout in _merge_grouped_cutouts(cutouts):
-        if segment.local_stair_edge:
-            cutout = _cutout_from_local_stair_edge(cutout, segment)
+        cutout = _cutout_from_local_lower_edge(cutout, segment)
         bounds = _allowance_adjusted_bounds(cutout, allowances)
         intersection = strip_cutout_intersection(
             _cutout_from_bounds(cutout, bounds), segment.x_start, segment.x_end
@@ -143,8 +142,8 @@ def _segment_cutouts(
     return blocks, notches
 
 
-def _cutout_from_local_stair_edge(cutout: Cutout, segment: StripSegment) -> Cutout:
-    """Map an under-stairs opening from its local edge datum to wall datum.
+def _cutout_from_local_lower_edge(cutout: Cutout, segment: StripSegment) -> Cutout:
+    """Map an opening from its local lower edge datum to wall datum.
 
     The lower edge is linear.  The left origin keeps a rectangular cutout's
     table-cut coordinates stable; validation separately checks both vertical

@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from planqer.schemas.wallpaper import Allowances, Corner, Room, Wall
-from planqer.wallpaper.geometry import LOCAL_EDGE_PROFILES, wall_outline
+from planqer.wallpaper.geometry import wall_outline
 
 _EPSILON = 1e-6
 
@@ -27,7 +27,6 @@ class StripSegment:
     bottom_height: float = 0
     lower_left: float = 0
     lower_right: float = 0
-    local_stair_edge: bool = False
     corner_geometry: CornerGeometry | None = None
 
     @property
@@ -184,7 +183,6 @@ def lay_run_strips(
                 bottom_height=outline.strip_bottom_height(x, x_end),
                 lower_left=outline.bottom_height_at(x),
                 lower_right=outline.bottom_height_at(x_end),
-                local_stair_edge=walls[wall_index].profile in LOCAL_EDGE_PROFILES,
                 corner_geometry=(
                     CornerGeometry("outside_wrap")
                     if x == 0 and len(segments) > 0 else None
@@ -269,7 +267,6 @@ def _wrap_inside_corner(
         bottom_height=outline.strip_bottom_height(0, wrap),
         lower_left=outline.bottom_height_at(0),
         lower_right=outline.bottom_height_at(wrap),
-        local_stair_edge=next_wall.profile in LOCAL_EDGE_PROFILES,
         corner_geometry=CornerGeometry(
             "inside_wrap",
             widths=widths,

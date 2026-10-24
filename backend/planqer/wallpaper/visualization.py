@@ -30,19 +30,10 @@ def render_plan_svg(room: dict, plan: dict, *, project_name: str) -> str:
         x_scale, y_scale = drawing_width / wall_width, drawing_height / wall_height
         wall_name = escape(str(wall.get("name", f"Wall {index + 1}")), _ENTITIES)
         profile = wall.get("profile", "rectangle")
-        if profile == "over_stairs":
-            lower_left = wall_height - float(wall.get("height_left", wall_height))
-            lower_right = wall_height - float(wall.get("height_right", wall_height))
-            top_left = top_right = wall_height
-        elif profile == "double_slope":
-            lower_left = float(wall.get("lower_left", 0))
-            lower_right = float(wall.get("lower_right", 0))
-            top_left = float(wall.get("height_left", wall_height))
-            top_right = float(wall.get("height_right", wall_height))
-        else:
-            lower_left = lower_right = 0
-            top_left = float(wall.get("height_left", wall_height))
-            top_right = float(wall.get("height_right", wall_height))
+        lower_left = float(wall.get("lower_left", 0))
+        lower_right = float(wall.get("lower_right", 0))
+        top_left = float(wall.get("height_left", wall_height))
+        top_right = float(wall.get("height_right", wall_height))
         path = " ".join((
             f"M {drawing_x:.1f} {drawing_y + drawing_height - lower_left * y_scale:.1f}",
             f"L {drawing_x + drawing_width:.1f} {drawing_y + drawing_height - lower_right * y_scale:.1f}",
@@ -77,7 +68,7 @@ def render_plan_svg(room: dict, plan: dict, *, project_name: str) -> str:
             ))
         card.extend((
             f'<text x="{drawing_x + drawing_width / 2}" y="{drawing_y + drawing_height + 20}" text-anchor="middle" class="small">width {round(wall_width)} mm · height {round(wall_height)} mm</text>',
-            f'<text x="{drawing_x}" y="{drawing_y + drawing_height + 39}" class="small">Origin: {"local lower edge" if profile in {"over_stairs", "double_slope"} else "bottom-left"}</text>',
+            f'<text x="{drawing_x}" y="{drawing_y + drawing_height + 39}" class="small">Origin: {"local lower edge" if profile == "sloped" else "bottom-left"}</text>',
         ))
         cards.extend(card)
     title = escape(project_name, _ENTITIES)

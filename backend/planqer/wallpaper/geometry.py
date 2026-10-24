@@ -3,9 +3,6 @@ from dataclasses import dataclass
 from planqer.schemas.wallpaper import Cutout, Wall
 
 
-LOCAL_EDGE_PROFILES = frozenset({"over_stairs", "double_slope"})
-
-
 @dataclass(frozen=True)
 class WallOutline:
     width: float
@@ -58,16 +55,9 @@ class StripCutoutIntersection:
 def wall_outline(wall: Wall) -> WallOutline:
     """Return a conservative elevation outline from the wall measurements."""
     width = max(wall.width_top, wall.width_middle, wall.width_bottom)
-    if wall.profile == "over_stairs":
-        top = max(wall.height_left, wall.height_right)
-        lower_left = top - wall.height_left
-        lower_right = top - wall.height_right
-        return WallOutline(width, top, top, lower_left, lower_right)
-    if wall.profile == "double_slope":
-        return WallOutline(
-            width, wall.height_left, wall.height_right, wall.lower_left, wall.lower_right
-        )
-    return WallOutline(width, wall.height_left, wall.height_right)
+    return WallOutline(
+        width, wall.height_left, wall.height_right, wall.lower_left, wall.lower_right
+    )
 
 
 def cutout_bounds(cutout: Cutout) -> tuple[float, float, float, float]:

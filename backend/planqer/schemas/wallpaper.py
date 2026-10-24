@@ -106,15 +106,7 @@ class Cutout(WallpaperSchema):
 
 class Wall(WallpaperSchema):
     name: str = Field(min_length=1, max_length=100)
-    profile: Literal[
-        "rectangle",
-        "sloped_ceiling",
-        "under_stairs",
-        "over_stairs",
-        "double_slope",
-        "advanced",
-    ] = "rectangle"
-    stair_direction: Literal["rising_left", "rising_right"] | None = None
+    profile: Literal["rectangle", "sloped"] = "rectangle"
     width_top: float
     width_middle: float
     width_bottom: float
@@ -157,24 +149,11 @@ class Wall(WallpaperSchema):
 
     @model_validator(mode="after")
     def validate_profile(self):
-        stair_profiles = {"under_stairs", "over_stairs"}
-        if self.profile in stair_profiles and self.stair_direction is None:
-            raise ValueError("stair_direction is required for a stairs wall")
-        if self.profile not in stair_profiles and self.stair_direction is not None:
-            raise ValueError("stair_direction is only valid for a stairs wall")
-        if self.profile == "under_stairs":
-            rises_left = self.height_left >= self.height_right
-            if (self.stair_direction == "rising_left") != rises_left:
-                raise ValueError("under-stairs heights do not match the stair direction")
-        if self.profile == "over_stairs":
-            rises_left = self.height_left <= self.height_right
-            if (self.stair_direction == "rising_left") != rises_left:
-                raise ValueError("over-stairs heights do not match the stair direction")
-        if self.profile == "double_slope":
+        if self.profile == "sloped":
             if self.lower_left >= self.height_left or self.lower_right >= self.height_right:
-                raise ValueError("double-slope lower edge must be below the upper edge")
+                raise ValueError("sloped wall lower edge must be below the upper edge")
         elif self.lower_left or self.lower_right:
-            raise ValueError("lower edge measurements are only valid for a double-slope wall")
+            raise ValueError("lower edge measurements are only valid for a sloped wall")
         return self
 
 
