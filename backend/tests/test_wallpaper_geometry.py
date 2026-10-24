@@ -9,7 +9,7 @@ from planqer.wallpaper.geometry import (
 
 
 def wall(**overrides) -> Wall:
-    return Wall(
+    values = dict(
         name="Hallway",
         width_top=3000,
         width_middle=2980,
@@ -17,8 +17,9 @@ def wall(**overrides) -> Wall:
         height_left=2400,
         height_middle=2500,
         height_right=2600,
-        **overrides,
     )
+    values.update(overrides)
+    return Wall(**values)
 
 
 def test_wall_outline_uses_the_widest_measurement_and_sloped_top():
@@ -34,6 +35,21 @@ def test_wall_outline_uses_the_high_edge_for_a_strip():
 
     assert outline.strip_top_height(0, 530) == pytest.approx(2435.2159468)
     assert outline.strip_top_height(2480, 3010) == 2600
+
+
+def test_over_stairs_outline_has_a_level_top_and_sloped_lower_edge():
+    outline = wall_outline(wall(
+        profile="over_stairs",
+        stair_direction="rising_left",
+        height_left=1800,
+        height_middle=2100,
+        height_right=2400,
+    ))
+
+    assert outline.vertices == ((0, 600), (3010, 0), (3010, 2400), (0, 2400))
+    assert outline.top_height_at(0) == outline.top_height_at(3010) == 2400
+    assert outline.usable_height_at(0) == 1800
+    assert outline.usable_height_at(3010) == 2400
 
 
 def test_cutout_bounds_are_a_bottom_left_rectangle():

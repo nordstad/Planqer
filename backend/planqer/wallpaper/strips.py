@@ -25,6 +25,9 @@ class StripSegment:
     x_end: float
     top_height: float
     bottom_height: float = 0
+    lower_left: float = 0
+    lower_right: float = 0
+    local_stair_edge: bool = False
     corner_geometry: CornerGeometry | None = None
 
     @property
@@ -178,6 +181,10 @@ def lay_run_strips(
                 x_start=x,
                 x_end=x_end,
                 top_height=outline.strip_top_height(x, x_end),
+                bottom_height=outline.strip_bottom_height(x, x_end),
+                lower_left=outline.bottom_height_at(x),
+                lower_right=outline.bottom_height_at(x_end),
+                local_stair_edge=walls[wall_index].profile == "over_stairs",
                 corner_geometry=(
                     CornerGeometry("outside_wrap")
                     if x == 0 and len(segments) > 0 else None
@@ -259,6 +266,10 @@ def _wrap_inside_corner(
         x_start=0,
         x_end=wrap,
         top_height=outline.strip_top_height(0, wrap),
+        bottom_height=outline.strip_bottom_height(0, wrap),
+        lower_left=outline.bottom_height_at(0),
+        lower_right=outline.bottom_height_at(wrap),
+        local_stair_edge=next_wall.profile == "over_stairs",
         corner_geometry=CornerGeometry(
             "inside_wrap",
             widths=widths,

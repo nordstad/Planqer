@@ -93,7 +93,7 @@ def split_strip_into_pieces(
             for part_start, part_end in _subtract(start, end, split_ranges):
                 notches.append(Notch(segment.x_start, part_start, segment.x_end, part_end, mode))
 
-    piece_ranges, offcut_ranges = _split_ranges(strip.top_height, split_ranges)
+    piece_ranges, offcut_ranges = _split_ranges(strip.bottom_height, strip.top_height, split_ranges)
     pieces = []
     for y_start, y_end in piece_ranges:
         segments = tuple(
@@ -125,6 +125,8 @@ def _segment_cutouts(
     blocks = []
     notches = []
     for cutout in _merge_grouped_cutouts(cutouts):
+        if segment.local_stair_edge:
+            cutout = _cutout_from_local_stair_edge(cutout, segment)
         bounds = _allowance_adjusted_bounds(cutout, allowances)
         intersection = strip_cutout_intersection(
             _cutout_from_bounds(cutout, bounds), segment.x_start, segment.x_end
@@ -139,6 +141,21 @@ def _segment_cutouts(
         else:
             notches.append(Notch(x_start, y_start, x_end, y_end, cutout.mode))
     return blocks, notches
+
+
+def _cutout_from_local_stair_edge(cutout: Cutout, segment: StripSegment) -> Cutout:
+    """Map an under-stairs opening from its local edge datum to wall datum.
+
+    The lower edge is linear.  The left origin keeps a rectangular cutout's
+    table-cut coordinates stable; validation separately checks both vertical
+    sides against the actual usable profile.
+    """
+    if segment.x_end == segment.x_start:
+        lower = segment.lower_left
+    else:
+        fraction = (cutout.x - segment.x_start) / (segment.x_end - segment.x_start)
+        lower = segment.lower_left + (segment.lower_right - segment.lower_left) * fraction
+    return cutout.model_copy(update={"y": cutout.y + lower})
 
 
 def _intersect_faces(
@@ -211,11 +228,11 @@ def _clamp_to_segment(
 
 
 def _split_ranges(
-    top_height: float, full_width_bounds: list[tuple[float, float]]
+    bottom_height: float, top_height: float, full_width_bounds: list[tuple[float, float]]
 ) -> tuple[list[tuple[float, float]], list[tuple[float, float]]]:
     pieces = []
     offcuts = []
-    y_start = 0.0
+    y_start = bottom_height
     for cutout_start, cutout_end in _merge_ranges(full_width_bounds, top_height):
         if cutout_start > y_start:
             pieces.append((y_start, cutout_start))

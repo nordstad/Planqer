@@ -22,16 +22,29 @@ def render_plan_svg(room: dict, plan: dict, *, project_name: str) -> str:
     for index, wall in enumerate(walls):
         card_x = 30 + (index % columns) * 480
         card_y = 85 + (index // columns) * card_height
-        wall_width = float(wall.get("width_top", 0))
-        wall_height = max(float(wall.get("height_left", 0)), float(wall.get("height_right", 0)))
+        wall_width = max(float(wall.get(key, 0)) for key in ("width_top", "width_middle", "width_bottom"))
+        wall_height = max(float(wall.get(key, 0)) for key in ("height_left", "height_middle", "height_right"))
         if wall_width <= 0 or wall_height <= 0:
             continue
         drawing_x, drawing_y, drawing_width, drawing_height = card_x + 45, card_y + 35, 390, 160
         x_scale, y_scale = drawing_width / wall_width, drawing_height / wall_height
         wall_name = escape(str(wall.get("name", f"Wall {index + 1}")), _ENTITIES)
+        profile = wall.get("profile", "rectangle")
+        lower_left = wall_height - float(wall.get("height_left", wall_height)) if profile == "over_stairs" else 0
+        lower_right = wall_height - float(wall.get("height_right", wall_height)) if profile == "over_stairs" else 0
+        top_left = wall_height if profile == "over_stairs" else float(wall.get("height_left", wall_height))
+        top_right = wall_height if profile == "over_stairs" else float(wall.get("height_right", wall_height))
+        path = " ".join((
+            f"M {drawing_x:.1f} {drawing_y + drawing_height - lower_left * y_scale:.1f}",
+            f"L {drawing_x + drawing_width:.1f} {drawing_y + drawing_height - lower_right * y_scale:.1f}",
+            f"L {drawing_x + drawing_width:.1f} {drawing_y + drawing_height - top_right * y_scale:.1f}",
+            f"L {drawing_x:.1f} {drawing_y + drawing_height - top_left * y_scale:.1f} Z",
+        ))
+        clip_id = f"wall-{index}-clip"
         card = [
             f'<text x="{card_x}" y="{card_y + 16}" class="title">{wall_name}</text>',
-            f'<rect x="{drawing_x}" y="{drawing_y}" width="{drawing_width}" height="{drawing_height}" class="wall"/>',
+            f'<defs><clipPath id="{clip_id}"><path d="{path}"/></clipPath></defs>',
+            f'<path d="{path}" class="wall"/>',
         ]
         segments = (
             segment
@@ -41,7 +54,7 @@ def render_plan_svg(room: dict, plan: dict, *, project_name: str) -> str:
         )
         for segment in (item for item in segments if item.get("wall_index") == index):
             seam = drawing_x + float(segment["x_end"]) * x_scale
-            card.append(f'<line x1="{seam:.1f}" y1="{drawing_y}" x2="{seam:.1f}" y2="{drawing_y + drawing_height}" class="seam"/>')
+            card.append(f'<line x1="{seam:.1f}" y1="{drawing_y}" x2="{seam:.1f}" y2="{drawing_y + drawing_height}" class="seam" clip-path="url(#{clip_id})"/>')
         for cutout in wall.get("cutouts", []):
             x = drawing_x + float(cutout.get("x", 0)) * x_scale
             cutout_width = float(cutout.get("width", 0)) * x_scale
@@ -55,7 +68,7 @@ def render_plan_svg(room: dict, plan: dict, *, project_name: str) -> str:
             ))
         card.extend((
             f'<text x="{drawing_x + drawing_width / 2}" y="{drawing_y + drawing_height + 20}" text-anchor="middle" class="small">width {round(wall_width)} mm · height {round(wall_height)} mm</text>',
-            f'<text x="{drawing_x}" y="{drawing_y + drawing_height + 39}" class="small">Origin: bottom-left</text>',
+            f'<text x="{drawing_x}" y="{drawing_y + drawing_height + 39}" class="small">Origin: {"local stair edge" if profile == "over_stairs" else "bottom-left"}</text>',
         ))
         cards.extend(card)
     title = escape(project_name, _ENTITIES)

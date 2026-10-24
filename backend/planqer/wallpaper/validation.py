@@ -9,14 +9,18 @@ def validate_wallpaper_request(request: WallpaperPlanRequest) -> list[str]:
     for wall in request.room.walls:
         outline = wall_outline(wall)
         allowances = wall.allowances or request.allowances
-        tallest_piece = max(wall.height_left, wall.height_middle, wall.height_right)
+        tallest_piece = max(
+            wall.height_left, wall.height_right
+        ) if wall.profile in {"under_stairs", "over_stairs"} else max(
+            wall.height_left, wall.height_middle, wall.height_right
+        )
         tallest_piece += allowances.top + allowances.bottom
         if request.wallpaper.roll_length < tallest_piece:
             raise ValueError(
                 f"Wallpaper roll is shorter than the tallest piece on wall '{wall.name}'"
             )
         for cutout in wall.cutouts:
-            _validate_cutout_inside_wall(cutout, wall.name, outline)
+            _validate_cutout_inside_wall(cutout, wall.name, outline, wall.profile)
             if _is_near_wall_edge(cutout, outline.width, max(outline.height_left, outline.height_right)):
                 warnings.append(
                     f"Cutout on wall '{wall.name}' is within 10 mm of a wall edge"
@@ -31,11 +35,16 @@ def _validate_roll(request: WallpaperPlanRequest) -> None:
         raise ValueError("Wallpaper repeat cannot be longer than the roll")
 
 
-def _validate_cutout_inside_wall(cutout: Cutout, wall_name: str, outline) -> None:
+def _validate_cutout_inside_wall(cutout: Cutout, wall_name: str, outline, profile: str) -> None:
     left, bottom, right, top = cutout_bounds(cutout)
     if left < 0 or bottom < 0 or right > outline.width:
         raise ValueError(f"Cutout is outside wall '{wall_name}'")
-    if top > min(outline.top_height_at(left), outline.top_height_at(right)):
+    available_height = min(outline.usable_height_at(left), outline.usable_height_at(right))
+    if profile == "over_stairs":
+        # Over-stairs openings are measured upward from the local stair edge.
+        if top > available_height:
+            raise ValueError(f"Cutout is outside wall '{wall_name}'")
+    elif top > min(outline.top_height_at(left), outline.top_height_at(right)):
         raise ValueError(f"Cutout is outside wall '{wall_name}'")
 
 

@@ -106,6 +106,10 @@ class Cutout(WallpaperSchema):
 
 class Wall(WallpaperSchema):
     name: str = Field(min_length=1, max_length=100)
+    profile: Literal[
+        "rectangle", "sloped_ceiling", "under_stairs", "over_stairs", "advanced"
+    ] = "rectangle"
+    stair_direction: Literal["rising_left", "rising_right"] | None = None
     width_top: float
     width_middle: float
     width_bottom: float
@@ -138,6 +142,23 @@ class Wall(WallpaperSchema):
             if value is None
             else validate_numeric_input(value, 1.0, _MAX_DIMENSION_MM)
         )
+
+    @model_validator(mode="after")
+    def validate_profile(self):
+        stair_profiles = {"under_stairs", "over_stairs"}
+        if self.profile in stair_profiles and self.stair_direction is None:
+            raise ValueError("stair_direction is required for a stairs wall")
+        if self.profile not in stair_profiles and self.stair_direction is not None:
+            raise ValueError("stair_direction is only valid for a stairs wall")
+        if self.profile == "under_stairs":
+            rises_left = self.height_left >= self.height_right
+            if (self.stair_direction == "rising_left") != rises_left:
+                raise ValueError("under-stairs heights do not match the stair direction")
+        if self.profile == "over_stairs":
+            rises_left = self.height_left <= self.height_right
+            if (self.stair_direction == "rising_left") != rises_left:
+                raise ValueError("over-stairs heights do not match the stair direction")
+        return self
 
 
 class CornerWidths(WallpaperSchema):
