@@ -75,6 +75,7 @@ MODULES = (
     "planqer/wallpaper/rolls.py",
     "planqer/wallpaper/strips.py",
     "planqer/wallpaper/validation.py",
+    "planqer/wallpaper/visualization.py",
 )
 
 DATA_FILES = (

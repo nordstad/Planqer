@@ -1,7 +1,7 @@
 from typing import Literal
 
 from planqer.schemas.wallpaper import PatternAnchor, Wall
-from planqer.wallpaper.strips import Strip
+from planqer.wallpaper.strips import ConnectedStrip
 
 
 def pattern_datum(walls: list[Wall], anchor: PatternAnchor | None = None) -> float:
@@ -12,7 +12,7 @@ def pattern_datum(walls: list[Wall], anchor: PatternAnchor | None = None) -> flo
 
 
 def strip_phase(
-    strip: Strip,
+    strip: ConnectedStrip,
     *,
     repeat: float,
     match: Literal["straight", "half_drop"] | None,

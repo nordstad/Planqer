@@ -1,8 +1,9 @@
+from collections.abc import Mapping
 from dataclasses import dataclass
 
 from planqer.schemas.wallpaper import Allowances, Cutout
 from planqer.wallpaper.geometry import cutout_bounds, strip_cutout_intersection
-from planqer.wallpaper.strips import Strip
+from planqer.wallpaper.strips import ConnectedStrip, StripSegment
 
 _FIXED_OBSTACLE_KINDS = {"heat_pump", "radiator", "pipe"}
 
@@ -17,6 +18,16 @@ class Notch:
 
 
 @dataclass(frozen=True)
+class PieceSegment:
+    """Face-local hanging geometry of a piece, in its wall's coordinates."""
+
+    wall_index: int
+    x_start: float
+    x_end: float
+    notches: tuple[Notch, ...] = ()
+
+
+@dataclass(frozen=True)
 class WallpaperPiece:
     strip_number: int
     wall_index: int
@@ -24,6 +35,7 @@ class WallpaperPiece:
     y_end: float
     phase: float
     notches: tuple[Notch, ...] = ()
+    segments: tuple[PieceSegment, ...] = ()
 
     @property
     def length(self) -> float:
@@ -49,44 +61,123 @@ class PieceSplitResult:
 
 
 def split_strip_into_pieces(
-    strip: Strip, cutouts: list[Cutout], phase: float, allowances: Allowances
+    strip: ConnectedStrip,
+    cutouts: Mapping[int, list[Cutout]],
+    phase: float,
+    allowances: Mapping[int, Allowances],
 ) -> PieceSplitResult:
-    """Split a strip around full-width obstacles and notch partial cutouts."""
-    merged_cutouts = _merge_grouped_cutouts(cutouts)
-    full_width_bounds = []
-    notches = []
-    for cutout in merged_cutouts:
-        bounds = _allowance_adjusted_bounds(cutout, allowances)
-        intersection = strip_cutout_intersection(
-            _cutout_from_bounds(cutout, bounds), strip.x_start, strip.x_end
-        )
-        if intersection is None:
-            continue
-        x_start, y_start, x_end, y_end = _clamp_to_strip(strip, bounds)
-        if y_start >= y_end:
-            continue
-        if x_start == strip.x_start and x_end == strip.x_end:
-            full_width_bounds.append((y_start, y_end))
-        else:
-            notches.append(Notch(x_start, y_start, x_end, y_end, cutout.mode))
+    """Split one physical strip once, keeping every face's cutouts.
 
-    piece_ranges, offcut_ranges = _split_ranges(strip.top_height, full_width_bounds)
-    pieces = [
-        WallpaperPiece(
+    A range becomes a hidden-seam split only when it blocks the full width of
+    every face. A range that blocks one face only stays a notch on that face.
+    """
+    face_blocks = []
+    face_notches = []
+    for segment in strip.segments:
+        blocks, notches = _segment_cutouts(
+            segment, cutouts.get(segment.wall_index, []), allowances[segment.wall_index]
+        )
+        if segment.top_height < strip.top_height:
+            blocks.append((segment.top_height, strip.top_height, None))
+        face_blocks.append(blocks)
+        face_notches.append(notches)
+
+    split_ranges = _intersect_faces(
+        [[(start, end) for start, end, _ in blocks] for blocks in face_blocks],
+        strip.top_height,
+    )
+    for blocks, notches, segment in zip(face_blocks, face_notches, strip.segments):
+        for start, end, mode in blocks:
+            if mode is None:
+                continue
+            for part_start, part_end in _subtract(start, end, split_ranges):
+                notches.append(Notch(segment.x_start, part_start, segment.x_end, part_end, mode))
+
+    piece_ranges, offcut_ranges = _split_ranges(strip.top_height, split_ranges)
+    pieces = []
+    for y_start, y_end in piece_ranges:
+        segments = tuple(
+            PieceSegment(
+                segment.wall_index, segment.x_start, segment.x_end,
+                _clip_notches(notches, y_start, y_end),
+            )
+            for segment, notches in zip(strip.segments, face_notches)
+        )
+        pieces.append(WallpaperPiece(
             strip_number=strip.number,
             wall_index=strip.wall_index,
             y_start=y_start,
             y_end=y_end,
             phase=phase,
-            notches=tuple(notches),
-        )
-        for y_start, y_end in piece_ranges
-    ]
+            notches=segments[0].notches,
+            segments=segments,
+        ))
     offcuts = [
         WallpaperOffcut(strip.number, y_start, y_end, phase)
         for y_start, y_end in offcut_ranges
     ]
     return PieceSplitResult(pieces=pieces, offcuts=offcuts)
+
+
+def _segment_cutouts(
+    segment: StripSegment, cutouts: list[Cutout], allowances: Allowances
+) -> tuple[list[tuple[float, float, str | None]], list[Notch]]:
+    blocks = []
+    notches = []
+    for cutout in _merge_grouped_cutouts(cutouts):
+        bounds = _allowance_adjusted_bounds(cutout, allowances)
+        intersection = strip_cutout_intersection(
+            _cutout_from_bounds(cutout, bounds), segment.x_start, segment.x_end
+        )
+        if intersection is None:
+            continue
+        x_start, y_start, x_end, y_end = _clamp_to_segment(segment, bounds)
+        if y_start >= y_end:
+            continue
+        if x_start == segment.x_start and x_end == segment.x_end:
+            blocks.append((y_start, y_end, cutout.mode))
+        else:
+            notches.append(Notch(x_start, y_start, x_end, y_end, cutout.mode))
+    return blocks, notches
+
+
+def _intersect_faces(
+    faces: list[list[tuple[float, float]]], maximum: float
+) -> list[tuple[float, float]]:
+    result = _merge_ranges(faces[0], maximum)
+    for ranges in faces[1:]:
+        other = _merge_ranges(ranges, maximum)
+        result = [
+            (max(start, other_start), min(end, other_end))
+            for start, end in result
+            for other_start, other_end in other
+            if max(start, other_start) < min(end, other_end)
+        ]
+    return result
+
+
+def _subtract(
+    start: float, end: float, ranges: list[tuple[float, float]]
+) -> list[tuple[float, float]]:
+    parts = []
+    cursor = start
+    for range_start, range_end in ranges:
+        if range_end <= cursor or range_start >= end:
+            continue
+        if range_start > cursor:
+            parts.append((cursor, range_start))
+        cursor = max(cursor, range_end)
+    if cursor < end:
+        parts.append((cursor, end))
+    return parts
+
+
+def _clip_notches(notches: list[Notch], y_start: float, y_end: float) -> tuple[Notch, ...]:
+    return tuple(
+        Notch(notch.x_start, max(notch.y_start, y_start), notch.x_end, min(notch.y_end, y_end), notch.mode)
+        for notch in notches
+        if notch.y_start < y_end and notch.y_end > y_start
+    )
 
 
 def _allowance_adjusted_bounds(
@@ -107,15 +198,15 @@ def _allowance_adjusted_bounds(
     )
 
 
-def _clamp_to_strip(
-    strip: Strip, bounds: tuple[float, float, float, float]
+def _clamp_to_segment(
+    segment: StripSegment, bounds: tuple[float, float, float, float]
 ) -> tuple[float, float, float, float]:
     left, bottom, right, top = bounds
     return (
-        max(strip.x_start, left),
+        max(segment.x_start, left),
         max(0, bottom),
-        min(strip.x_end, right),
-        min(strip.top_height, top),
+        min(segment.x_end, right),
+        min(segment.top_height, top),
     )
 
 

@@ -1,7 +1,6 @@
 """Self-contained SVG output for wallpaper plan review and cutting."""
 
 import base64
-
 from xml.sax.saxutils import escape
 
 _ENTITIES = {'"': "&quot;", "'": "&apos;"}
@@ -34,8 +33,14 @@ def render_plan_svg(room: dict, plan: dict, *, project_name: str) -> str:
             f'<text x="{card_x}" y="{card_y + 16}" class="title">{wall_name}</text>',
             f'<rect x="{drawing_x}" y="{drawing_y}" width="{drawing_width}" height="{drawing_height}" class="wall"/>',
         ]
-        for strip in (item for item in strips if item.get("wall_index") == index):
-            seam = drawing_x + float(strip["x_end"]) * x_scale
+        segments = (
+            segment
+            for strip in strips
+            # Plans saved before connected strips have no segments.
+            for segment in strip.get("segments") or [strip]
+        )
+        for segment in (item for item in segments if item.get("wall_index") == index):
+            seam = drawing_x + float(segment["x_end"]) * x_scale
             card.append(f'<line x1="{seam:.1f}" y1="{drawing_y}" x2="{seam:.1f}" y2="{drawing_y + drawing_height}" class="seam"/>')
         for cutout in wall.get("cutouts", []):
             x = drawing_x + float(cutout.get("x", 0)) * x_scale

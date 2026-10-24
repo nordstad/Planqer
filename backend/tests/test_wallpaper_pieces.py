@@ -19,7 +19,7 @@ def strip():
 def test_full_width_fixed_obstacle_splits_a_strip_and_tracks_the_middle_offcut():
     result = split_strip_into_pieces(
         strip(),
-        [
+        {0: [
             Cutout(
                 kind="heat_pump",
                 x=0,
@@ -28,9 +28,9 @@ def test_full_width_fixed_obstacle_splits_a_strip_and_tracks_the_middle_offcut()
                 height=600,
                 tuck_edges=["top", "bottom"],
             )
-        ],
+        ]},
         phase=120,
-        allowances=Allowances(),
+        allowances={0: Allowances()},
     )
 
     assert [(piece.y_start, piece.y_end, piece.phase) for piece in result.pieces] == [
@@ -45,9 +45,9 @@ def test_full_width_fixed_obstacle_splits_a_strip_and_tracks_the_middle_offcut()
 def test_partial_cutout_becomes_an_allowance_aware_notch_on_the_piece():
     result = split_strip_into_pieces(
         strip(),
-        [Cutout(kind="window", x=100, y=800, width=200, height=900, mode="precut")],
+        {0: [Cutout(kind="window", x=100, y=800, width=200, height=900, mode="precut")]},
         phase=0,
-        allowances=Allowances(),
+        allowances={0: Allowances()},
     )
 
     assert len(result.pieces) == 1
@@ -60,12 +60,12 @@ def test_partial_cutout_becomes_an_allowance_aware_notch_on_the_piece():
 def test_grouped_cutouts_merge_to_one_conservative_notch_per_strip():
     result = split_strip_into_pieces(
         strip(),
-        [
+        {0: [
             Cutout(kind="outlet", x=100, y=800, width=50, height=50, group="services"),
             Cutout(kind="switch", x=200, y=900, width=50, height=50, group="services"),
-        ],
+        ]},
         phase=0,
-        allowances=Allowances(),
+        allowances={0: Allowances()},
     )
 
     assert len(result.pieces[0].notches) == 1
@@ -75,9 +75,9 @@ def test_grouped_cutouts_merge_to_one_conservative_notch_per_strip():
 def test_door_at_the_bottom_only_leaves_an_upper_piece():
     result = split_strip_into_pieces(
         strip(),
-        [Cutout(kind="door", x=0, y=0, width=530, height=2100)],
+        {0: [Cutout(kind="door", x=0, y=0, width=530, height=2100)]},
         phase=0,
-        allowances=Allowances(),
+        allowances={0: Allowances()},
     )
 
     assert [(piece.y_start, piece.y_end) for piece in result.pieces] == [(2130, 2400)]

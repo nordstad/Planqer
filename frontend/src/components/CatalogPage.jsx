@@ -56,6 +56,7 @@ const CatalogPage = ({ children }) => {
 
   return (
     <div className="cat-page">
+      <style>{`@media (max-width: 767px) { .app-nav-row, .app-nav-right { min-width: 0; max-width: 100%; flex-wrap: wrap; } .app-nav-right > * { min-width: 0; overflow-wrap: anywhere; } }`}</style>
       <nav className="app-nav">
         <div className="app-nav-row">
           <Link to="/" className="app-wordmark">
