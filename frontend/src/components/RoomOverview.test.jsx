@@ -43,4 +43,18 @@ describe('RoomOverview', () => {
 
     expect(screen.getByText(/2 separate wall runs/)).toBeInTheDocument();
   });
+
+  it('shows each wall length in mm and says when a wall has no wallpaper', () => {
+    const walls = [wall('A', 2400), { ...wall('B', 1000), skip: true }, wall('C', 2400)];
+    render(<RoomOverview walls={walls} corners={corners(2)} plan={{ strips: [] }} />);
+
+    expect(screen.getAllByTestId('wall-length').map((node) => node.textContent)).toEqual(['2400 mm', '1000 mm · no wallpaper', '2400 mm']);
+  });
+
+  it('lists wall lengths in the legend for many walls', () => {
+    const walls = Array.from({ length: 7 }, (_, index) => wall(`Wall ${index + 1}`, 2000));
+    render(<RoomOverview walls={walls} corners={corners(6)} plan={{ strips: [] }} />);
+
+    expect(screen.getByLabelText('Wall numbers')).toHaveTextContent('Wall 1 · 2000 mm');
+  });
 });

@@ -108,6 +108,16 @@ test.describe('Wallpaper planner guardrails', () => {
     expect(pageErrors).toEqual([]);
   });
 
+  test('inside corners overlap by 15 mm without any extra decision', async ({ page }) => {
+    await setWidths(page, [2400, 2400]);
+    await expect(page.getByLabel('Hanging decision')).toHaveValue('overlap');
+    await createPlan(page);
+
+    await expect(page.getByTestId('corner-overlap-out')).toContainText('wraps 15 mm onto Wall B');
+    await expect(page.getByTestId('corner-overlap-in')).toContainText('covers 15 mm');
+    await expect(page.getByTestId('corner-quality')).toHaveCount(0);
+  });
+
   test('an opening that does not fit is explained beside the field and blocks the plan', async ({ page }) => {
     await setWidths(page, [3000]);
     await page.getByRole('button', { name: 'Add opening or obstacle' }).click();

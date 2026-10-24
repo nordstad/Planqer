@@ -57,3 +57,25 @@ def test_allocator_reuses_a_phase_compatible_alignment_offcut():
     assert len(rolls) == 1
     assert short.source_kind == "offcut"
     assert (short.start, short.end) == (0, 100)
+
+
+def test_material_summary_counts_reused_offcuts_and_net_pattern_loss():
+    from planqer.wallpaper.plan import _material_summary, _unused_gaps
+
+    rolls = assign_pieces_to_rolls(
+        [RollPiece("long", 700, 500), RollPiece("short", 100, 0)],
+        roll_length=2000,
+        repeat=600,
+    )
+
+    material = _material_summary(rolls, 2000)
+
+    # The 500 mm alignment gap shrinks to 400 mm because "short" fills the first 100 mm.
+    assert _unused_gaps(rolls[0]) == 400
+    assert material == {
+        "bought_length": 2000,
+        "used_length": 800,
+        "offcuts_reused_count": 1,
+        "offcuts_reused_length": 100,
+        "largest_leftover": 800,
+    }

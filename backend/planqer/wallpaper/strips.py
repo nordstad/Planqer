@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Literal
 
 from planqer.schemas.wallpaper import Allowances, Corner, Room, Wall
@@ -34,6 +34,10 @@ class ConnectedStrip:
     phase: float
     precut_length: float
     precut_width: float
+    # Material the final segment carries past the corner onto the next wall,
+    # where the next wall's first strip is hung over it.
+    return_overlap: float = 0
+    return_wall_index: int | None = None
 
     @property
     def wall_index(self) -> int:
@@ -69,10 +73,12 @@ class RunLayout:
     narrowest_corner: float = float("inf")
 
 
-@dataclass(frozen=True)
+@dataclass
 class ConnectedRun:
     wall_indices: list[int]
     corners: list[Corner]
+    # The wall that the run's final strip overlaps by a corner allowance.
+    overlap_wall: int | None = None
 
 
 def corner_connects(corner: Corner) -> bool:
@@ -80,6 +86,11 @@ def corner_connects(corner: Corner) -> bool:
     if corner.kind == "none":
         return False
     return corner.kind == "outside" or corner.confirmed_continuation == "continue"
+
+
+def corner_overlaps(corner: Corner) -> bool:
+    """Inside corners lap the final strip over the corner unless a butt joint is chosen."""
+    return corner.kind == "inside" and corner.confirmed_continuation in (None, "overlap")
 
 
 def connected_runs(room: Room, start_wall: int = 0) -> tuple[list[ConnectedRun], list[str]]:
@@ -99,10 +110,22 @@ def connected_runs(room: Room, start_wall: int = 0) -> tuple[list[ConnectedRun],
             runs.append(current)
         is_last = position == count - 1
         if is_last:
+            closing_corner = room.corners[wall_index] if room.closed else None
+            start_wall = order[0]
+            if (
+                current is not None
+                and closing_corner is not None
+                and closing_corner.kind == "inside"
+                and closing_corner.confirmed_continuation != "start_new"
+                and not room.walls[start_wall].skip
+            ):
+                current.overlap_wall = start_wall
             break
         corner = room.corners[wall_index]
         next_index = order[position + 1]
         if room.walls[next_index].skip or not corner_connects(corner):
+            if not room.walls[next_index].skip and corner_overlaps(corner):
+                current.overlap_wall = next_index
             current = None
             continue
         current.wall_indices.append(next_index)
@@ -126,11 +149,15 @@ def lay_run_strips(
     *,
     first_strip_width: float | None = None,
     start_number: int = 1,
+    end_overlap: float = 0,
+    end_overlap_wall: int | None = None,
 ) -> RunLayout:
     """Lay physical strips across a run of walls joined by wrapping corners.
 
     ``corners[k]`` joins ``run[k]`` and ``run[k + 1]``. At a continued corner,
     inside or outside, the rest of the roll width carries onto the next wall.
+    ``end_overlap`` is the extra material the run's final strip wraps past the
+    last corner onto ``end_overlap_wall``, where the next run's strip laps it.
     """
     if roll_width <= 0:
         raise ValueError("roll_width must be greater than 0")
@@ -194,6 +221,20 @@ def lay_run_strips(
                 )
             if segments:
                 finish()
+
+    if strips and end_overlap > 0 and end_overlap_wall is not None:
+        last = strips[-1]
+        # A strip cannot be wider than the roll, so a full-width final strip has no room to wrap.
+        overlap = max(0.0, min(end_overlap, roll_width - last.precut_width))
+        if overlap < end_overlap - _EPSILON:
+            notes.append(
+                f"Strip {last.number} has no room to wrap {end_overlap:g} mm past the corner "
+                f"after wall '{walls[last.segments[-1].wall_index].name}'"
+            )
+        strips[-1] = replace(
+            last, return_overlap=overlap, return_wall_index=end_overlap_wall,
+            precut_width=last.precut_width + overlap,
+        )
 
     narrowest = min((strip.width for strip in strips), default=0)
     for strip in strips:

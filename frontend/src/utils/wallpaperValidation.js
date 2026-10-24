@@ -60,7 +60,23 @@ export const cutoutIssue = (wall, cutout) => {
   return null;
 };
 
+export const MAX_CORNER_OVERLAP_MM = 50;
+
+export const overlapIssue = (value) => {
+  const overlap = Number(value);
+  if (value === '' || !Number.isInteger(overlap) || overlap < 0 || overlap > MAX_CORNER_OVERLAP_MM) {
+    return `Corner overlap must be a whole number between 0 and ${MAX_CORNER_OVERLAP_MM} mm.`;
+  }
+  return null;
+};
+
 export const wallIssues = (wall) => {
+  // An open wall gets no paper, so only its width (used by the room closure) is checked.
+  if (wall.skip) {
+    const width = wallDimensionIssues(wall);
+    const errors = width.errors.filter((message) => message.startsWith('Width'));
+    return { errors, warnings: [], cutouts: [], hasErrors: errors.length > 0 };
+  }
   const dimensions = wallDimensionIssues(wall);
   const cutouts = (wall.cutouts || []).map((cutout) => cutoutIssue(wall, cutout));
   return { ...dimensions, cutouts, hasErrors: dimensions.errors.length > 0 || cutouts.some(Boolean) };

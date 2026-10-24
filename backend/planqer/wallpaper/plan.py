@@ -6,7 +6,7 @@ from planqer.wallpaper.closure import room_closure
 from planqer.wallpaper.pattern import pattern_datum, strip_phase
 from planqer.wallpaper.pieces import split_strip_into_pieces
 from planqer.wallpaper.rolls import RollPiece, assign_pieces_to_rolls
-from planqer.wallpaper.strips import ConnectedStrip, connected_runs, lay_run_strips
+from planqer.wallpaper.strips import ConnectedRun, ConnectedStrip, connected_runs, lay_run_strips
 from planqer.wallpaper.validation import validate_wallpaper_request
 
 # Complete room plans are compared for a handful of first-strip widths, but each
@@ -35,6 +35,7 @@ def create_wallpaper_plan(request: WallpaperPlanRequest) -> dict:
             layout = lay_run_strips(
                 walls, run.wall_indices, run.corners, roll_width, allowances, minimums,
                 first_strip_width=first_width, start_number=len(strips) + 1,
+                **_end_overlap(run, allowances),
             )
             strips.extend(layout.strips)
             notes.extend(layout.notes)
@@ -54,7 +55,7 @@ def create_wallpaper_plan(request: WallpaperPlanRequest) -> dict:
     per_run_best = tuple(
         min(fine_options, key=lambda width, run=run: _run_rank(lay_run_strips(
             walls, run.wall_indices, run.corners, roll_width, allowances, minimums,
-            first_strip_width=width,
+            first_strip_width=width, **_end_overlap(run, allowances),
         ), minimum_corner))
         for run in runs
     )
@@ -102,6 +103,16 @@ def create_wallpaper_plan(request: WallpaperPlanRequest) -> dict:
         "corner_quality": corner_quality(candidates[0][1], walls, minimum_corner),
         "start_candidates": start_candidates,
         "corners": [corner.model_dump(mode="json") for corner in request.room.corners],
+    }
+
+
+def _end_overlap(run: ConnectedRun, allowances) -> dict:
+    """The corner allowance a run's final strip wraps onto the next wall, if any."""
+    if run.overlap_wall is None:
+        return {}
+    return {
+        "end_overlap": allowances[run.wall_indices[-1]].corner,
+        "end_overlap_wall": run.overlap_wall,
     }
 
 
@@ -201,13 +212,16 @@ def _plan_strips(request: WallpaperPlanRequest, strips: list[ConnectedStrip], al
         "rolls_to_buy": ceil(rolls_needed * (1 + request.safety_margin_percent / 100)),
         "area_estimate_rolls": ceil(covered_area / roll_area) if roll_area else 0,
         "waste": {
-            "pattern": sum(cut.alignment_gap for roll in rolls for cut in roll.cuts),
+            # Unused length between cuts after offcut reuse: a gap later refilled by
+            # another piece is no longer lost.
+            "pattern": sum(_unused_gaps(roll) for roll in rolls),
             # Allowance is deliberately cut material at the top and bottom of
             # every strip, whether or not an opening later splits that strip.
             "allowance": sum(strip.precut_length - strip.top_height for strip in phased),
             "trim": sum(offcut.length for offcut in offcuts),
             "offcut": sum(request.wallpaper.roll_length - roll.cursor for roll in rolls),
         },
+        "material": _material_summary(rolls, request.wallpaper.roll_length),
         "candidate_waste": total_roll_length - sum(piece.length for piece in pieces),
         "strips": [_serialize_strip(strip) for strip in phased],
         "pieces": [
@@ -223,6 +237,31 @@ def _plan_strips(request: WallpaperPlanRequest, strips: list[ConnectedStrip], al
             }
             for roll in rolls
         ],
+    }
+
+
+def _roll_gaps(roll) -> list[float]:
+    cuts = sorted(roll.cuts, key=lambda cut: cut.start)
+    previous_end = [0, *(cut.end for cut in cuts)]
+    return [cut.start - end for cut, end in zip(cuts, previous_end)]
+
+
+def _unused_gaps(roll) -> float:
+    return sum(_roll_gaps(roll))
+
+
+def _material_summary(rolls, roll_length: float) -> dict:
+    """What the user actually buys, uses and can still use from leftovers."""
+    bought = len(rolls) * roll_length
+    cuts = [cut for roll in rolls for cut in roll.cuts]
+    reused = [cut for cut in cuts if cut.source_kind == "offcut"]
+    leftovers = [gap for roll in rolls for gap in [*_roll_gaps(roll), roll_length - roll.cursor]]
+    return {
+        "bought_length": bought,
+        "used_length": sum(cut.end - cut.start for cut in cuts),
+        "offcuts_reused_count": len(reused),
+        "offcuts_reused_length": sum(cut.end - cut.start for cut in reused),
+        "largest_leftover": max(leftovers, default=0),
     }
 
 

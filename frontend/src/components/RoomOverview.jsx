@@ -31,7 +31,7 @@ const layOutWalls = (walls, corners) => {
   });
 };
 
-const RoomOverview = ({ walls, corners = [], plan, closed = false }) => {
+const RoomOverview = ({ walls, corners = [], plan, closed = false, activeWallIndex = null, showStart = false }) => {
   const placed = layOutWalls(walls, corners);
   const closure = plan?.closure;
   const useLegend = walls.length > LEGEND_THRESHOLD;
@@ -64,7 +64,9 @@ const RoomOverview = ({ walls, corners = [], plan, closed = false }) => {
         const [lx, ly] = at(item, item.length / 2, sideways ? 14 : 22);
         const anchor = sideways > 0 ? 'start' : sideways < 0 ? 'end' : 'middle';
         return <g key={index}>
-          <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--ink)" strokeWidth="3" strokeLinecap="square" />
+          {walls[index].skip
+            ? <line data-testid="open-wall" x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--ink-3)" strokeWidth="2" strokeDasharray="8 6" />
+            : <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={activeWallIndex === index ? 'var(--accent)' : 'var(--ink)'} strokeWidth={activeWallIndex === index ? 5 : 3} strokeLinecap="square" />}
           {segmentsFor(index).map((segment) => {
             const [sx1, sy1] = at(item, segment.x_start, 6);
             const [sx2, sy2] = at(item, segment.x_end, 6);
@@ -78,7 +80,17 @@ const RoomOverview = ({ walls, corners = [], plan, closed = false }) => {
           })}
           {useLegend
             ? <g><circle cx={lx} cy={ly} r="8" fill="var(--paper, #fff)" stroke="var(--ink)" /><text x={lx} y={ly} textAnchor="middle" dominantBaseline="central" className="wallpaper-svg-small" style={{ fontWeight: 700 }}>{index + 1}</text></g>
-            : <text x={lx} y={ly} textAnchor={anchor} dominantBaseline="middle" className="wallpaper-svg-small" style={{ fontWeight: 700 }}>{walls[index].name}</text>}
+            : <g style={walls[index].skip ? { opacity: 0.6 } : undefined}>
+              <text x={lx} y={ly} textAnchor={anchor} dominantBaseline="middle" className="wallpaper-svg-small" style={{ fontWeight: 700 }}>{walls[index].name}</text>
+              <text x={lx} y={ly + 13} textAnchor={anchor} dominantBaseline="middle" className="wallpaper-svg-small" data-testid="wall-length">{Math.round(item.length)} mm{walls[index].skip ? ' · no wallpaper' : ''}</text>
+            </g>}
+          {showStart && index === 0 && (() => {
+            const [dx, dy] = at(item, 0, 0);
+            const [ax, ay] = at(item, Math.min(item.length * 0.35, item.length), 0);
+            const [bx, by] = at(item, Math.min(item.length * 0.35, item.length) - item.length * 0.08, -8);
+            const [cx, cy] = at(item, Math.min(item.length * 0.35, item.length) - item.length * 0.08, 8);
+            return <g data-testid="start-marker"><circle cx={dx} cy={dy} r="6" fill="var(--accent)" /><polygon points={`${ax},${ay} ${bx},${by} ${cx},${cy}`} fill="var(--accent)" /><text x={dx} y={dy - 12} textAnchor="middle" className="wallpaper-svg-small" style={{ fill: 'var(--accent)', fontWeight: 700 }}>Start</text></g>;
+          })()}
         </g>;
       })}
       {placed.slice(1).map((item, index) => { if (corners[index]?.kind === 'none') return null; const [cx, cy] = at(item, 0); return <circle key={index} cx={cx} cy={cy} r="3.5" fill="var(--ink)" />; })}
@@ -89,8 +101,8 @@ const RoomOverview = ({ walls, corners = [], plan, closed = false }) => {
         return <line data-testid="closure-gap" x1={gx1} y1={gy1} x2={gx2} y2={gy2} stroke="#c0392b" strokeWidth="3" strokeDasharray="5 4" />;
       })()}
     </svg>
-    {useLegend && <ol className="synthetic" aria-label="Wall numbers" style={{ columnCount: 2, margin: '8px 0', paddingLeft: '24px' }}>{walls.map((wall, index) => <li key={index}>{wall.name}</li>)}</ol>}
-    <figcaption className="synthetic" style={{ textAlign: 'center' }}>{closed ? 'Closed room' : runCount > 1 ? `${runCount} separate wall runs` : 'Open wall run'}. Simplified top view: walls are shown in entry order with square corners.{closed ? ' A dashed red line marks where the walls fail to meet.' : ''} Coloured stretches are one strip that carries round a corner.</figcaption>
+    {useLegend && <ol className="synthetic" aria-label="Wall numbers" style={{ columnCount: 2, margin: '8px 0', paddingLeft: '24px' }}>{walls.map((wall, index) => <li key={index}>{wall.name} · {Math.round(placed[index].length)} mm{wall.skip ? ' · no wallpaper' : ''}</li>)}</ol>}
+    <figcaption className="synthetic" style={{ textAlign: 'center' }}>{showStart ? 'Simplified top view, updated as you type. Walls follow your entry order with square corners; the arrow shows the clockwise direction.' : null}{showStart ? null : <>{closed ? 'Closed room' : runCount > 1 ? `${runCount} separate wall runs` : 'Open wall run'}. Simplified top view: walls are shown in entry order with square corners.{closed ? ' A dashed red line marks where the walls fail to meet.' : ''} Coloured stretches are one strip that carries round a corner.</>}</figcaption>
   </figure>;
 };
 

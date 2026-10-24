@@ -86,7 +86,7 @@ const planFacts = (project, t) => {
   if (project.projectType === 'wallpaper') {
     return {
       type: t('common.wallpaperPlanner'),
-      count: `${project.plan_result?.rolls_to_buy ?? '—'} rolls to buy`,
+      count: `${project.plan_result?.rolls_to_buy ?? '—'} rolls to buy${project.wallpaper_data?.price_per_roll != null && project.plan_result?.rolls_to_buy != null ? ` · est. ${(project.plan_result.rolls_to_buy * project.wallpaper_data.price_per_roll).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : ''}`,
       stock: project.wallpaper_data?.name || 'Wallpaper',
     };
   }

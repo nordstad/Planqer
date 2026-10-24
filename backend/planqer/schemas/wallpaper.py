@@ -57,7 +57,7 @@ class WallpaperSpec(WallpaperSchema):
 class Allowances(WallpaperSchema):
     top: float = 50
     bottom: float = 50
-    corner: float = 20
+    corner: float = 15
     opening: float = 30
     tuck: float = 10
 
@@ -159,8 +159,8 @@ class Wall(WallpaperSchema):
 
 class Corner(WallpaperSchema):
     kind: Literal["inside", "outside", "none"]
-    recommended_continuation: Literal["continue", "start_new"] | None = None
-    confirmed_continuation: Literal["continue", "start_new"] | None = None
+    recommended_continuation: Literal["continue", "start_new", "overlap"] | None = None
+    confirmed_continuation: Literal["continue", "start_new", "overlap"] | None = None
 
 
 class Room(WallpaperSchema):
