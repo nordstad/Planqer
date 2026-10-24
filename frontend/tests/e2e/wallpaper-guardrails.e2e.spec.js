@@ -58,6 +58,8 @@ test.describe('Wallpaper planner guardrails', () => {
     // A vertical SVG line has no width, so Playwright never reports it as visible.
     await expect(page.getByTestId('closure-gap')).toHaveCount(1);
     await expect(page.getByText(/Buy \d+ rolls/)).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Prepare cut sheets →' })).toBeDisabled();
+    await expect(page.getByRole('button', { name: /Cut\s*Choose a plan/ })).toBeDisabled();
   });
 
   test('walls that close are accepted as a closed room', async ({ page }) => {
