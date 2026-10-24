@@ -240,3 +240,32 @@ def test_selected_layout_never_places_a_seam_on_an_outside_corner():
                 continue
             if segment["x_start"] == 0:
                 assert len(strip["segments"]) == 2, "seam on the outside edge"
+
+
+def corner_pieces(plan):
+    return [
+        segment["x_end"] - segment["x_start"]
+        for strip in plan["strips"] if len(strip["segments"]) > 1
+        for segment in strip["segments"]
+    ]
+
+
+def four_wall_room(**options):
+    return request(
+        [wall(2400, f"Wall {number}") for number in range(1, 5)],
+        [inside_continue() for _ in range(3)],
+        **options,
+    )
+
+
+def test_first_strip_is_cut_so_no_corner_piece_is_a_sliver():
+    plan = create_wallpaper_plan(four_wall_room())
+
+    assert min(corner_pieces(plan)) >= 120
+    assert not any("corner" in warning for warning in plan["warnings"])
+
+
+def test_unavoidable_corner_sliver_is_reported_with_a_recommendation():
+    plan = create_wallpaper_plan(four_wall_room(minimum_corner_piece=200))
+
+    assert any("start a new strip" in warning for warning in plan["warnings"])

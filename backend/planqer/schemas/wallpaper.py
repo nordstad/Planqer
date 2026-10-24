@@ -202,6 +202,7 @@ class WallpaperPlanRequest(WallpaperSchema):
     allowances: Allowances = Field(default_factory=Allowances)
     safety_margin_percent: float = 10
     minimum_strip_width: float = 50
+    minimum_corner_piece: float = 100
     start: StartPosition | None = None
     anchor: PatternAnchor | None = None
 
@@ -210,7 +211,7 @@ class WallpaperPlanRequest(WallpaperSchema):
     def validate_safety_margin(cls, value: float) -> float:
         return validate_numeric_input(value, 0.0, 100.0)
 
-    @field_validator("minimum_strip_width")
+    @field_validator("minimum_strip_width", "minimum_corner_piece")
     @classmethod
     def validate_minimum_strip_width(cls, value: float) -> float:
         return validate_numeric_input(value, 1.0, _MAX_DIMENSION_MM)

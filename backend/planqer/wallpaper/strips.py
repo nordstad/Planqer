@@ -65,6 +65,8 @@ class RunLayout:
     strips: list[ConnectedStrip]
     notes: list[str]
     narrowest: float
+    # Narrowest piece on either side of a corner a strip is continued round.
+    narrowest_corner: float = float("inf")
 
 
 @dataclass(frozen=True)
@@ -138,6 +140,7 @@ def lay_run_strips(
     segments: list[StripSegment] = []
     remaining = 0.0
     next_width = first_strip_width or roll_width
+    seam_on_corner = False
     x = 0.0
 
     def finish() -> None:
@@ -182,6 +185,7 @@ def lay_run_strips(
             continue
         # A continued strip carries its leftover roll width onto the next wall.
         if remaining <= _EPSILON:
+            seam_on_corner = True
             if corner.kind == "outside":
                 notes.append(
                     f"A seam falls on the outside corner after wall '{walls[wall_index].name}'"
@@ -202,7 +206,15 @@ def lay_run_strips(
                     f"Strip {strip.number} is {segment.width:g} mm on wall "
                     f"'{walls[segment.wall_index].name}', below the {minimum:g} mm minimum"
                 )
-    return RunLayout(strips=strips, notes=notes, narrowest=narrowest)
+    narrowest_corner = min(
+        (segment.width for strip in strips if len(strip.segments) > 1 for segment in strip.segments),
+        default=float("inf"),
+    )
+    if seam_on_corner:
+        narrowest_corner = 0.0
+    return RunLayout(
+        strips=strips, notes=notes, narrowest=narrowest, narrowest_corner=narrowest_corner
+    )
 
 
 def lay_wall_strips(

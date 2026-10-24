@@ -8,9 +8,11 @@ from planqer.wallpaper.rolls import RollPiece, assign_pieces_to_rolls
 from planqer.wallpaper.strips import ConnectedStrip, connected_runs, lay_run_strips
 from planqer.wallpaper.validation import validate_wallpaper_request
 
-# First-strip widths are searched in fractions of the roll width, which keeps
-# the candidate search bounded to a handful of complete plans.
+# Complete room plans are compared for a handful of first-strip widths, but each
+# connected run searches its own first-strip width in much finer steps, because
+# that one cut decides where every seam, and so every corner piece, falls.
 _FIRST_WIDTH_STEPS = 8
+_FINE_WIDTH_STEP = 5
 
 
 def create_wallpaper_plan(request: WallpaperPlanRequest) -> dict:
@@ -23,8 +25,11 @@ def create_wallpaper_plan(request: WallpaperPlanRequest) -> dict:
     start_wall = request.start.wall_index if request.start else _default_start(request.room)
     runs, room_notes = connected_runs(request.room, start_wall)
 
-    def lay(first_widths: tuple[float, ...]) -> tuple[list[ConnectedStrip], list[str], float]:
+    minimum_corner = request.minimum_corner_piece
+
+    def lay(first_widths: tuple[float, ...]) -> tuple[list[ConnectedStrip], list[str], float, float]:
         strips, notes, narrowest = [], list(room_notes), float("inf")
+        narrowest_corner = float("inf")
         for run, first_width in zip(runs, first_widths):
             layout = lay_run_strips(
                 walls, run.wall_indices, run.corners, roll_width, allowances, minimums,
@@ -33,7 +38,8 @@ def create_wallpaper_plan(request: WallpaperPlanRequest) -> dict:
             strips.extend(layout.strips)
             notes.extend(layout.notes)
             narrowest = min(narrowest, layout.narrowest)
-        return strips, notes, 0 if narrowest == float("inf") else narrowest
+            narrowest_corner = min(narrowest_corner, layout.narrowest_corner)
+        return strips, notes, 0 if narrowest == float("inf") else narrowest, narrowest_corner
 
     options = sorted(
         {round(roll_width * step / _FIRST_WIDTH_STEPS) for step in range(1, _FIRST_WIDTH_STEPS + 1)}
@@ -41,11 +47,14 @@ def create_wallpaper_plan(request: WallpaperPlanRequest) -> dict:
         reverse=True,
     )
     options = [width for width in options if 0 < width <= roll_width]
+    fine_options = sorted(
+        {*range(_FINE_WIDTH_STEP, int(roll_width), _FINE_WIDTH_STEP), *options}, reverse=True
+    )
     per_run_best = tuple(
-        min(options, key=lambda width, run=run: _run_rank(lay_run_strips(
+        min(fine_options, key=lambda width, run=run: _run_rank(lay_run_strips(
             walls, run.wall_indices, run.corners, roll_width, allowances, minimums,
             first_strip_width=width,
-        )))
+        ), minimum_corner))
         for run in runs
     )
     combinations = list(dict.fromkeys(
@@ -54,11 +63,17 @@ def create_wallpaper_plan(request: WallpaperPlanRequest) -> dict:
 
     candidates = []
     for first_widths in combinations:
-        strips, notes, narrowest = lay(first_widths)
+        strips, notes, narrowest, narrowest_corner = lay(first_widths)
         plan = _plan_strips(request, strips, allowances)
-        candidates.append((first_widths, strips, notes, narrowest, plan))
-    candidates.sort(key=lambda item: (bool(item[2]), item[4]["rolls_needed"], -item[3], item[4]["candidate_waste"]))
-
+        candidates.append((first_widths, strips, notes, narrowest, plan, narrowest_corner))
+    candidates.sort(key=lambda item: (
+        bool(item[2]),
+        _corner_shortfall(item[5], minimum_corner),
+        item[4]["rolls_needed"],
+        -item[5],
+        -item[3],
+        item[4]["candidate_waste"],
+    ))
     start_candidates = [
         {
             "wall_index": start_wall,
@@ -71,10 +86,13 @@ def create_wallpaper_plan(request: WallpaperPlanRequest) -> dict:
             "feasible": not notes,
             "seam_notes": notes,
         }
-        for first_widths, _, notes, narrowest, plan in candidates
+        for first_widths, _, notes, narrowest, plan, _ in candidates
     ]
     selected = candidates[0][4]
     selected.pop("candidate_waste")
+    warnings = warnings + _corner_piece_warnings(
+        candidates[0][1], walls, minimum_corner
+    )
     return selected | {
         "warnings": warnings,
         "errors": [],
@@ -93,9 +111,31 @@ def _default_start(room: Room) -> int:
     return 0
 
 
-def _run_rank(layout) -> tuple:
+def _corner_shortfall(narrowest_corner: float, minimum: float) -> float:
+    return max(0.0, minimum - narrowest_corner)
+
+
+def _corner_piece_warnings(strips, walls, minimum: float) -> list[str]:
+    return [
+        f"Strip {strip.number} leaves only {segment.width:g} mm on wall "
+        f"'{walls[segment.wall_index].name}' at a corner, below the {minimum:g} mm "
+        "minimum, and no first-strip width avoids it. Consider choosing to start a "
+        "new strip at this corner."
+        for strip in strips if len(strip.segments) > 1
+        for segment in strip.segments if segment.width < minimum
+    ]
+
+
+def _run_rank(layout, minimum_corner: float) -> tuple:
     precut_area = sum(strip.precut_width * strip.precut_length for strip in layout.strips)
-    return (bool(layout.notes), len(layout.strips), -layout.narrowest, precut_area)
+    return (
+        bool(layout.notes),
+        _corner_shortfall(layout.narrowest_corner, minimum_corner),
+        len(layout.strips),
+        -layout.narrowest_corner,
+        -layout.narrowest,
+        precut_area,
+    )
 
 
 def _plan_strips(request: WallpaperPlanRequest, strips: list[ConnectedStrip], allowances) -> dict:
