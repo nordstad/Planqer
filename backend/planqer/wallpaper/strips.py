@@ -77,6 +77,8 @@ class ConnectedRun:
 
 def corner_connects(corner: Corner) -> bool:
     """Outside corners always wrap; inside corners only when confirmed."""
+    if corner.kind == "none":
+        return False
     return corner.kind == "outside" or corner.confirmed_continuation == "continue"
 
 

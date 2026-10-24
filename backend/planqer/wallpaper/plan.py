@@ -2,6 +2,7 @@ from dataclasses import asdict, replace
 from math import ceil
 
 from planqer.schemas.wallpaper import Room, WallpaperPlanRequest
+from planqer.wallpaper.closure import room_closure
 from planqer.wallpaper.pattern import pattern_datum, strip_phase
 from planqer.wallpaper.pieces import split_strip_into_pieces
 from planqer.wallpaper.rolls import RollPiece, assign_pieces_to_rolls
@@ -93,9 +94,11 @@ def create_wallpaper_plan(request: WallpaperPlanRequest) -> dict:
     warnings = warnings + _corner_piece_warnings(
         candidates[0][1], walls, minimum_corner
     )
+    closure = room_closure(request.room)
     return selected | {
         "warnings": warnings,
-        "errors": [],
+        "errors": [closure.message] if closure and not closure.valid else [],
+        "closure": closure.as_dict() if closure else None,
         "start_candidates": start_candidates,
         "corners": [corner.model_dump(mode="json") for corner in request.room.corners],
     }

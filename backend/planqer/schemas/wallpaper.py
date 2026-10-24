@@ -158,7 +158,7 @@ class Wall(WallpaperSchema):
 
 
 class Corner(WallpaperSchema):
-    kind: Literal["inside", "outside"]
+    kind: Literal["inside", "outside", "none"]
     recommended_continuation: Literal["continue", "start_new"] | None = None
     confirmed_continuation: Literal["continue", "start_new"] | None = None
 
@@ -173,6 +173,8 @@ class Room(WallpaperSchema):
         expected = len(self.walls) if self.closed else max(0, len(self.walls) - 1)
         if len(self.corners) != expected:
             raise ValueError("Room must have one corner between each pair of walls")
+        if self.closed and any(corner.kind == "none" for corner in self.corners):
+            raise ValueError("A closed room cannot contain a break between walls")
         return self
 
 
