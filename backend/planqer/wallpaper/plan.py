@@ -99,6 +99,7 @@ def create_wallpaper_plan(request: WallpaperPlanRequest) -> dict:
         "warnings": warnings,
         "errors": [closure.message] if closure and not closure.valid else [],
         "closure": closure.as_dict() if closure else None,
+        "corner_quality": corner_quality(candidates[0][1], walls, minimum_corner),
         "start_candidates": start_candidates,
         "corners": [corner.model_dump(mode="json") for corner in request.room.corners],
     }
@@ -116,6 +117,26 @@ def _default_start(room: Room) -> int:
 
 def _corner_shortfall(narrowest_corner: float, minimum: float) -> float:
     return max(0.0, minimum - narrowest_corner)
+
+
+def corner_quality(strips, walls, minimum: float) -> dict:
+    """Summarise the pieces either side of every corner a strip is carried round."""
+    smallest = None
+    short = []
+    for strip in strips:
+        for before, after in zip(strip.segments, strip.segments[1:]):
+            width = min(before.width, after.width)
+            smallest = width if smallest is None else min(smallest, width)
+            if width < minimum:
+                first, second = walls[before.wall_index].name, walls[after.wall_index].name
+                short.append({
+                    "strip": strip.number,
+                    "from_wall": first,
+                    "to_wall": second,
+                    "width": width,
+                    "action": f"Start a new strip at the corner between '{first}' and '{second}'.",
+                })
+    return {"minimum": minimum, "smallest": smallest, "short_corners": short}
 
 
 def _corner_piece_warnings(strips, walls, minimum: float) -> list[str]:
