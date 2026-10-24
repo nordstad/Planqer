@@ -157,20 +157,8 @@ class Wall(WallpaperSchema):
         return self
 
 
-class CornerWidths(WallpaperSchema):
-    top: float
-    middle: float
-    bottom: float
-
-    @field_validator("top", "middle", "bottom")
-    @classmethod
-    def validate_width(cls, value: float) -> float:
-        return validate_numeric_input(value, 0.0, _MAX_DIMENSION_MM)
-
-
 class Corner(WallpaperSchema):
     kind: Literal["inside", "outside"]
-    widths: CornerWidths | None = None
     recommended_continuation: Literal["continue", "start_new"] | None = None
     confirmed_continuation: Literal["continue", "start_new"] | None = None
 

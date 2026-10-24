@@ -8,15 +8,6 @@ _EPSILON = 1e-6
 
 
 @dataclass(frozen=True)
-class CornerGeometry:
-    kind: Literal["inside_wrap", "outside_wrap"]
-    # Finished and precut wrap widths at the top, middle and bottom of an
-    # inside corner. Outside wraps follow the straight roll edge.
-    widths: tuple[float, float, float] | None = None
-    precut_widths: tuple[float, float, float] | None = None
-
-
-@dataclass(frozen=True)
 class StripSegment:
     """The part of one physical strip that is hung on a single wall face."""
 
@@ -27,7 +18,7 @@ class StripSegment:
     bottom_height: float = 0
     lower_left: float = 0
     lower_right: float = 0
-    corner_geometry: CornerGeometry | None = None
+    wraps_corner: bool = False
 
     @property
     def width(self) -> float:
@@ -134,11 +125,8 @@ def lay_run_strips(
 ) -> RunLayout:
     """Lay physical strips across a run of walls joined by wrapping corners.
 
-    ``corners[k]`` joins ``run[k]`` and ``run[k + 1]``. An inside corner wraps
-    the terminal strip by the measured corner widths, and the next wall starts
-    after the narrowest wrapped amount so an out-of-plumb corner overlaps
-    rather than leaves a gap. An outside corner carries the rest of the roll
-    width onto the next wall.
+    ``corners[k]`` joins ``run[k]`` and ``run[k + 1]``. At a continued corner,
+    inside or outside, the rest of the roll width carries onto the next wall.
     """
     if roll_width <= 0:
         raise ValueError("roll_width must be greater than 0")
@@ -149,12 +137,11 @@ def lay_run_strips(
     notes: list[str] = []
     segments: list[StripSegment] = []
     remaining = 0.0
-    corner_extra = 0.0
     next_width = first_strip_width or roll_width
     x = 0.0
 
     def finish() -> None:
-        nonlocal segments, corner_extra
+        nonlocal segments
         wall_allowances = [allowances[segment.wall_index] for segment in segments]
         top = max(segment.top_height for segment in segments)
         strips.append(ConnectedStrip(
@@ -162,10 +149,9 @@ def lay_run_strips(
             segments=tuple(segments),
             phase=0,
             precut_length=top + max(item.top + item.bottom for item in wall_allowances),
-            precut_width=sum(segment.width for segment in segments) + corner_extra,
+            precut_width=sum(segment.width for segment in segments),
         ))
         segments = []
-        corner_extra = 0.0
 
     for position, wall_index in enumerate(run):
         outline = wall_outline(walls[wall_index])
@@ -183,10 +169,7 @@ def lay_run_strips(
                 bottom_height=outline.strip_bottom_height(x, x_end),
                 lower_left=outline.bottom_height_at(x),
                 lower_right=outline.bottom_height_at(x_end),
-                corner_geometry=(
-                    CornerGeometry("outside_wrap")
-                    if x == 0 and len(segments) > 0 else None
-                ),
+                wraps_corner=x == 0 and len(segments) > 0,
             ))
             remaining -= x_end - x
             x = x_end
@@ -197,32 +180,21 @@ def lay_run_strips(
             if segments:
                 finish()
             continue
-        next_wall = walls[run[position + 1]]
-        if corner.kind == "outside":
-            if remaining <= _EPSILON:
+        # A continued strip carries its leftover roll width onto the next wall.
+        if remaining <= _EPSILON:
+            if corner.kind == "outside":
                 notes.append(
                     f"A seam falls on the outside corner after wall '{walls[wall_index].name}'"
                 )
-                if segments:
-                    finish()
-            continue
-        x, corner_extra = _wrap_inside_corner(
-            corner, next_wall, run[position + 1], walls[wall_index].name,
-            segments, remaining, allowances[wall_index].corner, notes,
-        )
-        if segments:
-            finish()
+            if segments:
+                finish()
 
     narrowest = min((strip.width for strip in strips), default=0)
     for strip in strips:
         for segment in strip.segments:
             minimum = minimum_widths[segment.wall_index]
             wall_width = wall_outline(walls[segment.wall_index]).width
-            is_inside_wrap = (
-                segment.corner_geometry is not None
-                and segment.corner_geometry.kind == "inside_wrap"
-            )
-            if is_inside_wrap or segment.width >= wall_width - _EPSILON:
+            if segment.wraps_corner or segment.width >= wall_width - _EPSILON:
                 continue
             narrowest = min(narrowest, segment.width)
             if segment.width < minimum - _EPSILON:
@@ -231,49 +203,6 @@ def lay_run_strips(
                     f"'{walls[segment.wall_index].name}', below the {minimum:g} mm minimum"
                 )
     return RunLayout(strips=strips, notes=notes, narrowest=narrowest)
-
-
-def _wrap_inside_corner(
-    corner: Corner,
-    next_wall: Wall,
-    next_index: int,
-    wall_name: str,
-    segments: list[StripSegment],
-    remaining: float,
-    allowance: float,
-    notes: list[str],
-) -> tuple[float, float]:
-    """Append the wrapped segment; return where the next wall starts and the
-    extra precut width added for the corner allowance."""
-    if corner.widths is None:
-        raise ValueError(f"Corner after wall '{wall_name}' needs wrap widths to continue")
-    widths = (corner.widths.top, corner.widths.middle, corner.widths.bottom)
-    outline = wall_outline(next_wall)
-    wrap = min(max(widths), outline.width)
-    if not segments or wrap > remaining + _EPSILON:
-        notes.append(
-            f"Strip at the corner after wall '{wall_name}' cannot wrap {max(widths):g} mm; "
-            f"the next wall starts afresh"
-        )
-        return 0.0, 0.0
-    if wrap <= _EPSILON:
-        return 0.0, 0.0
-    extra = min(allowance, remaining - wrap)
-    segments.append(StripSegment(
-        wall_index=next_index,
-        x_start=0,
-        x_end=wrap,
-        top_height=outline.strip_top_height(0, wrap),
-        bottom_height=outline.strip_bottom_height(0, wrap),
-        lower_left=outline.bottom_height_at(0),
-        lower_right=outline.bottom_height_at(wrap),
-        corner_geometry=CornerGeometry(
-            "inside_wrap",
-            widths=widths,
-            precut_widths=tuple(width + extra for width in widths),
-        ),
-    ))
-    return min(widths), extra
 
 
 def lay_wall_strips(

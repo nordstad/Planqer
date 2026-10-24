@@ -3,7 +3,6 @@ import pytest
 from planqer.schemas.wallpaper import (
     Allowances,
     Corner,
-    CornerWidths,
     Cutout,
     Room,
     Wall,
@@ -21,12 +20,8 @@ def wall(width: float, name: str = "Wall", **overrides) -> Wall:
     )
 
 
-def inside_continue(top: float = 20, middle: float = 20, bottom: float = 20) -> Corner:
-    return Corner(
-        kind="inside",
-        widths=CornerWidths(top=top, middle=middle, bottom=bottom),
-        confirmed_continuation="continue",
-    )
+def inside_continue() -> Corner:
+    return Corner(kind="inside", confirmed_continuation="continue")
 
 
 def request(walls, corners, *, repeat=0, match=None, closed=False, **options):
@@ -65,19 +60,15 @@ def assert_covers(strips, wall_index, width):
     assert cursor == pytest.approx(width)
 
 
-def test_inside_continuation_wraps_exactly_the_measured_amount():
-    result = layout([wall(800), wall(900)], [inside_continue(25, 20, 15)])
+def test_inside_continuation_carries_the_remaining_roll_width_onto_the_next_wall():
+    result = layout([wall(800), wall(900)], [inside_continue()])
 
-    terminal = result.strips[1]
-    face, wrap = terminal.segments
+    face, wrap = result.strips[1].segments
     assert (face.wall_index, face.x_start, face.x_end) == (0, 530, 800)
-    assert (wrap.wall_index, wrap.x_start, wrap.x_end) == (1, 0, 25)
-    assert wrap.corner_geometry.kind == "inside_wrap"
-    assert wrap.corner_geometry.widths == (25, 20, 15)
-    assert wrap.corner_geometry.precut_widths == (45, 40, 35)
-    # The next wall begins after the narrowest wrapped amount, so an
-    # out-of-plumb corner overlaps rather than leaves a gap.
-    assert result.strips[2].segments[0].x_start == 15
+    assert (wrap.wall_index, wrap.x_start, wrap.x_end) == (1, 0, 260)
+    assert wrap.wraps_corner
+    # The next strip starts where the wrapped leftover ends.
+    assert result.strips[2].segments[0].x_start == 260
     assert result.notes == []
 
 
@@ -94,7 +85,7 @@ def test_outside_corner_wraps_the_remaining_roll_width_onto_the_next_wall():
     face, wrap = result.strips[1].segments
     assert (face.wall_index, face.x_start, face.x_end) == (0, 530, 800)
     assert (wrap.wall_index, wrap.x_start, wrap.x_end) == (1, 0, 260)
-    assert wrap.corner_geometry.kind == "outside_wrap"
+    assert wrap.wraps_corner
     assert_covers(result.strips, 1, 900)
 
 
@@ -128,11 +119,12 @@ def test_closed_room_breaks_the_loop_at_the_start_wall():
     assert notes == []
 
 
-def test_inside_continuation_that_does_not_fit_is_reported_not_dropped():
-    result = layout([wall(1000), wall(900)], [inside_continue(80, 80, 80)])
+def test_inside_continuation_with_nothing_left_starts_the_next_wall_cleanly():
+    result = layout([wall(1060), wall(900)], [inside_continue()])
 
-    assert any("cannot wrap" in note for note in result.notes)
-    assert_covers(result.strips, 0, 1000)
+    assert result.notes == []
+    assert not any(segment.wraps_corner for strip in result.strips for segment in strip.segments)
+    assert_covers(result.strips, 0, 1060)
     assert_covers(result.strips, 1, 900)
 
 

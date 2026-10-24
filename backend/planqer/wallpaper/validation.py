@@ -77,12 +77,6 @@ def _rectangles_overlap(
 
 def _corner_warnings(request: WallpaperPlanRequest) -> list[str]:
     warnings = []
-    for corner in request.room.corners:
-        if corner.widths is None:
-            continue
-        widths = (corner.widths.top, corner.widths.middle, corner.widths.bottom)
-        if max(widths) - min(widths) > 30:
-            warnings.append("Corner widths differ by more than 30 mm")
     if request.room.closed:
         wall_count = len(request.room.walls)
         for index in range(wall_count // 2):
