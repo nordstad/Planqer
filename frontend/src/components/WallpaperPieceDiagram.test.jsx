@@ -18,6 +18,7 @@ describe('WallpaperPieceDiagram', () => {
     expect(screen.getByText('Kitchen')).toBeInTheDocument();
     expect(screen.getByText('200 × 900 mm')).toBeInTheDocument();
     expect(screen.getByText('TOP (ceiling)')).toBeInTheDocument();
+    expect(screen.getByText('precut 2490 mm')).toBeInTheDocument();
     expect(screen.getByText('BOTTOM (floor)')).toBeInTheDocument();
     expect(screen.getByTestId('trim-top')).toHaveTextContent('+50 mm trim');
     expect(screen.getByTestId('trim-bottom')).toHaveTextContent('+40 mm trim');

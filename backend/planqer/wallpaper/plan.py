@@ -184,6 +184,7 @@ def _plan_strips(request: WallpaperPlanRequest, strips: list[ConnectedStrip], al
     allowances_by_wall = dict(enumerate(allowances))
     phased = []
     pieces = []
+    piece_trims = []
     offcuts = []
     for strip in strips:
         strip = replace(strip, phase=strip_phase(
@@ -192,12 +193,13 @@ def _plan_strips(request: WallpaperPlanRequest, strips: list[ConnectedStrip], al
         phased.append(strip)
         split = split_strip_into_pieces(strip, cutouts, strip.phase, allowances_by_wall)
         pieces.extend(split.pieces)
+        piece_trims.extend(_piece_trims(strip, piece, request.wallpaper.repeat) for piece in split.pieces)
         offcuts.extend(split.offcuts)
 
     # One physical piece is allocated once, however many wall faces it covers.
     roll_pieces = [
-        RollPiece(f"piece-{index + 1}", piece.length, piece.phase)
-        for index, piece in enumerate(pieces)
+        RollPiece(f"piece-{index + 1}", trim["cut_length"], trim["phase"])
+        for index, (piece, trim) in enumerate(zip(pieces, piece_trims))
     ]
     rolls = assign_pieces_to_rolls(
         roll_pieces,
@@ -226,11 +228,16 @@ def _plan_strips(request: WallpaperPlanRequest, strips: list[ConnectedStrip], al
             "offcut": sum(request.wallpaper.roll_length - roll.cursor for roll in rolls),
         },
         "material": _material_summary(rolls, request.wallpaper.roll_length, request.wallpaper.repeat),
-        "candidate_waste": total_roll_length - sum(piece.length for piece in pieces),
+        "candidate_waste": total_roll_length - sum(trim["cut_length"] for trim in piece_trims),
         "strips": [_serialize_strip(strip) for strip in phased],
         "pieces": [
-            asdict(piece) | {"id": f"piece-{index + 1}", "length": piece.length}
-            for index, piece in enumerate(pieces)
+            asdict(piece) | {
+                "id": f"piece-{index + 1}", "length": piece.length,
+                "allowance_top": trim["allowance_top"], "allowance_bottom": trim["allowance_bottom"],
+                "cut_length": trim["cut_length"],
+                "cut_phase": trim["phase"],
+            }
+            for index, (piece, trim) in enumerate(zip(pieces, piece_trims))
         ],
         "offcuts": [asdict(offcut) | {"length": offcut.length} for offcut in offcuts],
         "rolls": [
@@ -294,6 +301,21 @@ def _roll_fit(cuts, roll_length: float, repeat: float, longest: float) -> dict |
         "pieces_per_roll": per_roll,
         "length_for_next": needed,
         "shortfall": needed - roll_length,
+    }
+
+
+def _piece_trims(strip: ConnectedStrip, piece, repeat: float) -> dict:
+    """What is cut from the roll for a piece: its hanging height plus trim at a ceiling or floor end.
+
+    The pattern phase belongs to the top edge of the paper, so trim above the ceiling shifts it.
+    """
+    top = strip.allowance_top if piece.y_end >= strip.top_height - 0.5 else 0
+    bottom = strip.allowance_bottom if piece.y_start <= strip.bottom_height + 0.5 else 0
+    return {
+        "allowance_top": top,
+        "allowance_bottom": bottom,
+        "cut_length": piece.length + top + bottom,
+        "phase": (piece.phase - top) % repeat if repeat else piece.phase,
     }
 
 

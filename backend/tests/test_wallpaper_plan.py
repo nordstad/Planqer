@@ -28,7 +28,7 @@ def test_plan_returns_every_strip_piece_and_roll_for_a_plain_wall():
         "pattern": 0,
         "allowance": 200,
         "trim": 0,
-        "offcut": 5250,
+        "offcut": 5050,
     }
     assert result["area_estimate_rolls"] == 1
     assert result["start_candidates"][0]["narrowest_strip"] == 530
@@ -100,3 +100,36 @@ def test_requested_first_strip_width_is_used_when_it_is_a_candidate():
 
     assert chosen["strips"][0]["width"] == 265
     assert chosen["start_candidates"][0]["first_strip_widths"] == [265]
+
+
+def _heat_pump_plan(repeat):
+    return create_wallpaper_plan(WallpaperPlanRequest(
+        wallpaper=WallpaperSpec(
+            name="Willow", manufacturer="Example", roll_width=530, roll_length=10050,
+            repeat=repeat, match="straight" if repeat else None,
+        ),
+        room=Room(walls=[Wall(
+            name="Hall", width_top=530, width_middle=530, width_bottom=530,
+            height_left=2400, height_middle=2400, height_right=2400,
+            cutouts=[Cutout(kind="heat_pump", x=0, y=800, width=530, height=600, tuck_edges=["top", "bottom"])],
+        )]),
+    ))
+
+
+def test_cut_length_adds_trim_only_at_the_ceiling_and_floor_ends():
+    plan = _heat_pump_plan(0)
+    lower, upper = plan["pieces"]
+
+    assert (lower["length"], lower["allowance_top"], lower["allowance_bottom"], lower["cut_length"]) == (790, 0, 50, 840)
+    assert (upper["length"], upper["allowance_top"], upper["allowance_bottom"], upper["cut_length"]) == (990, 50, 0, 1040)
+    cuts = {cut["piece_id"]: cut["end"] - cut["start"] for roll in plan["rolls"] for cut in roll["cuts"]}
+    assert cuts == {"piece-1": 840, "piece-2": 1040}
+
+
+def test_trim_above_the_ceiling_shifts_the_pattern_phase_of_the_paper_top():
+    plain, patterned = _heat_pump_plan(0), _heat_pump_plan(640)
+
+    assert plain["pieces"][1]["cut_phase"] == 0
+    assert patterned["pieces"][1]["cut_phase"] == 590
+    cut = next(cut for roll in patterned["rolls"] for cut in roll["cuts"] if cut["piece_id"] == "piece-2")
+    assert cut["phase"] == 590

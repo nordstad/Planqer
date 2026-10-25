@@ -186,7 +186,7 @@ const CutInstruction = ({ cut, piece, strip, wallIndex, wallNames, progress, tog
   const notches = faces.flatMap((face) => face.notches.map((notch) => ({ ...notch, left: notch.x_start - face.x_start + face.offset })));
   return <div className="flex items-start gap-3 border-b border-[var(--rule-hair)] py-4"><button type="button" className="flex min-w-0 flex-1 items-start gap-3 text-left" onClick={() => onSelect(piece.id)} aria-pressed={selected}>
     <span>{selected ? '●' : '○'}</span><span>
-      <b>{t('wallpaperUi.cutHeading', { id: cut.piece_id, mm: Math.round(piece.length) })}</b>
+      <b>{t('wallpaperUi.cutHeading', { id: cut.piece_id, mm: Math.round(piece.cut_length ?? piece.length) })}</b>
       <small className="block synthetic">{t('wallpaperUi.stripHang', { strip: piece.strip_number, from: Math.round(piece.y_start), to: Math.round(piece.y_end) })}</small>
       <small className="block synthetic">{t('wallpaperUi.rollPosition', { start: Math.round(cut.start), end: Math.round(cut.end), phase: Math.round(cut.phase) })}{cut.alignment_gap > 0 ? ` · ${t('wallpaperUi.leaveGap', { mm: Math.round(cut.alignment_gap) })}` : ''}</small>
       {strip.return_overlap > 0 && faces.some((face) => face.wall_index === strip.segments[strip.segments.length - 1].wall_index) && <small className="block synthetic"><b>{t('wallpaperUi.cornerOverlapLabel')}</b> {t('wallpaperUi.cornerOverlapNote', { mm: Math.round(strip.return_overlap), wall: wallNames[strip.return_wall_index] })}</small>}

@@ -33,7 +33,9 @@ phase for each cut, but always visually match the motif to the previous strip
 before cutting.
 
 The plan adds top, bottom, opening and corner allowances. They are deliberate
-extra material for final trimming, not finished dimensions. Keep all bought
+extra material for final trimming, not finished dimensions. The top and bottom
+allowances are included in each piece's cut length (only at the ceiling and floor
+ends) and the pattern phase is worked out for the top of the paper. Keep all bought
 rolls from the same batch/run.
 
 ## Corners
