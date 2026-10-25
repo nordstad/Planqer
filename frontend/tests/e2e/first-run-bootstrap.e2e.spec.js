@@ -20,5 +20,5 @@ test('creates the first administrator through the browser on a fresh Compose ins
   const apiBaseUrl = process.env.API_BASE_URL || 'http://localhost:8002';
   const setupStatus = await page.request.get(`${apiBaseUrl}/api/auth/setup-status`);
   await expect(setupStatus).toBeOK();
-  await expect(setupStatus.json()).resolves.toEqual({ needs_setup: false });
+  await expect(setupStatus.json()).resolves.toEqual({ needs_setup: false, single_user: false });
 });
