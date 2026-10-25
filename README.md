@@ -128,7 +128,7 @@ One person, one computer. No accounts or password, nothing to configure.
    docker compose -f docker-compose.simple.yml ps
    ```
 
-> The simple install needs a release newer than 0.9.3. Until it is published,
+> The simple install needs a release newer than 0.10.0. Until it is published,
 > use the advanced install.
 
 To stop Planqer, or to upgrade, run these in the same folder. Your projects stay
@@ -207,7 +207,7 @@ template with every option is [`.env.example`](.env.example); see
 #### Upgrading
 
 Back up first, then pull and recreate in the same folder. To pin a version, set
-`PLANQER_VERSION` in `.env` (for example `PLANQER_VERSION=0.9.3`):
+`PLANQER_VERSION` in `.env` (for example `PLANQER_VERSION=0.10.0`):
 
 ```bash
 docker compose -f docker-compose.release.yml exec backend planqer backup
