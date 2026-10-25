@@ -43,7 +43,7 @@ const openingsOf = (piece, strip) => pieceFaces(piece, strip).flatMap((face) => 
   return { ...base, core: { left: face.offset + coreStart - face.x_start, bottom: coreBottom - piece.y_start, width: coreEnd - coreStart, height: coreTop - coreBottom } };
 }));
 
-export const WallpaperPieceDiagram = ({ piece, strip, repeat }) => {
+export const WallpaperPieceDiagram = ({ piece, strip, repeat, wallNames = [] }) => {
   const { t } = useTranslation();
   const faces = pieceFaces(piece, strip);
   const openings = openingsOf(piece, strip);
@@ -63,9 +63,9 @@ export const WallpaperPieceDiagram = ({ piece, strip, repeat }) => {
   const bottom = top + paperHeight;
   const hatchId = `hatch-${piece.id}`;
   const openingName = (opening) => opening.label || (KIND_KEYS[opening.kind] ? t(KIND_KEYS[opening.kind]) : '');
-  return <svg viewBox="0 0 540 462" className="wallpaper-wall-drawing" role="img" aria-label={t('wallpaperUi.pieceAria', { id: piece.id })} fontFamily="Helvetica Neue, Arial, sans-serif">
+  return <svg viewBox="0 0 540 482" className="wallpaper-wall-drawing" role="img" aria-label={t('wallpaperUi.pieceAria', { id: piece.id })} fontFamily="Helvetica Neue, Arial, sans-serif">
     <defs><pattern id={hatchId} width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill={CARD} /><line x1="0" y1="0" x2="0" y2="6" stroke={ACCENT} strokeWidth="1.5" opacity="0.55" /></pattern></defs>
-    <rect x="0" y="0" width="540" height="462" fill={CARD} />
+    <rect x="0" y="0" width="540" height="482" fill={CARD} />
     <text x="28" y="30" {...LABEL}>{t('wallpaperUi.pieceStrip', { id: piece.id, number: piece.strip_number })}</text>
     <line x1="508" y1="92" x2="508" y2="36" stroke={ACCENT} strokeWidth="2" /><polygon points="508,28 502,40 514,40" fill={ACCENT} /><text x="508" y="112" textAnchor="middle" {...LABEL} fill={ACCENT}>{t('wallpaperUi.up')}</text>
     <text x="270" y="52" textAnchor="middle" {...SMALL} fontWeight="700">{atCeiling ? t('wallpaperUi.edgeTopCeiling') : t('wallpaperUi.edgeTop')}</text>
@@ -85,7 +85,7 @@ export const WallpaperPieceDiagram = ({ piece, strip, repeat }) => {
       const core = box(opening.core);
       const name = openingName(opening);
       const roomy = core.width >= 90 && core.height >= 40;
-      const textX = roomy ? core.x + core.width / 2 : core.x + core.width + 6;
+      const textX = roomy ? core.x + core.width / 2 : margin.x + margin.width + 6;
       const textY = core.y + core.height / 2 - 6;
       const anchor = roomy ? 'middle' : 'start';
       const midY = core.y + core.height / 2;
@@ -108,7 +108,8 @@ export const WallpaperPieceDiagram = ({ piece, strip, repeat }) => {
     <line x1={left - 24} y1={top} x2={left - 24} y2={bottom} stroke={INK_3} /><text x={left - 32} y={top + paperHeight / 2} textAnchor="middle" transform={`rotate(-90 ${left - 32} ${top + paperHeight / 2})`} {...SMALL}>{t('wallpaperUi.precut', { mm: Math.round(piece.length) })}</text>
     <text x="270" y={bottom + trimBottom * scale + 16} textAnchor="middle" {...SMALL} fontWeight="700">{atFloor ? t('wallpaperUi.edgeBottomFloor') : t('wallpaperUi.edgeBottom')}</text>
     <line x1={left} y1="392" x2={left + paperWidth} y2="392" stroke={INK_3} /><line x1={left} y1="387" x2={left} y2="397" stroke={INK_3} /><line x1={left + paperWidth} y1="387" x2={left + paperWidth} y2="397" stroke={INK_3} /><text x={left + paperWidth / 2} y="408" textAnchor="middle" {...SMALL}>{overlap > 0 ? t('wallpaperUi.finishedWidthWrap', { width: Math.round(faceWidth), wrap: Math.round(overlap) }) : t('wallpaperUi.finishedWidth', { mm: Math.round(width) })}</text>
-    <text x="28" y="428" {...SMALL}>{repeat ? t('wallpaperUi.phaseRepeat', { phase: Math.round(piece.phase), repeat: Math.round(repeat) }) : t('wallpaperUi.phaseOnly', { phase: Math.round(piece.phase) })}</text><text x="28" y="444" {...SMALL} fill={INK_3}>{t('wallpaperUi.diagramLegend')}</text><text x="28" y="458" {...SMALL} fill={INK_3}>{t('wallpaperUi.hatchLegend')}</text>
+    <text x="28" y="428" {...SMALL} fontWeight="700">{faces.map((face) => `${wallNames[face.wall_index] ? `${wallNames[face.wall_index]} · ` : ''}${t('wallpaperUi.pieceLocation', { x1: Math.round(face.x_start), x2: Math.round(face.x_end), y1: Math.round(piece.y_start), y2: Math.round(piece.y_end) })}`).join(' + ')}</text>
+    <text x="28" y="444" {...SMALL}>{repeat ? t('wallpaperUi.phaseRepeat', { phase: Math.round(piece.phase), repeat: Math.round(repeat) }) : t('wallpaperUi.phaseOnly', { phase: Math.round(piece.phase) })}</text><text x="28" y="460" {...SMALL} fill={INK_3}>{t('wallpaperUi.diagramLegend')}</text><text x="28" y="476" {...SMALL} fill={INK_3}>{t('wallpaperUi.hatchLegend')}</text>
   </svg>;
 };
 

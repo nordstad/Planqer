@@ -30,7 +30,7 @@ export const buildWallpaperCutSheetsHtml = (plan, walls, repeat, t) => {
     const own = pieces.filter((piece) => piece.wall_index === wallIndex);
     const figures = own.map((piece) => {
       const strip = plan.strips.find((item) => item.number === piece.strip_number);
-      return strip ? `<figure class="wp-piece">${renderToStaticMarkup(createElement(WallpaperPieceDiagram, { piece, strip, repeat: Number(repeat) || 0 }))}</figure>` : '';
+      return strip ? `<figure class="wp-piece">${renderToStaticMarkup(createElement(WallpaperPieceDiagram, { piece, strip, repeat: Number(repeat) || 0, wallNames: (walls || []).map((item) => item.name) }))}</figure>` : '';
     }).join('');
     return own.length ? `<h3>${escapeHtml(wall.name)}</h3><div class="wp-grid">${figures}</div>` : '';
   }).join('');

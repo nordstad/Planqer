@@ -150,6 +150,7 @@ describe('WallpaperOptimizer plan step', () => {
 
     expect(screen.getByTestId('roll-fit-hint')).toHaveTextContent('Only 3 full-height pieces fit on a 10050 mm roll');
     expect(screen.getByTestId('partial-piece')).toHaveTextContent('300 mm piece');
+    expect(screen.getByTestId('piece-id')).toHaveTextContent('piece-1');
   });
 
   it('draws every piece of the wall on the Cut step', async () => {

@@ -77,7 +77,30 @@ whole room, and a wall marked as having no wallpaper is shown as such and uses
 no material. Use Modify on a saved wallpaper plan to reopen it with its start
 choice, margin and prices.
 
-The Cut step lists
+The Cut step shows a drawing of every piece on the selected wall. Each piece is
+named on the wall drawing (piece-1, piece-2…) and its drawing says where on the
+wall it is hung, so the two are easy to match. Select a drawing to see it full
+size.
+
+![A piece drawing with a window, a heat pump, trim, the up direction and measurements](../assets/screenshots/wallpaper-piece-drawing.png)
+
+Each drawing shows:
+
+- **Up and down.** An arrow marks up, and the top and bottom edges are named,
+  with the ceiling and floor ends shaded as the trim allowance.
+- **Openings.** Each opening has its name, size and a hatched margin around it.
+  A solid outline is a table cut; a dashed outline is an outlet or switch to
+  mark on the wall and trim in place.
+- **Measurements.** The numbers are millimetres from the piece's top edge and
+  left edge to each opening, as you measure at the cutting table.
+
+The drawings are a guide, not exact: walls are rarely square, so trim to the
+real opening in place. They are also kept when you reopen a saved plan with
+Modify, and Print adds them, several to a page and grouped by wall, after the
+overview. Plans saved before this feature show openings as plain rectangles
+until you plan them again.
+
+The Cut step also lists
 pieces in chronological roll order. Mark a piece cut only after table cutting;
 then mark it hung once it is on the wall.
 

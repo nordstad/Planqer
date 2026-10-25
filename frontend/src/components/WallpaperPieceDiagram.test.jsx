@@ -27,6 +27,12 @@ describe('WallpaperPieceDiagram', () => {
     expect(screen.getByText('100')).toBeInTheDocument();
   });
 
+  it('says where on the wall the piece is hung', () => {
+    render(<WallpaperPieceDiagram piece={piece({ y_start: 100 })} strip={strip} wallNames={['Wall A']} />);
+
+    expect(screen.getByText('Wall A · 0–530 mm from the left of the wall · hung 100–2400 mm above the floor')).toBeInTheDocument();
+  });
+
   it('names an opening without a label by its kind and dashes marks', () => {
     const outlet = { ...notch, label: null, kind: 'outlet', mode: 'mark' };
     const { container } = render(<WallpaperPieceDiagram piece={piece({ notches: [outlet], segments: [{ wall_index: 0, x_start: 0, x_end: 530, notches: [outlet] }] })} strip={strip} />);

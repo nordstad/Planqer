@@ -135,6 +135,11 @@ const WallElevation = ({ wall, wallIndex, plan, wallNames }) => {
         <text x={(left + right) / 2} y="349" textAnchor="middle" className="wallpaper-svg-strip" style={link ? { fill: link.colour, fontWeight: 700 } : undefined}><title>{t('wallpaperUi.stripTitle', { number: segment.number, width: Math.round(segment.x_end - segment.x_start), wall: wall.name })}</title>{label}</text>
       </g>;
     })}
+    {(plan?.pieces || []).filter((piece) => isOnWall(piece, wallIndex)).map((piece) => {
+      const segment = segments.find((item) => item.number === piece.strip_number);
+      if (!segment) return null;
+      return <text key={`label-${piece.id}`} data-testid="piece-id" x={(scaleX(segment.x_start) + scaleX(segment.x_end)) / 2} y={scaleY(Math.min(piece.y_end, height)) - 5} textAnchor="middle" className="wallpaper-svg-small" style={{ fontWeight: 700 }}>{piece.id}</text>;
+    })}
     {!isSloped && (plan?.pieces || []).filter((piece) => isOnWall(piece, wallIndex) && piece.y_end - piece.y_start < height - 1).map((piece) => {
       const segment = segments.find((item) => item.number === piece.strip_number);
       if (!segment) return null;
@@ -151,7 +156,14 @@ const WallElevation = ({ wall, wallIndex, plan, wallNames }) => {
       const cutoutWidth = (numeric(cutout.width) / width) * 600;
       const cutoutHeight = (numeric(cutout.height) / height) * 240;
       const label = cutout.label || (KIND_KEYS[cutout.kind] ? t(KIND_KEYS[cutout.kind]).toLowerCase() : cutout.kind.replace('_', ' '));
-      return <g key={index}><rect x={x} y={y} width={cutoutWidth} height={cutoutHeight} fill="var(--card)" stroke="var(--ink)" /><text x={x + cutoutWidth / 2} y={y + cutoutHeight / 2 - 10} textAnchor="middle" className="wallpaper-svg-small">{label}</text><text x={x + cutoutWidth / 2} y={y + cutoutHeight / 2 + 5} textAnchor="middle" className="wallpaper-svg-small">{numeric(cutout.width)} × {numeric(cutout.height)} mm</text><text x={x + cutoutWidth / 2} y={y + cutoutHeight / 2 + 20} textAnchor="middle" className="wallpaper-svg-small">{t('wallpaperUi.cutoutPosition', { x: numeric(cutout.x), ref: isSloped ? t('wallpaperUi.refLowerEdge') : t('wallpaperUi.refFloor'), y: numeric(cutout.y) })}</text></g>;
+      const lines = [label, `${numeric(cutout.width)} × ${numeric(cutout.height)} mm`, t('wallpaperUi.cutoutPosition', { x: numeric(cutout.x), ref: isSloped ? t('wallpaperUi.refLowerEdge') : t('wallpaperUi.refFloor'), y: numeric(cutout.y) })];
+      // A box too small for its three lines gets them beside it, on the side with room, with a halo to stay legible.
+      const small = cutoutWidth < 140 || cutoutHeight < 50;
+      const leftSide = x + cutoutWidth + 190 > 720;
+      const textX = small ? (leftSide ? x - 6 : x + cutoutWidth + 6) : x + cutoutWidth / 2;
+      const anchor = small ? (leftSide ? 'end' : 'start') : 'middle';
+      const textY = y + cutoutHeight / 2 - 10;
+      return <g key={index}><rect x={x} y={y} width={cutoutWidth} height={cutoutHeight} fill="var(--card)" stroke="var(--ink)" />{lines.map((line, row) => <text key={row} x={textX} y={textY + row * 15} textAnchor={anchor} className="wallpaper-svg-small" style={small ? { paintOrder: 'stroke', stroke: 'var(--ground-2)', strokeWidth: 4 } : undefined}>{line}</text>)}</g>;
     })}
     <line x1="60" y1="316" x2={scaleX(widthBottom)} y2="316" stroke="var(--ink-3)" markerStart={`url(#wall-arrow-${wallIndex})`} markerEnd={`url(#wall-arrow-${wallIndex})`} /><text x={(60 + scaleX(widthBottom)) / 2} y="311" textAnchor="middle" className="wallpaper-svg-small">{isDetailed ? t('wallpaperUi.widthNearFloor', { mm: Math.round(widthBottom) }) : t('wallpaperUi.wallWidthDim', { mm: Math.round(width) })}</text>
     <line x1="35" y1={scaleY(0)} x2="35" y2={scaleY(heightLeft)} stroke="var(--ink-3)" markerStart={`url(#wall-arrow-${wallIndex})`} markerEnd={`url(#wall-arrow-${wallIndex})`} /><text x="25" y={(scaleY(0) + scaleY(heightLeft)) / 2} textAnchor="middle" transform={`rotate(-90 25 ${(scaleY(0) + scaleY(heightLeft)) / 2})`} className="wallpaper-svg-small">{isDetailed ? t('wallpaperUi.heightAtLeft', { mm: Math.round(heightLeft) }) : t('wallpaperUi.wallHeightDim', { mm: Math.round(height) })}</text>
@@ -405,7 +417,7 @@ const WallpaperOptimizer = () => {
         <div className="section-rule"><h2 className="section-title">{walls[cutWallIndex].name}</h2><span className="synthetic">{t('wallpaperUi.originBottomLeftLabel')}</span></div>
         <div className="wallpaper-measured-sheet"><WallElevation wall={walls[cutWallIndex]} wallIndex={cutWallIndex} plan={plan} wallNames={walls.map((item) => item.name)} /></div>
       </section>
-      <WallpaperPieceGallery pieces={plan.pieces.filter((piece) => isOnWall(piece, cutWallIndex))} strips={plan.strips} repeat={numeric(wallpaper.repeat)} openId={selectedPieceId} onOpen={setSelectedPieceId} />
+      <WallpaperPieceGallery pieces={plan.pieces.filter((piece) => isOnWall(piece, cutWallIndex))} strips={plan.strips} repeat={numeric(wallpaper.repeat)} wallNames={walls.map((item) => item.name)} openId={selectedPieceId} onOpen={setSelectedPieceId} />
       {plan.rolls.filter((roll) => roll.cuts.some((cut) => isOnWall(plan.pieces.find((piece) => piece.id === cut.piece_id) || {}, cutWallIndex))).map((roll) => <section key={roll.number} style={{ marginTop: '24px' }}>
         <div className="section-rule"><h2 className="section-title">{t('wallpaperUi.rollTitle', { number: roll.number })}</h2></div>
         <RollDiagram roll={roll} rollLength={numeric(wallpaper.roll_length)} pieces={plan.pieces} wallIndex={cutWallIndex} />
