@@ -1,0 +1,38 @@
+# Simple install: one person, this computer, no accounts and no sign-in.
+#
+#   docker compose -f docker-compose.simple.yml up -d
+#
+# Then open http://localhost:3001. Nothing to configure.
+#
+# It is reachable only from the computer it runs on. To use Planqer from other
+# devices or give several people their own accounts, use the advanced install
+# (docker-compose.release.yml). Both keep projects in the same data volume, so
+# you can switch later without losing them.
+services:
+  backend:
+    container_name: planqer-web-backend
+    image: ghcr.io/nordstad/planqer-backend:${PLANQER_VERSION:-latest}
+    ports:
+      - "127.0.0.1:8002:8002"
+    environment:
+      - PLANQER_SINGLE_USER=true
+      - PLANQER_BIND_ADDRESS=127.0.0.1
+    volumes:
+      - backend_data:/app/backend/data
+    networks:
+      - planqer-network
+
+  frontend:
+    container_name: planqer-web-frontend
+    image: ghcr.io/nordstad/planqer-frontend:${PLANQER_VERSION:-latest}
+    ports:
+      - "127.0.0.1:3001:3001"
+    networks:
+      - planqer-network
+
+networks:
+  planqer-network:
+    driver: bridge
+
+volumes:
+  backend_data:

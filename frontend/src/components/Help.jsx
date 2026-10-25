@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { demoContext } from '../utils/mode';
+import { useAccountContext } from '../contexts/useAccountContext';
 import CatalogPage from './CatalogPage';
 
 const DOCS_URL = 'https://nordstad.github.io/Planqer/';
@@ -21,6 +21,7 @@ const FullDocsLink = ({ t }) => (
 );
 
 const HelpPage = () => {
+  const accountContext = useAccountContext();
   const { t } = useTranslation();
   const location = useLocation();
   const requestedSection = location.hash.slice(1);
@@ -171,7 +172,7 @@ const HelpPage = () => {
             <p>{t('help.beforeCuttingText')}</p>
           </div>
           <p>
-            {t('help.saveIntro', demoContext())}
+            {t('help.saveIntro', accountContext)}
           </p>
         </section>
 
@@ -183,7 +184,7 @@ const HelpPage = () => {
             <div><h3>{t('help.partsFailTitle')}</h3><p>{t('help.partsFailText')}</p></div>
             <div><h3>{t('help.wasteTitle')}</h3><p>{t('help.wasteText')}</p></div>
             <div><h3>{t('help.uploadTitle')}</h3><p>{t('help.uploadText')}</p></div>
-            <div><h3>{t('help.saveFailTitle')}</h3><p>{t('help.saveFailText')}</p></div>
+            <div><h3>{t('help.saveFailTitle')}</h3><p>{t('help.saveFailText', accountContext)}</p></div>
           </div>
           <p>
             {t('help.troubleshootingIntro')}

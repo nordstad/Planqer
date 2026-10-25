@@ -18,7 +18,7 @@ import ConfirmDialog from './ConfirmDialog';
 import { optimizeSheetCutting, saveSheetProject, getProjectGroups, createProjectGroup, getUserSheetProjects, getUserSettings } from '../utils/api';
 import { useDebounce } from '../hooks/useDebounce';
 import { useAuth } from '../contexts/AuthContext';
-import { demoContext } from '../utils/mode';
+import { useAccountContext } from '../contexts/useAccountContext';
 import Disclosure from './Disclosure';
 import ProjectPicker from './ProjectPicker';
 import ProductPicker from './ProductPicker';
@@ -78,6 +78,7 @@ const validateSheetParts = (parts, t) => parts.map((part) => {
 const SheetOptimizer = () => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
+  const accountContext = useAccountContext();
   const location = useLocation();
   const navigate = useNavigate();
   const [step, setStep] = useState(STEP_PARTS);
@@ -733,7 +734,7 @@ const SheetOptimizer = () => {
               <h1 className="step-h1">{saved ? t('workflow.planSaved') : t('workflow.saveThisPlan')}</h1>
               <p className="step-lede">
                 {saved
-                   ? t('ui.keptPlan', demoContext())
+                   ? t('ui.keptPlan', accountContext)
                    : t('ui.namePlan')}
               </p>
             </div>

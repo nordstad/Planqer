@@ -19,7 +19,8 @@ import {
 } from '../utils/api';
 import { useDebounce } from '../hooks/useDebounce';
 import { useAuth } from '../contexts/AuthContext';
-import { demoContext, isStaticMode } from '../utils/mode';
+import { useAccountContext } from '../contexts/useAccountContext';
+import { isStaticMode } from '../utils/mode';
 import { isHeavyTileJob } from '../utils/tileLoad';
 import CatalogPage from './CatalogPage';
 import ConfirmDialog from './ConfirmDialog';
@@ -91,6 +92,7 @@ const validateTileInputs = (values, t) => ({
 const TileOptimizer = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const accountContext = useAccountContext();
   const location = useLocation();
   const navigate = useNavigate();
   const [step, setStep] = useState(STEP_SURFACE);
@@ -820,7 +822,7 @@ const TileOptimizer = () => {
                 <h1 className="step-h1">{saved ? t('ui.layoutSaved') : t('ui.saveLayout')}</h1>
               <p className="step-lede">
                 {saved
-                    ? t('ui.keptPlan', demoContext())
+                    ? t('ui.keptPlan', accountContext)
                     : t('ui.namePlan')}
               </p>
             </div>

@@ -9,7 +9,7 @@ import AdminCatalogue from './AdminCatalogue';
 
 const AdminDashboard = () => {
   const { t } = useTranslation();
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, singleUser } = useAuth();
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -19,7 +19,7 @@ const AdminDashboard = () => {
   const [tab, setTab] = useState('users');
 
   useEffect(() => {
-    loadData();
+    if (!singleUser) loadData();
   }, []);
 
   const loadData = async () => {
@@ -82,6 +82,15 @@ const AdminDashboard = () => {
       ))}
     </div>
   );
+
+  // No accounts to manage: the catalogue is all that is left of this page.
+  if (singleUser) {
+    return (
+      <CatalogPage>
+        <AdminCatalogue />
+      </CatalogPage>
+    );
+  }
 
   if (tab === 'catalogue') {
     return (

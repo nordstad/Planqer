@@ -99,7 +99,13 @@ def test_the_command_fails_on_a_leak_and_succeeds_when_clean(tmp_path):
 
 
 @pytest.mark.parametrize(
-    "path", ["frontend/Dockerfile", "docker-compose.yml", "frontend/nginx.conf"]
+    "path",
+    [
+        "frontend/Dockerfile",
+        "docker-compose.yml",
+        "docker-compose.simple.yml",
+        "frontend/nginx.conf",
+    ],
 )
 def test_the_docker_files_never_switch_the_demo_on(path):
     text = (ROOT / path).read_text(encoding="utf-8").lower()

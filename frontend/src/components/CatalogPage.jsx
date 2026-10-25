@@ -44,14 +44,15 @@ const CatalogPage = ({ children }) => {
   const { changeLanguage, language } = useLanguage();
   const { pathname } = useLocation();
   const isCurrent = (path) => pathname === path;
-  const { user, isAuthenticated, logout, needsSetup, setupCheckError } = useAuth();
+  const { user, isAuthenticated, logout, needsSetup, singleUser, setupCheckError } = useAuth();
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const demo = isStaticMode();
 
   const navLinks = demo
     ? [...BASE_NAV_LINKS, { path: '/catalogue', label: 'demo.catalogue.title' }]
     : user?.is_admin
-      ? [...BASE_NAV_LINKS, { path: '/admin', label: 'common.admin' }]
+      // With no accounts the admin page is only the catalogue editor.
+      ? [...BASE_NAV_LINKS, { path: '/admin', label: singleUser ? 'catalogueAdmin.tab.catalogue' : 'common.admin' }]
       : BASE_NAV_LINKS;
 
   return (
@@ -76,7 +77,7 @@ const CatalogPage = ({ children }) => {
             ))}
           </div>
           <div className="app-nav-right">
-            {demo ? (
+            {demo || singleUser ? (
               <Link to="/dashboard" className={`app-nav-link ${isCurrent('/dashboard') ? 'is-current' : ''}`}>
                 {t('common.myProjects')}
               </Link>

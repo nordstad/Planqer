@@ -22,6 +22,13 @@ services:
       - PLANQER_CORS_ORIGINS=${PLANQER_CORS_ORIGINS:-}
       # Default catalogue country (SE or NO); users can pick their own. Empty: generic.
       - PLANQER_CATALOGUE_COUNTRY=${PLANQER_CATALOGUE_COUNTRY:-}
+      # Set to true to drop accounts and sign-in: everyone who can reach
+      # the app is its owner. Refused unless the app is bound to loopback (the
+      # address below is what Compose publishes it on) or you accept the risk
+      # with PLANQER_ALLOW_OPEN_LAN=true.
+      - PLANQER_SINGLE_USER=${PLANQER_SINGLE_USER:-}
+      - PLANQER_BIND_ADDRESS=${PLANQER_BIND_ADDRESS:-127.0.0.1}
+      - PLANQER_ALLOW_OPEN_LAN=${PLANQER_ALLOW_OPEN_LAN:-}
     volumes:
       # Local accounts + saved projects, on your own instance.
       - backend_data:/app/backend/data

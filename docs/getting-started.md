@@ -16,9 +16,19 @@ them. Planqer is built for computers, where there is more room to work. It
 also runs on phones: tested on a recent iPhone, other phones are untested. See
 [Demo or full version](demo-vs-full.md) for what is different.
 
-**Run your own server (full version, recommended).** Accounts, projects on your
-own server, the REST API and the MCP server for AI assistants. The rest of this
-page covers it.
+**Run your own server (full version, recommended).** Your projects are kept
+on your own computer or server, with two ways to install it:
+
+- **Simple install (recommended).** For one person on one computer, such as a
+  workshop or a DIY project. No accounts, no password, nothing to configure:
+  start it and use it. It can only be reached from the computer it runs on.
+- **Advanced install.** For several people, other devices on your network, a
+  reverse proxy or a real hostname. It has local accounts, an admin page, the
+  REST API with rate limiting, and the optional MCP server for AI assistants.
+
+Both run the same calculations and keep projects in the same data volume, so
+you can start simple and switch later without losing anything. The rest of this
+page covers both.
 
 ## Prerequisites
 
@@ -26,7 +36,29 @@ page covers it.
 - [Docker Compose](https://docs.docker.com/compose/install/) (bundled with
   Docker Desktop)
 
-## Run it
+## Simple install (recommended)
+
+```bash
+curl -O https://raw.githubusercontent.com/nordstad/Planqer/main/docker-compose.simple.yml
+docker compose -f docker-compose.simple.yml up -d
+```
+
+Open <http://localhost:3001> and start planning. There is no sign-in: whoever
+opens the app on this computer is its owner. Saved plans are under **My
+projects**, and the catalogue is under **Catalogue**.
+
+!!! note "Only this computer"
+    The simple install is reachable only from the computer it runs on. That is
+    what makes it safe to run without a password. If you open it to your
+    network, anyone on that network can read and change your projects. Planqer
+    refuses to start without sign-in on a network address unless you set
+    `PLANQER_ALLOW_OPEN_LAN=true`. If you want other devices, use the advanced
+    install instead.
+
+To upgrade, back up first, then pull and recreate. See [Upgrade](#upgrade) and
+use `docker-compose.simple.yml` in place of `docker-compose.release.yml`.
+
+## Advanced install
 
 ```bash
 git clone https://github.com/nordstad/Planqer.git
@@ -65,7 +97,7 @@ Open:
 ## Upgrade
 
 Run these commands from the directory containing `docker-compose.release.yml`
-and `.env`:
+(or `docker-compose.simple.yml` for the simple install) and `.env`:
 
 ```bash
 # Back up accounts and saved projects before upgrading.
@@ -143,8 +175,9 @@ docker compose -f docker-compose.release.yml --profile mcp up -d
 
 1. Open <http://localhost:3001> and choose **Board cutting**, **Sheet cutting**,
    **Tile layout**, **Wallpaper**, or **3D model**.
-2. Sign in or create a local account when prompted. The optimizer pages,
-   model uploads, and saving a plan require a local account.
+2. Advanced install only: sign in or create a local account when prompted. The
+   optimizer pages, model uploads, and saving a plan require a local account.
+   The simple install has no sign-in.
 3. Enter your parts, surface and tile dimensions, wall measurements, or upload
    a model. Add stock lengths, sheet size, openings, or tile layout options as
    appropriate.

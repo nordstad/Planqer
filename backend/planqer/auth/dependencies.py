@@ -6,15 +6,26 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
 from planqer.auth.security import verify_token
+from planqer.auth.single_user import get_or_create_owner, is_single_user_mode
 from planqer.database import User, get_session
 
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
     session: AsyncSession = Depends(get_session),
 ) -> User:
+    if is_single_user_mode():
+        return await get_or_create_owner(session)
+
+    if credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -62,6 +73,9 @@ async def get_current_user_optional(
     ),
     session: AsyncSession = Depends(get_session),
 ) -> User | None:
+    if is_single_user_mode():
+        return await get_or_create_owner(session)
+
     if credentials is None:
         return None
 

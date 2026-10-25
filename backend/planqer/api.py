@@ -14,6 +14,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from alembic import command as alembic_command
 from planqer import __version__
 from planqer.async_processing import start_periodic_cleanup
+from planqer.auth.single_user import check_single_user_bind
 from planqer.errors import PlanqerError
 from planqer.helpers import load_config
 from planqer.logging_config import configure_structured_logging, get_logger
@@ -98,6 +99,7 @@ def _run_migrations():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    check_single_user_bind()
     await asyncio.to_thread(_run_migrations)
     start_periodic_cleanup()
     yield

@@ -32,7 +32,7 @@ import { materialLabel, cleanMaterial } from '../utils/materialLabel';
 import { restoreBoardParts } from '../utils/boardParts';
 import { buildCutListHtml } from '../utils/tileCutList';
 import { useAuth } from '../contexts/AuthContext';
-import { demoContext } from '../utils/mode';
+import { useAccountContext } from '../contexts/useAccountContext';
 import Loader from './Loader';
 import PlanThumb from './PlanThumb';
 import ConfirmDialog from './ConfirmDialog';
@@ -132,6 +132,7 @@ const planStatus = (project, t) => {
 const UserProjectsContent = ({ onPreview, groupId }) => {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
+  const accountContext = useAccountContext();
   const navigate = useNavigate();
   const [allProjects, setAllProjects] = useState([]);
   const [groups, setGroups] = useState([]);
@@ -779,7 +780,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
       {shelves.length === 0 && loose.length === 0 && (
         <div className="proj-blank is-first">
           <p>
-            {t('projects.nothingSaved', demoContext())}
+            {t('projects.nothingSaved', accountContext)}
           </p>
           <Link to="/cutting" className="btn btn-primary">{t('workflow.planCuts')}</Link>
         </div>

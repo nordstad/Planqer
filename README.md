@@ -72,7 +72,25 @@ Running your own server (below) is the full version.
 ## Quick Start
 
 Planqer runs with Docker Compose. The recommended route pulls the published
-release images, so there is nothing to build.
+release images, so there is nothing to build. Pick one of two installs:
+
+- **Simple (recommended):** one person on one computer. No accounts or
+  password, nothing to configure.
+- **Advanced:** several people or devices, with local accounts, an admin page,
+  the REST API and an optional MCP server.
+
+Both keep projects in the same data volume, so you can switch later.
+
+### Simple install (recommended)
+
+```bash
+curl -O https://raw.githubusercontent.com/nordstad/Planqer/main/docker-compose.simple.yml
+docker compose -f docker-compose.simple.yml up -d
+```
+
+Open <http://localhost:3001>. It is reachable only from that computer.
+
+### Advanced install
 
 ```bash
 curl -O https://raw.githubusercontent.com/nordstad/Planqer/main/docker-compose.release.yml

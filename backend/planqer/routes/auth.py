@@ -16,6 +16,7 @@ from planqer.auth import (
     validate_password,
     verify_password,
 )
+from planqer.auth.single_user import is_single_user_mode
 from planqer.database import InstanceBootstrap, User, get_session
 
 from .common import limiter
@@ -53,12 +54,15 @@ class UserResponse(BaseModel):
 
 class SetupStatusResponse(BaseModel):
     needs_setup: bool
+    single_user: bool = False
 
 
 @router.get("/setup-status", response_model=SetupStatusResponse)
 async def get_setup_status(session: AsyncSession = Depends(get_session)):
     """Whether this self-hosted instance has no accounts yet, so the frontend can
     offer first-run setup instead of a login form nobody could sign in to."""
+    if is_single_user_mode():
+        return SetupStatusResponse(needs_setup=False, single_user=True)
     user_count = (await session.execute(select(func.count(User.id)))).scalar() or 0
     return SetupStatusResponse(needs_setup=user_count == 0)
 
@@ -72,6 +76,12 @@ async def register_user(
     user_data: UserCreate,
     session: AsyncSession = Depends(get_session),
 ):
+    if is_single_user_mode():
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Accounts are disabled in single-user mode",
+        )
+
     stmt = select(User).where(User.email == user_data.email)
     result = await session.execute(stmt)
     existing_user = result.scalar_one_or_none()

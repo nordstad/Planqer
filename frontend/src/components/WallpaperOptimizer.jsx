@@ -8,6 +8,7 @@ import { wallIssues, overlapIssue } from '../utils/wallpaperValidation';
 import RoomOverview, { linkColour } from './RoomOverview';
 import { createWallpaperPlan, getProjectGroups, getUserSettings, getWallpaperProjects, saveWallpaper, saveWallpaperProject, updateWallpaperProject } from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useAccountContext } from '../contexts/useAccountContext';
 import { isStaticMode } from '../utils/mode';
 
 const numeric = (value) => Number(value) || 0;
@@ -237,6 +238,7 @@ const restoreWalls = (walls) => walls.map((wall) => ({
 const WallpaperOptimizer = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const accountContext = useAccountContext();
   const location = useLocation();
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
