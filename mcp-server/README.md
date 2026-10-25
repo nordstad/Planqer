@@ -63,6 +63,9 @@ planqer/
 ├── LICENSE
 ├── README.md
 ├── docker-compose.yml
+├── docker-compose.release.yml
+├── docker-compose.simple.yml
+├── docs/                # Documentation site (MkDocs)
 ├── backend/             # FastAPI service with optimization algorithms
 │   ├── Dockerfile
 │   ├── pyproject.toml
@@ -75,6 +78,7 @@ planqer/
     ├── Dockerfile
     ├── package.json
     ├── pyproject.toml
+    ├── schemas/          # Tool contract and demo payloads
     ├── src/index.ts      # TypeScript implementation
     └── src/planqer_mcp_server/  # Python implementation
 ```
@@ -148,14 +152,14 @@ Operational guidance:
 
 - Docker and Docker Compose
 - Node.js (for local frontend development)
-- Python 3.8+ (for local backend development)
+- Python 3.12+ and [uv](https://docs.astral.sh/uv/) (for local backend development)
 
 ### Quick Start
 
 1. Clone the repository:
    ```bash
    git clone https://github.com/nordstad/Planqer.git
-   cd planqer
+   cd Planqer
    ```
 
 2. Build and run with Docker Compose:
@@ -165,7 +169,7 @@ Operational guidance:
 
 3. Access the application:
    - **Frontend**: http://localhost:3001
-   - **API Documentation**: http://localhost:8000/docs
+   - **API Documentation**: http://localhost:8002/docs
 
 ## 🧪 API Usage
 
@@ -185,13 +189,6 @@ curl -X POST "http://localhost:8002/api/cutting-plans" \
 
 <http://localhost:8002/docs> — or the same path on whatever host you serve
 Planqer from.
-
-### Generate Visualization
-
-```bash
-cd backend
-python -c "import json; from planqer.visualization import generate_visual_cut_list; from planqer.cutting import min_boards_required_with_cut_list; cut_list = min_boards_required_with_cut_list({\"270\":4, \"179\":8, \"90\":16, \"81\":4}, 360)[1]; generate_visual_cut_list(cut_list, 360, 'output.png'); print('Visualization saved as output.png')"
-```
 
 ### Getting Started with MCP
 
@@ -285,10 +282,8 @@ Install the MCP extension in VS Code and add this configuration to `.vscode/mcp.
 
 The MCP server includes several pre-configured examples:
 
-- **Furniture Project**: Cabinet making with various part sizes
-- **Kitchen Renovation**: Shelving and trim work
-- **Woodworking Shop**: Mixed length requirements
-- **Construction**: Framing and structural components
+- **Furniture Project** (`furniture_project`): Cabinet making with various part sizes
+- **Kitchen Cabinets** (`kitchen_cabinets`): Shelving and cabinet parts
 
 Access them with: *"Show me all demo payloads"* or *"Run the furniture project demo"*
 
@@ -305,12 +300,12 @@ Claude: I'll optimize your floating shelf cutting plan...
 
 **🏭 Professional Woodworking:**
 ```
-You: "Compare material costs: 3m boards at $45 each vs 4m boards at $58 each for this cabinet project"
+You: "Compare 300cm and 360cm boards for this cabinet project"
 
-Claude: I'll run both scenarios and calculate the total costs...
-📊 3m boards: 12 boards needed = $540 total
-📊 4m boards: 9 boards needed = $522 total  
-💡 Recommendation: 4m boards save $18 (3.4% cost reduction)
+Claude: I'll run both scenarios and compare them...
+📊 300cm boards: 12 boards needed
+📊 360cm boards: 9 boards needed
+💡 Recommendation: 360cm boards use 3 fewer boards
 ```
 
 **📐 Educational/Learning:**
@@ -338,7 +333,7 @@ Claude: Looking at your cutting plan, I can see the main waste factors:
    ```bash
    # Test server directly
    cd mcp-server
-   uv run planqer-mcp-server --version
+   uv run planqer-mcp-server
    ```
 
 3. **"Claude Desktop not connecting"**
@@ -362,11 +357,11 @@ npx @modelcontextprotocol/inspector uv run planqer-mcp-server
 # Click "optimize_demo" in the inspector - should return cutting plan
 ```
 
-## �🧑‍💻 Development
+## 🧑‍💻 Development
 
 ### Backend
 
-The core optimization logic is located in `backend/app/planqer/`. To set up a local development environment:
+The core optimization logic is located in `backend/planqer/`. To set up a local development environment:
 
 ```bash
 # Set up backend development environment

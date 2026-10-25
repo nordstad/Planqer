@@ -42,7 +42,7 @@ accounts and saved projects.
 
 - `PLANQER_VERSION`: defaults to `latest` in
   `docker-compose.release.yml`. Selects the release image tag to pull from
-  GitHub Container Registry. Pin it (e.g. `0.2.0`) for reproducible installs.
+  GitHub Container Registry. Pin it (e.g. `0.9.3`) for reproducible installs.
 - `SECRET_KEY`: optional explicit signing key for login sessions. When omitted,
   Planqer generates a cryptographically random key and persists it at
   `data/.secret_key` inside the persistent backend data volume. The generated
@@ -150,7 +150,8 @@ To share a product with every Planqer user, see
 
 ## MCP server
 
-The MCP service is optional in both Compose files. Enable it with the `mcp`
+The MCP service is optional in `docker-compose.yml` and
+`docker-compose.release.yml`; the simple install does not include it. Enable it with the `mcp`
 profile when using a containerized MCP client:
 
 ```bash

@@ -103,6 +103,7 @@ Longer 1D board cutting requests can use the async endpoint:
 | `/auth` | Setup status, registration, login, and current user. |
 | `/projects` | Saved 1D board cutting projects and generated images. |
 | `/sheet-projects` | Saved 2D sheet projects and generated images. |
+| `/tile-projects` | Saved tile layouts and generated images. |
 | `/wallpaper-projects` | Saved wallpaper room plans and generated images. |
 | `/wallpapers` | Wallpaper specifications you have used before. |
 | `/project-groups` | User-defined project grouping. |

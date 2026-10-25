@@ -34,7 +34,7 @@ npm test
 npm run test:e2e
 ```
 
-`npm test` runs the Jest/React Testing Library component tests in
+`npm test` runs the Vitest/React Testing Library component tests in
 `src/**/*.test.jsx`. `npm run test:e2e` (Playwright) covers full user flows
 against a running instance.
 

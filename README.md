@@ -88,7 +88,9 @@ curl -O https://raw.githubusercontent.com/nordstad/Planqer/main/docker-compose.s
 docker compose -f docker-compose.simple.yml up -d
 ```
 
-Open <http://localhost:3001>. It is reachable only from that computer.
+Open <http://localhost:3001>. It is reachable only from that computer. The
+simple install needs a release newer than 0.9.3; until it is published, use the
+advanced install.
 
 ### Advanced install
 
