@@ -6,6 +6,8 @@ installation guidance.
 
 ## Measure the room
 
+![Measuring a four-wall room with the live top view](../assets/screenshots/wallpaper-room.png)
+
 Stand in the doorway and look into the room. Start with the wall on your left
 and work clockwise, one wall at a time. Walls are lettered like a drawing
 (Wall A, B, C…); rename them by what is on them, such as "Window wall". A live
@@ -50,6 +52,8 @@ If the final strip already uses the full roll width there is no room to wrap,
 so the planner prefers a layout that leaves room.
 
 ## Read the cut plan
+
+![Wallpaper plan with rolls to buy, first-strip options and a wall-by-wall layout](../assets/screenshots/wallpaper-plan.png)
 
 The Plan step shows the rolls needed, the spare rolls added by your spare margin
 and the roll length lost to pattern matching, roll ends and top/bottom allowance.

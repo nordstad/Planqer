@@ -442,7 +442,7 @@ const WallpaperOptimizer = () => {
     {step === 3 && plan && <section className="step-view is-form">
       <div className="step-head">
         <div><h1 className="step-h1">{t('wallpaperUi.cutTitle')}</h1><p className="step-lede">{t('wallpaperUi.cutLede')}</p></div>
-        <button className="btn" onClick={() => window.print()}>{t('auditUi.printOne')}</button>
+        <button className="btn" onClick={() => window.print()}>{t('projectUi.printOne')}</button>
       </div>
       <div className="flex gap-2" style={{ marginBottom: '18px', flexWrap: 'wrap' }}>{walls.map((wall, index) => <button className={`btn ${cutWallIndex === index ? 'is-active' : ''}`} key={wall.name} onClick={() => setCutWallIndex(index)}>{wall.name}</button>)}</div>
       <section style={{ marginBottom: '24px' }}>

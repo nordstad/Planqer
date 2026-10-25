@@ -332,3 +332,19 @@ it('does not offer a quick/specified badge or a details prompt for priced tile p
   expect(screen.getByText('Priced')).toBeInTheDocument();
   expect(screen.queryByText('Add missing details or prices')).not.toBeInTheDocument();
 });
+
+it.each([
+  [[plan], '1 project · 1 plan'],
+  [[plan, secondPlan], '1 project · 2 plans'],
+])('summarises the dashboard as "%s"', async (plans, summary) => {
+  getUserProjects.mockResolvedValue(plans);
+  render(
+    <MemoryRouter>
+      <LanguageProvider>
+        <UserProjectsContent onPreview={vi.fn()} />
+      </LanguageProvider>
+    </MemoryRouter>,
+  );
+
+  expect(await screen.findByText(summary)).toBeInTheDocument();
+});

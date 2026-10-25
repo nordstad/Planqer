@@ -2,6 +2,7 @@
   "name": "planqer-frontend",
   "version": "0.9.3",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "packageManager": "npm@11.12.1",
   "dependencies": {

@@ -74,7 +74,8 @@ another service is already using port 3001, you can override the published host 
 FRONTEND_PORT=3002 docker compose up -d
 ```
 
-Alternatively, you can edit the port mappings directly in `docker-compose.yml`.
+`docker-compose.simple.yml` has its ports fixed, so edit the port mappings in
+that file. You can also edit the mappings in `docker-compose.yml` directly.
 
 ## Still stuck
 

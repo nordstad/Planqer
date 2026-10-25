@@ -43,6 +43,10 @@ curl -O https://raw.githubusercontent.com/nordstad/Planqer/main/docker-compose.s
 docker compose -f docker-compose.simple.yml up -d
 ```
 
+!!! note "Needs a release after 0.9.3"
+    The simple install pulls release images. Single-user mode is not in a
+    published release yet, so until the next release use the advanced install.
+
 Open <http://localhost:3001> and start planning. There is no sign-in: whoever
 opens the app on this computer is its owner. Saved plans are under **My
 projects**, and the catalogue is under **Catalogue**.
@@ -62,7 +66,7 @@ use `docker-compose.simple.yml` in place of `docker-compose.release.yml`.
 
 ```bash
 git clone https://github.com/nordstad/Planqer.git
-cd planqer
+cd Planqer
 docker compose -f docker-compose.release.yml up -d
 ```
 

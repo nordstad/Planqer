@@ -33,7 +33,7 @@ storage.
   docs site use anonymous, cookie-free usage counting; see the
   [privacy page](https://nordstad.github.io/Planqer/privacy/).
 - **AI Assistant Integration**: Includes an MCP (Model Context Protocol) server
-  for Claude Desktop and compatible clients.
+  for any MCP-compatible AI assistant or agent.
 
 ---
 
@@ -42,11 +42,12 @@ storage.
 <!-- markdownlint-disable MD013 MD033 -->
 <table>
 <tr>
-<td width="20%"><a href="docs/assets/screenshots/board-cutting-result.png"><img src="docs/assets/screenshots/board-cutting-result.png" alt="Board cutting result"></a><br><sub>Board cutting</sub></td>
-<td width="20%"><a href="docs/assets/screenshots/sheet-cutting-result.png"><img src="docs/assets/screenshots/sheet-cutting-result.png" alt="Sheet cutting result"></a><br><sub>Sheet cutting</sub></td>
-<td width="20%"><a href="docs/assets/screenshots/tile-layout.png"><img src="docs/assets/screenshots/tile-layout.png" alt="Tile layout surface setup"></a><br><sub>Tile layout</sub></td>
-<td width="20%"><a href="docs/assets/screenshots/model-cutlist.png"><img src="docs/assets/screenshots/model-cutlist.png" alt="3D model upload"></a><br><sub>3D model → cutlist</sub></td>
-<td width="20%"><a href="docs/assets/screenshots/dashboard.png"><img src="docs/assets/screenshots/dashboard.png" alt="Project dashboard"></a><br><sub>Saved projects</sub></td>
+<td width="16%"><a href="docs/assets/screenshots/board-cutting-result.png"><img src="docs/assets/screenshots/board-cutting-result.png" alt="Board cutting result"></a><br><sub>Board cutting</sub></td>
+<td width="16%"><a href="docs/assets/screenshots/sheet-cutting-result.png"><img src="docs/assets/screenshots/sheet-cutting-result.png" alt="Sheet cutting result"></a><br><sub>Sheet cutting</sub></td>
+<td width="16%"><a href="docs/assets/screenshots/tile-layout.png"><img src="docs/assets/screenshots/tile-layout.png" alt="Tile layout surface setup"></a><br><sub>Tile layout</sub></td>
+<td width="16%"><a href="docs/assets/screenshots/wallpaper-plan.png"><img src="docs/assets/screenshots/wallpaper-plan.png" alt="Wallpaper plan"></a><br><sub>Wallpaper</sub></td>
+<td width="16%"><a href="docs/assets/screenshots/model-cutlist.png"><img src="docs/assets/screenshots/model-cutlist.png" alt="3D model upload"></a><br><sub>3D model → cutlist</sub></td>
+<td width="16%"><a href="docs/assets/screenshots/dashboard.png"><img src="docs/assets/screenshots/dashboard.png" alt="Project dashboard"></a><br><sub>Saved projects</sub></td>
 </tr>
 </table>
 <!-- markdownlint-enable MD013 MD033 -->
@@ -72,67 +73,151 @@ Running your own server (below) is the full version.
 ## Quick Start
 
 Planqer runs with Docker Compose. The recommended route pulls the published
-release images, so there is nothing to build. Pick one of two installs:
+release images, so there is nothing to build. Just want a look first? Use the
+[browser demo](https://nordstad.github.io/Planqer/app/) above, with nothing to
+install.
 
-- **Simple (recommended):** one person on one computer. No accounts or
-  password, nothing to configure.
-- **Advanced:** several people or devices, with local accounts, an admin page,
-  the REST API and an optional MCP server.
+**Before you start:** install [Docker Desktop](https://docs.docker.com/get-docker/)
+(or Docker Engine with the Compose plugin on Linux), start it, and check it
+works in a terminal:
 
-Both keep projects in the same data volume, so you can switch later.
+```bash
+docker compose version
+```
+
+**Which install?** If it is just you on one computer, pick Simple. If several
+people or other devices need to use it, pick Advanced. Both keep projects in the
+same data volume, so you can switch later.
 
 ### Simple install (recommended)
 
+One person, one computer. No accounts or password, nothing to configure.
+
+1. Make a folder for Planqer and download the compose file into it. Use the same
+   folder every time: Docker names the data volume after it.
+
+   macOS or Linux:
+
+   ```bash
+   mkdir planqer && cd planqer
+   curl -O https://raw.githubusercontent.com/nordstad/Planqer/main/docker-compose.simple.yml
+   ```
+
+   Windows PowerShell (use `curl.exe`; plain `curl` is a different command
+   there):
+
+   ```powershell
+   mkdir planqer; cd planqer
+   curl.exe -O https://raw.githubusercontent.com/nordstad/Planqer/main/docker-compose.simple.yml
+   ```
+
+   No terminal download? Open [`docker-compose.simple.yml`](docker-compose.simple.yml)
+   on GitHub, use **Download raw file**, and save it in a new `planqer` folder.
+
+2. Start it from that folder. The first start downloads the images and can take
+   a minute or two:
+
+   ```bash
+   docker compose -f docker-compose.simple.yml up -d
+   ```
+
+3. Check that both containers are running, then open <http://localhost:3001>.
+   It is reachable only from that computer.
+
+   ```bash
+   docker compose -f docker-compose.simple.yml ps
+   ```
+
+> The simple install needs a release newer than 0.9.3. Until it is published,
+> use the advanced install.
+
+To stop Planqer, or to upgrade, run these in the same folder. Your projects stay
+in the data volume:
+
 ```bash
-curl -O https://raw.githubusercontent.com/nordstad/Planqer/main/docker-compose.simple.yml
+# stop (projects are kept)
+docker compose -f docker-compose.simple.yml down
+
+# upgrade to the latest release
+docker compose -f docker-compose.simple.yml pull
 docker compose -f docker-compose.simple.yml up -d
 ```
 
-Open <http://localhost:3001>. It is reachable only from that computer.
-
 ### Advanced install
 
+Several people or devices, with local accounts, an admin page, the REST API and
+an optional MCP server.
+
+1. Download the release compose file into a `planqer` folder, as above, but use
+   `docker-compose.release.yml`.
+
+   macOS or Linux:
+
+   ```bash
+   mkdir planqer && cd planqer
+   curl -O https://raw.githubusercontent.com/nordstad/Planqer/main/docker-compose.release.yml
+   ```
+
+   Windows PowerShell:
+
+   ```powershell
+   mkdir planqer; cd planqer
+   curl.exe -O https://raw.githubusercontent.com/nordstad/Planqer/main/docker-compose.release.yml
+   ```
+
+2. Start it and check it:
+
+   ```bash
+   docker compose -f docker-compose.release.yml up -d
+   docker compose -f docker-compose.release.yml ps
+   ```
+
+3. Open the app on the same computer and create the first account. It becomes
+   the administrator.
+
+   - Frontend: <http://localhost:3001>
+   - Backend API docs: <http://localhost:8002/docs>
+   - Health check: <http://localhost:8002/health>
+
+#### Using other devices or a hostname
+
+By default Planqer answers only on the computer it runs on. To reach it from
+other devices (for example `http://192.168.1.50:3001`) create a file named
+`.env` in the same folder, with these lines changed to your address:
+
+```dotenv
+PLANQER_BIND_ADDRESS=0.0.0.0
+PLANQER_TRUSTED_BOOTSTRAP=false
+PLANQER_SETUP_SECRET=<a random secret, e.g. from: openssl rand -hex 32>
+PLANQER_CORS_ORIGINS=http://192.168.1.50:3001
+```
+
+Then recreate the containers. Creating the first account now asks for the setup
+code; enter the secret from `.env`, and remove it afterwards. Without
+`PLANQER_CORS_ORIGINS`, sign-in fails silently as a blocked request.
+
 ```bash
-curl -O https://raw.githubusercontent.com/nordstad/Planqer/main/docker-compose.release.yml
 docker compose -f docker-compose.release.yml up -d
 ```
 
-Then open:
+Behind a reverse proxy or a real hostname, also set `PLANQER_HOST`. A ready-made
+template with every option is [`.env.example`](.env.example); see
+[Configuration](docs/reference/configuration.md) for what each variable does.
 
-| | |
-| --- | --- |
-| **Frontend** | <http://localhost:3001> |
-| **Backend API docs** | <http://localhost:8002/docs> |
-| **Health check** | <http://localhost:8002/health> |
+#### Upgrading
 
-The first account created on a fresh instance becomes the administrator.
-
-### Configuration
-
-No setup is needed for `localhost`. To pin a version, allow a LAN or DNS
-address, or set an explicit `SECRET_KEY`, download
-[`.env.example`](.env.example) as `.env` in the same directory. Compose reads
-it automatically:
+Back up first, then pull and recreate in the same folder. To pin a version, set
+`PLANQER_VERSION` in `.env` (for example `PLANQER_VERSION=0.9.3`):
 
 ```bash
-curl -o .env https://raw.githubusercontent.com/nordstad/Planqer/main/.env.example
-```
-
-See [Configuration](docs/reference/configuration.md) for what each variable
-does.
-
-### Upgrading
-
-Set `PLANQER_VERSION` in `.env`, then pull and recreate the containers:
-
-```bash
+docker compose -f docker-compose.release.yml exec backend planqer backup
 docker compose -f docker-compose.release.yml pull
 docker compose -f docker-compose.release.yml up -d
 ```
 
-For a one-off upgrade without editing `.env`, prefix both commands with
-`PLANQER_VERSION=0.9.3`. Run them from the directory containing both files.
-The Compose volume preserves local accounts and saved projects across upgrades.
+The compose volume keeps local accounts and saved projects across upgrades.
+Stop Planqer with `docker compose -f docker-compose.release.yml down`; add `-v`
+only if you want to delete the data too.
 
 ### Build from source
 
@@ -142,17 +227,6 @@ Use `docker-compose.yml` to build the images yourself:
 git clone https://github.com/nordstad/Planqer.git
 cd Planqer
 docker compose up -d --build
-```
-
-### Using another device on your network
-
-If you open Planqer from another device (for example
-`http://192.168.1.50:3001`) instead of `localhost`, set `PLANQER_CORS_ORIGINS`
-to that address before starting. Otherwise sign-in and registration fail
-silently as CORS-blocked requests:
-
-```bash
-PLANQER_CORS_ORIGINS=http://192.168.1.50:3001 docker compose up -d --build
 ```
 
 ---

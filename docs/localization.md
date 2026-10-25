@@ -53,5 +53,5 @@ algorithm identifiers remain unchanged.
   browser-language detection.
 - `backend/tests/test_settings.py` verifies preferred-language persistence and
   rejection of unsupported language codes.
-- The frontend Jest suite covers the localized component behavior and runs with
-  `npm test -- --runInBand`.
+- The frontend Vitest suite covers the localized component behavior and runs with
+  `npm test`.
