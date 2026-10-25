@@ -38,6 +38,9 @@ class ConnectedStrip:
     # where the next wall's first strip is hung over it.
     return_overlap: float = 0
     return_wall_index: int | None = None
+    # Extra material kept at the ceiling and floor ends for trimming in place.
+    allowance_top: float = 0
+    allowance_bottom: float = 0
 
     @property
     def wall_index(self) -> int:
@@ -182,6 +185,8 @@ def lay_run_strips(
             phase=0,
             precut_length=top + max(item.top + item.bottom for item in wall_allowances),
             precut_width=sum(segment.width for segment in segments),
+            allowance_top=max(item.top for item in wall_allowances),
+            allowance_bottom=max(item.bottom for item in wall_allowances),
         ))
         segments = []
 

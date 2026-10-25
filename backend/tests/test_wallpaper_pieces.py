@@ -81,3 +81,95 @@ def test_door_at_the_bottom_only_leaves_an_upper_piece():
     )
 
     assert [(piece.y_start, piece.y_end) for piece in result.pieces] == [(2130, 2400)]
+
+
+def test_notch_keeps_the_real_opening_kind_and_label():
+    result = split_strip_into_pieces(
+        strip(),
+        {0: [Cutout(kind="window", label="Kitchen", x=100, y=800, width=200, height=900)]},
+        phase=0,
+        allowances={0: Allowances()},
+    )
+
+    notch = result.pieces[0].notches[0]
+    assert (notch.kind, notch.label) == ("window", "Kitchen")
+    assert notch.core == (100, 800, 300, 1700)
+
+
+def test_door_gets_the_opening_margin_on_all_sides():
+    result = split_strip_into_pieces(
+        strip(),
+        {0: [Cutout(kind="door", x=100, y=300, width=200, height=1000)]},
+        phase=0,
+        allowances={0: Allowances()},
+    )
+
+    notch = result.pieces[0].notches[0]
+    margins = (
+        notch.core[0] - notch.x_start,
+        notch.core[1] - notch.y_start,
+        notch.x_end - notch.core[2],
+        notch.y_end - notch.core[3],
+    )
+    assert margins == (30, 30, 30, 30)
+
+
+def test_heat_pump_only_gets_a_margin_on_its_tuck_edges():
+    result = split_strip_into_pieces(
+        strip(),
+        {0: [Cutout(
+            kind="heat_pump", x=100, y=800, width=200, height=300, tuck_edges=["top"]
+        )]},
+        phase=0,
+        allowances={0: Allowances()},
+    )
+
+    notch = result.pieces[0].notches[0]
+    assert notch.core == (100, 800, 300, 1100)
+    assert (notch.x_start, notch.y_start, notch.x_end) == (100, 800, 300)
+    assert notch.y_end == 1110
+
+
+def test_margin_is_clamped_at_the_floor_but_the_core_is_not_moved():
+    result = split_strip_into_pieces(
+        strip(),
+        {0: [Cutout(kind="window", x=100, y=10, width=200, height=400)]},
+        phase=0,
+        allowances={0: Allowances()},
+    )
+
+    notch = result.pieces[0].notches[0]
+    assert notch.core == (100, 10, 300, 410)
+    assert notch.y_start == 0
+
+
+def test_core_is_clipped_to_the_piece_it_belongs_to():
+    result = split_strip_into_pieces(
+        strip(),
+        {0: [
+            Cutout(kind="window", x=100, y=800, width=200, height=900),
+            Cutout(kind="heat_pump", x=0, y=1000, width=530, height=100, tuck_edges=["top", "bottom"]),
+        ]},
+        phase=0,
+        allowances={0: Allowances()},
+    )
+
+    lower, upper = result.pieces
+    assert lower.notches[0].core == (100, 800, 300, 990)
+    assert upper.notches[0].core == (100, 1110, 300, 1700)
+
+
+def test_grouped_cutouts_use_the_group_name_as_label():
+    result = split_strip_into_pieces(
+        strip(),
+        {0: [
+            Cutout(kind="outlet", x=100, y=800, width=50, height=50, group="services"),
+            Cutout(kind="switch", x=200, y=900, width=50, height=50, group="services"),
+        ]},
+        phase=0,
+        allowances={0: Allowances()},
+    )
+
+    notch = result.pieces[0].notches[0]
+    assert notch.label == "services"
+    assert notch.core == (100, 800, 250, 950)
