@@ -33,7 +33,7 @@ storage.
   docs site use anonymous, cookie-free usage counting; see the
   [privacy page](https://nordstad.github.io/Planqer/privacy/).
 - **AI Assistant Integration**: Includes an MCP (Model Context Protocol) server
-  for Claude Desktop and compatible clients.
+  for any MCP-compatible AI assistant or agent.
 
 ---
 

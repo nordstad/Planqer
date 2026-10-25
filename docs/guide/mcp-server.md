@@ -1,7 +1,7 @@
 # MCP server (AI assistants)
 
 `mcp-server/` ships a [Model Context Protocol](https://modelcontextprotocol.io/)
-server so an AI assistant (Claude Desktop and compatible clients) can drive
+server so any MCP-compatible AI assistant or agent can drive
 the optimizer in natural language, instead of you filling in the form.
 
 ## Tools
@@ -31,14 +31,18 @@ plan.
 `search_products` finds those ids. It searches the same catalogue as the web
 app, including products your admins added and without the ones they hid:
 
-```
+```text
 search_products({"query": "regel c24 45x95", "kind": "board", "language": "sv"})
 ```
 
 The MCP server doesn't sign in, so it can plan and search but not save plans;
 saved plans, with their product, are made in the web app.
 
-## Connect it to Claude Desktop
+## Connect it to your assistant
+
+The server speaks standard MCP over stdio, so it works with any MCP client.
+Most clients take a configuration like this one; the file location and exact
+key names depend on the client, so check its documentation:
 
 ```json
 {

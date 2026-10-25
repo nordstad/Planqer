@@ -6,7 +6,7 @@
 
 ## 🤖 AI Assistant Integration (MCP Server)
 
-**Transform cutting optimization with natural language!** This project includes a complete **Model Context Protocol (MCP) server** that enables AI assistants like Claude Desktop to perform cutting optimizations through natural conversation.
+**Transform cutting optimization with natural language!** This project includes a complete **Model Context Protocol (MCP) server** that enables any MCP-compatible AI assistant or agent to perform cutting optimizations through natural conversation.
 
 ### Why Use the MCP Server?
 
@@ -21,7 +21,7 @@
 }
 ```
 
-**Just talk naturally to Claude:**
+**Just talk naturally to your assistant:**
 - *"I need to cut 4 pieces at 270cm, 8 at 179cm, 16 at 90cm, and 4 at 81cm from boards of 300, 360, or 500cm with 3mm saw kerf"*
 - *"Test the cutting optimizer with the furniture project demo"*
 - *"What's the most efficient way to cut these parts with minimal waste?"*
@@ -198,9 +198,9 @@ cd mcp-server
 npx @modelcontextprotocol/inspector uv run planqer-mcp-server
 ```
 
-**2. Claude Desktop Integration:**
+**2. Connect an MCP client:**
 
-Add to your Claude Desktop configuration (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+Any MCP client that can launch a stdio server works. Add this to its MCP server configuration (the file location and key names depend on the client; for example, Claude Desktop uses `claude_desktop_config.json`):
 
 ```json
 {
@@ -220,12 +220,12 @@ Add to your Claude Desktop configuration (`~/Library/Application Support/Claude/
 
 **3. Start Optimizing with Natural Language:**
 
-Once configured, restart Claude Desktop and try these conversations:
+Once configured, restart your client and try these conversations:
 
 ```
 You: "Test the cutting optimizer with the furniture project demo"
 
-Claude: I'll run the furniture project demo for you using the optimize_demo tool...
+Assistant: I'll run the furniture project demo for you using the optimize_demo tool...
 ✅ Optimized cutting plan complete!
 • Total boards needed: 8
 • Total waste: 156 cm
@@ -236,7 +236,7 @@ Claude: I'll run the furniture project demo for you using the optimize_demo tool
 ```
 You: "I need to cut 12 pieces at 45cm and 8 pieces at 80cm from 240cm boards with 3mm kerf"
 
-Claude: I'll optimize that cutting plan for you...
+Assistant: I'll optimize that cutting plan for you...
 [Processes your request and returns optimized results]
 ```
 
@@ -245,22 +245,22 @@ Claude: I'll optimize that cutting plan for you...
 **Iterative Design:**
 ```
 You: "Show me demo payloads"
-Claude: [Shows available examples]
+Assistant: [Shows available examples]
 
 You: "Use the kitchen cabinet example but change the board length to 400cm"
-Claude: [Modifies and optimizes the new configuration]
+Assistant: [Modifies and optimizes the new configuration]
 ```
 
 **Waste Analysis:**
 ```
 You: "What's causing the most waste in this cutting plan?"
-Claude: [Analyzes results and suggests improvements]
+Assistant: [Analyzes results and suggests improvements]
 ```
 
 **Project Comparison:**
 ```
 You: "Compare the efficiency of 300cm vs 360cm boards for my project"
-Claude: [Runs both scenarios and compares results]
+Assistant: [Runs both scenarios and compares results]
 ```
 
 ### VS Code Integration
@@ -293,7 +293,7 @@ Access them with: *"Show me all demo payloads"* or *"Run the furniture project d
 ```
 You: "I'm building floating shelves. I need 6 pieces at 120cm, 12 pieces at 30cm, and 4 pieces at 80cm. I have 240cm boards available with a 3mm saw kerf."
 
-Claude: I'll optimize your floating shelf cutting plan...
+Assistant: I'll optimize your floating shelf cutting plan...
 ✅ Result: Use 4 boards total, only 24cm waste (96% efficiency)
 [Detailed cutting instructions follow]
 ```
@@ -302,7 +302,7 @@ Claude: I'll optimize your floating shelf cutting plan...
 ```
 You: "Compare 300cm and 360cm boards for this cabinet project"
 
-Claude: I'll run both scenarios and compare them...
+Assistant: I'll run both scenarios and compare them...
 📊 300cm boards: 12 boards needed
 📊 360cm boards: 9 boards needed
 💡 Recommendation: 360cm boards use 3 fewer boards
@@ -312,7 +312,7 @@ Claude: I'll run both scenarios and compare them...
 ```
 You: "Explain why this cutting plan is generating so much waste"
 
-Claude: Looking at your cutting plan, I can see the main waste factors:
+Assistant: Looking at your cutting plan, I can see the main waste factors:
 1. Part length mismatch: 85cm parts from 100cm boards = 15cm waste each
 2. Kerf accumulation: 3mm × 12 cuts = 36mm additional waste  
 3. Optimization suggestion: Try 200cm boards instead...
@@ -336,10 +336,10 @@ Claude: Looking at your cutting plan, I can see the main waste factors:
    uv run planqer-mcp-server
    ```
 
-3. **"Claude Desktop not connecting"**
+3. **"Client not connecting"**
    - Ensure the path in config is absolute (not relative)
-   - Restart Claude Desktop after config changes
-   - Check logs in: `~/Library/Logs/Claude/mcp.log` (macOS)
+   - Restart the client after config changes
+   - Check the client's MCP logs (for Claude Desktop on macOS: `~/Library/Logs/Claude/mcp.log`)
 
 4. **"Backend not accessible from MCP"**
    ```bash
