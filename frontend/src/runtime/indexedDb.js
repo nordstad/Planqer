@@ -10,7 +10,7 @@
 
 export const DATABASE_NAME = "planqer";
 
-export const STORES = ["projects", "sheet_projects", "tile_projects", "groups", "settings", "catalogue_entries"];
+export const STORES = ["projects", "sheet_projects", "tile_projects", "wallpaper_projects", "groups", "settings", "catalogue_entries"];
 
 export const MIGRATIONS = [
   // 1: the first schema. Every record is stored as the server would return it
@@ -23,6 +23,10 @@ export const MIGRATIONS = [
   // 2: the user's own catalogue entries, one record per product id.
   (database) => {
     database.createObjectStore("catalogue_entries", { keyPath: "id" });
+  },
+  // 3: saved wallpaper plans.
+  (database) => {
+    database.createObjectStore("wallpaper_projects", { keyPath: "id" });
   },
 ];
 

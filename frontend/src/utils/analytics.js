@@ -14,7 +14,7 @@ const OPT_OUT_KEY = 'planqer.analytics.optout';
 const HOOK = 'planqerBeforeSend';
 const QUEUE_LIMIT = 20;
 
-const TOOLS = ['board', 'sheet', 'tile', 'model'];
+const TOOLS = ['board', 'sheet', 'tile', 'wallpaper', 'model'];
 
 // event -> property -> allowed values. Coarse buckets, never exact values.
 export const EVENTS = Object.freeze({

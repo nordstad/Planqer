@@ -42,7 +42,7 @@ export const backupImport = (content) => db().then((ready) => importBackup(ready
 export const hasSavedWork = async () => {
   const ready = await db();
   const lists = await Promise.all(
-    ["projects", "sheet_projects", "tile_projects", "groups"].map((store) => ready.list(store)),
+    ["projects", "sheet_projects", "tile_projects", "wallpaper_projects", "groups"].map((store) => ready.list(store)),
   );
   return lists.some((records) => records.length > 0);
 };

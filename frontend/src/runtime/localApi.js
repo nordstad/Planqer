@@ -1,7 +1,7 @@
 // The saved projects, groups and settings of the demo, kept in the browser.
 //
 // This mirrors the server's routes (routes/projects.py, sheet_projects.py,
-// tile_projects.py, project_groups.py, settings.py) for a single local user.
+// tile_projects.py, wallpaper_projects.py, project_groups.py, settings.py) for a single local user.
 // What a request may contain is decided by the server's own pydantic models,
 // run in the worker through the `saved_request` operation, and a stored diagram
 // is drawn by the `saved_diagram` operation. This file only persists and
@@ -167,6 +167,38 @@ const PROJECT_KINDS = {
       layout_result: record.layout_result,
     }),
   },
+  wallpaper: {
+    path: "/wallpaper-projects",
+    store: "wallpaper_projects",
+    missing: "Wallpaper project not found",
+    deleted: "Wallpaper project",
+    label: "wallpaper plan",
+    fromValues: (v) => ({
+      project_group_id: v.project_group_id,
+      name: v.name,
+      wallpaper_data: v.wallpaper_data,
+      room_data: v.room_data,
+      options_data: v.options_data,
+      plan_result: v.plan_result,
+      ordered_rolls: v.ordered_rolls,
+      progress_data: v.progress_data,
+    }),
+    edit: (record, v) => {
+      for (const field of ["name", "wallpaper_data", "room_data", "options_data", "progress_data"]) {
+        if (given(v, field)) record[field] = v[field];
+      }
+      for (const field of ["project_group_id", "plan_result", "ordered_rolls"]) {
+        if (sent(v, field)) record[field] = v[field];
+      }
+    },
+    redraws: (v) => sent(v, "name") || sent(v, "room_data") || sent(v, "plan_result"),
+    diagram: (record) => ({
+      kind: "wallpaper",
+      name: record.name,
+      room_data: record.room_data,
+      plan_result: record.plan_result,
+    }),
+  },
 };
 
 const byNewest = (a, b) => (a.updated_at < b.updated_at ? 1 : a.updated_at > b.updated_at ? -1 : 0);
@@ -273,7 +305,7 @@ export function createLocalApi({
     return null;
   }
 
-  /* ── projects (board, sheet and tile share one shape of route) ── */
+  /* ── projects (board, sheet, tile and wallpaper share one shape of route) ── */
 
   async function projects(kind, method, id, isImage, body) {
     const spec = PROJECT_KINDS[kind];

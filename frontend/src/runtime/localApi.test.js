@@ -220,6 +220,7 @@ describe("local api analytics", () => {
     ["/projects", "board"],
     ["/sheet-projects", "sheet"],
     ["/tile-projects", "tile"],
+    ["/wallpaper-projects", "wallpaper"],
   ])("counts a saved %s project by tool, nothing else", async (path, tool) => {
     const { api } = setup();
     track.mockClear();
@@ -238,5 +239,59 @@ describe("local api analytics", () => {
     await api.handle("POST", "/projects", {});
 
     expect(track).not.toHaveBeenCalled();
+  });
+});
+
+describe("local api: wallpaper projects", () => {
+  const body = {
+    name: "Hall",
+    wallpaper_data: { name: "Willow" },
+    room_data: { walls: [{ name: "A" }] },
+    options_data: {},
+    plan_result: { strips: [] },
+    ordered_rolls: null,
+    progress_data: {},
+  };
+
+  it("saves, lists, edits and deletes in the server's shapes", async () => {
+    const { api, call } = setup();
+
+    const created = (await api.handle("POST", "/wallpaper-projects/", body)).body;
+    expect(created).toMatchObject({ ...body, project_group_id: undefined, has_svg_image: true });
+    expect(call).toHaveBeenCalledWith("saved_diagram", {
+      kind: "wallpaper", name: "Hall", room_data: body.room_data, plan_result: body.plan_result,
+    });
+
+    const listed = (await api.handle("GET", "/wallpaper-projects")).body;
+    expect(listed.map((item) => item.id)).toEqual([created.id]);
+
+    const edited = (await api.handle("PUT", `/wallpaper-projects/${created.id}`, { ordered_rolls: 3 })).body;
+    expect(edited).toMatchObject({ name: "Hall", ordered_rolls: 3 });
+
+    expect((await api.handle("DELETE", `/wallpaper-projects/${created.id}`)).body)
+      .toEqual({ message: "Wallpaper project deleted successfully" });
+    expect((await api.handle("GET", `/wallpaper-projects/${created.id}`)).status).toBe(404);
+  });
+
+  it("redraws the diagram only when the name, room or plan changes", async () => {
+    const { api, call } = setup();
+    const { id } = (await api.handle("POST", "/wallpaper-projects", body)).body;
+    call.mockClear();
+
+    await api.handle("PUT", `/wallpaper-projects/${id}`, { ordered_rolls: 2 });
+    expect(call).toHaveBeenCalledTimes(1); // validation only
+
+    await api.handle("PUT", `/wallpaper-projects/${id}`, { name: "Landing" });
+    expect(call).toHaveBeenCalledWith("saved_diagram", expect.objectContaining({ kind: "wallpaper", name: "Landing" }));
+  });
+
+  it("deletes its plans with their project group", async () => {
+    const { api } = setup();
+    const group = (await api.handle("POST", "/project-groups", { name: "House" })).body;
+    const { id } = (await api.handle("POST", "/wallpaper-projects", { ...body, project_group_id: group.id })).body;
+
+    await api.handle("DELETE", `/project-groups/${group.id}`);
+
+    expect((await api.handle("GET", `/wallpaper-projects/${id}`)).status).toBe(404);
   });
 });

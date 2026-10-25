@@ -30,6 +30,41 @@ test("a first visit shows the demo without interrupting it", async ({ page }) =>
   await expect(page.getByRole("link", { name: "Admin" })).toHaveCount(0);
 });
 
+test("a wallpaper plan is solved in the browser, saved, and can be modified from the dashboard", async ({ page }) => {
+  await page.goto(`${APP}#/wallpaper`);
+  const seen = watchRequests(page);
+
+  await page.getByLabel("Name", { exact: true }).fill("Willow");
+  await page.getByLabel("Manufacturer").fill("Example");
+  await page.getByRole("button", { name: "Measure the room →" }).click();
+  await page.getByLabel("Wall width (mm)").fill("3000");
+  await page.getByRole("button", { name: /Create plan/ }).click();
+
+  // The first solve downloads and starts the runtime.
+  await expect(page.getByRole("heading", { name: "Your wallpaper plan" })).toBeVisible({ timeout: 120000 });
+  await expect(page.getByText(/Buy \d+ rolls/)).toBeVisible();
+
+  await page.getByRole("button", { name: /Save\s*Keep this project/ }).click();
+  await page.getByLabel("Project name").fill("Demo wallpaper");
+  await page.getByRole("button", { name: "Save plan", exact: true }).click();
+  await expect(page.getByRole("heading", { name: /plan saved/i })).toBeVisible();
+
+  // Stays inside the demo: a plain /dashboard would leave the hash router.
+  await page.getByRole("button", { name: /open your dashboard/i }).click();
+  await expect(page).toHaveURL(/#\/dashboard$/);
+  const savedPlan = page.locator(".plan-item").filter({ hasText: "Demo wallpaper" });
+  await expect(savedPlan).toBeVisible();
+
+  await page.reload();
+  await expect(page.locator(".plan-item").filter({ hasText: "Demo wallpaper" })).toBeVisible();
+  await page.locator(".plan-item").filter({ hasText: "Demo wallpaper" }).getByRole("button", { name: "Modify" }).click();
+  await expect(page).toHaveURL(/#\/wallpaper$/);
+  await expect(page.getByRole("heading", { name: "Your wallpaper plan" })).toBeVisible();
+
+  expect(seen.outside, "nothing may be loaded from another origin").toEqual([]);
+  expect(seen.failed, "nothing may 404").toEqual([]);
+});
+
 test("a plan is solved in the browser, saved, and still there after a reload", async ({ page }) => {
   await page.goto(APP);
   const seen = watchRequests(page);

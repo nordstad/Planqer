@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 
 vi.mock('../contexts/AuthContext', () => ({ useAuth: () => ({ user: null }) }));
 vi.mock('./CatalogPage', () => ({ default: ({ children }) => <div>{children}</div> }));
@@ -10,7 +11,7 @@ const { default: i18n } = await import('../i18n');
 const { createWallpaperPlan } = await import('../utils/api');
 
 const openRoomStep = async () => {
-  render(<WallpaperOptimizer />);
+  render(<MemoryRouter><WallpaperOptimizer /></MemoryRouter>);
   fireEvent.change(screen.getByLabelText(/^Wallpaper name|^Name/i), { target: { value: 'Willow' } });
   fireEvent.change(screen.getByLabelText(/Manufacturer/i), { target: { value: 'Example' } });
   fireEvent.click(screen.getByRole('button', { name: /Measure the room →/ }));
@@ -73,7 +74,7 @@ describe('WallpaperOptimizer room step', () => {
   });
 
   it('offers an optional price per roll on the wallpaper step', () => {
-    render(<WallpaperOptimizer />);
+    render(<MemoryRouter><WallpaperOptimizer /></MemoryRouter>);
 
     expect(screen.getByLabelText(/Price per roll/)).toHaveValue('');
   });
@@ -125,7 +126,7 @@ const planFixture = {
 describe('WallpaperOptimizer plan step', () => {
   const openPlanStep = async () => {
     createWallpaperPlan.mockResolvedValue(planFixture);
-    render(<WallpaperOptimizer />);
+    render(<MemoryRouter><WallpaperOptimizer /></MemoryRouter>);
     fireEvent.change(screen.getByLabelText(/^Name/i), { target: { value: 'Willow' } });
     fireEvent.change(screen.getByLabelText(/Manufacturer/i), { target: { value: 'Example' } });
     fireEvent.change(screen.getByLabelText(/Price per roll/), { target: { value: '1000' } });
@@ -169,7 +170,7 @@ describe('WallpaperOptimizer translations', () => {
 
   it('renders the wallpaper step in Norwegian', async () => {
     await inLanguage('nb-NO', () => {
-      render(<WallpaperOptimizer />);
+      render(<MemoryRouter><WallpaperOptimizer /></MemoryRouter>);
 
       expect(screen.getByRole('heading', { name: 'Tapetdetaljer' })).toBeInTheDocument();
       expect(screen.getByLabelText('Produsent')).toBeInTheDocument();
@@ -179,7 +180,7 @@ describe('WallpaperOptimizer translations', () => {
 
   it('translates room step labels and measurement errors in Swedish', async () => {
     await inLanguage('sv-SE', async () => {
-      render(<WallpaperOptimizer />);
+      render(<MemoryRouter><WallpaperOptimizer /></MemoryRouter>);
       fireEvent.change(screen.getByLabelText('Namn'), { target: { value: 'Willow' } });
       fireEvent.change(screen.getByLabelText('Tillverkare'), { target: { value: 'Example' } });
       fireEvent.click(screen.getByRole('button', { name: 'Mät rummet →' }));
