@@ -46,6 +46,7 @@ MODULES = (
     "planqer/schemas/saved.py",
     "planqer/schemas/sheet.py",
     "planqer/schemas/tile.py",
+    "planqer/schemas/wallpaper.py",
     "planqer/services.py",
     "planqer/sheet_optimization.py",
     "planqer/sheet_services.py",
@@ -66,6 +67,16 @@ MODULES = (
     "planqer/uploads.py",
     "planqer/validation.py",
     "planqer/visualization_constants.py",
+    "planqer/wallpaper/__init__.py",
+    "planqer/wallpaper/closure.py",
+    "planqer/wallpaper/geometry.py",
+    "planqer/wallpaper/pattern.py",
+    "planqer/wallpaper/pieces.py",
+    "planqer/wallpaper/plan.py",
+    "planqer/wallpaper/rolls.py",
+    "planqer/wallpaper/strips.py",
+    "planqer/wallpaper/validation.py",
+    "planqer/wallpaper/visualization.py",
 )
 
 DATA_FILES = (

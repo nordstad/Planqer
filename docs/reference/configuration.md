@@ -28,8 +28,13 @@ accounts and saved projects.
 
 ## Compose files
 
-- `docker-compose.release.yml`: recommended self-hosted install. Pulls pinned
-  release images from GitHub Container Registry.
+- `docker-compose.simple.yml`: simple install for one person on one computer.
+  Single-user mode, no accounts, reachable only from that computer, nothing to
+  configure. Uses the same release images and data volume as the advanced
+  install.
+- `docker-compose.release.yml`: advanced self-hosted install, with accounts,
+  LAN and reverse-proxy support. Pulls pinned release images from GitHub
+  Container Registry.
 - `docker-compose.yml`: development/source install. Builds local Dockerfiles
   and bind-mounts frontend source.
 
@@ -50,6 +55,15 @@ accounts and saved projects.
 - `PLANQER_BIND_ADDRESS`: defaults to `127.0.0.1`, so a new instance is only
   reachable from its own host. Set `0.0.0.0` only for LAN or reverse-proxy
   deployments.
+- `PLANQER_SINGLE_USER`: defaults to off. Set to `true` to remove accounts and
+  sign-in: everyone who can reach the app is its owner, shown as **My
+  projects**. Registration is disabled and the admin page shows only the
+  catalogue. `docker-compose.simple.yml` sets it. Accounts already in the data
+  volume are kept and used again if you turn it off.
+- `PLANQER_ALLOW_OPEN_LAN`: only for `PLANQER_SINGLE_USER=true`. Planqer
+  refuses to start when `PLANQER_BIND_ADDRESS` is not a loopback address,
+  because anyone on the network could then read and change your projects. Set
+  to `true` to accept that, for example on a network you fully trust.
 - `PLANQER_TRUSTED_BOOTSTRAP`: defaults to `true` with the default loopback
   binding, allowing the first browser account to become administrator. Set it
   to `false` before exposing the instance.

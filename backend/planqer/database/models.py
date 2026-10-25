@@ -226,3 +226,33 @@ class UserTileProject(SQLModel, table=True):
         default_factory=lambda: datetime.now(),
         sa_column=Column(DateTime(timezone=False), nullable=False),
     )
+
+
+class UserWallpaper(SQLModel, table=True):
+    __tablename__ = "user_wallpapers"
+
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    user_id: UUID = Field(foreign_key="users.id")
+    name: str
+    data: str
+    created_at: datetime | None = Field(default_factory=lambda: datetime.now(), sa_column=Column(DateTime(timezone=False), nullable=False))
+    updated_at: datetime | None = Field(default_factory=lambda: datetime.now(), sa_column=Column(DateTime(timezone=False), nullable=False))
+
+
+class UserWallpaperProject(SQLModel, table=True):
+    __tablename__ = "user_wallpaper_projects"
+
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    user_id: UUID = Field(foreign_key="users.id")
+    project_group_id: UUID | None = Field(default=None, foreign_key="project_groups.id")
+    name: str
+    wallpaper_data: str
+    room_data: str
+    options_data: str = Field(default="{}")
+    plan_result: str | None = None
+    ordered_rolls: int | None = None
+    progress_data: str = Field(default="{}")
+    cutlist_image: str | None = None
+    cutlist_image_svg: str | None = None
+    created_at: datetime | None = Field(default_factory=lambda: datetime.now(), sa_column=Column(DateTime(timezone=False), nullable=False))
+    updated_at: datetime | None = Field(default_factory=lambda: datetime.now(), sa_column=Column(DateTime(timezone=False), nullable=False))

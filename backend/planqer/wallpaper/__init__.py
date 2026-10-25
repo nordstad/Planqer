@@ -1,0 +1,1 @@
+"""Wallpaper planning domain logic."""

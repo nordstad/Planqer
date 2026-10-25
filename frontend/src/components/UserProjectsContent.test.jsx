@@ -7,6 +7,7 @@ import {
   getUserProjects,
   getUserSheetProjects,
   getUserTileProjects,
+  getWallpaperProjects,
   getProjectGroups,
   getUserSettings,
   deleteProject,
@@ -20,6 +21,9 @@ vi.mock('../utils/api', () => ({
   getUserProjects: vi.fn(),
   getUserSheetProjects: vi.fn(),
   getUserTileProjects: vi.fn(),
+  getWallpaperProjects: vi.fn(),
+  updateWallpaperProject: vi.fn(),
+  deleteWallpaperProject: vi.fn(),
   getProjectGroups: vi.fn(),
   getUserSettings: vi.fn(),
   deleteProject: vi.fn(),
@@ -114,6 +118,7 @@ beforeEach(() => {
   getUserProjects.mockResolvedValue([plan]);
   getUserSheetProjects.mockResolvedValue([]);
   getUserTileProjects.mockResolvedValue([]);
+  getWallpaperProjects.mockResolvedValue([]);
   getProjectGroups.mockResolvedValue([group]);
   getUserSettings.mockResolvedValue({ spare_margin_percent: 10 });
   deleteProject.mockResolvedValue({});

@@ -37,6 +37,7 @@ const TOOL = {
   cutting_plan: "board",
   sheet_optimization: "sheet",
   tile_layout: "tile",
+  wallpaper_plan: "wallpaper",
   cutlist_3d: "model",
   cutlist_step: "model",
 };

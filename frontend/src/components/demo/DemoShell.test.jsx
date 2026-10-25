@@ -127,6 +127,7 @@ describe('tool_opened', () => {
     ['/cutting', 'board'],
     ['/sheet-cutting', 'sheet'],
     ['/tile-layout', 'tile'],
+    ['/wallpaper', 'wallpaper'],
     ['/model-cutlist', 'model'],
   ])('counts opening %s as the %s tool', (path, tool) => {
     renderShell(path);

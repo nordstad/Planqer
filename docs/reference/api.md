@@ -40,8 +40,8 @@ Authorization: Bearer <token>
 Swagger UI supports this flow through the **Authorize** button after you call
 `POST /auth/login` and copy the returned token.
 
-Board, sheet, and tile optimization endpoints can be called without a saved
-project. STL and STEP model-upload endpoints, saved projects, settings, project
+Board, sheet, tile, and wallpaper planning endpoints can be called without a
+saved project. STL and STEP model-upload endpoints, saved projects, settings, project
 groups, and admin endpoints require authentication.
 
 ## Optimization
@@ -52,6 +52,7 @@ groups, and admin endpoints require authentication.
 | `POST /api/cutting-plans/async` | Start an async 1D task. |
 | `POST /api/sheet-optimization` | 2D sheet packing. Rate limited: 10/min. |
 | `POST /api/tile-layout` | Ranked tile candidates. Rate limited: 10/min. |
+| `POST /api/wallpaper-plans` | Wallpaper room plan. Rate limited: 10/min. |
 | `POST /api/3d-cutlist` | STL upload to cutlist. Rate limited: 5/minute. |
 | `POST /api/step-cutlist` | STEP upload to cutlist. Rate limited: 3/minute. |
 | `GET /algorithms` | List available 1D optimization algorithms. |
@@ -102,6 +103,8 @@ Longer 1D board cutting requests can use the async endpoint:
 | `/auth` | Setup status, registration, login, and current user. |
 | `/projects` | Saved 1D board cutting projects and generated images. |
 | `/sheet-projects` | Saved 2D sheet projects and generated images. |
+| `/wallpaper-projects` | Saved wallpaper room plans and generated images. |
+| `/wallpapers` | Wallpaper specifications you have used before. |
 | `/project-groups` | User-defined project grouping. |
 | `/catalogue` | The instance's product catalogue (public, read-only, served with an `ETag`). |
 | `/settings` | User preferences such as units and defaults. |

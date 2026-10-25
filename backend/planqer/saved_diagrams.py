@@ -14,6 +14,7 @@ from planqer.sheet_visualization import generate_saved_sheet_diagram
 from planqer.svg_visualization import generate_saved_diagram
 from planqer.tile_layout.geometry import Cutout, PlacedTile, Surface, TileKind
 from planqer.tile_visualization import generate_saved_tile_diagram
+from planqer.wallpaper.visualization import render_plan_svg
 
 logger = logging.getLogger("planqer.saved_diagrams")
 
@@ -91,6 +92,7 @@ def render_saved_tile_layout(
     if not layout_result or not layout_result.get("tiles") or not surface_data:
         return None
 
+
     try:
         cutouts = tuple(
             Cutout(
@@ -139,4 +141,17 @@ def render_saved_tile_layout(
     except Exception as e:
         # A missing diagram is worth far less than a lost layout — keep the save.
         logger.warning(f"Failed to render diagram for saved tile project '{name}': {e}")
+        return None
+
+
+def render_saved_wallpaper_plan(
+    room_data: dict | None, plan_result: dict | None, name: str
+) -> str | None:
+    """Render the saved wallpaper plan without recalculating its layout."""
+    if not room_data or not plan_result or not room_data.get("walls"):
+        return None
+    try:
+        return render_plan_svg(room_data, plan_result, project_name=name)
+    except Exception as e:
+        logger.warning(f"Failed to render diagram for saved wallpaper project '{name}': {e}")
         return None

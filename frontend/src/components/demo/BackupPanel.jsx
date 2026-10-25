@@ -55,7 +55,7 @@ const BackupPanel = () => {
     if (!file) return;
     try {
       const counts = await backupImport(await file.text());
-      const plans = (counts.projects ?? 0) + (counts.sheet_projects ?? 0) + (counts.tile_projects ?? 0);
+      const plans = (counts.projects ?? 0) + (counts.sheet_projects ?? 0) + (counts.tile_projects ?? 0) + (counts.wallpaper_projects ?? 0);
       setFeedback({ text: t('demo.backup.imported', { plans, projects: counts.groups ?? 0 }) });
       refresh();
     } catch (error) {

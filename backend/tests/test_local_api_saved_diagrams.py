@@ -148,12 +148,38 @@ def test_a_saved_tile_layout_has_the_diagram_the_server_stores(client, headers):
     assert body == {"image": saved["cutlist_image"]}
 
 
+def test_a_saved_wallpaper_plan_has_the_diagram_the_server_stores(client, headers):
+    from test_local_api_wallpaper import PAYLOAD
+
+    _, plan = call("wallpaper_plan", PAYLOAD)
+
+    saved = client.post(
+        "/api/wallpaper-projects/",
+        headers=headers,
+        json={
+            "name": "Hall",
+            "wallpaper_data": PAYLOAD["wallpaper"],
+            "room_data": PAYLOAD["room"],
+            "plan_result": plan,
+        },
+    ).json()
+    status, body = call(
+        "saved_diagram",
+        {"kind": "wallpaper", "name": "Hall", "room_data": PAYLOAD["room"], "plan_result": plan},
+    )
+
+    assert status == 200
+    assert saved["cutlist_image"]
+    assert body == {"image": saved["cutlist_image"]}
+
+
 @pytest.mark.parametrize(
     "request_body",
     [
         {"kind": "board", "name": "x", "saw_blade_width": 3, "optimization_result": {}},
         {"kind": "sheet", "name": "x", "optimization_result": {"sheets": []}},
         {"kind": "tile", "name": "x", "surface_data": {}, "layout_result": {}},
+        {"kind": "wallpaper", "name": "x", "room_data": {}, "plan_result": {}},
     ],
 )
 def test_a_plan_with_nothing_to_draw_has_no_image(request_body):

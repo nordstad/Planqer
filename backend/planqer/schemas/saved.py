@@ -115,6 +115,33 @@ class UpdateTileProjectRequest(BaseModel):
     pricing: dict | None = None
 
 
+class WallpaperRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    data: dict
+
+
+class WallpaperProjectRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=200)
+    project_group_id: UUID | None = None
+    wallpaper_data: dict
+    room_data: dict
+    options_data: dict = {}
+    plan_result: dict | None = None
+    ordered_rolls: int | None = Field(default=None, ge=0)
+    progress_data: dict = {}
+
+
+class UpdateWallpaperProjectRequest(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    project_group_id: UUID | None = None
+    wallpaper_data: dict | None = None
+    room_data: dict | None = None
+    options_data: dict | None = None
+    plan_result: dict | None = None
+    ordered_rolls: int | None = Field(default=None, ge=0)
+    progress_data: dict | None = None
+
+
 class ProjectGroupRequest(BaseModel):
     name: str
     spare_margin_percent: float | None = Field(default=None, ge=0, le=100)

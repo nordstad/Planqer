@@ -14,6 +14,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from alembic import command as alembic_command
 from planqer import __version__
 from planqer.async_processing import start_periodic_cleanup
+from planqer.auth.single_user import check_single_user_bind
 from planqer.errors import PlanqerError
 from planqer.helpers import load_config
 from planqer.logging_config import configure_structured_logging, get_logger
@@ -25,6 +26,8 @@ from planqer.routes import (
     settings_router,
     sheet_projects_router,
     tile_projects_router,
+    wallpaper_projects_router,
+    wallpapers_router,
 )
 from planqer.routes.admin_catalogue import router as admin_catalogue_router
 from planqer.routes.catalogue import router as catalogue_router
@@ -35,6 +38,7 @@ from planqer.routes.cutting import task_router
 from planqer.routes.sheet_optimization import router as sheet_router
 from planqer.routes.system import router as system_router
 from planqer.routes.tile_layout import router as tile_router
+from planqer.routes.wallpaper import router as wallpaper_router
 from planqer.schemas import (  # noqa: F401
     BoardCost,
     CostAnalysis,
@@ -95,6 +99,7 @@ def _run_migrations():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    check_single_user_bind()
     await asyncio.to_thread(_run_migrations)
     start_periodic_cleanup()
     yield
@@ -182,6 +187,8 @@ for route in (
     projects_router,
     sheet_projects_router,
     tile_projects_router,
+    wallpapers_router,
+    wallpaper_projects_router,
     project_groups_router,
     admin_router,
     admin_catalogue_router,
@@ -190,6 +197,7 @@ for route in (
     sheet_router,
     cutlists_router,
     tile_router,
+    wallpaper_router,
     system_router,
     task_router,
 ):

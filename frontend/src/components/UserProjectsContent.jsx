@@ -21,7 +21,8 @@ import { useTranslation } from 'react-i18next';
 import {
   getUserProjects, updateProject, deleteProject,
   getUserSheetProjects, updateSheetProject, deleteSheetProject,
-  getUserTileProjects, updateTileProject, deleteTileProject,
+   getUserTileProjects, updateTileProject, deleteTileProject,
+   getWallpaperProjects, updateWallpaperProject, deleteWallpaperProject,
   downloadProjectImage, getProjectGroups, renameProjectGroup, deleteProjectGroup, getUserSettings,
 } from '../utils/api';
 import { svgBlobToPngBlob } from '../utils/svgToPng';
@@ -31,7 +32,7 @@ import { materialLabel, cleanMaterial } from '../utils/materialLabel';
 import { restoreBoardParts } from '../utils/boardParts';
 import { buildCutListHtml } from '../utils/tileCutList';
 import { useAuth } from '../contexts/AuthContext';
-import { demoContext } from '../utils/mode';
+import { useAccountContext } from '../contexts/useAccountContext';
 import Loader from './Loader';
 import PlanThumb from './PlanThumb';
 import ConfirmDialog from './ConfirmDialog';
@@ -82,6 +83,13 @@ const planFacts = (project, t) => {
       stock: `${materialLabel(project.tile_data?.material_type || 'tile', t)} · ${project.tile_data?.thickness || '—'}×${project.tile_data.width}×${project.tile_data.height}mm`,
     };
   }
+  if (project.projectType === 'wallpaper') {
+    return {
+      type: t('common.wallpaperPlanner'),
+      count: `${project.plan_result?.rolls_to_buy ?? '—'} rolls to buy${project.wallpaper_data?.price_per_roll != null && project.plan_result?.rolls_to_buy != null ? ` · est. ${(project.plan_result.rolls_to_buy * project.wallpaper_data.price_per_roll).toLocaleString(undefined, { maximumFractionDigits: 2 })} ${project.wallpaper_data.currency || ''}`.trimEnd() : ''}`,
+      stock: project.wallpaper_data?.name || 'Wallpaper',
+    };
+  }
   const parts = restoreBoardParts(project.parts_data);
   const count = parts.reduce((sum, part) => sum + (parseInt(part.quantity, 10) || 0), 0);
   const demand = parts.reduce((sum, part) => sum + (parseFloat(part.length) || 0) * (parseInt(part.quantity, 10) || 0), 0);
@@ -124,6 +132,7 @@ const planStatus = (project, t) => {
 const UserProjectsContent = ({ onPreview, groupId }) => {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
+  const accountContext = useAccountContext();
   const navigate = useNavigate();
   const [allProjects, setAllProjects] = useState([]);
   const [groups, setGroups] = useState([]);
@@ -156,10 +165,11 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
       setLoading(true);
       setError('');
 
-      const [boardProjects, sheetProjects, tileProjects, projectGroups, settings] = await Promise.all([
+      const [boardProjects, sheetProjects, tileProjects, wallpaperProjects, projectGroups, settings] = await Promise.all([
         getUserProjects(),
         getUserSheetProjects(),
         getUserTileProjects(),
+        getWallpaperProjects(),
         getProjectGroups(),
         getUserSettings().catch(() => null),
       ]);
@@ -169,6 +179,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
         ...boardProjects.map((p) => ({ ...p, projectType: 'board' })),
         ...sheetProjects.map((p) => ({ ...p, projectType: 'sheet' })),
         ...tileProjects.map((p) => ({ ...p, projectType: 'tile' })),
+        ...wallpaperProjects.map((p) => ({ ...p, projectType: 'wallpaper' })),
       ].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
 
       setAllProjects(combined);
@@ -194,6 +205,8 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
             await deleteSheetProject(project.id);
           } else if (project.projectType === 'tile') {
             await deleteTileProject(project.id);
+          } else if (project.projectType === 'wallpaper') {
+            await deleteWallpaperProject(project.id);
           } else {
             await deleteProject(project.id);
           }
@@ -313,7 +326,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
   };
 
   const handleModify = (project) => {
-    const routes = { board: '/cutting', sheet: '/sheet-cutting', tile: '/tile-layout' };
+    const routes = { board: '/cutting', sheet: '/sheet-cutting', tile: '/tile-layout', wallpaper: '/wallpaper' };
     const route = routes[project.projectType];
     if (route) navigate(`${route}?edit=${encodeURIComponent(project.id)}`);
   };
@@ -340,6 +353,8 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
         await updateSheetProject(project.id, { name });
       } else if (project.projectType === 'tile') {
         await updateTileProject(project.id, { name });
+      } else if (project.projectType === 'wallpaper') {
+        await updateWallpaperProject(project.id, { name });
       } else {
         await updateProject(project.id, { name });
       }
@@ -765,7 +780,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
       {shelves.length === 0 && loose.length === 0 && (
         <div className="proj-blank is-first">
           <p>
-            {t('projects.nothingSaved', demoContext())}
+            {t('projects.nothingSaved', accountContext)}
           </p>
           <Link to="/cutting" className="btn btn-primary">{t('workflow.planCuts')}</Link>
         </div>

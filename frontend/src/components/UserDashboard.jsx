@@ -49,7 +49,7 @@ const SavedSheetPreview = ({ project }) => {
 
 const UserDashboard = () => {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, singleUser } = useAuth();
   const { groupId } = useParams();
   const [activeTab, setActiveTab] = useState('projects');
   const [previewProject, setPreviewProject] = useState(null);
@@ -87,7 +87,7 @@ const UserDashboard = () => {
             </p>
           )}
           {BackupPanel && isStaticMode() && <Suspense fallback={null}><BackupPanel /></Suspense>}
-          {!isStaticMode() && (
+          {!isStaticMode() && !singleUser && (
             <dl className="job-block">
               <div className="job-cell" style={{ flex: '1 1 260px' }}>
                  <dt>{t('ui.account')}</dt>

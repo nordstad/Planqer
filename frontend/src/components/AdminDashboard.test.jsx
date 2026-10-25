@@ -77,4 +77,21 @@ describe('AdminDashboard', () => {
     await waitFor(() => expect(deleteUser).toHaveBeenCalledWith('other'));
     expect(getAdminUsers).toHaveBeenCalledTimes(2); // initial load + reload after delete
   });
+
+  it('shows only the catalogue, with no user management, on a single-user instance', async () => {
+    api.getAuthToken.mockReturnValue(null);
+    api.getSetupStatus.mockResolvedValue({ needs_setup: false, single_user: true });
+    api.getCurrentUser.mockResolvedValue({ id: 'owner', email: 'owner@planqer.local', is_admin: true });
+    try {
+      renderDashboard();
+      expect(await screen.findByLabelText('Search products')).toBeInTheDocument();
+      expect(screen.queryByRole('tab')).not.toBeInTheDocument();
+      expect(screen.queryByText('owner@planqer.local')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Sign out' })).not.toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'My projects' })).toBeInTheDocument();
+    } finally {
+      api.getAuthToken.mockReturnValue('fake-token');
+      api.getSetupStatus.mockResolvedValue({ needs_setup: false });
+    }
+  });
 });

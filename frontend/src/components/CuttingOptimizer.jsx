@@ -37,7 +37,7 @@ import {
 } from '../utils/validators';
 import { useDebounce } from '../hooks/useDebounce';
 import { useAuth } from '../contexts/AuthContext';
-import { demoContext } from '../utils/mode';
+import { useAccountContext } from '../contexts/useAccountContext';
 import BoardLengthRow from './BoardLengthRow';
 import CatalogPage from './CatalogPage';
 import ConfirmDialog from './ConfirmDialog';
@@ -68,6 +68,7 @@ const EXAMPLE_PARTS = [
 const CuttingOptimizer = () => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
+  const accountContext = useAccountContext();
   const location = useLocation();
   const navigate = useNavigate();
   const [step, setStep] = useState(STEP_PARTS);
@@ -983,7 +984,7 @@ const CuttingOptimizer = () => {
                <h1 className="step-h1">{saved ? t('workflow.planSaved') : t('workflow.saveThisPlan')}</h1>
               <p className="step-lede">
                 {saved
-                   ? t('ui.keptPlan', demoContext())
+                   ? t('ui.keptPlan', accountContext)
                    : t('ui.namePlan')}
               </p>
             </div>

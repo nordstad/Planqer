@@ -69,15 +69,21 @@ TILE = {
     "tile_data": {"width": 300, "height": 300},
     "bond_data": {"pattern": "stack"},
 }
+WALLPAPER = {
+    "name": "Hall",
+    "wallpaper_data": {"name": "Willow", "roll_width": 530, "roll_length": 10050},
+    "room_data": {"walls": []},
+}
 ENDPOINTS = {
     "board": "/api/projects/",
     "sheet": "/api/sheet-projects/",
     "tile": "/api/tile-projects/",
+    "wallpaper": "/api/wallpaper-projects/",
 }
-VALID = {"board": BOARD, "sheet": SHEET, "tile": TILE}
+VALID = {"board": BOARD, "sheet": SHEET, "tile": TILE, "wallpaper": WALLPAPER}
 
 
-@pytest.mark.parametrize("kind", ["board", "sheet", "tile"])
+@pytest.mark.parametrize("kind", ["board", "sheet", "tile", "wallpaper"])
 def test_a_valid_save_comes_back_as_the_endpoint_stores_it(client, headers, kind):
     saved = client.post(ENDPOINTS[kind], json=VALID[kind], headers=headers).json()
 
@@ -116,7 +122,7 @@ def test_a_partial_update_returns_only_what_was_sent():
     assert body == {"values": {"name": "Renamed", "project_group_id": None}}
 
 
-@pytest.mark.parametrize("kind", ["board", "sheet", "tile"])
+@pytest.mark.parametrize("kind", ["board", "sheet", "tile", "wallpaper"])
 @pytest.mark.parametrize(
     "change",
     [{"name": ""}, {"name": "x" * 201}, {"project_group_id": "not-a-uuid"}],
@@ -131,7 +137,7 @@ def test_an_invalid_save_fails_with_the_endpoints_errors(client, headers, kind, 
     assert errors(local["detail"]) == errors(http.json()["detail"])
 
 
-@pytest.mark.parametrize("kind", ["board", "sheet", "tile"])
+@pytest.mark.parametrize("kind", ["board", "sheet", "tile", "wallpaper"])
 def test_a_missing_required_field_fails_like_the_endpoint(client, headers, kind):
     body = {"name": "Only a name"}
     http = client.post(ENDPOINTS[kind], json=body, headers=headers)

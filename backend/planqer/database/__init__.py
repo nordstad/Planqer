@@ -8,6 +8,8 @@ from .models import (
     UserSettings,
     UserSheetProject,
     UserTileProject,
+    UserWallpaper,
+    UserWallpaperProject,
 )
 
 __all__ = [
@@ -19,6 +21,8 @@ __all__ = [
     "UserSettings",
     "UserSheetProject",
     "UserTileProject",
+    "UserWallpaper",
+    "UserWallpaperProject",
     "create_db_and_tables",
     "engine",
     "get_session",

@@ -9,6 +9,11 @@ account created on a fresh instance becomes its admin.
 Uploading and reading a 3D model (`/model-cutlist`) requires a local account.
 Planning and saving the resulting cutlist also require that account.
 
+!!! note "Simple install"
+    The simple install has no accounts: there is nothing to sign in to, and
+    your saved plans are under **My projects**. This page describes the
+    advanced install.
+
 ## Dashboard
 
 Your dashboard (`/dashboard`) lists everything you've saved, optionally

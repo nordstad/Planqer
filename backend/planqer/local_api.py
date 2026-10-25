@@ -36,6 +36,7 @@ from planqer.saved_diagrams import (
     render_saved_board_diagram,
     render_saved_sheet_layout,
     render_saved_tile_layout,
+    render_saved_wallpaper_plan,
 )
 from planqer.schemas import (
     PlanqerRequest,
@@ -51,11 +52,15 @@ from planqer.schemas.saved import (
     ProjectUpdateRequest,
     UpdateSheetProjectRequest,
     UpdateTileProjectRequest,
+    UpdateWallpaperProjectRequest,
     UserSettingsUpdate,
+    WallpaperProjectRequest,
 )
+from planqer.schemas.wallpaper import WallpaperPlanRequest
 from planqer.services import normalize_optimization_options, run_optimization
 from planqer.sheet_services import run_sheet_optimization
 from planqer.tile_services import run_tile_layout
+from planqer.wallpaper.plan import create_wallpaper_plan
 
 logger = logging.getLogger("planqer.local_api")
 
@@ -106,6 +111,15 @@ def _tile_layout(payload: dict) -> dict:
     except Exception as exc:
         raise PlanqerError(400, f"Tile layout failed: {exc!s}") from exc
     return result.model_dump(mode="json")
+
+
+def _wallpaper_plan(payload: dict) -> dict:
+    request = WallpaperPlanRequest.model_validate(payload)
+    try:
+        result = create_wallpaper_plan(request)
+    except ValueError as exc:
+        raise PlanqerError(400, str(exc)) from exc
+    return result
 
 
 class StoredCatalogueEntry(BaseModel):
@@ -224,9 +238,16 @@ class SavedTileDiagram(BaseModel):
     layout_result: dict | None = None
 
 
+class SavedWallpaperDiagram(BaseModel):
+    kind: Literal["wallpaper"]
+    name: str
+    room_data: dict | None = None
+    plan_result: dict | None = None
+
+
 _saved_diagram_request = TypeAdapter(
     Annotated[
-        SavedBoardDiagram | SavedSheetDiagram | SavedTileDiagram,
+        SavedBoardDiagram | SavedSheetDiagram | SavedTileDiagram | SavedWallpaperDiagram,
         Field(discriminator="kind"),
     ]
 )
@@ -242,6 +263,8 @@ def _saved_diagram(payload: dict) -> dict:
         )
     elif isinstance(request, SavedSheetDiagram):
         image = render_saved_sheet_layout(request.optimization_result, request.name)
+    elif isinstance(request, SavedWallpaperDiagram):
+        image = render_saved_wallpaper_plan(request.room_data, request.plan_result, request.name)
     else:
         image = render_saved_tile_layout(
             request.surface_data, request.layout_result, request.name
@@ -255,13 +278,14 @@ SAVED_REQUESTS: dict[str, dict[str, type[BaseModel]]] = {
     "board": {"create": ProjectCreateRequest, "update": ProjectUpdateRequest},
     "sheet": {"create": CreateSheetProjectRequest, "update": UpdateSheetProjectRequest},
     "tile": {"create": CreateTileProjectRequest, "update": UpdateTileProjectRequest},
+    "wallpaper": {"create": WallpaperProjectRequest, "update": UpdateWallpaperProjectRequest},
     "group": {"create": ProjectGroupRequest, "update": ProjectGroupRequest},
     "settings": {"create": UserSettingsUpdate, "update": UserSettingsUpdate},
 }
 
 
 class SavedRequest(BaseModel):
-    kind: Literal["board", "sheet", "tile", "group", "settings"]
+    kind: Literal["board", "sheet", "tile", "wallpaper", "group", "settings"]
     mode: Literal["create", "update"]
     body: dict
 
@@ -303,6 +327,7 @@ OPERATIONS: dict[str, Callable[[dict], dict | list]] = {
     "cutting_plan": _cutting_plan,
     "sheet_optimization": _sheet_optimization,
     "tile_layout": _tile_layout,
+    "wallpaper_plan": _wallpaper_plan,
     "catalogue": _catalogue,
     "catalogue_search": _catalogue_search,
     "catalogue_admin": _catalogue_admin,

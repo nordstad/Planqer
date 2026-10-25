@@ -103,3 +103,8 @@ it("ignores internal calls such as drawing a saved diagram", async () => {
   await solver.solverCall("saved_diagram", {});
   expect(track).not.toHaveBeenCalled();
 });
+
+it("counts a wallpaper plan under the wallpaper tool", async () => {
+  await solver.solverCall("wallpaper_plan", { room: {} });
+  expect(track).toHaveBeenCalledWith("solve_completed", { tool: "wallpaper" });
+});

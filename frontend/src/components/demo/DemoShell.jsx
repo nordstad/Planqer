@@ -22,6 +22,7 @@ const TOOL_PATHS = {
   '/cutting': 'board',
   '/sheet-cutting': 'sheet',
   '/tile-layout': 'tile',
+  '/wallpaper': 'wallpaper',
   '/model-cutlist': 'model',
 };
 

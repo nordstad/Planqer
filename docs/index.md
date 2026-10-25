@@ -27,8 +27,9 @@ nothing to install. It is the light version; see
   another country or language? [Open an issue](https://github.com/nordstad/Planqer/issues/new/choose).
 - **Kerf-aware.** Every plan subtracts the material your saw blade actually
   removes, so the numbers hold up at the saw.
-- **Five ways in.** Plan board cuts, sheet layouts, or tile layouts, or upload
-  an STL or STEP file and let Planqer measure the parts for you.
+- **Five ways in.** Plan board cuts, sheet layouts, tile layouts, or wallpaper
+  for a room, or upload an STL or STEP file and let Planqer measure the parts
+  for you.
 - **AI-ready.** A REST API and an MCP server let an AI assistant drive the
   optimizer in natural language.
 
@@ -68,6 +69,15 @@ nothing to install. It is the light version; see
     Find a tile grid that avoids ugly slivers around edges and openings.
 
     [:octicons-arrow-right-24: Tile layout](guide/tile-layout.md)
+
+- :material-wallpaper:{ .lg .middle } **Hanging wallpaper?**
+
+    ---
+
+    Measure the walls and get the roll count, strip order and pattern-matched
+    cuts.
+
+    [:octicons-arrow-right-24: Wallpaper planning](guide/wallpaper.md)
 
 - :material-cube-outline:{ .lg .middle } **Already have a 3D model?**
 

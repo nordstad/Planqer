@@ -512,7 +512,7 @@ export const deleteProjectGroup = async (groupId) => {
    'projects' and downloading (or 404ing on) the wrong thing — a live bug the
    moment a third project type existed to fall through to. See
    .plans/tile-layout.md Decision #12. */
-const PROJECT_IMAGE_ENDPOINTS = { board: 'projects', sheet: 'sheet-projects', tile: 'tile-projects' };
+const PROJECT_IMAGE_ENDPOINTS = { board: 'projects', sheet: 'sheet-projects', tile: 'tile-projects', wallpaper: 'wallpaper-projects' };
 
 export const downloadProjectImage = async (projectId, projectType) => {
   const endpoint = PROJECT_IMAGE_ENDPOINTS[projectType];
@@ -792,6 +792,22 @@ export const optimizeTileLayout = async ({
     throw new Error(extractErrorMessage(error));
   }
 };
+
+export const createWallpaperPlan = async (payload) => {
+  try {
+    const response = await http.post(`${API_URL}/api/wallpaper-plans`, payload, { timeout: 30000 });
+    return response.data;
+  } catch (error) {
+    throw new Error(extractErrorMessage(error));
+  }
+};
+
+export const getWallpapers = async () => (await http.get(`${API_URL}/api/wallpapers/`)).data;
+export const saveWallpaper = async (payload) => (await http.post(`${API_URL}/api/wallpapers/`, payload)).data;
+export const getWallpaperProjects = async () => (await http.get(`${API_URL}/api/wallpaper-projects/`)).data;
+export const saveWallpaperProject = async (payload) => (await http.post(`${API_URL}/api/wallpaper-projects/`, payload)).data;
+export const updateWallpaperProject = async (id, payload) => (await http.put(`${API_URL}/api/wallpaper-projects/${id}`, payload)).data;
+export const deleteWallpaperProject = async (id) => (await http.delete(`${API_URL}/api/wallpaper-projects/${id}`)).data;
 
 /**
  * Process a 3D STL file to generate a cutting list

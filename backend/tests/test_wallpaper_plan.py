@@ -1,0 +1,102 @@
+import pytest
+
+from planqer.schemas.wallpaper import Cutout, Room, Wall, WallpaperPlanRequest, WallpaperSpec
+from planqer.wallpaper.plan import create_wallpaper_plan
+
+
+def test_plan_returns_every_strip_piece_and_roll_for_a_plain_wall():
+    request = WallpaperPlanRequest(
+        wallpaper=WallpaperSpec(
+            name="Willow", manufacturer="Example", roll_width=530, roll_length=10050
+        ),
+        room=Room(
+            walls=[
+                Wall(
+                    name="Hall", width_top=1060, width_middle=1060, width_bottom=1060,
+                    height_left=2400, height_middle=2400, height_right=2400,
+                )
+            ]
+        ),
+    )
+
+    result = create_wallpaper_plan(request)
+
+    assert result["rolls_needed"] == 1
+    assert result["rolls_to_buy"] == 2
+    assert len(result["strips"]) == len(result["pieces"]) == 2
+    assert result["waste"] == {
+        "pattern": 0,
+        "allowance": 200,
+        "trim": 0,
+        "offcut": 5250,
+    }
+    assert result["area_estimate_rolls"] == 1
+    assert result["start_candidates"][0]["narrowest_strip"] == 530
+
+
+@pytest.mark.parametrize(
+    ("upper", "lower"),
+    [((2600, 2000), (700, 200)), ((2000, 2600), (200, 700))],
+)
+@pytest.mark.parametrize("with_cutout", [False, True])
+def test_sloped_keeps_coverage_phase_and_roll_allocation(upper, lower, with_cutout):
+    cutouts = [Cutout(kind="window", x=700, y=300, width=400, height=500)] if with_cutout else []
+    request = WallpaperPlanRequest(
+        wallpaper=WallpaperSpec(
+            name="Willow", manufacturer="Example", roll_width=530, roll_length=10050,
+            repeat=300, match="straight",
+        ),
+        room=Room(walls=[Wall(
+            name="Gable", profile="sloped",
+            width_top=1800, width_middle=1800, width_bottom=1800,
+            height_left=upper[0], height_middle=2000, height_right=upper[1],
+            lower_left=lower[0], lower_right=lower[1],
+            cutouts=cutouts,
+        )]),
+    )
+
+    result = create_wallpaper_plan(request)
+
+    assert len(result["strips"]) == 4
+    assert {piece["strip_number"] for piece in result["pieces"]} == {
+        strip["number"] for strip in result["strips"]
+    }
+    allocated = {cut["piece_id"] for roll in result["rolls"] for cut in roll["cuts"]}
+    assert allocated == {piece["id"] for piece in result["pieces"]}
+    datum = max(upper)
+    pieces = {piece["strip_number"]: piece for piece in result["pieces"]}
+    for strip in result["strips"]:
+        segment = strip["segments"][0]
+        piece = pieces[strip["number"]]
+        assert piece["phase"] == pytest.approx((datum - segment["top_height"]) % 300)
+        assert piece["y_start"] <= segment["bottom_height"]
+        assert piece["y_end"] >= segment["top_height"]
+
+
+def test_sloped_requires_lower_edge_below_upper_edge():
+    with pytest.raises(ValueError, match="below the upper edge"):
+        Wall(
+            name="Gable", profile="sloped",
+            width_top=1800, width_middle=1800, width_bottom=1800,
+            height_left=1000, height_middle=1000, height_right=1000,
+            lower_left=1000, lower_right=0,
+        )
+
+
+def test_requested_first_strip_width_is_used_when_it_is_a_candidate():
+    from planqer.schemas.wallpaper import StartPosition
+
+    def request(start=None):
+        return WallpaperPlanRequest(
+            wallpaper=WallpaperSpec(name="W", manufacturer="M", roll_width=530, roll_length=10050),
+            room=Room(walls=[Wall(
+                name="Hall", width_top=2400, width_middle=2400, width_bottom=2400,
+                height_left=2400, height_middle=2400, height_right=2400,
+            )]),
+            start=start,
+        )
+
+    chosen = create_wallpaper_plan(request(StartPosition(wall_index=0, first_strip_width=265)))
+
+    assert chosen["strips"][0]["width"] == 265
+    assert chosen["start_candidates"][0]["first_strip_widths"] == [265]

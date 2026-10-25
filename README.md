@@ -20,8 +20,9 @@ storage.
 
 ## Features
 
-- **Board, Sheet & Tile Layouts**: Kerf-aware board and sheet cutting, plus tile
-  grids that account for joints, openings, bond patterns, edge cuts, and waste.
+- **Board, Sheet, Tile & Wallpaper Layouts**: Kerf-aware board and sheet cutting,
+  tile grids that account for joints, openings, bond patterns, edge cuts, and
+  waste, and repeat-aware wallpaper room plans with roll counts and cut sheets.
 - **CAD File Support**: Upload STL or STEP files to automatically generate
   cutlists.
 - **Norway & Sweden**: The built-in product catalogue covers Norway and
@@ -54,6 +55,9 @@ Tile layout has its own guide with supported bond patterns, openings, edge-cut
 controls, candidate ranking, and the REST API example:
 [Tile layout documentation](docs/guide/tile-layout.md).
 
+Wallpaper planning turns measured walls into a roll count, strip order and
+pattern-matched cuts: [Wallpaper documentation](docs/guide/wallpaper.md).
+
 ---
 
 ## Try it in your browser
@@ -68,7 +72,25 @@ Running your own server (below) is the full version.
 ## Quick Start
 
 Planqer runs with Docker Compose. The recommended route pulls the published
-release images, so there is nothing to build.
+release images, so there is nothing to build. Pick one of two installs:
+
+- **Simple (recommended):** one person on one computer. No accounts or
+  password, nothing to configure.
+- **Advanced:** several people or devices, with local accounts, an admin page,
+  the REST API and an optional MCP server.
+
+Both keep projects in the same data volume, so you can switch later.
+
+### Simple install (recommended)
+
+```bash
+curl -O https://raw.githubusercontent.com/nordstad/Planqer/main/docker-compose.simple.yml
+docker compose -f docker-compose.simple.yml up -d
+```
+
+Open <http://localhost:3001>. It is reachable only from that computer.
+
+### Advanced install
 
 ```bash
 curl -O https://raw.githubusercontent.com/nordstad/Planqer/main/docker-compose.release.yml
