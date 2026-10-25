@@ -22,7 +22,7 @@
         "optimization",
         "woodworking"
     ],
-    "author": "Planqer Web Team",
+    "author": "Even Nordstad",
     "license": "MIT",
     "dependencies": {
         "@modelcontextprotocol/sdk": "^1.32.1",
