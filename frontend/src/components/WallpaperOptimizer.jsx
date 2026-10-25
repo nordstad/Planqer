@@ -4,6 +4,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import CatalogPage from './CatalogPage';
 import PlanSteps from './PlanSteps';
 import WallOutlineEditor from './WallOutlineEditor';
+import WallpaperPieceGallery from './WallpaperPieceGallery';
+import { KIND_KEYS, pieceFaces } from './WallpaperPieceDiagram';
 import { wallIssues, overlapIssue } from '../utils/wallpaperValidation';
 import RoomOverview, { linkColour } from './RoomOverview';
 import { createWallpaperPlan, getProjectGroups, getUserSettings, getWallpaperProjects, saveWallpaper, saveWallpaperProject, updateWallpaperProject } from '../utils/api';
@@ -15,13 +17,6 @@ const numeric = (value) => Number(value) || 0;
 // Plans saved before connected strips have no segments; treat them as one face.
 const segmentsOf = (item) => (item.segments?.length ? item.segments : [item]);
 const isOnWall = (item, wallIndex) => segmentsOf(item).some((segment) => segment.wall_index === wallIndex);
-const legacyFace = (piece, strip) => ({
-  wall_index: piece.wall_index,
-  x_start: strip.x_start,
-  x_end: strip.x_end,
-  notches: piece.notches || [],
-});
-
 // Drawing-style letters: Wall A, B, … Z, AA. Walls are lettered clockwise from the first wall.
 const wallLetter = (index, t) => {
   let letters = '';
@@ -41,11 +36,6 @@ const SHAPE_PATHS = {
 const ShapeIcon = ({ profile }) => <svg width="34" height="24" viewBox="0 0 28 22" aria-hidden="true"><polygon points={SHAPE_PATHS[profile]} fill="var(--ground-2)" stroke="var(--ink)" strokeWidth="1.5" strokeLinejoin="round" /></svg>;
 
 const wallShapes = [['rectangle', 'wallpaperUi.shapeRectangle'], ['sloped', 'wallpaperUi.shapeSloped']];
-
-const KIND_KEYS = {
-  door: 'wallpaperUi.kindDoor', window: 'wallpaperUi.kindWindow', opening: 'wallpaperUi.kindOpening', heat_pump: 'wallpaperUi.kindHeatPump', radiator: 'wallpaperUi.kindRadiator',
-  outlet: 'wallpaperUi.kindOutlet', switch: 'wallpaperUi.kindSwitch', pipe: 'wallpaperUi.kindPipe', custom: 'wallpaperUi.kindCustom',
-};
 
 const stripLabel = (t, number) => t('wallpaperUi.stripLabel', { number });
 
@@ -178,16 +168,6 @@ const RollDiagram = ({ roll, rollLength, pieces, wallIndex }) => {
 </svg>;
 };
 
-const pieceFaces = (piece, strip) => {
-  let offset = 0;
-  const segments = piece.segments?.length ? piece.segments : [legacyFace(piece, strip)];
-  return segments.map((segment) => {
-    const face = { ...segment, offset, notches: segment.notches || [] };
-    offset += segment.x_end - segment.x_start;
-    return face;
-  });
-};
-
 const CutInstruction = ({ cut, piece, strip, wallIndex, wallNames, progress, toggle, selected, onSelect }) => {
   const { t } = useTranslation();
   const faces = pieceFaces(piece, strip).filter((face) => face.wall_index === wallIndex);
@@ -200,30 +180,6 @@ const CutInstruction = ({ cut, piece, strip, wallIndex, wallNames, progress, tog
       {strip.return_overlap > 0 && faces.some((face) => face.wall_index === strip.segments[strip.segments.length - 1].wall_index) && <small className="block synthetic"><b>{t('wallpaperUi.cornerOverlapLabel')}</b> {t('wallpaperUi.cornerOverlapNote', { mm: Math.round(strip.return_overlap), wall: wallNames[strip.return_wall_index] })}</small>}
       {notches.map((notch, index) => <small className="block synthetic" key={index}><b>{notch.mode === 'mark' ? t('wallpaperUi.markOpeningLabel') : t('wallpaperUi.cutOpeningLabel')}</b> {t('wallpaperUi.openingOffsets', { x1: Math.round(notch.left), x2: Math.round(notch.left + notch.x_end - notch.x_start), y1: Math.round(notch.y_start - piece.y_start), y2: Math.round(notch.y_end - piece.y_start) })}</small>)}
     </span></button><button type="button" className="btn" onClick={() => toggle('cut', cut.piece_id)}>{progress.includes(cut.piece_id) ? t('wallpaperUi.cutDone') : t('wallpaperUi.markCut')}</button></div>;
-};
-
-const PieceDiagram = ({ piece, strip, repeat }) => {
-  const { t } = useTranslation();
-  const faces = pieceFaces(piece, strip);
-  const overlap = strip.return_overlap || 0;
-  const faceWidth = strip.width || strip.x_end - strip.x_start;
-  const width = faceWidth + overlap;
-  const scale = Math.min(230 / width, 280 / piece.length);
-  const paperWidth = width * scale;
-  const paperHeight = piece.length * scale;
-  const left = 270 - paperWidth / 2;
-  const top = 55;
-  return <svg viewBox="0 0 540 405" className="wallpaper-wall-drawing" role="img" aria-label={t('wallpaperUi.pieceAria', { id: piece.id })}>
-    <rect x="0" y="0" width="540" height="405" fill="var(--card)" />
-    <text x="28" y="34" className="wallpaper-svg-label">{t('wallpaperUi.pieceStrip', { id: piece.id, number: piece.strip_number })}</text><text x="478" y="34" textAnchor="end" className="wallpaper-svg-accent">{t('wallpaperUi.up')}</text>
-    <rect x={left} y={top} width={paperWidth} height={paperHeight} fill="var(--ground-2)" stroke="var(--ink)" strokeWidth="2" />
-    {overlap > 0 && <line x1={left + faceWidth * scale} x2={left + faceWidth * scale} y1={top} y2={top + paperHeight} stroke="var(--accent)" strokeDasharray="2 3" />}
-    {faces.slice(1).map((face) => <line key={`fold-${face.offset}`} x1={left + face.offset * scale} x2={left + face.offset * scale} y1={top} y2={top + paperHeight} stroke="var(--ink-3)" strokeDasharray="2 3" />)}
-    {faces.flatMap((face) => face.notches.map((notch) => ({ ...notch, left: notch.x_start - face.x_start + face.offset }))).map((notch, index) => { const x = left + notch.left * scale; const notchWidth = (notch.x_end - notch.x_start) * scale; const notchHeight = (notch.y_end - notch.y_start) * scale; const y = top + paperHeight - (notch.y_end - piece.y_start) * scale; return <g key={index}><rect x={x} y={y} width={notchWidth} height={notchHeight} fill="var(--card)" stroke="var(--accent)" strokeWidth="2" strokeDasharray={notch.mode === 'mark' ? '5 4' : undefined} /><text x={x + notchWidth / 2} y={y + notchHeight / 2} textAnchor="middle" className="wallpaper-svg-small">{notch.mode === 'mark' ? t('wallpaperUi.markOnWall') : t('wallpaperUi.tableCut')}</text><text x={x + notchWidth / 2} y={y + notchHeight / 2 + 13} textAnchor="middle" className="wallpaper-svg-small">{Math.round(notch.x_end - notch.x_start)} × {Math.round(notch.y_end - notch.y_start)} mm</text></g>; })}
-    <line x1={left - 24} y1={top} x2={left - 24} y2={top + paperHeight} stroke="var(--ink-3)" /><text x={left - 32} y={top + paperHeight / 2} textAnchor="middle" transform={`rotate(-90 ${left - 32} ${top + paperHeight / 2})`} className="wallpaper-svg-small">{t('wallpaperUi.precut', { mm: Math.round(piece.length) })}</text>
-    <line x1={left} y1={top + paperHeight + 16} x2={left + paperWidth} y2={top + paperHeight + 16} stroke="var(--ink-3)" /><line x1={left} y1={top + paperHeight + 11} x2={left} y2={top + paperHeight + 21} stroke="var(--ink-3)" /><line x1={left + paperWidth} y1={top + paperHeight + 11} x2={left + paperWidth} y2={top + paperHeight + 21} stroke="var(--ink-3)" /><text x={left + paperWidth / 2} y={top + paperHeight + 32} textAnchor="middle" className="wallpaper-svg-small">{overlap > 0 ? t('wallpaperUi.finishedWidthWrap', { width: Math.round(faceWidth), wrap: Math.round(overlap) }) : t('wallpaperUi.finishedWidth', { mm: Math.round(width) })}</text>
-    <text x="28" y="374" className="wallpaper-svg-small">{repeat ? t('wallpaperUi.phaseRepeat', { phase: Math.round(piece.phase), repeat: Math.round(repeat) }) : t('wallpaperUi.phaseOnly', { phase: Math.round(piece.phase) })}</text><text x="28" y="397" className="wallpaper-svg-small">{t('wallpaperUi.diagramLegend')}</text>
-  </svg>;
 };
 
 const text = (value) => (value == null ? '' : String(value));
@@ -449,7 +405,7 @@ const WallpaperOptimizer = () => {
         <div className="section-rule"><h2 className="section-title">{walls[cutWallIndex].name}</h2><span className="synthetic">{t('wallpaperUi.originBottomLeftLabel')}</span></div>
         <div className="wallpaper-measured-sheet"><WallElevation wall={walls[cutWallIndex]} wallIndex={cutWallIndex} plan={plan} wallNames={walls.map((item) => item.name)} /></div>
       </section>
-      {(() => { const selectedPiece = plan.pieces.find((piece) => piece.id === selectedPieceId && isOnWall(piece, cutWallIndex)) || plan.pieces.find((piece) => isOnWall(piece, cutWallIndex)); const selectedStrip = selectedPiece && plan.strips.find((strip) => strip.number === selectedPiece.strip_number); return selectedPiece && selectedStrip && <section className="wallpaper-piece-sheet" style={{ marginBottom: '24px' }}><div className="section-rule"><h2 className="section-title">{t('wallpaperUi.selectedPiece')}</h2><span className="synthetic">{t('wallpaperUi.selectedPieceHint')}</span></div><PieceDiagram piece={selectedPiece} strip={selectedStrip} repeat={numeric(wallpaper.repeat)} /></section>; })()}
+      <WallpaperPieceGallery pieces={plan.pieces.filter((piece) => isOnWall(piece, cutWallIndex))} strips={plan.strips} repeat={numeric(wallpaper.repeat)} openId={selectedPieceId} onOpen={setSelectedPieceId} />
       {plan.rolls.filter((roll) => roll.cuts.some((cut) => isOnWall(plan.pieces.find((piece) => piece.id === cut.piece_id) || {}, cutWallIndex))).map((roll) => <section key={roll.number} style={{ marginTop: '24px' }}>
         <div className="section-rule"><h2 className="section-title">{t('wallpaperUi.rollTitle', { number: roll.number })}</h2></div>
         <RollDiagram roll={roll} rollLength={numeric(wallpaper.roll_length)} pieces={plan.pieces} wallIndex={cutWallIndex} />

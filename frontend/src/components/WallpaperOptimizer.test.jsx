@@ -124,8 +124,8 @@ const planFixture = {
 };
 
 describe('WallpaperOptimizer plan step', () => {
-  const openPlanStep = async () => {
-    createWallpaperPlan.mockResolvedValue(planFixture);
+  const openPlanStep = async (plan = planFixture) => {
+    createWallpaperPlan.mockResolvedValue(plan);
     render(<MemoryRouter><WallpaperOptimizer /></MemoryRouter>);
     fireEvent.change(screen.getByLabelText(/^Name/i), { target: { value: 'Willow' } });
     fireEvent.change(screen.getByLabelText(/Manufacturer/i), { target: { value: 'Example' } });
@@ -150,6 +150,19 @@ describe('WallpaperOptimizer plan step', () => {
 
     expect(screen.getByTestId('roll-fit-hint')).toHaveTextContent('Only 3 full-height pieces fit on a 10050 mm roll');
     expect(screen.getByTestId('partial-piece')).toHaveTextContent('300 mm piece');
+  });
+
+  it('draws every piece of the wall on the Cut step', async () => {
+    await openPlanStep({
+      ...planFixture,
+      pieces: [...planFixture.pieces, { ...planFixture.pieces[0], id: 'piece-2', y_start: 0, y_end: 2100 }],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Prepare cut sheets/ }));
+
+    expect(await screen.findAllByTestId('piece-drawing')).toHaveLength(2);
+    fireEvent.click(screen.getByRole('button', { name: 'Open drawing of piece-2' }));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 
   it('re-plans with the chosen first strip width', async () => {

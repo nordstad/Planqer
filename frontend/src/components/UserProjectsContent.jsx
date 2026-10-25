@@ -31,6 +31,7 @@ import { buildMaterialListHtml, buildMaterialCsv, isPlanPriced } from '../utils/
 import { materialLabel, cleanMaterial } from '../utils/materialLabel';
 import { restoreBoardParts } from '../utils/boardParts';
 import { buildCutListHtml } from '../utils/tileCutList';
+import { buildWallpaperCutSheetsHtml } from '../utils/wallpaperCutSheets';
 import { useAuth } from '../contexts/AuthContext';
 import { useAccountContext } from '../contexts/useAccountContext';
 import Loader from './Loader';
@@ -270,7 +271,11 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
           name: p.name,
           facts,
           svgBlob: await downloadProjectImage(p.id, p.projectType),
-          extraHtml: p.projectType === 'tile' ? buildCutListHtml(p.layout_result, t) : undefined,
+          extraHtml: p.projectType === 'tile'
+            ? buildCutListHtml(p.layout_result, t)
+            : p.projectType === 'wallpaper'
+              ? buildWallpaperCutSheetsHtml(p.plan_result, p.room_data?.walls, p.wallpaper_data?.repeat, t)
+              : undefined,
         };
       }))).flat();
       await printProjectPlans({
