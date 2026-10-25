@@ -88,3 +88,11 @@ export const TileIcon = ({ size = 22 }) => (
     <path d="M3 12h18M11 4v8M17 12v8M5 12v8" />
   </svg>
 );
+
+/* Three drops of wallpaper hung side by side, the middle one with a motif. */
+export const WallpaperIcon = ({ size = 22 }) => (
+  <svg {...base} viewBox="0 0 24 24" width={size} height={size}>
+    <rect x="3" y="3" width="18" height="18" />
+    <path d="M9 3v18M15 3v18M12 8l2 2-2 2-2-2zM12 15l2 2-2 2-2-2z" />
+  </svg>
+);

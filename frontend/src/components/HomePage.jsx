@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import CatalogPage from './CatalogPage';
-import { BoardIcon, SheetIcon, CubeIcon, TileIcon, ArrowRight } from './icons';
+import { BoardIcon, SheetIcon, CubeIcon, TileIcon, WallpaperIcon, ArrowRight } from './icons';
 import { getHealth, getLatestRelease } from '../utils/api';
 import { demoContext, isStaticMode } from '../utils/mode';
 import { version as appVersion } from '../../package.json';
@@ -36,6 +36,12 @@ const TOOLS = [
     title: 'home.tileTitle',
     body: 'home.tileDescription',
     Icon: TileIcon,
+  },
+  {
+    path: '/wallpaper',
+    title: 'home.wallpaperTitle',
+    body: 'home.wallpaperDescription',
+    Icon: WallpaperIcon,
   },
   {
     path: '/model-cutlist',
