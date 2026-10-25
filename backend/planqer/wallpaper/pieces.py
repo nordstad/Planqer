@@ -15,6 +15,11 @@ class Notch:
     x_end: float
     y_end: float
     mode: str
+    kind: str | None = None
+    label: str | None = None
+    # The real opening (x_start, y_start, x_end, y_end), clamped like the notch;
+    # the notch minus the core is the margin around it.
+    core: tuple[float, float, float, float] | None = None
 
 
 @dataclass(frozen=True)
@@ -78,20 +83,23 @@ def split_strip_into_pieces(
             segment, cutouts.get(segment.wall_index, []), allowances[segment.wall_index]
         )
         if segment.top_height < strip.top_height:
-            blocks.append((segment.top_height, strip.top_height, None))
+            blocks.append((segment.top_height, strip.top_height, None, None))
         face_blocks.append(blocks)
         face_notches.append(notches)
 
     split_ranges = _intersect_faces(
-        [[(start, end) for start, end, _ in blocks] for blocks in face_blocks],
+        [[(start, end) for start, end, _, _ in blocks] for blocks in face_blocks],
         strip.top_height,
     )
     for blocks, notches, segment in zip(face_blocks, face_notches, strip.segments):
-        for start, end, mode in blocks:
+        for start, end, mode, info in blocks:
             if mode is None:
                 continue
+            kind, label, core = info
             for part_start, part_end in _subtract(start, end, split_ranges):
-                notches.append(Notch(segment.x_start, part_start, segment.x_end, part_end, mode))
+                notches.append(Notch(
+                    segment.x_start, part_start, segment.x_end, part_end, mode, kind, label, core
+                ))
 
     piece_ranges, offcut_ranges = _split_ranges(strip.bottom_height, strip.top_height, split_ranges)
     pieces = []
@@ -135,11 +143,21 @@ def _segment_cutouts(
         x_start, y_start, x_end, y_end = _clamp_to_segment(segment, bounds)
         if y_start >= y_end:
             continue
+        info = (cutout.kind, cutout.label, _clamped_core(segment, cutout))
         if x_start == segment.x_start and x_end == segment.x_end:
-            blocks.append((y_start, y_end, cutout.mode))
+            blocks.append((y_start, y_end, cutout.mode, info))
         else:
-            notches.append(Notch(x_start, y_start, x_end, y_end, cutout.mode))
+            notches.append(Notch(x_start, y_start, x_end, y_end, cutout.mode, *info))
     return blocks, notches
+
+
+def _clamped_core(
+    segment: StripSegment, cutout: Cutout
+) -> tuple[float, float, float, float] | None:
+    x_start, y_start, x_end, y_end = _clamp_to_segment(segment, cutout_bounds(cutout))
+    if x_start >= x_end or y_start >= y_end:
+        return None
+    return (x_start, y_start, x_end, y_end)
 
 
 def _cutout_from_local_lower_edge(cutout: Cutout, segment: StripSegment) -> Cutout:
@@ -190,10 +208,25 @@ def _subtract(
 
 def _clip_notches(notches: list[Notch], y_start: float, y_end: float) -> tuple[Notch, ...]:
     return tuple(
-        Notch(notch.x_start, max(notch.y_start, y_start), notch.x_end, min(notch.y_end, y_end), notch.mode)
+        Notch(
+            notch.x_start, max(notch.y_start, y_start), notch.x_end, min(notch.y_end, y_end),
+            notch.mode, notch.kind, notch.label, _clip_core(notch.core, y_start, y_end),
+        )
         for notch in notches
         if notch.y_start < y_end and notch.y_end > y_start
     )
+
+
+def _clip_core(
+    core: tuple[float, float, float, float] | None, y_start: float, y_end: float
+) -> tuple[float, float, float, float] | None:
+    if core is None:
+        return None
+    x_start, core_start, x_end, core_end = core
+    core_start, core_end = max(core_start, y_start), min(core_end, y_end)
+    if core_start >= core_end:
+        return None
+    return (x_start, core_start, x_end, core_end)
 
 
 def _allowance_adjusted_bounds(
@@ -267,7 +300,7 @@ def _merge_grouped_cutouts(cutouts: list[Cutout]) -> list[Cutout]:
             merged.append(cutout)
         else:
             groups.setdefault(cutout.group, []).append(cutout)
-    for group in groups.values():
+    for name, group in groups.items():
         left = min(cutout.x for cutout in group)
         bottom = min(cutout.y for cutout in group)
         right = max(cutout.x + cutout.width for cutout in group)
@@ -275,6 +308,7 @@ def _merge_grouped_cutouts(cutouts: list[Cutout]) -> list[Cutout]:
         merged.append(
             Cutout(
                 kind=group[0].kind,
+                label=name,
                 x=left,
                 y=bottom,
                 width=right - left,
