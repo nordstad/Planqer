@@ -192,8 +192,14 @@ def _plan_strips(request: WallpaperPlanRequest, strips: list[ConnectedStrip], al
         ))
         phased.append(strip)
         split = split_strip_into_pieces(strip, cutouts, strip.phase, allowances_by_wall)
-        pieces.extend(split.pieces)
-        piece_trims.extend(_piece_trims(strip, piece, request.wallpaper.repeat) for piece in split.pieces)
+        # The motif must line up at wall height, so a piece starting below the
+        # ceiling needs the phase of its own top edge, not the strip's.
+        strip_pieces = [
+            replace(piece, phase=_phase_at(strip, piece.y_end, request.wallpaper.repeat))
+            for piece in split.pieces
+        ]
+        pieces.extend(strip_pieces)
+        piece_trims.extend(_piece_trims(strip, piece, request.wallpaper.repeat) for piece in strip_pieces)
         offcuts.extend(split.offcuts)
 
     # One physical piece is allocated once, however many wall faces it covers.
@@ -302,6 +308,10 @@ def _roll_fit(cuts, roll_length: float, repeat: float, longest: float) -> dict |
         "length_for_next": needed,
         "shortfall": needed - roll_length,
     }
+
+
+def _phase_at(strip: ConnectedStrip, height: float, repeat: float) -> float:
+    return (strip.phase + (strip.top_height - height)) % repeat if repeat else 0
 
 
 def _piece_trims(strip: ConnectedStrip, piece, repeat: float) -> dict:

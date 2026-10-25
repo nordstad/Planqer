@@ -133,3 +133,16 @@ def test_trim_above_the_ceiling_shifts_the_pattern_phase_of_the_paper_top():
     assert patterned["pieces"][1]["cut_phase"] == 590
     cut = next(cut for roll in patterned["rolls"] for cut in roll["cuts"] if cut["piece_id"] == "piece-2")
     assert cut["phase"] == 590
+
+
+def test_piece_below_an_opening_takes_the_pattern_phase_of_its_own_top_edge():
+    plan = _heat_pump_plan(640)
+    lower, upper = plan["pieces"]
+
+    # The strip's top is at 2400 mm; the lower piece's top is 1610 mm below it.
+    assert upper["phase"] == 0
+    assert lower["phase"] == 1610 % 640 == 330
+    # Trim is only above the ceiling, so only the upper piece's paper top moves.
+    assert (lower["cut_phase"], upper["cut_phase"]) == (330, 590)
+    cuts = {cut["piece_id"]: cut["phase"] for roll in plan["rolls"] for cut in roll["cuts"]}
+    assert cuts == {"piece-1": 330, "piece-2": 590}
