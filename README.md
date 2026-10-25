@@ -20,9 +20,9 @@ storage.
 
 ## Features
 
-- **Board, Sheet, Tile & Wallpaper Layouts**: Kerf-aware board and sheet cutting, tile
-  layouts, and repeat-aware wallpaper room plans.
-  grids that account for joints, openings, bond patterns, edge cuts, and waste.
+- **Board, Sheet, Tile & Wallpaper Layouts**: Kerf-aware board and sheet cutting,
+  tile grids that account for joints, openings, bond patterns, edge cuts, and
+  waste, and repeat-aware wallpaper room plans with roll counts and cut sheets.
 - **CAD File Support**: Upload STL or STEP files to automatically generate
   cutlists.
 - **Norway & Sweden**: The built-in product catalogue covers Norway and
@@ -54,6 +54,9 @@ storage.
 Tile layout has its own guide with supported bond patterns, openings, edge-cut
 controls, candidate ranking, and the REST API example:
 [Tile layout documentation](docs/guide/tile-layout.md).
+
+Wallpaper planning turns measured walls into a roll count, strip order and
+pattern-matched cuts: [Wallpaper documentation](docs/guide/wallpaper.md).
 
 ---
 

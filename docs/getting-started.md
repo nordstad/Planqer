@@ -142,11 +142,12 @@ docker compose -f docker-compose.release.yml --profile mcp up -d
 ## Plan your first cut
 
 1. Open <http://localhost:3001> and choose **Board cutting**, **Sheet cutting**,
-   **Tile layout**, or **3D model**.
+   **Tile layout**, **Wallpaper**, or **3D model**.
 2. Sign in or create a local account when prompted. The optimizer pages,
    model uploads, and saving a plan require a local account.
-3. Enter your parts, surface and tile dimensions, or upload a model. Add stock
-   lengths, sheet size, openings, or tile layout options as appropriate.
+3. Enter your parts, surface and tile dimensions, wall measurements, or upload
+   a model. Add stock lengths, sheet size, openings, or tile layout options as
+   appropriate.
 4. Run the plan and read the boards/sheets-required figure.
 5. Download the diagram, or name and save the plan to your dashboard.
 

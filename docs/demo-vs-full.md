@@ -25,8 +25,8 @@ The MCP server is optional.
 
 ## What is the same
 
-Board, sheet and tile optimisation, cost analysis, SVG, PNG and print output,
-catalogue search, and STEP and STL cutlists.
+Board, sheet, tile and wallpaper planning, cost analysis, SVG, PNG and print
+output, catalogue search, and STEP and STL cutlists.
 
 ## What is different
 
