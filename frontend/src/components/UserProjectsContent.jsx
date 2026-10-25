@@ -769,7 +769,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
         <h2 className="section-title">{t('projects.myProjects')}</h2>
         <span className="section-rule-end">
           {allProjects.length > 0 && (
-            <span className="folio">{groups.length} {t('ui.project')} · {allProjects.length} {t('workflow.planName').toLowerCase()}</span>
+            <span className="folio">{t('projectUi.projectCount', { count: groups.length })} · {t('projectUi.planCount', { count: allProjects.length })}</span>
           )}
           <button type="button" className="btn btn-sm" onClick={loadProjects}>{t('projects.refresh')}</button>
         </span>
