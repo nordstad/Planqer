@@ -30,6 +30,21 @@ describe('WallpaperOptimizer room step', () => {
     expect(screen.getByRole('button', { name: /Create plan/ })).toBeDisabled();
   });
 
+  it('uses realistic defaults for windows and outlets', async () => {
+    await openRoomStep();
+    fireEvent.click(screen.getByRole('button', { name: 'Add opening or obstacle' }));
+
+    expect(screen.getByLabelText('Type')).toHaveValue('window');
+    expect(screen.getByLabelText('From floor (mm)')).toHaveValue('900');
+    expect(screen.getByLabelText('Width (mm)')).toHaveValue('1200');
+    expect(screen.getByLabelText('Height (mm)')).toHaveValue('1200');
+
+    fireEvent.change(screen.getByLabelText('Type'), { target: { value: 'outlet' } });
+    expect(screen.getByLabelText('From floor (mm)')).toHaveValue('250');
+    expect(screen.getByLabelText('Width (mm)')).toHaveValue('85');
+    expect(screen.getByLabelText('Height (mm)')).toHaveValue('85');
+  });
+
   it('adds a closing corner when the room is marked closed and offers wall-run breaks only while open', async () => {
     await openRoomStep();
     fireEvent.click(screen.getByRole('button', { name: 'Add wall' }));
@@ -43,6 +58,15 @@ describe('WallpaperOptimizer room step', () => {
     expect(screen.getAllByText(/Wall [A-Z] → Wall [A-Z]/)).toHaveLength(3);
     expect(screen.queryByRole('option', { name: /start a new wall run/ })).not.toBeInTheDocument();
     expect(screen.getByText(/Wall C → Wall A/)).toBeInTheDocument();
+  });
+
+  it('keeps Add wall before the corner settings', async () => {
+    await openRoomStep();
+    fireEvent.click(screen.getByRole('button', { name: 'Add wall' }));
+
+    const addWall = screen.getByRole('button', { name: 'Add wall' });
+    const corners = screen.getByRole('heading', { name: 'Corners' });
+    expect(addWall.compareDocumentPosition(corners) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('defaults every inside corner to a 15 mm overlap so a plan can be created at once', async () => {

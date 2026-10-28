@@ -144,6 +144,16 @@
   .step-view { min-width: 0; }
   .step-view.is-form { max-width: 620px; }
 
+  /* Elevations reserve their fixed SVG width for the wall itself. When a long
+     wall creates narrow strips, their labels move into this wrapping key so
+     no text is squeezed into neighbouring strips. */
+  .wallpaper-strip-key {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 6px 16px;
+    margin: 4px 0 0; padding: 10px 0 0; list-style-position: inside;
+    border-top: 1px solid var(--rule-hair); color: var(--ink-2); font-size: 12px;
+  }
+  .wallpaper-strip-key b { color: var(--ink); }
+
   .step-h1 {
     font-size: 26px; font-weight: 800; letter-spacing: -.02em; line-height: 1.15;
     margin: 0 0 6px;
