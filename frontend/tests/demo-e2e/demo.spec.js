@@ -45,7 +45,7 @@ test("a wallpaper plan is solved in the browser, saved, and can be modified from
   await expect(page.getByText(/Buy \d+ rolls/)).toBeVisible();
 
   await page.getByRole("button", { name: /Save\s*Keep this project/ }).click();
-  await page.getByLabel("Project name").fill("Demo wallpaper");
+  await page.getByLabel("Plan name").fill("Demo wallpaper");
   await page.getByRole("button", { name: "Save plan", exact: true }).click();
   await expect(page.getByRole("heading", { name: /plan saved/i })).toBeVisible();
 
