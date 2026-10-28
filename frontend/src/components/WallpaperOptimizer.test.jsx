@@ -1,14 +1,14 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 
 vi.mock('../contexts/AuthContext', () => ({ useAuth: () => ({ user: null }) }));
 vi.mock('./CatalogPage', () => ({ default: ({ children }) => <div>{children}</div> }));
-vi.mock('../utils/api', async (importOriginal) => ({ ...(await importOriginal()), getProjectGroups: vi.fn(), createWallpaperPlan: vi.fn() }));
+vi.mock('../utils/api', async (importOriginal) => ({ ...(await importOriginal()), createProjectGroup: vi.fn(), getProjectGroups: vi.fn(), createWallpaperPlan: vi.fn() }));
 
 const { default: WallpaperOptimizer } = await import('./WallpaperOptimizer');
 const { default: i18n } = await import('../i18n');
-const { createWallpaperPlan } = await import('../utils/api');
+const { createProjectGroup, createWallpaperPlan } = await import('../utils/api');
 
 const openRoomStep = async () => {
   render(<MemoryRouter><WallpaperOptimizer /></MemoryRouter>);
@@ -30,6 +30,21 @@ describe('WallpaperOptimizer room step', () => {
     expect(screen.getByRole('button', { name: /Create plan/ })).toBeDisabled();
   });
 
+  it('uses realistic defaults for windows and outlets', async () => {
+    await openRoomStep();
+    fireEvent.click(screen.getByRole('button', { name: 'Add opening or obstacle' }));
+
+    expect(screen.getByLabelText('Type')).toHaveValue('window');
+    expect(screen.getByLabelText('From floor (mm)')).toHaveValue('900');
+    expect(screen.getByLabelText('Width (mm)')).toHaveValue('1200');
+    expect(screen.getByLabelText('Height (mm)')).toHaveValue('1200');
+
+    fireEvent.change(screen.getByLabelText('Type'), { target: { value: 'outlet' } });
+    expect(screen.getByLabelText('From floor (mm)')).toHaveValue('250');
+    expect(screen.getByLabelText('Width (mm)')).toHaveValue('85');
+    expect(screen.getByLabelText('Height (mm)')).toHaveValue('85');
+  });
+
   it('adds a closing corner when the room is marked closed and offers wall-run breaks only while open', async () => {
     await openRoomStep();
     fireEvent.click(screen.getByRole('button', { name: 'Add wall' }));
@@ -43,6 +58,15 @@ describe('WallpaperOptimizer room step', () => {
     expect(screen.getAllByText(/Wall [A-Z] → Wall [A-Z]/)).toHaveLength(3);
     expect(screen.queryByRole('option', { name: /start a new wall run/ })).not.toBeInTheDocument();
     expect(screen.getByText(/Wall C → Wall A/)).toBeInTheDocument();
+  });
+
+  it('keeps Add wall before the corner settings', async () => {
+    await openRoomStep();
+    fireEvent.click(screen.getByRole('button', { name: 'Add wall' }));
+
+    const addWall = screen.getByRole('button', { name: 'Add wall' });
+    const corners = screen.getByRole('heading', { name: 'Corners' });
+    expect(addWall.compareDocumentPosition(corners) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('defaults every inside corner to a 15 mm overlap so a plan can be created at once', async () => {
@@ -173,6 +197,22 @@ describe('WallpaperOptimizer plan step', () => {
 
     await screen.findByTestId('start-options');
     expect(createWallpaperPlan).toHaveBeenLastCalledWith(expect.objectContaining({ start: { wall_index: 0, first_strip_width: 331 } }));
+  });
+
+  it('names the saved plan and lets the user create a project for it', async () => {
+    createProjectGroup.mockResolvedValue({ id: 'new-project', name: 'Living room' });
+    await openPlanStep();
+
+    fireEvent.click(screen.getByRole('button', { name: /Prepare cut sheets/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Save plan/ }));
+
+    expect(await screen.findByLabelText('Plan name')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Project — optional'), { target: { value: '__new__' } });
+    fireEvent.change(screen.getByLabelText('New project name'), { target: { value: 'Living room' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Create project' }));
+
+    await waitFor(() => expect(createProjectGroup).toHaveBeenCalledWith('Living room'));
+    expect(screen.getByLabelText('Project — optional')).toHaveValue('new-project');
   });
 });
 

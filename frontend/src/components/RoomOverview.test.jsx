@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import '../i18n';
 import RoomOverview from './RoomOverview';
+import { WallElevation } from './WallpaperOptimizer';
 
 const wall = (name, width) => ({ name, width_top: width, width_middle: width, width_bottom: width });
 const corners = (count, kind = 'inside') => Array.from({ length: count }, () => ({ kind }));
@@ -57,5 +58,22 @@ describe('RoomOverview', () => {
     render(<RoomOverview walls={walls} corners={corners(6)} plan={{ strips: [] }} />);
 
     expect(screen.getByLabelText('Wall numbers')).toHaveTextContent('Wall 1 · 2000 mm');
+  });
+
+  it('moves labels into a key on a 12 m wall with narrow strips', () => {
+    const longWall = { ...wall('Wall A', 12000), height_left: 2400, height_middle: 2400, height_right: 2400 };
+    const strips = Array.from({ length: 23 }, (_, index) => ({
+      number: index + 1,
+      wall_index: 0,
+      x_start: index * (12000 / 23),
+      x_end: (index + 1) * (12000 / 23),
+    }));
+    const pieces = strips.map((strip, index) => ({ id: `piece-${strip.number}`, strip_number: strip.number, wall_index: 0, y_start: 0, y_end: index === 0 ? 1200 : 2400 }));
+
+    render(<WallElevation wall={longWall} wallIndex={0} plan={{ strips, pieces }} wallNames={['Wall A']} />);
+
+    expect(screen.getByTestId('wallpaper-strip-key')).toHaveTextContent('S1 · 522 mm · piece-1 (1200 mm)');
+    expect(screen.queryByTestId('piece-id')).not.toBeInTheDocument();
+    expect(screen.getByTestId('partial-piece')).not.toHaveTextContent('1200 mm piece');
   });
 });
