@@ -6,7 +6,12 @@ from planqer.wallpaper.closure import room_closure
 from planqer.wallpaper.pattern import pattern_datum, strip_phase
 from planqer.wallpaper.pieces import split_strip_into_pieces
 from planqer.wallpaper.rolls import RollPiece, assign_pieces_to_rolls
-from planqer.wallpaper.strips import ConnectedRun, ConnectedStrip, connected_runs, lay_run_strips
+from planqer.wallpaper.strips import (
+    ConnectedRun,
+    ConnectedStrip,
+    connected_runs,
+    lay_run_strips,
+)
 from planqer.wallpaper.validation import validate_wallpaper_request
 
 # Complete room plans are compared for a handful of first-strip widths, but each
@@ -22,64 +27,108 @@ def create_wallpaper_plan(request: WallpaperPlanRequest) -> dict:
     walls = request.room.walls
     roll_width = request.wallpaper.roll_width
     allowances = [wall.allowances or request.allowances for wall in walls]
-    minimums = [wall.minimum_strip_width or request.minimum_strip_width for wall in walls]
-    start_wall = request.start.wall_index if request.start else _default_start(request.room)
+    minimums = [
+        wall.minimum_strip_width or request.minimum_strip_width for wall in walls
+    ]
+    start_wall = (
+        request.start.wall_index if request.start else _default_start(request.room)
+    )
     runs, room_notes = connected_runs(request.room, start_wall)
 
     minimum_corner = request.minimum_corner_piece
 
-    def lay(first_widths: tuple[float, ...]) -> tuple[list[ConnectedStrip], list[str], float, float]:
+    def lay(
+        first_widths: tuple[float, ...],
+    ) -> tuple[list[ConnectedStrip], list[str], float, float]:
         strips, notes, narrowest = [], list(room_notes), float("inf")
         narrowest_corner = float("inf")
         for run, first_width in zip(runs, first_widths):
             layout = lay_run_strips(
-                walls, run.wall_indices, run.corners, roll_width, allowances, minimums,
-                first_strip_width=first_width, start_number=len(strips) + 1,
+                walls,
+                run.wall_indices,
+                run.corners,
+                roll_width,
+                allowances,
+                minimums,
+                first_strip_width=first_width,
+                start_number=len(strips) + 1,
                 **_end_overlap(run, allowances),
             )
             strips.extend(layout.strips)
             notes.extend(layout.notes)
             narrowest = min(narrowest, layout.narrowest)
             narrowest_corner = min(narrowest_corner, layout.narrowest_corner)
-        return strips, notes, 0 if narrowest == float("inf") else narrowest, narrowest_corner
+        return (
+            strips,
+            notes,
+            0 if narrowest == float("inf") else narrowest,
+            narrowest_corner,
+        )
 
     options = sorted(
-        {round(roll_width * step / _FIRST_WIDTH_STEPS) for step in range(1, _FIRST_WIDTH_STEPS + 1)}
+        {
+            round(roll_width * step / _FIRST_WIDTH_STEPS)
+            for step in range(1, _FIRST_WIDTH_STEPS + 1)
+        }
         | {roll_width},
         reverse=True,
     )
     options = [width for width in options if 0 < width <= roll_width]
     fine_options = sorted(
-        {*range(_FINE_WIDTH_STEP, int(roll_width), _FINE_WIDTH_STEP), *options}, reverse=True
+        {*range(_FINE_WIDTH_STEP, int(roll_width), _FINE_WIDTH_STEP), *options},
+        reverse=True,
     )
     per_run_best = tuple(
-        min(fine_options, key=lambda width, run=run: _run_rank(lay_run_strips(
-            walls, run.wall_indices, run.corners, roll_width, allowances, minimums,
-            first_strip_width=width, **_end_overlap(run, allowances),
-        ), minimum_corner))
+        min(
+            fine_options,
+            key=lambda width, run=run: _run_rank(
+                lay_run_strips(
+                    walls,
+                    run.wall_indices,
+                    run.corners,
+                    roll_width,
+                    allowances,
+                    minimums,
+                    first_strip_width=width,
+                    **_end_overlap(run, allowances),
+                ),
+                minimum_corner,
+            ),
+        )
         for run in runs
     )
     preferred = request.start.first_strip_width if request.start else None
-    combinations = list(dict.fromkeys(
-        [per_run_best] + [tuple(width for _ in runs) for width in options]
-        + ([tuple(preferred for _ in runs)] if preferred and preferred <= roll_width else [])
-    ))
+    combinations = list(
+        dict.fromkeys(
+            [per_run_best]
+            + [tuple(width for _ in runs) for width in options]
+            + (
+                [tuple(preferred for _ in runs)]
+                if preferred and preferred <= roll_width
+                else []
+            )
+        )
+    )
 
     candidates = []
     for first_widths in combinations:
         strips, notes, narrowest, narrowest_corner = lay(first_widths)
         plan = _plan_strips(request, strips, allowances)
-        candidates.append((first_widths, strips, notes, narrowest, plan, narrowest_corner))
-    candidates.sort(key=lambda item: (
-        # A width the user asked for wins over the automatic ranking.
-        bool(preferred) and not all(width == preferred for width in item[0]),
-        bool(item[2]),
-        _corner_shortfall(item[5], minimum_corner),
-        item[4]["rolls_needed"],
-        -item[5],
-        -item[3],
-        item[4]["candidate_waste"],
-    ))
+        candidates.append(
+            (first_widths, strips, notes, narrowest, plan, narrowest_corner)
+        )
+    candidates.sort(
+        key=lambda item: (
+            # A width the user asked for wins over the automatic ranking.
+            bool(preferred) and not all(width == preferred for width in item[0]),
+            bool(item[2]),
+            _corner_shortfall(item[5], minimum_corner),
+            item[4]["rolls_needed"],
+            -item[5],
+            -item[3],
+            item[4]["candidate_waste"],
+        )
+    )
     start_candidates = [
         {
             "wall_index": start_wall,
@@ -143,14 +192,19 @@ def corner_quality(strips, walls, minimum: float) -> dict:
             width = min(before.width, after.width)
             smallest = width if smallest is None else min(smallest, width)
             if width < minimum:
-                first, second = walls[before.wall_index].name, walls[after.wall_index].name
-                short.append({
-                    "strip": strip.number,
-                    "from_wall": first,
-                    "to_wall": second,
-                    "width": width,
-                    "action": f"Start a new strip at the corner between '{first}' and '{second}'.",
-                })
+                first, second = (
+                    walls[before.wall_index].name,
+                    walls[after.wall_index].name,
+                )
+                short.append(
+                    {
+                        "strip": strip.number,
+                        "from_wall": first,
+                        "to_wall": second,
+                        "width": width,
+                        "action": f"Start a new strip at the corner between '{first}' and '{second}'.",
+                    }
+                )
     return {"minimum": minimum, "smallest": smallest, "short_corners": short}
 
 
@@ -160,13 +214,17 @@ def _corner_piece_warnings(strips, walls, minimum: float) -> list[str]:
         f"'{walls[segment.wall_index].name}' at a corner, below the {minimum:g} mm "
         "minimum, and no first-strip width avoids it. Consider choosing to start a "
         "new strip at this corner."
-        for strip in strips if len(strip.segments) > 1
-        for segment in strip.segments if segment.width < minimum
+        for strip in strips
+        if len(strip.segments) > 1
+        for segment in strip.segments
+        if segment.width < minimum
     ]
 
 
 def _run_rank(layout, minimum_corner: float) -> tuple:
-    precut_area = sum(strip.precut_width * strip.precut_length for strip in layout.strips)
+    precut_area = sum(
+        strip.precut_width * strip.precut_length for strip in layout.strips
+    )
     return (
         bool(layout.notes),
         _corner_shortfall(layout.narrowest_corner, minimum_corner),
@@ -177,7 +235,9 @@ def _run_rank(layout, minimum_corner: float) -> tuple:
     )
 
 
-def _plan_strips(request: WallpaperPlanRequest, strips: list[ConnectedStrip], allowances) -> dict:
+def _plan_strips(
+    request: WallpaperPlanRequest, strips: list[ConnectedStrip], allowances
+) -> dict:
     walls = request.room.walls
     datum = pattern_datum(walls, request.anchor)
     cutouts = {index: wall.cutouts for index, wall in enumerate(walls)}
@@ -187,19 +247,30 @@ def _plan_strips(request: WallpaperPlanRequest, strips: list[ConnectedStrip], al
     piece_trims = []
     offcuts = []
     for strip in strips:
-        strip = replace(strip, phase=strip_phase(
-            strip, repeat=request.wallpaper.repeat, match=request.wallpaper.match, datum=datum,
-        ))
+        strip = replace(
+            strip,
+            phase=strip_phase(
+                strip,
+                repeat=request.wallpaper.repeat,
+                match=request.wallpaper.match,
+                datum=datum,
+            ),
+        )
         phased.append(strip)
         split = split_strip_into_pieces(strip, cutouts, strip.phase, allowances_by_wall)
         # The motif must line up at wall height, so a piece starting below the
         # ceiling needs the phase of its own top edge, not the strip's.
         strip_pieces = [
-            replace(piece, phase=_phase_at(strip, piece.y_end, request.wallpaper.repeat))
+            replace(
+                piece, phase=_phase_at(strip, piece.y_end, request.wallpaper.repeat)
+            )
             for piece in split.pieces
         ]
         pieces.extend(strip_pieces)
-        piece_trims.extend(_piece_trims(strip, piece, request.wallpaper.repeat) for piece in strip_pieces)
+        piece_trims.extend(
+            _piece_trims(strip, piece, request.wallpaper.repeat)
+            for piece in strip_pieces
+        )
         offcuts.extend(split.offcuts)
 
     # One physical piece is allocated once, however many wall faces it covers.
@@ -216,7 +287,9 @@ def _plan_strips(request: WallpaperPlanRequest, strips: list[ConnectedStrip], al
     rolls_needed = len(rolls)
     total_roll_length = rolls_needed * request.wallpaper.roll_length
     covered_area = sum(
-        segment.width * segment.top_height for strip in phased for segment in strip.segments
+        segment.width * segment.top_height
+        for strip in phased
+        for segment in strip.segments
     )
     roll_area = request.wallpaper.roll_width * request.wallpaper.roll_length
     return {
@@ -229,17 +302,27 @@ def _plan_strips(request: WallpaperPlanRequest, strips: list[ConnectedStrip], al
             "pattern": sum(_unused_gaps(roll) for roll in rolls),
             # Allowance is deliberately cut material at the top and bottom of
             # every strip, whether or not an opening later splits that strip.
-            "allowance": sum(strip.precut_length - strip.top_height for strip in phased),
+            "allowance": sum(
+                strip.precut_length - strip.top_height for strip in phased
+            ),
             "trim": sum(offcut.length for offcut in offcuts),
-            "offcut": sum(request.wallpaper.roll_length - roll.cursor for roll in rolls),
+            "offcut": sum(
+                request.wallpaper.roll_length - roll.cursor for roll in rolls
+            ),
         },
-        "material": _material_summary(rolls, request.wallpaper.roll_length, request.wallpaper.repeat),
-        "candidate_waste": total_roll_length - sum(trim["cut_length"] for trim in piece_trims),
+        "material": _material_summary(
+            rolls, request.wallpaper.roll_length, request.wallpaper.repeat
+        ),
+        "candidate_waste": total_roll_length
+        - sum(trim["cut_length"] for trim in piece_trims),
         "strips": [_serialize_strip(strip) for strip in phased],
         "pieces": [
-            asdict(piece) | {
-                "id": f"piece-{index + 1}", "length": piece.length,
-                "allowance_top": trim["allowance_top"], "allowance_bottom": trim["allowance_bottom"],
+            asdict(piece)
+            | {
+                "id": f"piece-{index + 1}",
+                "length": piece.length,
+                "allowance_top": trim["allowance_top"],
+                "allowance_bottom": trim["allowance_bottom"],
                 "cut_length": trim["cut_length"],
                 "cut_phase": trim["phase"],
             }
@@ -272,12 +355,15 @@ def _material_summary(rolls, roll_length: float, repeat: float = 0) -> dict:
     bought = len(rolls) * roll_length
     cuts = [cut for roll in rolls for cut in roll.cuts]
     reused = [cut for cut in cuts if cut.source_kind == "offcut"]
-    leftovers = [gap for roll in rolls for gap in [*_roll_gaps(roll), roll_length - roll.cursor]]
+    leftovers = [
+        gap for roll in rolls for gap in [*_roll_gaps(roll), roll_length - roll.cursor]
+    ]
     # Pieces shorter than the longest one (for example the band above a heat pump)
     # that follow another cut on their roll use length that would otherwise be waste.
     longest = max((cut.end - cut.start for cut in cuts), default=0)
     short = [
-        cut for roll in rolls
+        cut
+        for roll in rolls
         for cut in sorted(roll.cuts, key=lambda item: item.start)[1:]
         if cut.end - cut.start < longest
     ]

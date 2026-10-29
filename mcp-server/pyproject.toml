@@ -1,6 +1,6 @@
 [project]
 name = "planqer-mcp-server"
-version = "0.10.0"
+version = "0.11.0"
 description = "MCP server for interacting with Planqer cutting optimization API"
 readme = "README.md"
 license = "MIT"

@@ -22,7 +22,9 @@ def test_pattern_datum_defaults_to_the_highest_ceiling_point():
 def test_plain_wallpaper_has_zero_phase_for_every_strip():
     strips = lay_wall_strips(wall(2400, 2400), 530, Allowances())
 
-    assert [strip_phase(strip, repeat=0, match=None, datum=2400) for strip in strips] == [
+    assert [
+        strip_phase(strip, repeat=0, match=None, datum=2400) for strip in strips
+    ] == [
         0,
         0,
     ]

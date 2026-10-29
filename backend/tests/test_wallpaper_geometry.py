@@ -9,15 +9,15 @@ from planqer.wallpaper.geometry import (
 
 
 def wall(**overrides) -> Wall:
-    values = dict(
-        name="Hallway",
-        width_top=3000,
-        width_middle=2980,
-        width_bottom=3010,
-        height_left=2400,
-        height_middle=2500,
-        height_right=2600,
-    )
+    values = {
+        "name": "Hallway",
+        "width_top": 3000,
+        "width_middle": 2980,
+        "width_bottom": 3010,
+        "height_left": 2400,
+        "height_middle": 2500,
+        "height_right": 2600,
+    }
     values.update(overrides)
     return Wall(**values)
 
@@ -38,10 +38,16 @@ def test_wall_outline_uses_the_high_edge_for_a_strip():
 
 
 def test_sloped_outline_interpolates_both_boundaries():
-    outline = wall_outline(wall(
-        profile="sloped", height_left=2600, height_middle=2300, height_right=2000,
-        lower_left=700, lower_right=200,
-    ))
+    outline = wall_outline(
+        wall(
+            profile="sloped",
+            height_left=2600,
+            height_middle=2300,
+            height_right=2000,
+            lower_left=700,
+            lower_right=200,
+        )
+    )
 
     assert outline.vertices == ((0, 700), (3010, 200), (3010, 2000), (0, 2600))
     assert outline.usable_height_at(0) == 1900

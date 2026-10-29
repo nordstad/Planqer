@@ -15,8 +15,14 @@ from planqer.wallpaper.strips import connected_runs, lay_run_strips
 
 def wall(width: float, name: str = "Wall", **overrides) -> Wall:
     return Wall(
-        name=name, width_top=width, width_middle=width, width_bottom=width,
-        height_left=2400, height_middle=2400, height_right=2400, **overrides,
+        name=name,
+        width_top=width,
+        width_middle=width,
+        width_bottom=width,
+        height_left=2400,
+        height_middle=2400,
+        height_right=2400,
+        **overrides,
     )
 
 
@@ -27,8 +33,12 @@ def inside_continue() -> Corner:
 def request(walls, corners, *, repeat=0, match=None, closed=False, **options):
     return WallpaperPlanRequest(
         wallpaper=WallpaperSpec(
-            name="Willow", manufacturer="Example", roll_width=530,
-            roll_length=10050, repeat=repeat, match=match,
+            name="Willow",
+            manufacturer="Example",
+            roll_width=530,
+            roll_length=10050,
+            repeat=repeat,
+            match=match,
         ),
         room=Room(walls=walls, corners=corners, closed=closed),
         **options,
@@ -37,8 +47,12 @@ def request(walls, corners, *, repeat=0, match=None, closed=False, **options):
 
 def layout(walls, corners, first_strip_width=None):
     return lay_run_strips(
-        walls, list(range(len(walls))), corners, 530,
-        [Allowances()] * len(walls), [50] * len(walls),
+        walls,
+        list(range(len(walls))),
+        corners,
+        530,
+        [Allowances()] * len(walls),
+        [50] * len(walls),
         first_strip_width=first_strip_width,
     )
 
@@ -123,24 +137,38 @@ def test_inside_continuation_with_nothing_left_starts_the_next_wall_cleanly():
     result = layout([wall(1060), wall(900)], [inside_continue()])
 
     assert result.notes == []
-    assert not any(segment.wraps_corner for strip in result.strips for segment in strip.segments)
+    assert not any(
+        segment.wraps_corner for strip in result.strips for segment in strip.segments
+    )
     assert_covers(result.strips, 0, 1060)
     assert_covers(result.strips, 1, 900)
 
 
 def test_continued_strip_is_allocated_once_with_both_faces_and_cutouts():
-    plan = create_wallpaper_plan(request(
-        [
-            wall(800, "A", cutouts=[Cutout(kind="outlet", x=600, y=300, width=80, height=80)]),
-            wall(900, "B", cutouts=[Cutout(kind="switch", x=5, y=1000, width=10, height=80)]),
-        ],
-        [inside_continue()],
-    ))
+    plan = create_wallpaper_plan(
+        request(
+            [
+                wall(
+                    800,
+                    "A",
+                    cutouts=[Cutout(kind="outlet", x=600, y=300, width=80, height=80)],
+                ),
+                wall(
+                    900,
+                    "B",
+                    cutouts=[Cutout(kind="switch", x=5, y=1000, width=10, height=80)],
+                ),
+            ],
+            [inside_continue()],
+        )
+    )
 
     connected = [strip for strip in plan["strips"] if len(strip["segments"]) == 2]
     assert len(connected) == 1
     number = connected[0]["number"]
-    connected_pieces = [piece for piece in plan["pieces"] if piece["strip_number"] == number]
+    connected_pieces = [
+        piece for piece in plan["pieces"] if piece["strip_number"] == number
+    ]
     assert len(connected_pieces) == 1
     piece = connected_pieces[0]
     assert [segment["wall_index"] for segment in piece["segments"]] == [0, 1]
@@ -153,45 +181,76 @@ def test_continued_strip_is_allocated_once_with_both_faces_and_cutouts():
 
 
 def test_full_height_obstacle_on_one_face_notches_rather_than_splits_the_strip():
-    plan = create_wallpaper_plan(request(
-        [
-            wall(800, "A", cutouts=[Cutout(
-                kind="heat_pump", x=530, y=800, width=270, height=600,
-                tuck_edges=["top", "bottom"],
-            )]),
-            wall(900, "B"),
-        ],
-        [inside_continue()],
-    ))
+    plan = create_wallpaper_plan(
+        request(
+            [
+                wall(
+                    800,
+                    "A",
+                    cutouts=[
+                        Cutout(
+                            kind="heat_pump",
+                            x=530,
+                            y=800,
+                            width=270,
+                            height=600,
+                            tuck_edges=["top", "bottom"],
+                        )
+                    ],
+                ),
+                wall(900, "B"),
+            ],
+            [inside_continue()],
+        )
+    )
 
     connected = next(strip for strip in plan["strips"] if len(strip["segments"]) == 2)
-    pieces = [piece for piece in plan["pieces"] if piece["strip_number"] == connected["number"]]
+    pieces = [
+        piece
+        for piece in plan["pieces"]
+        if piece["strip_number"] == connected["number"]
+    ]
     assert len(pieces) == 1
     assert pieces[0]["segments"][0]["notches"][0]["mode"] == "precut"
     assert not pieces[0]["segments"][1]["notches"]
 
 
 def test_pattern_phase_is_unchanged_across_the_corner():
-    plan = create_wallpaper_plan(request(
-        [wall(800), wall(900)], [inside_continue()], repeat=640, match="half_drop",
-    ))
+    plan = create_wallpaper_plan(
+        request(
+            [wall(800), wall(900)],
+            [inside_continue()],
+            repeat=640,
+            match="half_drop",
+        )
+    )
 
     connected = next(strip for strip in plan["strips"] if len(strip["segments"]) == 2)
-    phases = {piece["phase"] for piece in plan["pieces"] if piece["strip_number"] == connected["number"]}
+    phases = {
+        piece["phase"]
+        for piece in plan["pieces"]
+        if piece["strip_number"] == connected["number"]
+    }
     assert phases == {connected["phase"]}
     numbers = [strip["number"] for strip in plan["strips"]]
     assert numbers == list(range(1, len(numbers) + 1))
 
 
 def test_no_piece_is_dropped_or_double_counted_across_a_room():
-    plan = create_wallpaper_plan(request(
-        [
-            wall(800, "A", cutouts=[Cutout(kind="door", x=100, y=0, width=530, height=2000)]),
-            wall(300, "Return"),
-            wall(1200, "B"),
-        ],
-        [Corner(kind="outside"), inside_continue()],
-    ))
+    plan = create_wallpaper_plan(
+        request(
+            [
+                wall(
+                    800,
+                    "A",
+                    cutouts=[Cutout(kind="door", x=100, y=0, width=530, height=2000)],
+                ),
+                wall(300, "Return"),
+                wall(1200, "B"),
+            ],
+            [Corner(kind="outside"), inside_continue()],
+        )
+    )
 
     piece_ids = [piece["id"] for piece in plan["pieces"]]
     cut_ids = [cut["piece_id"] for roll in plan["rolls"] for cut in roll["cuts"]]
@@ -231,7 +290,9 @@ def test_candidate_search_honours_a_per_wall_minimum_override():
 
 
 def test_selected_layout_never_places_a_seam_on_an_outside_corner():
-    plan = create_wallpaper_plan(request([wall(1060), wall(900)], [Corner(kind="outside")]))
+    plan = create_wallpaper_plan(
+        request([wall(1060), wall(900)], [Corner(kind="outside")])
+    )
 
     assert plan["start_candidates"][0]["feasible"]
     for strip in plan["strips"]:
@@ -245,7 +306,8 @@ def test_selected_layout_never_places_a_seam_on_an_outside_corner():
 def corner_pieces(plan):
     return [
         segment["x_end"] - segment["x_start"]
-        for strip in plan["strips"] if len(strip["segments"]) > 1
+        for strip in plan["strips"]
+        if len(strip["segments"]) > 1
         for segment in strip["segments"]
     ]
 

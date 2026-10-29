@@ -165,7 +165,12 @@ def test_a_saved_wallpaper_plan_has_the_diagram_the_server_stores(client, header
     ).json()
     status, body = call(
         "saved_diagram",
-        {"kind": "wallpaper", "name": "Hall", "room_data": PAYLOAD["room"], "plan_result": plan},
+        {
+            "kind": "wallpaper",
+            "name": "Hall",
+            "room_data": PAYLOAD["room"],
+            "plan_result": plan,
+        },
     )
 
     assert status == 200

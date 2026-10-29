@@ -22,7 +22,9 @@ def validate_wallpaper_request(request: WallpaperPlanRequest) -> list[str]:
             )
         for cutout in wall.cutouts:
             _validate_cutout_inside_wall(cutout, wall.name, outline)
-            if _is_near_wall_edge(cutout, outline.width, max(outline.height_left, outline.height_right)):
+            if _is_near_wall_edge(
+                cutout, outline.width, max(outline.height_left, outline.height_right)
+            ):
                 warnings.append(
                     f"Cutout on wall '{wall.name}' is within 10 mm of a wall edge"
                 )
@@ -40,7 +42,9 @@ def _validate_cutout_inside_wall(cutout: Cutout, wall_name: str, outline) -> Non
     left, bottom, right, top = cutout_bounds(cutout)
     if left < 0 or bottom < 0 or right > outline.width:
         raise ValueError(f"Cutout is outside wall '{wall_name}'")
-    available_height = min(outline.usable_height_at(left), outline.usable_height_at(right))
+    available_height = min(
+        outline.usable_height_at(left), outline.usable_height_at(right)
+    )
     # Openings are measured upward from the wall's local lower edge.
     if top > available_height:
         raise ValueError(f"Cutout is outside wall '{wall_name}'")
@@ -83,7 +87,9 @@ def _corner_warnings(request: WallpaperPlanRequest) -> list[str]:
             first = request.room.walls[index]
             second = request.room.walls[index + wall_count // 2]
             first_width = max(first.width_top, first.width_middle, first.width_bottom)
-            second_width = max(second.width_top, second.width_middle, second.width_bottom)
+            second_width = max(
+                second.width_top, second.width_middle, second.width_bottom
+            )
             if abs(first_width - second_width) > 20:
                 warnings.append("Opposite walls differ by more than 20 mm")
     return warnings

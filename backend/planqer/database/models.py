@@ -235,8 +235,14 @@ class UserWallpaper(SQLModel, table=True):
     user_id: UUID = Field(foreign_key="users.id")
     name: str
     data: str
-    created_at: datetime | None = Field(default_factory=lambda: datetime.now(), sa_column=Column(DateTime(timezone=False), nullable=False))
-    updated_at: datetime | None = Field(default_factory=lambda: datetime.now(), sa_column=Column(DateTime(timezone=False), nullable=False))
+    created_at: datetime | None = Field(
+        default_factory=lambda: datetime.now(),
+        sa_column=Column(DateTime(timezone=False), nullable=False),
+    )
+    updated_at: datetime | None = Field(
+        default_factory=lambda: datetime.now(),
+        sa_column=Column(DateTime(timezone=False), nullable=False),
+    )
 
 
 class UserWallpaperProject(SQLModel, table=True):
@@ -254,5 +260,11 @@ class UserWallpaperProject(SQLModel, table=True):
     progress_data: str = Field(default="{}")
     cutlist_image: str | None = None
     cutlist_image_svg: str | None = None
-    created_at: datetime | None = Field(default_factory=lambda: datetime.now(), sa_column=Column(DateTime(timezone=False), nullable=False))
-    updated_at: datetime | None = Field(default_factory=lambda: datetime.now(), sa_column=Column(DateTime(timezone=False), nullable=False))
+    created_at: datetime | None = Field(
+        default_factory=lambda: datetime.now(),
+        sa_column=Column(DateTime(timezone=False), nullable=False),
+    )
+    updated_at: datetime | None = Field(
+        default_factory=lambda: datetime.now(),
+        sa_column=Column(DateTime(timezone=False), nullable=False),
+    )

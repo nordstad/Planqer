@@ -35,13 +35,15 @@ def assign_pieces_to_rolls(
     """Assign every piece with bounded longest-first, phase-aware first fit."""
     if roll_length <= 0:
         raise ValueError("roll_length must be greater than 0")
-    rolls: list[WallpaperRoll] = []
     # Trying both descending and ascending length order keeps this deliberately
     # bounded while allowing short phase-compatible pieces to fill a gap.
-    candidates = [_allocate(order, roll_length, repeat, roll_offset) for order in (
-        sorted(pieces, key=lambda item: item.length, reverse=True),
-        sorted(pieces, key=lambda item: item.length),
-    )]
+    candidates = [
+        _allocate(order, roll_length, repeat, roll_offset)
+        for order in (
+            sorted(pieces, key=lambda item: item.length, reverse=True),
+            sorted(pieces, key=lambda item: item.length),
+        )
+    ]
     # Keep longest-first when candidates use the same number of rolls. This
     # makes the cut sheet stable while still considering a short-first fallback
     # when it saves a roll.
@@ -87,8 +89,10 @@ def _record_alignment_offcut(
 
 
 def _take_compatible_offcut(
-    offcuts: list[tuple[WallpaperRoll, float, float]], piece: RollPiece,
-    repeat: float, roll_offset: float,
+    offcuts: list[tuple[WallpaperRoll, float, float]],
+    piece: RollPiece,
+    repeat: float,
+    roll_offset: float,
 ) -> tuple[WallpaperRoll, RollCut] | None:
     """Consume a real phase-compatible alignment gap before opening new stock."""
     for index, (roll, start, end) in enumerate(offcuts):
@@ -101,16 +105,27 @@ def _take_compatible_offcut(
         if end - cut.end >= 50:
             offcuts.append((roll, cut.end, end))
         return roll, RollCut(
-            piece_id=cut.piece_id, start=cut.start, end=cut.end, phase=cut.phase,
-            alignment_gap=cut.alignment_gap, gap_kind=cut.gap_kind, source_kind="offcut",
+            piece_id=cut.piece_id,
+            start=cut.start,
+            end=cut.end,
+            phase=cut.phase,
+            alignment_gap=cut.alignment_gap,
+            gap_kind=cut.gap_kind,
+            source_kind="offcut",
         )
     return None
 
 
-def _aligned_cut(cursor: float, piece: RollPiece, repeat: float, roll_offset: float) -> RollCut:
+def _aligned_cut(
+    cursor: float, piece: RollPiece, repeat: float, roll_offset: float
+) -> RollCut:
     gap = 0 if repeat == 0 else (piece.phase - (cursor + roll_offset)) % repeat
     start = cursor + gap
     # A gap at least as long as the shortest practical strip is a separately
     # tracked reusable offcut; smaller gaps are pattern loss.
-    gap_kind = None if gap == 0 else ("reusable_offcut" if gap >= 50 else "pattern_waste")
-    return RollCut(piece.piece_id, start, start + piece.length, piece.phase, gap, gap_kind)
+    gap_kind = (
+        None if gap == 0 else ("reusable_offcut" if gap >= 50 else "pattern_waste")
+    )
+    return RollCut(
+        piece.piece_id, start, start + piece.length, piece.phase, gap, gap_kind
+    )

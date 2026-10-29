@@ -1,5 +1,4 @@
 from dataclasses import dataclass, replace
-from typing import Literal
 
 from planqer.schemas.wallpaper import Allowances, Corner, Room, Wall
 from planqer.wallpaper.geometry import wall_outline
@@ -93,10 +92,15 @@ def corner_connects(corner: Corner) -> bool:
 
 def corner_overlaps(corner: Corner) -> bool:
     """Inside corners lap the final strip over the corner unless a butt joint is chosen."""
-    return corner.kind == "inside" and corner.confirmed_continuation in (None, "overlap")
+    return corner.kind == "inside" and corner.confirmed_continuation in (
+        None,
+        "overlap",
+    )
 
 
-def connected_runs(room: Room, start_wall: int = 0) -> tuple[list[ConnectedRun], list[str]]:
+def connected_runs(
+    room: Room, start_wall: int = 0
+) -> tuple[list[ConnectedRun], list[str]]:
     """Group consecutive walls joined by wrapping corners into hanging runs."""
     count = len(room.walls)
     start = start_wall % count if room.closed else 0
@@ -165,7 +169,9 @@ def lay_run_strips(
     if roll_width <= 0:
         raise ValueError("roll_width must be greater than 0")
     if first_strip_width is not None and not 0 < first_strip_width <= roll_width:
-        raise ValueError("first_strip_width must be greater than 0 and at most roll_width")
+        raise ValueError(
+            "first_strip_width must be greater than 0 and at most roll_width"
+        )
 
     strips: list[ConnectedStrip] = []
     notes: list[str] = []
@@ -179,15 +185,18 @@ def lay_run_strips(
         nonlocal segments
         wall_allowances = [allowances[segment.wall_index] for segment in segments]
         top = max(segment.top_height for segment in segments)
-        strips.append(ConnectedStrip(
-            number=start_number + len(strips),
-            segments=tuple(segments),
-            phase=0,
-            precut_length=top + max(item.top + item.bottom for item in wall_allowances),
-            precut_width=sum(segment.width for segment in segments),
-            allowance_top=max(item.top for item in wall_allowances),
-            allowance_bottom=max(item.bottom for item in wall_allowances),
-        ))
+        strips.append(
+            ConnectedStrip(
+                number=start_number + len(strips),
+                segments=tuple(segments),
+                phase=0,
+                precut_length=top
+                + max(item.top + item.bottom for item in wall_allowances),
+                precut_width=sum(segment.width for segment in segments),
+                allowance_top=max(item.top for item in wall_allowances),
+                allowance_bottom=max(item.bottom for item in wall_allowances),
+            )
+        )
         segments = []
 
     for position, wall_index in enumerate(run):
@@ -198,16 +207,18 @@ def lay_run_strips(
                 remaining = next_width
                 next_width = roll_width
             x_end = min(outline.width, x + remaining)
-            segments.append(StripSegment(
-                wall_index=wall_index,
-                x_start=x,
-                x_end=x_end,
-                top_height=outline.strip_top_height(x, x_end),
-                bottom_height=outline.strip_bottom_height(x, x_end),
-                lower_left=outline.bottom_height_at(x),
-                lower_right=outline.bottom_height_at(x_end),
-                wraps_corner=x == 0 and len(segments) > 0,
-            ))
+            segments.append(
+                StripSegment(
+                    wall_index=wall_index,
+                    x_start=x,
+                    x_end=x_end,
+                    top_height=outline.strip_top_height(x, x_end),
+                    bottom_height=outline.strip_bottom_height(x, x_end),
+                    lower_left=outline.bottom_height_at(x),
+                    lower_right=outline.bottom_height_at(x_end),
+                    wraps_corner=x == 0 and len(segments) > 0,
+                )
+            )
             remaining -= x_end - x
             x = x_end
             if x < outline.width - _EPSILON:
@@ -237,7 +248,9 @@ def lay_run_strips(
                 f"after wall '{walls[last.segments[-1].wall_index].name}'"
             )
         strips[-1] = replace(
-            last, return_overlap=overlap, return_wall_index=end_overlap_wall,
+            last,
+            return_overlap=overlap,
+            return_wall_index=end_overlap_wall,
             precut_width=last.precut_width + overlap,
         )
 
@@ -255,13 +268,21 @@ def lay_run_strips(
                     f"'{walls[segment.wall_index].name}', below the {minimum:g} mm minimum"
                 )
     narrowest_corner = min(
-        (segment.width for strip in strips if len(strip.segments) > 1 for segment in strip.segments),
+        (
+            segment.width
+            for strip in strips
+            if len(strip.segments) > 1
+            for segment in strip.segments
+        ),
         default=float("inf"),
     )
     if seam_on_corner:
         narrowest_corner = 0.0
     return RunLayout(
-        strips=strips, notes=notes, narrowest=narrowest, narrowest_corner=narrowest_corner
+        strips=strips,
+        notes=notes,
+        narrowest=narrowest,
+        narrowest_corner=narrowest_corner,
     )
 
 
@@ -277,7 +298,12 @@ def lay_wall_strips(
     """Lay consecutive vertical strips across one wall without dropping coverage."""
     walls = [wall] * (wall_index + 1)
     return lay_run_strips(
-        walls, [wall_index], [], roll_width,
-        [allowances] * (wall_index + 1), [0] * (wall_index + 1),
-        first_strip_width=first_strip_width, start_number=start_number,
+        walls,
+        [wall_index],
+        [],
+        roll_width,
+        [allowances] * (wall_index + 1),
+        [0] * (wall_index + 1),
+        first_strip_width=first_strip_width,
+        start_number=start_number,
     ).strips

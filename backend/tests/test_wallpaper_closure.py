@@ -14,8 +14,13 @@ from planqer.wallpaper.plan import create_wallpaper_plan
 
 def wall(width: float, name: str = "Wall") -> Wall:
     return Wall(
-        name=name, width_top=width, width_middle=width, width_bottom=width,
-        height_left=2400, height_middle=2400, height_right=2400,
+        name=name,
+        width_top=width,
+        width_middle=width,
+        width_bottom=width,
+        height_left=2400,
+        height_middle=2400,
+        height_right=2400,
     )
 
 
@@ -23,13 +28,18 @@ def room(widths, *, closed=True, kinds=None) -> Room:
     walls = [wall(width, f"Wall {index + 1}") for index, width in enumerate(widths)]
     count = len(walls) if closed else len(walls) - 1
     kinds = kinds or ["inside"] * count
-    return Room(walls=walls, corners=[Corner(kind=kind) for kind in kinds], closed=closed)
+    return Room(
+        walls=walls, corners=[Corner(kind=kind) for kind in kinds], closed=closed
+    )
 
 
 def plan_request(target: Room) -> WallpaperPlanRequest:
     return WallpaperPlanRequest(
         wallpaper=WallpaperSpec(
-            name="Willow", manufacturer="Example", roll_width=530, roll_length=10050,
+            name="Willow",
+            manufacturer="Example",
+            roll_width=530,
+            roll_length=10050,
         ),
         room=target,
     )

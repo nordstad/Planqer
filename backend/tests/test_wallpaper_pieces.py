@@ -19,16 +19,18 @@ def strip():
 def test_full_width_fixed_obstacle_splits_a_strip_and_tracks_the_middle_offcut():
     result = split_strip_into_pieces(
         strip(),
-        {0: [
-            Cutout(
-                kind="heat_pump",
-                x=0,
-                y=800,
-                width=530,
-                height=600,
-                tuck_edges=["top", "bottom"],
-            )
-        ]},
+        {
+            0: [
+                Cutout(
+                    kind="heat_pump",
+                    x=0,
+                    y=800,
+                    width=530,
+                    height=600,
+                    tuck_edges=["top", "bottom"],
+                )
+            ]
+        },
         phase=120,
         allowances={0: Allowances()},
     )
@@ -37,15 +39,22 @@ def test_full_width_fixed_obstacle_splits_a_strip_and_tracks_the_middle_offcut()
         (0, 790, 120),
         (1410, 2400, 120),
     ]
-    assert [(offcut.y_start, offcut.y_end, offcut.length, offcut.phase) for offcut in result.offcuts] == [
-        (790, 1410, 620, 120)
-    ]
+    assert [
+        (offcut.y_start, offcut.y_end, offcut.length, offcut.phase)
+        for offcut in result.offcuts
+    ] == [(790, 1410, 620, 120)]
 
 
 def test_partial_cutout_becomes_an_allowance_aware_notch_on_the_piece():
     result = split_strip_into_pieces(
         strip(),
-        {0: [Cutout(kind="window", x=100, y=800, width=200, height=900, mode="precut")]},
+        {
+            0: [
+                Cutout(
+                    kind="window", x=100, y=800, width=200, height=900, mode="precut"
+                )
+            ]
+        },
         phase=0,
         allowances={0: Allowances()},
     )
@@ -53,17 +62,28 @@ def test_partial_cutout_becomes_an_allowance_aware_notch_on_the_piece():
     assert len(result.pieces) == 1
     assert result.offcuts == []
     notch = result.pieces[0].notches[0]
-    assert (notch.x_start, notch.y_start, notch.x_end, notch.y_end) == (70, 770, 330, 1730)
+    assert (notch.x_start, notch.y_start, notch.x_end, notch.y_end) == (
+        70,
+        770,
+        330,
+        1730,
+    )
     assert notch.mode == "precut"
 
 
 def test_grouped_cutouts_merge_to_one_conservative_notch_per_strip():
     result = split_strip_into_pieces(
         strip(),
-        {0: [
-            Cutout(kind="outlet", x=100, y=800, width=50, height=50, group="services"),
-            Cutout(kind="switch", x=200, y=900, width=50, height=50, group="services"),
-        ]},
+        {
+            0: [
+                Cutout(
+                    kind="outlet", x=100, y=800, width=50, height=50, group="services"
+                ),
+                Cutout(
+                    kind="switch", x=200, y=900, width=50, height=50, group="services"
+                ),
+            ]
+        },
         phase=0,
         allowances={0: Allowances()},
     )
@@ -86,7 +106,13 @@ def test_door_at_the_bottom_only_leaves_an_upper_piece():
 def test_notch_keeps_the_real_opening_kind_and_label():
     result = split_strip_into_pieces(
         strip(),
-        {0: [Cutout(kind="window", label="Kitchen", x=100, y=800, width=200, height=900)]},
+        {
+            0: [
+                Cutout(
+                    kind="window", label="Kitchen", x=100, y=800, width=200, height=900
+                )
+            ]
+        },
         phase=0,
         allowances={0: Allowances()},
     )
@@ -117,9 +143,18 @@ def test_door_gets_the_opening_margin_on_all_sides():
 def test_heat_pump_only_gets_a_margin_on_its_tuck_edges():
     result = split_strip_into_pieces(
         strip(),
-        {0: [Cutout(
-            kind="heat_pump", x=100, y=800, width=200, height=300, tuck_edges=["top"]
-        )]},
+        {
+            0: [
+                Cutout(
+                    kind="heat_pump",
+                    x=100,
+                    y=800,
+                    width=200,
+                    height=300,
+                    tuck_edges=["top"],
+                )
+            ]
+        },
         phase=0,
         allowances={0: Allowances()},
     )
@@ -146,10 +181,19 @@ def test_margin_is_clamped_at_the_floor_but_the_core_is_not_moved():
 def test_core_is_clipped_to_the_piece_it_belongs_to():
     result = split_strip_into_pieces(
         strip(),
-        {0: [
-            Cutout(kind="window", x=100, y=800, width=200, height=900),
-            Cutout(kind="heat_pump", x=0, y=1000, width=530, height=100, tuck_edges=["top", "bottom"]),
-        ]},
+        {
+            0: [
+                Cutout(kind="window", x=100, y=800, width=200, height=900),
+                Cutout(
+                    kind="heat_pump",
+                    x=0,
+                    y=1000,
+                    width=530,
+                    height=100,
+                    tuck_edges=["top", "bottom"],
+                ),
+            ]
+        },
         phase=0,
         allowances={0: Allowances()},
     )
@@ -162,10 +206,16 @@ def test_core_is_clipped_to_the_piece_it_belongs_to():
 def test_grouped_cutouts_use_the_group_name_as_label():
     result = split_strip_into_pieces(
         strip(),
-        {0: [
-            Cutout(kind="outlet", x=100, y=800, width=50, height=50, group="services"),
-            Cutout(kind="switch", x=200, y=900, width=50, height=50, group="services"),
-        ]},
+        {
+            0: [
+                Cutout(
+                    kind="outlet", x=100, y=800, width=50, height=50, group="services"
+                ),
+                Cutout(
+                    kind="switch", x=200, y=900, width=50, height=50, group="services"
+                ),
+            ]
+        },
         phase=0,
         allowances={0: Allowances()},
     )

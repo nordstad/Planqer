@@ -98,9 +98,7 @@ class Cutout(WallpaperSchema):
     @model_validator(mode="after")
     def set_default_mode(self):
         if self.mode is None:
-            self.mode = (
-                "mark" if self.kind in {"outlet", "switch"} else "precut"
-            )
+            self.mode = "mark" if self.kind in {"outlet", "switch"} else "precut"
         return self
 
 
@@ -117,7 +115,9 @@ class Wall(WallpaperSchema):
     lower_right: float = 0
     allowances: Allowances | None = None
     minimum_strip_width: float | None = None
-    cutouts: list[Cutout] = Field(default_factory=list, max_length=_MAX_CUTOUTS_PER_WALL)
+    cutouts: list[Cutout] = Field(
+        default_factory=list, max_length=_MAX_CUTOUTS_PER_WALL
+    )
     skip: bool = False
     confirmed: bool = False
 
@@ -150,7 +150,10 @@ class Wall(WallpaperSchema):
     @model_validator(mode="after")
     def validate_profile(self):
         if self.profile == "sloped":
-            if self.lower_left >= self.height_left or self.lower_right >= self.height_right:
+            if (
+                self.lower_left >= self.height_left
+                or self.lower_right >= self.height_right
+            ):
                 raise ValueError("sloped wall lower edge must be below the upper edge")
         elif self.lower_left or self.lower_right:
             raise ValueError("lower edge measurements are only valid for a sloped wall")
@@ -202,7 +205,11 @@ class StartPosition(WallpaperSchema):
     @field_validator("first_strip_width")
     @classmethod
     def validate_first_strip_width(cls, value: float | None) -> float | None:
-        return None if value is None else validate_numeric_input(value, 1.0, _MAX_DIMENSION_MM)
+        return (
+            None
+            if value is None
+            else validate_numeric_input(value, 1.0, _MAX_DIMENSION_MM)
+        )
 
 
 class WallpaperPlanRequest(WallpaperSchema):

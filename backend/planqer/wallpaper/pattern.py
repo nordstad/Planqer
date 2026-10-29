@@ -8,7 +8,9 @@ def pattern_datum(walls: list[Wall], anchor: PatternAnchor | None = None) -> flo
     """Return the shared pattern datum for a room."""
     if anchor is not None:
         return anchor.motif_height_from_floor
-    return max(max(wall.height_left, wall.height_middle, wall.height_right) for wall in walls)
+    return max(
+        max(wall.height_left, wall.height_middle, wall.height_right) for wall in walls
+    )
 
 
 def strip_phase(

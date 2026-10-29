@@ -247,7 +247,10 @@ class SavedWallpaperDiagram(BaseModel):
 
 _saved_diagram_request = TypeAdapter(
     Annotated[
-        SavedBoardDiagram | SavedSheetDiagram | SavedTileDiagram | SavedWallpaperDiagram,
+        SavedBoardDiagram
+        | SavedSheetDiagram
+        | SavedTileDiagram
+        | SavedWallpaperDiagram,
         Field(discriminator="kind"),
     ]
 )
@@ -264,7 +267,9 @@ def _saved_diagram(payload: dict) -> dict:
     elif isinstance(request, SavedSheetDiagram):
         image = render_saved_sheet_layout(request.optimization_result, request.name)
     elif isinstance(request, SavedWallpaperDiagram):
-        image = render_saved_wallpaper_plan(request.room_data, request.plan_result, request.name)
+        image = render_saved_wallpaper_plan(
+            request.room_data, request.plan_result, request.name
+        )
     else:
         image = render_saved_tile_layout(
             request.surface_data, request.layout_result, request.name
@@ -278,7 +283,10 @@ SAVED_REQUESTS: dict[str, dict[str, type[BaseModel]]] = {
     "board": {"create": ProjectCreateRequest, "update": ProjectUpdateRequest},
     "sheet": {"create": CreateSheetProjectRequest, "update": UpdateSheetProjectRequest},
     "tile": {"create": CreateTileProjectRequest, "update": UpdateTileProjectRequest},
-    "wallpaper": {"create": WallpaperProjectRequest, "update": UpdateWallpaperProjectRequest},
+    "wallpaper": {
+        "create": WallpaperProjectRequest,
+        "update": UpdateWallpaperProjectRequest,
+    },
     "group": {"create": ProjectGroupRequest, "update": ProjectGroupRequest},
     "settings": {"create": UserSettingsUpdate, "update": UserSettingsUpdate},
 }

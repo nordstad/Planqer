@@ -8,13 +8,23 @@ def test_wallpaper_plan_endpoint_returns_a_plan():
         "/wallpaper-plans",
         json={
             "wallpaper": {
-                "name": "Willow", "manufacturer": "Example", "roll_width": 530, "roll_length": 10050
+                "name": "Willow",
+                "manufacturer": "Example",
+                "roll_width": 530,
+                "roll_length": 10050,
             },
             "room": {
-                "walls": [{
-                    "name": "Hall", "width_top": 530, "width_middle": 530, "width_bottom": 530,
-                    "height_left": 2400, "height_middle": 2400, "height_right": 2400,
-                }]
+                "walls": [
+                    {
+                        "name": "Hall",
+                        "width_top": 530,
+                        "width_middle": 530,
+                        "width_bottom": 530,
+                        "height_left": 2400,
+                        "height_middle": 2400,
+                        "height_right": 2400,
+                    }
+                ]
             },
         },
     )
@@ -28,17 +38,33 @@ def test_wallpaper_plan_pieces_carry_the_opening_details():
         "/wallpaper-plans",
         json={
             "wallpaper": {
-                "name": "Willow", "manufacturer": "Example", "roll_width": 530, "roll_length": 10050
+                "name": "Willow",
+                "manufacturer": "Example",
+                "roll_width": 530,
+                "roll_length": 10050,
             },
             "room": {
-                "walls": [{
-                    "name": "Hall", "width_top": 1060, "width_middle": 1060, "width_bottom": 1060,
-                    "height_left": 2400, "height_middle": 2400, "height_right": 2400,
-                    "cutouts": [{
-                        "kind": "window", "label": "Kitchen", "x": 100, "y": 800,
-                        "width": 200, "height": 900,
-                    }],
-                }]
+                "walls": [
+                    {
+                        "name": "Hall",
+                        "width_top": 1060,
+                        "width_middle": 1060,
+                        "width_bottom": 1060,
+                        "height_left": 2400,
+                        "height_middle": 2400,
+                        "height_right": 2400,
+                        "cutouts": [
+                            {
+                                "kind": "window",
+                                "label": "Kitchen",
+                                "x": 100,
+                                "y": 800,
+                                "width": 200,
+                                "height": 900,
+                            }
+                        ],
+                    }
+                ]
             },
         },
     )
@@ -53,13 +79,23 @@ def test_wallpaper_plan_strips_carry_their_top_and_bottom_allowance():
         "/wallpaper-plans",
         json={
             "wallpaper": {
-                "name": "Willow", "manufacturer": "Example", "roll_width": 530, "roll_length": 10050
+                "name": "Willow",
+                "manufacturer": "Example",
+                "roll_width": 530,
+                "roll_length": 10050,
             },
             "room": {
-                "walls": [{
-                    "name": "Hall", "width_top": 530, "width_middle": 530, "width_bottom": 530,
-                    "height_left": 2400, "height_middle": 2400, "height_right": 2400,
-                }]
+                "walls": [
+                    {
+                        "name": "Hall",
+                        "width_top": 530,
+                        "width_middle": 530,
+                        "width_bottom": 530,
+                        "height_left": 2400,
+                        "height_middle": 2400,
+                        "height_right": 2400,
+                    }
+                ]
             },
             "allowances": {"top": 40, "bottom": 20},
         },

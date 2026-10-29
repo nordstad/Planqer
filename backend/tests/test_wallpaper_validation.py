@@ -54,7 +54,9 @@ def test_validation_rejects_a_roll_shorter_than_the_tallest_piece():
 
 def test_validation_rejects_a_repeat_longer_than_a_roll():
     with pytest.raises(ValueError, match="repeat cannot be longer than the roll"):
-        validate_wallpaper_request(request(roll_length=500, repeat=640, match="straight"))
+        validate_wallpaper_request(
+            request(roll_length=500, repeat=640, match="straight")
+        )
 
 
 def test_validation_warns_about_ungrouped_overlap_and_wall_edges():

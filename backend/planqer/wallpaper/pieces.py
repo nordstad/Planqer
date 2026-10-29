@@ -97,29 +97,44 @@ def split_strip_into_pieces(
                 continue
             kind, label, core = info
             for part_start, part_end in _subtract(start, end, split_ranges):
-                notches.append(Notch(
-                    segment.x_start, part_start, segment.x_end, part_end, mode, kind, label, core
-                ))
+                notches.append(
+                    Notch(
+                        segment.x_start,
+                        part_start,
+                        segment.x_end,
+                        part_end,
+                        mode,
+                        kind,
+                        label,
+                        core,
+                    )
+                )
 
-    piece_ranges, offcut_ranges = _split_ranges(strip.bottom_height, strip.top_height, split_ranges)
+    piece_ranges, offcut_ranges = _split_ranges(
+        strip.bottom_height, strip.top_height, split_ranges
+    )
     pieces = []
     for y_start, y_end in piece_ranges:
         segments = tuple(
             PieceSegment(
-                segment.wall_index, segment.x_start, segment.x_end,
+                segment.wall_index,
+                segment.x_start,
+                segment.x_end,
                 _clip_notches(notches, y_start, y_end),
             )
             for segment, notches in zip(strip.segments, face_notches)
         )
-        pieces.append(WallpaperPiece(
-            strip_number=strip.number,
-            wall_index=strip.wall_index,
-            y_start=y_start,
-            y_end=y_end,
-            phase=phase,
-            notches=segments[0].notches,
-            segments=segments,
-        ))
+        pieces.append(
+            WallpaperPiece(
+                strip_number=strip.number,
+                wall_index=strip.wall_index,
+                y_start=y_start,
+                y_end=y_end,
+                phase=phase,
+                notches=segments[0].notches,
+                segments=segments,
+            )
+        )
     offcuts = [
         WallpaperOffcut(strip.number, y_start, y_end, phase)
         for y_start, y_end in offcut_ranges
@@ -171,7 +186,9 @@ def _cutout_from_local_lower_edge(cutout: Cutout, segment: StripSegment) -> Cuto
         lower = segment.lower_left
     else:
         fraction = (cutout.x - segment.x_start) / (segment.x_end - segment.x_start)
-        lower = segment.lower_left + (segment.lower_right - segment.lower_left) * fraction
+        lower = (
+            segment.lower_left + (segment.lower_right - segment.lower_left) * fraction
+        )
     return cutout.model_copy(update={"y": cutout.y + lower})
 
 
@@ -206,11 +223,19 @@ def _subtract(
     return parts
 
 
-def _clip_notches(notches: list[Notch], y_start: float, y_end: float) -> tuple[Notch, ...]:
+def _clip_notches(
+    notches: list[Notch], y_start: float, y_end: float
+) -> tuple[Notch, ...]:
     return tuple(
         Notch(
-            notch.x_start, max(notch.y_start, y_start), notch.x_end, min(notch.y_end, y_end),
-            notch.mode, notch.kind, notch.label, _clip_core(notch.core, y_start, y_end),
+            notch.x_start,
+            max(notch.y_start, y_start),
+            notch.x_end,
+            min(notch.y_end, y_end),
+            notch.mode,
+            notch.kind,
+            notch.label,
+            _clip_core(notch.core, y_start, y_end),
         )
         for notch in notches
         if notch.y_start < y_end and notch.y_end > y_start
@@ -260,7 +285,9 @@ def _clamp_to_segment(
 
 
 def _split_ranges(
-    bottom_height: float, top_height: float, full_width_bounds: list[tuple[float, float]]
+    bottom_height: float,
+    top_height: float,
+    full_width_bounds: list[tuple[float, float]],
 ) -> tuple[list[tuple[float, float]], list[tuple[float, float]]]:
     pieces = []
     offcuts = []
@@ -313,7 +340,9 @@ def _merge_grouped_cutouts(cutouts: list[Cutout]) -> list[Cutout]:
                 y=bottom,
                 width=right - left,
                 height=top - bottom,
-                mode="mark" if all(cutout.mode == "mark" for cutout in group) else "precut",
+                mode="mark"
+                if all(cutout.mode == "mark" for cutout in group)
+                else "precut",
             )
         )
     return merged

@@ -78,8 +78,11 @@ def test_material_summary_counts_reused_offcuts_and_net_pattern_loss():
         "offcuts_reused_count": 1,
         "offcuts_reused_length": 100,
         "fit": {
-            "longest_piece": 700, "full_pieces": 1, "pieces_per_roll": 2,
-            "length_for_next": 3100, "shortfall": 1100,
+            "longest_piece": 700,
+            "full_pieces": 1,
+            "pieces_per_roll": 2,
+            "length_for_next": 3100,
+            "shortfall": 1100,
         },
         "short_pieces_count": 0,
         "short_pieces_length": 0,
@@ -112,4 +115,8 @@ def test_roll_fit_says_what_a_longer_roll_would_need():
 
     # Each 2400 mm piece starts on a 380 mm repeat, so it advances 2660 mm: three fit,
     # and a fourth would need 3 * 2660 + 2400 = 10380 mm.
-    assert (fit["pieces_per_roll"], fit["length_for_next"], fit["shortfall"]) == (3, 10380, 330)
+    assert (fit["pieces_per_roll"], fit["length_for_next"], fit["shortfall"]) == (
+        3,
+        10380,
+        330,
+    )

@@ -92,7 +92,6 @@ def render_saved_tile_layout(
     if not layout_result or not layout_result.get("tiles") or not surface_data:
         return None
 
-
     try:
         cutouts = tuple(
             Cutout(
@@ -153,5 +152,7 @@ def render_saved_wallpaper_plan(
     try:
         return render_plan_svg(room_data, plan_result, project_name=name)
     except Exception as e:
-        logger.warning(f"Failed to render diagram for saved wallpaper project '{name}': {e}")
+        logger.warning(
+            f"Failed to render diagram for saved wallpaper project '{name}': {e}"
+        )
         return None

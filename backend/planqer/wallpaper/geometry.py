@@ -23,7 +23,9 @@ class WallOutline:
     def top_height_at(self, x: float) -> float:
         if not 0 <= x <= self.width:
             raise ValueError("x must be within the wall outline")
-        return self.height_left + (self.height_right - self.height_left) * x / self.width
+        return (
+            self.height_left + (self.height_right - self.height_left) * x / self.width
+        )
 
     def bottom_height_at(self, x: float) -> float:
         if not 0 <= x <= self.width:

@@ -12,9 +12,8 @@ from sqlmodel import select
 from planqer.auth import get_current_user
 from planqer.database import User, UserWallpaper, UserWallpaperProject, get_session
 from planqer.routes.project_groups import _get_owned_group
-from planqer.saved_project_adapters import load_saved_json
-from planqer.saved_project_adapters import update_saved_image
 from planqer.saved_diagrams import render_saved_wallpaper_plan
+from planqer.saved_project_adapters import load_saved_json, update_saved_image
 from planqer.schemas.saved import (
     UpdateWallpaperProjectRequest,
     WallpaperProjectRequest,
@@ -22,7 +21,9 @@ from planqer.schemas.saved import (
 )
 
 wallpapers_router = APIRouter(prefix="/wallpapers", tags=["user-wallpapers"])
-projects_router = APIRouter(prefix="/wallpaper-projects", tags=["user-wallpaper-projects"])
+projects_router = APIRouter(
+    prefix="/wallpaper-projects", tags=["user-wallpaper-projects"]
+)
 
 
 class WallpaperResponse(BaseModel):
@@ -48,18 +49,34 @@ class WallpaperProjectResponse(BaseModel):
 
 
 def _wallpaper_response(item: UserWallpaper) -> WallpaperResponse:
-    return WallpaperResponse(id=item.id, name=item.name, data=load_saved_json(item.data, field="wallpaper", default={}, expected=dict))
+    return WallpaperResponse(
+        id=item.id,
+        name=item.name,
+        data=load_saved_json(item.data, field="wallpaper", default={}, expected=dict),
+    )
 
 
 def _project_response(item: UserWallpaperProject) -> WallpaperProjectResponse:
     return WallpaperProjectResponse(
-        id=item.id, project_group_id=item.project_group_id, name=item.name,
-        wallpaper_data=load_saved_json(item.wallpaper_data, field="wallpaper", default={}, expected=dict),
-        room_data=load_saved_json(item.room_data, field="wallpaper room", default={}, expected=dict),
-        options_data=load_saved_json(item.options_data, field="wallpaper options", default={}, expected=dict),
-        plan_result=load_saved_json(item.plan_result, field="wallpaper plan", default=None, expected=dict),
+        id=item.id,
+        project_group_id=item.project_group_id,
+        name=item.name,
+        wallpaper_data=load_saved_json(
+            item.wallpaper_data, field="wallpaper", default={}, expected=dict
+        ),
+        room_data=load_saved_json(
+            item.room_data, field="wallpaper room", default={}, expected=dict
+        ),
+        options_data=load_saved_json(
+            item.options_data, field="wallpaper options", default={}, expected=dict
+        ),
+        plan_result=load_saved_json(
+            item.plan_result, field="wallpaper plan", default=None, expected=dict
+        ),
         ordered_rolls=item.ordered_rolls,
-        progress_data=load_saved_json(item.progress_data, field="wallpaper progress", default={}, expected=dict),
+        progress_data=load_saved_json(
+            item.progress_data, field="wallpaper progress", default={}, expected=dict
+        ),
         cutlist_image=item.cutlist_image,
         has_svg_image=bool(item.cutlist_image_svg),
         created_at=item.created_at.isoformat(),
@@ -72,8 +89,12 @@ def _ensure_project_diagram(item: UserWallpaperProject) -> bool:
     if item.cutlist_image_svg or item.cutlist_image:
         return False
     image = render_saved_wallpaper_plan(
-        load_saved_json(item.room_data, field="wallpaper room", default={}, expected=dict),
-        load_saved_json(item.plan_result, field="wallpaper plan", default=None, expected=dict),
+        load_saved_json(
+            item.room_data, field="wallpaper room", default={}, expected=dict
+        ),
+        load_saved_json(
+            item.plan_result, field="wallpaper plan", default=None, expected=dict
+        ),
         item.name,
     )
     if not image:
@@ -84,42 +105,99 @@ def _ensure_project_diagram(item: UserWallpaperProject) -> bool:
 
 
 async def _owned(model, item_id: UUID, user: User, session: AsyncSession, label: str):
-    item = (await session.execute(select(model).where(model.id == item_id, model.user_id == user.id))).scalar_one_or_none()
+    item = (
+        await session.execute(
+            select(model).where(model.id == item_id, model.user_id == user.id)
+        )
+    ).scalar_one_or_none()
     if not item:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"{label} not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"{label} not found"
+        )
     return item
 
 
 @wallpapers_router.get("/", response_model=list[WallpaperResponse])
-async def list_wallpapers(current_user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
-    items = (await session.execute(select(UserWallpaper).where(UserWallpaper.user_id == current_user.id).order_by(UserWallpaper.updated_at.desc()))).scalars().all()
+async def list_wallpapers(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    items = (
+        (
+            await session.execute(
+                select(UserWallpaper)
+                .where(UserWallpaper.user_id == current_user.id)
+                .order_by(UserWallpaper.updated_at.desc())
+            )
+        )
+        .scalars()
+        .all()
+    )
     return [_wallpaper_response(item) for item in items]
 
 
 @wallpapers_router.post("/", response_model=WallpaperResponse)
-async def create_wallpaper(data: WallpaperRequest, current_user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
-    item = UserWallpaper(user_id=current_user.id, name=data.name, data=json.dumps(data.data))
-    session.add(item); await session.commit(); await session.refresh(item)
+async def create_wallpaper(
+    data: WallpaperRequest,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    item = UserWallpaper(
+        user_id=current_user.id, name=data.name, data=json.dumps(data.data)
+    )
+    session.add(item)
+    await session.commit()
+    await session.refresh(item)
     return _wallpaper_response(item)
 
 
 @wallpapers_router.put("/{item_id}", response_model=WallpaperResponse)
-async def update_wallpaper(item_id: UUID, data: WallpaperRequest, current_user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
+async def update_wallpaper(
+    item_id: UUID,
+    data: WallpaperRequest,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
     item = await _owned(UserWallpaper, item_id, current_user, session, "Wallpaper")
-    item.name, item.data, item.updated_at = data.name, json.dumps(data.data), datetime.now()
-    await session.commit(); await session.refresh(item)
+    item.name, item.data, item.updated_at = (
+        data.name,
+        json.dumps(data.data),
+        datetime.now(),
+    )
+    await session.commit()
+    await session.refresh(item)
     return _wallpaper_response(item)
 
 
 @wallpapers_router.delete("/{item_id}")
-async def delete_wallpaper(item_id: UUID, current_user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
-    await session.delete(await _owned(UserWallpaper, item_id, current_user, session, "Wallpaper")); await session.commit()
+async def delete_wallpaper(
+    item_id: UUID,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    await session.delete(
+        await _owned(UserWallpaper, item_id, current_user, session, "Wallpaper")
+    )
+    await session.commit()
     return {"message": "Wallpaper deleted successfully"}
 
 
 @projects_router.get("/", response_model=list[WallpaperProjectResponse])
-async def list_projects(current_user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
-    items = (await session.execute(select(UserWallpaperProject).where(UserWallpaperProject.user_id == current_user.id).order_by(UserWallpaperProject.updated_at.desc()))).scalars().all()
+async def list_projects(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    items = (
+        (
+            await session.execute(
+                select(UserWallpaperProject)
+                .where(UserWallpaperProject.user_id == current_user.id)
+                .order_by(UserWallpaperProject.updated_at.desc())
+            )
+        )
+        .scalars()
+        .all()
+    )
     diagram_backfilled = False
     for item in items:
         diagram_backfilled = _ensure_project_diagram(item) or diagram_backfilled
@@ -129,17 +207,48 @@ async def list_projects(current_user: User = Depends(get_current_user), session:
 
 
 @projects_router.post("/", response_model=WallpaperProjectResponse)
-async def create_project(data: WallpaperProjectRequest, current_user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
-    if data.project_group_id: await _get_owned_group(data.project_group_id, current_user, session)
+async def create_project(
+    data: WallpaperProjectRequest,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    if data.project_group_id:
+        await _get_owned_group(data.project_group_id, current_user, session)
     svg = render_saved_wallpaper_plan(data.room_data, data.plan_result, data.name)
-    item = UserWallpaperProject(user_id=current_user.id, cutlist_image=svg, cutlist_image_svg=svg, **{key: json.dumps(value) if key in {"wallpaper_data", "room_data", "options_data", "plan_result", "progress_data"} and value is not None else value for key, value in data.model_dump().items()})
-    session.add(item); await session.commit(); await session.refresh(item)
+    item = UserWallpaperProject(
+        user_id=current_user.id,
+        cutlist_image=svg,
+        cutlist_image_svg=svg,
+        **{
+            key: json.dumps(value)
+            if key
+            in {
+                "wallpaper_data",
+                "room_data",
+                "options_data",
+                "plan_result",
+                "progress_data",
+            }
+            and value is not None
+            else value
+            for key, value in data.model_dump().items()
+        },
+    )
+    session.add(item)
+    await session.commit()
+    await session.refresh(item)
     return _project_response(item)
 
 
 @projects_router.get("/{item_id}", response_model=WallpaperProjectResponse)
-async def get_project(item_id: UUID, current_user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
-    item = await _owned(UserWallpaperProject, item_id, current_user, session, "Wallpaper project")
+async def get_project(
+    item_id: UUID,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    item = await _owned(
+        UserWallpaperProject, item_id, current_user, session, "Wallpaper project"
+    )
     if _ensure_project_diagram(item):
         await session.commit()
         await session.refresh(item)
@@ -147,32 +256,79 @@ async def get_project(item_id: UUID, current_user: User = Depends(get_current_us
 
 
 @projects_router.put("/{item_id}", response_model=WallpaperProjectResponse)
-async def update_project(item_id: UUID, data: UpdateWallpaperProjectRequest, current_user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
-    item = await _owned(UserWallpaperProject, item_id, current_user, session, "Wallpaper project")
-    if data.project_group_id: await _get_owned_group(data.project_group_id, current_user, session)
+async def update_project(
+    item_id: UUID,
+    data: UpdateWallpaperProjectRequest,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    item = await _owned(
+        UserWallpaperProject, item_id, current_user, session, "Wallpaper project"
+    )
+    if data.project_group_id:
+        await _get_owned_group(data.project_group_id, current_user, session)
     for key, value in data.model_dump(include=data.model_fields_set).items():
-        setattr(item, key, json.dumps(value) if key in {"wallpaper_data", "room_data", "options_data", "plan_result", "progress_data"} and value is not None else value)
+        setattr(
+            item,
+            key,
+            json.dumps(value)
+            if key
+            in {
+                "wallpaper_data",
+                "room_data",
+                "options_data",
+                "plan_result",
+                "progress_data",
+            }
+            and value is not None
+            else value,
+        )
     if {"name", "room_data", "plan_result"} & data.model_fields_set:
         item.cutlist_image = render_saved_wallpaper_plan(
-            load_saved_json(item.room_data, field="wallpaper room", default={}, expected=dict),
-            load_saved_json(item.plan_result, field="wallpaper plan", default=None, expected=dict),
+            load_saved_json(
+                item.room_data, field="wallpaper room", default={}, expected=dict
+            ),
+            load_saved_json(
+                item.plan_result, field="wallpaper plan", default=None, expected=dict
+            ),
             item.name,
         )
         item.cutlist_image_svg = item.cutlist_image
-    item.updated_at = datetime.now(); await session.commit(); await session.refresh(item)
+    item.updated_at = datetime.now()
+    await session.commit()
+    await session.refresh(item)
     return _project_response(item)
 
 
 @projects_router.get("/{item_id}/image")
-async def get_project_image(item_id: UUID, current_user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
-    item = await _owned(UserWallpaperProject, item_id, current_user, session, "Wallpaper project")
+async def get_project_image(
+    item_id: UUID,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    item = await _owned(
+        UserWallpaperProject, item_id, current_user, session, "Wallpaper project"
+    )
     if _ensure_project_diagram(item):
         await session.commit()
         await session.refresh(item)
-    return update_saved_image(item.cutlist_image_svg or item.cutlist_image, project_name=item.name, diagram_label="wallpaper plan")
+    return update_saved_image(
+        item.cutlist_image_svg or item.cutlist_image,
+        project_name=item.name,
+        diagram_label="wallpaper plan",
+    )
 
 
 @projects_router.delete("/{item_id}")
-async def delete_project(item_id: UUID, current_user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
-    await session.delete(await _owned(UserWallpaperProject, item_id, current_user, session, "Wallpaper project")); await session.commit()
+async def delete_project(
+    item_id: UUID,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    await session.delete(
+        await _owned(
+            UserWallpaperProject, item_id, current_user, session, "Wallpaper project"
+        )
+    )
+    await session.commit()
     return {"message": "Wallpaper project deleted successfully"}

@@ -5,7 +5,6 @@ from fastapi.testclient import TestClient
 from planqer.api import app
 from planqer.local_api import handle
 
-
 PAYLOAD = {
     "wallpaper": {
         "name": "Willow",
@@ -16,15 +15,17 @@ PAYLOAD = {
         "match": "straight",
     },
     "room": {
-        "walls": [{
-            "name": "Hall",
-            "width_top": 1060,
-            "width_middle": 1060,
-            "width_bottom": 1060,
-            "height_left": 2400,
-            "height_middle": 2400,
-            "height_right": 2400,
-        }],
+        "walls": [
+            {
+                "name": "Hall",
+                "width_top": 1060,
+                "width_middle": 1060,
+                "width_bottom": 1060,
+                "height_left": 2400,
+                "height_middle": 2400,
+                "height_right": 2400,
+            }
+        ],
     },
 }
 
