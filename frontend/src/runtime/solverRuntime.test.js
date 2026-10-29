@@ -140,7 +140,7 @@ describe("solver runtime", () => {
         .filter((url) => url.endsWith(".whl"));
       expect(wheels).toEqual([
         "/runtime/networkx-3.7-py3-none-any.whl",
-        "/runtime/trimesh-5.1.1-py3-none-any.whl",
+        "/runtime/trimesh-5.2.0-py3-none-any.whl",
       ]);
       expect(pyodide.unpackArchive).toHaveBeenCalledWith(
         expect.anything(),
