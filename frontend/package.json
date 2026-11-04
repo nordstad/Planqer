@@ -8,13 +8,13 @@
   "dependencies": {
     "@fontsource/archivo": "^5.3.0",
     "@fontsource/archivo-narrow": "^5.3.0",
-    "axios": "^1.20.0",
-    "i18next": "^26.5.10",
+    "axios": "^1.21.0",
+    "i18next": "^26.6.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
-    "react-i18next": "^17.1.8",
-    "react-router-dom": "^7.18.4",
-    "three": "0.186.1"
+    "react-i18next": "^17.1.9",
+    "react-router-dom": "^7.18.5",
+    "three": "0.187.0"
   },
   "scripts": {
     "start": "vite",
@@ -35,11 +35,11 @@
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.8",
     "@vitejs/plugin-react": "^6.1.2",
-    "autoprefixer": "^10.6.1",
+    "autoprefixer": "^10.6.2",
     "esbuild": "^0.28.2",
     "jsdom": "^30.1.3",
     "playwright": "^1.55.0",
-    "postcss": "^8.5.31",
+    "postcss": "^8.5.32",
     "source-map-js": "^1.2.2",
     "tailwindcss": "^4.3.3",
     "vite": "^8.3.5",
