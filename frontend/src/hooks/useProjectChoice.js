@@ -41,7 +41,14 @@ export function useProjectChoice({ groups, onCreated, fallbackName }) {
     }
     const name = newName.trim() || fallbackName?.trim() || defaultName;
     const existing = groups.find((group) => group.name.trim().toLowerCase() === name.toLowerCase());
-    const group = existing || await createProjectGroup(name);
+    let group = existing;
+    if (!group) {
+      try {
+        group = await createProjectGroup(name);
+      } catch (err) {
+        throw new Error(`${t('auditUi.createProjectFailed')}: ${err.message}`);
+      }
+    }
     if (!existing) onCreated(group);
     setPicked(group.id);
     remember(group.id);

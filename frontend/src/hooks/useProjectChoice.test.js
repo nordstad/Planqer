@@ -82,6 +82,6 @@ describe('useProjectChoice', () => {
   it('creates nothing and rejects when the project cannot be made', async () => {
     createProjectGroup.mockRejectedValue(new Error('rate limited'));
     const { result } = setup([]);
-    await expect(act(() => result.current.resolve())).rejects.toThrow('rate limited');
+    await expect(act(() => result.current.resolve())).rejects.toThrow('Could not create that project: rate limited');
   });
 });
