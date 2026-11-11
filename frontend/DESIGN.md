@@ -406,6 +406,14 @@ radius, 42px square).
 - **Error:** Border and fill shift to revision red / `--revision-bg`.
 - **In-table (`.cell-input`):** Transparent, right-aligned, tabular; focus
   fills the cell with `--accent-bg`.
+- **Bounded numbers (`.dimension-input`):** A measurement, rate, percentage,
+  or price does not need free-text width and should use a compact 112px control;
+  tightly scoped controls such as kerf may use 78px. Names, product search,
+  project names, and comma-separated lists remain full-width.
+- **Required and optional fields:** An optional field says “Optional” in its
+  label. Do not invent a one-off visual treatment for required fields; the
+  system-wide distinction is an open design decision and belongs here once
+  adopted.
 - **Checkbox / Radio:** 16px, 1.5px border, 4px radius (full for radio),
   filling amber when checked.
 
@@ -425,6 +433,15 @@ positions remain.
 The numbers are load-bearing here: the sequence is the information. This is the
 one place in the system where `01 / 02 / 03` is earned rather than decoration.
 
+### Blocked Actions and Recovery
+
+A disabled primary action must state the requirement that blocks it at the point
+of action and provide a direct route to fix it. In board cutting, no required
+parts shows a status beside the Required parts heading and a “Go to required
+parts” link beside the disabled plan action; the link scrolls to and focuses the
+heading. Do not rely on off-screen validation or a vague “fix highlighted rows”
+message.
+
 ### Folds
 
 `.fold` — an advanced option, closed by default, opened by one full-width row:
@@ -435,11 +452,12 @@ user should be checking (see The Check-It-Before-You-Cut Rule).
 
 ### Info Tips
 
-`.infotip` — a 18px hairline dot beside a field label that reveals a 250px
-explanation on hover **and** on keyboard focus, CSS-only. It opens downward,
+`InfoTip` / `.info-tip` — a 24px control beside a label that reveals a compact
+explanation on hover, keyboard focus, **and** tap/click. It opens downward,
 because these sit near the top of a step where an upward bubble would cover the
-heading it is explaining. Never a click-to-open panel: an explanation must not
-cost a step in the flow it is explaining.
+heading it is explaining. It is progressive disclosure: optional explanation
+lives here, while units, constraints, validation, and other error-preventing
+guidance stay inline.
 
 ### Navigation
 
@@ -475,6 +493,10 @@ value being present; the UI derives no number of its own.
 
 `.answer-field` (the bordered figure card) is the older form of the same idea
 and is no longer used by either optimizer.
+
+When a diagram already labels the cut sequence, do not repeat it in a separate
+text cut-order panel. Keep complementary information, such as the stock to buy,
+but make the diagram the single source for the sequence.
 
 ### The Homepage Cut-Plan Diagram
 
@@ -574,6 +596,7 @@ Recorded so future work does not mistake these for system rules:
   correct total. The same function returns a *line* total, not a unit price, so
   "each" is derived by division. Both are frontend compensations for API shapes,
   not conventions to copy.
-- **`src/components/*.test.jsx`** remain stale, and `npm test` invokes
-  `viject`, a CRA-to-Vite migration tool, not a test runner. No automated
-  test currently guards anything in this document.
+- **The design document is not mechanically enforced.** Component tests protect
+  behaviour, but every user-visible frontend change must still review this file
+  and update it when the design system, interaction rules, or current
+  intentional exceptions change.

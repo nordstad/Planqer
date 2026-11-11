@@ -5,7 +5,7 @@
   an edge, slivers, and material used.
 
   Selection uses the system's own current-state grammar (a 2px amber
-  underline) rather than an amber fill — see DESIGN.md's One Accent Rule. The
+   underline) rather than an amber fill — see frontend/DESIGN.md's One Accent Rule. The
   card that starts selected is the solver's own recommended candidate, so the
   one amber signal on this step also carries "this is the one we'd pick."
 */
