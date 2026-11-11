@@ -667,7 +667,7 @@
     font-family: 'Archivo', sans-serif; font-size: 13px; font-weight: 800; letter-spacing: 0;
   }
   .opt-mark {
-    margin-left: 5px; font-family: 'Archivo', sans-serif; font-size: 12px; font-weight: 400;
+    margin-left: 2px; font-family: 'Archivo', sans-serif; font-size: 12px; font-weight: 400;
     letter-spacing: 0; text-transform: none; color: var(--ink-3);
   }
   .field-unit-wrap { position: relative; display: block; width: fit-content; max-width: 100%; }

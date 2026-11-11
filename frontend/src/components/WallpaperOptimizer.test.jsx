@@ -12,6 +12,8 @@ const { createProjectGroup, createWallpaperPlan, saveWallpaperProject } = await 
 
 const openCorners = () => screen.getAllByRole('button', { name: /^Change corner/ }).forEach((button) => fireEvent.click(button));
 
+const fillOpening = (values) => Object.entries(values).forEach(([label, value]) => fireEvent.change(screen.getByLabelText(label), { target: { value } }));
+
 const openRoomStep = async () => {
   render(<MemoryRouter><WallpaperOptimizer /></MemoryRouter>);
   fireEvent.change(screen.getByLabelText(/^Wallpaper name|^Name/i), { target: { value: 'Willow' } });
@@ -24,6 +26,7 @@ describe('WallpaperOptimizer room step', () => {
   it('explains an opening that does not fit and blocks the plan', async () => {
     await openRoomStep();
     fireEvent.click(screen.getByRole('button', { name: 'Add opening or obstacle' }));
+    fillOpening({ 'From left edge (mm)': '1000', 'From floor (mm)': '900', 'Width (mm)': '1200', 'Height (mm)': '1200' });
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText(/^Wall height/), { target: { value: '1200' } });
@@ -32,19 +35,43 @@ describe('WallpaperOptimizer room step', () => {
     expect(screen.getByRole('button', { name: /Create plan/ })).toBeDisabled();
   });
 
-  it('uses realistic defaults for windows and outlets', async () => {
+  it('pre-fills only standard opening sizes and leaves guesses empty', async () => {
     await openRoomStep();
     fireEvent.click(screen.getByRole('button', { name: 'Add opening or obstacle' }));
 
     expect(screen.getByLabelText('Type')).toHaveValue('window');
-    expect(screen.getByLabelText('From floor (mm)')).toHaveValue('900');
-    expect(screen.getByLabelText('Width (mm)')).toHaveValue('1200');
-    expect(screen.getByLabelText('Height (mm)')).toHaveValue('1200');
+    ['From left edge (mm)', 'From floor (mm)', 'Width (mm)', 'Height (mm)'].forEach((label) => expect(screen.getByLabelText(label)).toHaveValue(''));
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.getAllByText(/4 required fields empty: Window: From left edge/).length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: /Create plan/ })).toBeDisabled();
 
     fireEvent.change(screen.getByLabelText('Type'), { target: { value: 'outlet' } });
+    expect(screen.getByLabelText('From left edge (mm)')).toHaveValue('');
     expect(screen.getByLabelText('From floor (mm)')).toHaveValue('250');
     expect(screen.getByLabelText('Width (mm)')).toHaveValue('85');
     expect(screen.getByLabelText('Height (mm)')).toHaveValue('85');
+  });
+
+  it('keeps a typed opening value when the type changes', async () => {
+    await openRoomStep();
+    fireEvent.click(screen.getByRole('button', { name: 'Add opening or obstacle' }));
+    fillOpening({ 'From left edge (mm)': '700', 'Width (mm)': '100' });
+
+    fireEvent.change(screen.getByLabelText('Type'), { target: { value: 'switch' } });
+
+    expect(screen.getByLabelText('From left edge (mm)')).toHaveValue('700');
+    expect(screen.getByLabelText('Width (mm)')).toHaveValue('100');
+    expect(screen.getByLabelText('From floor (mm)')).toHaveValue('1100');
+  });
+
+  it('blocks a fifth wall that lands on the first one and says the room already closed', async () => {
+    await openRoomStep();
+    for (let wall = 0; wall < 4; wall += 1) fireEvent.click(screen.getByRole('button', { name: 'Add wall' }));
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Wall E runs into Wall A');
+    expect(screen.getByRole('alert')).toHaveTextContent('The room already closes after Wall D');
+    expect(screen.getByRole('button', { name: /Create plan/ })).toBeDisabled();
+    expect(screen.getByTestId('clashing-wall')).toBeInTheDocument();
   });
 
   it('adds a closing corner when the room is marked closed and offers wall-run breaks only while open', async () => {
@@ -307,6 +334,7 @@ describe('WallpaperOptimizer translations', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Mät rummet →' }));
       await screen.findByRole('heading', { name: 'Mät rummet' });
       fireEvent.click(screen.getByRole('button', { name: 'Lägg till öppning eller hinder' }));
+      fillOpening({ 'Från vänster kant (mm)': '1000', 'Från golv (mm)': '900', 'Bredd (mm)': '1200', 'Höjd (mm)': '1200' });
       fireEvent.change(screen.getByLabelText(/^Väggshöjd|^Vägghöjd/), { target: { value: '1200' } });
 
       expect(await screen.findByRole('alert')).toHaveTextContent(/för hög vid höger kant/);

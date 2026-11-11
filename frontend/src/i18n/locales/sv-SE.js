@@ -575,6 +575,8 @@ Object.assign(locale, {
     wallsMeasured_one: "{{count}} uppmätt vägg",
     wallsMeasured_other: "{{count}} uppmätta väggar",
     measureRoom: "Mät rummet",
+    errWallsCross: "{{wall}} går in i {{other}}. Med de här bredderna och hörnen överlappar väggarna: kontrollera bredderna och hörntyperna.",
+    roomClosesAfter: "Rummet sluter sig redan efter {{wall}}: ta bort de extra väggarna, eller kryssa i ”Väggarna bildar ett slutet rum”.",
     sectionRoll: "Rulle",
     sectionPattern: "Mönster",
     pricePerRoll: "Pris per rulle",
@@ -755,6 +757,7 @@ Object.assign(locale, {
     errOverlap: "Hörnöverlappen måste vara ett heltal mellan 0 och {{max}} mm.",
   },
   formUi: {
+    checkValues: "Kontrollera de markerade värdena",
     optionalMark: "(valfritt)",
     requiredLegend: "Obligatoriskt. Fält som redan har ett värde har ett standardvärde som du kan ändra.",
     requiredEmpty_one: "{{count}} obligatoriskt fält är tomt: {{fields}}",
@@ -766,6 +769,15 @@ Object.assign(locale, {
     toFill_one: "{{count}} kvar att fylla i",
     toFill_other: "{{count}} kvar att fylla i",
     fillRequired: "Fyll i {{fields}} för att fortsätta.",
+  },
+  boardUi: {
+    partsDone_one: "{{count}} del · {{demand}} mm",
+    partsDone_other: "{{count}} delar · {{demand}} mm",
+    emptyRows: "Några rader är inte ifyllda",
+    fillPartRows: "Fyll i längd och antal på varje delrad för att planera kapningen.",
+    fillToPlan: "Fyll i {{fields}} för att planera kapningen.",
+    addStock: "Lägg till minst en lagerlängd",
+    noPrices: "Inga priser",
   },
   demo: {
     catalogue: {

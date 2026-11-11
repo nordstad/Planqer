@@ -11,7 +11,7 @@ import FormField, { SectionStatus, splitUnit } from './FormField';
 import InfoTip from './InfoTip';
 import WallpaperPieceGallery from './WallpaperPieceGallery';
 import { KIND_KEYS, pieceFaces } from './WallpaperPieceDiagram';
-import { wallIssues, overlapIssue } from '../utils/wallpaperValidation';
+import { wallIssues, overlapIssue, wallCrossings } from '../utils/wallpaperValidation';
 import RoomOverview, { linkColour } from './RoomOverview';
 import { createWallpaperPlan, getProjectGroups, getUserSettings, getWallpaperProjects, saveWallpaper, saveWallpaperProject, updateWallpaperProject, movePlanToProject } from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -63,20 +63,26 @@ const initialCorner = () => ({
   confirmed_continuation: defaultContinuation('inside'),
 });
 
+// Only standard values are pre-filled: outlet and switch boxes and their usual
+// heights, and a standard door. Anything that differs from room to room starts
+// empty, because a guessed value that is never corrected silently skews the plan.
 const CUTOUT_DEFAULTS = {
-  door: { x: '500', y: '0', width: '900', height: '2100' },
-  window: { x: '1000', y: '900', width: '1200', height: '1200' },
-  opening: { x: '1000', y: '0', width: '1000', height: '2100' },
-  heat_pump: { x: '500', y: '1800', width: '800', height: '300' },
-  radiator: { x: '500', y: '100', width: '800', height: '600' },
-  outlet: { x: '500', y: '250', width: '85', height: '85' },
-  switch: { x: '500', y: '1100', width: '85', height: '85' },
-  pipe: { x: '500', y: '0', width: '100', height: '2400' },
-  custom: { x: '500', y: '500', width: '500', height: '500' },
+  door: { y: '0', width: '900', height: '2100' },
+  opening: { y: '0' },
+  outlet: { y: '250', width: '85', height: '85' },
+  switch: { y: '1100', width: '85', height: '85' },
 };
+const CUTOUT_FIELDS = ['x', 'y', 'width', 'height'];
 
-const defaultCutout = (kind) => ({ kind, ...CUTOUT_DEFAULTS[kind], tuck_edges: [] });
-const hasDefaultCutoutDimensions = (cutout) => Object.entries(CUTOUT_DEFAULTS[cutout.kind] || {}).every(([field, value]) => cutout[field] === value);
+const defaultCutout = (kind) => ({ kind, x: '', y: '', width: '', height: '', ...CUTOUT_DEFAULTS[kind], tuck_edges: [] });
+// Changing the type swaps in the new type's standard values, but never over a
+// value the user typed.
+const changeCutoutKind = (cutout, kind) => {
+  const before = CUTOUT_DEFAULTS[cutout.kind] || {};
+  const after = CUTOUT_DEFAULTS[kind] || {};
+  const untouched = (field) => isBlank(cutout[field]) || cutout[field] === before[field];
+  return { ...cutout, kind, ...Object.fromEntries(CUTOUT_FIELDS.filter(untouched).map((field) => [field, after[field] ?? ''])) };
+};
 
 const CornerConnection = ({ from, to, corner, link, overlap }) => {
   const { t } = useTranslation();
@@ -323,7 +329,7 @@ const WallpaperOptimizer = () => {
   const toggleOpenWall = (index, open) => setWalls(walls.map((wall, i) => i !== index ? wall : open ? { ...wall, skip: true, profile: 'rectangle', cutouts: [], height_left: '2400', height_middle: '2400', height_right: '2400' } : { ...wall, skip: false }));
   const updateCutout = (wallIndex, cutoutIndex, field, value) => setWalls(walls.map((wall, index) => index !== wallIndex ? wall : { ...wall, cutouts: wall.cutouts.map((cutout, current) => {
     if (current !== cutoutIndex) return cutout;
-    return field === 'kind' && hasDefaultCutoutDimensions(cutout) ? defaultCutout(value) : { ...cutout, [field]: value };
+    return field === 'kind' ? changeCutoutKind(cutout, value) : { ...cutout, [field]: value };
   }) }));
   const removeCutout = (wallIndex, cutoutIndex) => setWalls(walls.map((wall, index) => index !== wallIndex ? wall : { ...wall, cutouts: wall.cutouts.filter((_, current) => current !== cutoutIndex) }));
   const addWall = () => {
@@ -445,7 +451,16 @@ const WallpaperOptimizer = () => {
   ];
   const hasConnectedCorner = corners.some((corner) => corner.confirmed_continuation === 'continue');
   const hasSlopedWall = walls.some((wall) => wall.profile === 'sloped');
-  const issues = walls.map((wall) => wallIssues(wall, t));
+  // Walls that overlap or run into an earlier wall are an error on the later one.
+  const { crossings, closesAfter } = wallCrossings(walls, corners, closed);
+  const issues = walls.map((wall, index) => {
+    const base = wallIssues(wall, t);
+    const clashes = crossings.filter((crossing) => crossing.wall === index).map((crossing) => [
+      t('wallpaperUi.errWallsCross', { wall: wall.name || wallLetter(index, t), other: walls[crossing.other].name || wallLetter(crossing.other, t) }),
+      closesAfter != null && closesAfter < index ? t('wallpaperUi.roomClosesAfter', { wall: walls[closesAfter].name || wallLetter(closesAfter, t) }) : '',
+    ].filter(Boolean).join(' '));
+    return clashes.length ? { ...base, errors: [...base.errors, ...clashes], hasErrors: true } : base;
+  });
   const overlapMessage = overlapIssue(cornerOverlap, t);
   const toggle = (kind, id) => setProgress((current) => ({ ...current, [kind]: current[kind].includes(id) ? current[kind].filter((item) => item !== id) : [...current[kind], id] }));
 
@@ -469,6 +484,7 @@ const WallpaperOptimizer = () => {
     missing: [
       ...(isBlank(wall.name) ? [t('wallpaperUi.wallNameLabel')] : []),
       ...issues[index].missing.map((group) => unitless(group === 'Width' ? 'wallpaperUi.wallWidthMm' : 'wallpaperUi.wallHeightMm')),
+      ...(wall.skip ? [] : (issues[index].cutoutsMissing || []).flatMap((fields, cutoutIndex) => fields.map((field) => `${t(KIND_KEYS[wall.cutouts[cutoutIndex].kind])}: ${unitless({ x: 'wallpaperUi.fromLeftEdge', y: wall.profile === 'sloped' ? 'wallpaperUi.fromLowerEdge' : 'wallpaperUi.fromFloor', width: 'wallpaperUi.widthMm', height: 'wallpaperUi.heightMm' }[field])}`))),
     ],
     hasErrors: issues[index].hasErrors,
   }));
@@ -593,7 +609,7 @@ const WallpaperOptimizer = () => {
           </nav>
           <details className="room-preview-fold" open={previewOpen} onToggle={(event) => setPreviewOpen(event.currentTarget.open)}>
             <summary>{t('wallpaperUi.roomPreview')}</summary>
-            <aside aria-label={t('wallpaperUi.roomPreview')}><RoomOverview walls={walls} corners={corners} closed={closed} activeWallIndex={openWall} showStart /></aside>
+            <aside aria-label={t('wallpaperUi.roomPreview')}><RoomOverview walls={walls} corners={corners} closed={closed} activeWallIndex={openWall} clashingWalls={crossings.map((crossing) => crossing.wall)} showStart /></aside>
           </details>
         </div>
         <div className="min-w-0 lg:order-1">
@@ -620,7 +636,7 @@ const WallpaperOptimizer = () => {
                     <fieldset style={{ marginTop: '16px' }}><legend className="form-label">{t('wallpaperUi.wallShape')}<span className="req-mark" aria-hidden="true" /></legend><div className="grid gap-3 md:grid-cols-2">{wallShapes.map(([profile, labelKey]) => <label key={profile} className="choice-tile"><input type="radio" name={`wall-shape-${index}`} checked={(wall.profile || 'rectangle') === profile} onChange={() => setWalls(walls.map((current, currentIndex) => { if (currentIndex !== index) return current; const left = numeric(current.height_left); const flat = left === numeric(current.height_right); return withDerivedMiddle({ ...current, profile, ...(profile === 'sloped' ? { ...(flat ? { height_right: String(Math.max(left - 600, 300)) } : {}), lower_left: current.lower_left ?? '0', lower_right: current.lower_right ?? '0' } : {}) }); }))} /><ShapeIcon profile={profile} /><span>{t(labelKey)}</span></label>)}</div></fieldset>
                     {wall.profile === 'sloped' && <div style={{ marginTop: '16px' }}><p className="synthetic">{t('wallpaperUi.slopedHelp')}</p><WallOutlineEditor wall={wall} onChange={(update) => setWalls(walls.map((current, currentIndex) => currentIndex === index ? withDerivedMiddle({ ...current, ...update }) : current))} /></div>}
                     <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--rule-hair)' }}>
-                      <div className="flex items-center"><h3 className="section-title" style={{ margin: 0 }}>{t('wallpaperUi.openingsTitle')}</h3><span className="opt-mark">{t('formUi.optionalMark')}</span><InfoTip label={t('wallpaperUi.openingsTitle')}>{t('wallpaperUi.everyPosition', { origin })}</InfoTip></div>
+                      <div className="flex items-center"><h3 className="section-title" style={{ margin: 0 }}>{t('wallpaperUi.openingsTitle')}</h3>{' '}<span className="opt-mark">{t('formUi.optionalMark')}</span><InfoTip label={t('wallpaperUi.openingsTitle')}>{t('wallpaperUi.everyPosition', { origin })}</InfoTip></div>
                       {(wall.cutouts || []).map((cutout, cutoutIndex) => <div key={cutoutIndex} style={{ padding: '12px 0', borderBottom: '1px solid var(--rule-hair)' }}>
                         <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
                           <FormField label={t('wallpaperUi.type')} className="w-[220px] max-w-full"><select className="form-select" value={cutout.kind} onChange={(event) => updateCutout(index, cutoutIndex, 'kind', event.target.value)}>{Object.entries(KIND_KEYS).map(([kind, kindKey]) => <option key={kind} value={kind}>{t(kindKey)}</option>)}</select></FormField>

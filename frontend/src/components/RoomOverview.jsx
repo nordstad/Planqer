@@ -1,39 +1,14 @@
 import { useTranslation } from 'react-i18next';
+import { layOutWalls } from '../utils/wallpaperValidation';
 
 // A strip that wraps a corner keeps one colour on every wall it touches.
 const LINK_COLOURS = ['#1f7a8c', '#7b4ea3', '#3b8a4b', '#2f5fb3', '#b0457a'];
 export const linkColour = (stripNumber) => LINK_COLOURS[stripNumber % LINK_COLOURS.length];
 
 const VIEW = { width: 720, height: 340, pad: 56 };
-const wallLength = (wall) => Math.max(Number(wall.width_top) || 0, Number(wall.width_middle) || 0, Number(wall.width_bottom) || 0);
-
-// Walls are entered clockwise with the room on the right of the direction of travel.
-// An inside corner turns right; an outside corner turns left. Corners are assumed square.
-// A "none" corner starts a new wall run: it is drawn below the previous walls, unconnected.
 const LEGEND_THRESHOLD = 6;
-const layOutWalls = (walls, corners) => {
-  let point = [0, 0];
-  let heading = [1, 0];
-  let lowest = 0;
-  const gap = Math.max(...walls.map(wallLength), 1) * 0.25;
-  return walls.map((wall, index) => {
-    const length = wallLength(wall);
-    const start = point;
-    const end = [start[0] + heading[0] * length, start[1] + heading[1] * length];
-    const placed = { start, end, heading, inward: [-heading[1], heading[0]], length };
-    const corner = corners[index];
-    if (corner) heading = corner.kind === 'outside' ? [heading[1], -heading[0]] : [-heading[1], heading[0]];
-    point = end;
-    lowest = Math.max(lowest, start[1], end[1]);
-    if (corner?.kind === 'none') {
-      heading = [1, 0];
-      point = [0, lowest + gap];
-    }
-    return placed;
-  });
-};
 
-const RoomOverview = ({ walls, corners = [], plan, closed = false, activeWallIndex = null, showStart = false }) => {
+const RoomOverview = ({ walls, corners = [], plan, closed = false, activeWallIndex = null, showStart = false, clashingWalls = [] }) => {
   const { t } = useTranslation();
   const placed = layOutWalls(walls, corners);
   const closure = plan?.closure;
@@ -69,7 +44,7 @@ const RoomOverview = ({ walls, corners = [], plan, closed = false, activeWallInd
         return <g key={index}>
           {walls[index].skip
             ? <line data-testid="open-wall" x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--ink-3)" strokeWidth="2" strokeDasharray="8 6" />
-            : <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={activeWallIndex === index ? 'var(--accent)' : 'var(--ink)'} strokeWidth={activeWallIndex === index ? 5 : 3} strokeLinecap="square" />}
+            : <line data-testid={clashingWalls.includes(index) ? 'clashing-wall' : undefined} x1={x1} y1={y1} x2={x2} y2={y2} stroke={clashingWalls.includes(index) ? 'var(--revision)' : activeWallIndex === index ? 'var(--accent)' : 'var(--ink)'} strokeWidth={activeWallIndex === index || clashingWalls.includes(index) ? 5 : 3} strokeDasharray={clashingWalls.includes(index) ? '10 6' : undefined} strokeLinecap="square" />}
           {segmentsFor(index).map((segment) => {
             const [sx1, sy1] = at(item, segment.x_start, 6);
             const [sx2, sy2] = at(item, segment.x_end, 6);

@@ -27,7 +27,7 @@ const FormField = ({ label, unit: unitOverride, required = false, optional = fal
           {text}
           {unit && <span className="sr-only"> ({unit})</span>}
           {required && <span className="req-mark" aria-hidden="true" />}
-          {optional && <span className="opt-mark">{t('formUi.optionalMark')}</span>}
+          {optional && <>{' '}<span className="opt-mark">{t('formUi.optionalMark')}</span></>}
         </label>
         {tip && <InfoTip label={text}>{tip}</InfoTip>}
       </div>
@@ -38,14 +38,39 @@ const FormField = ({ label, unit: unitOverride, required = false, optional = fal
   );
 };
 
-// A section card's header status: what is still empty, a problem, or done.
-export const SectionStatus = ({ missing = [], error = null }) => {
+// A section card's header status: a problem, what is still empty, a neutral
+// to-do, or done. `live` announces changes (use sparingly).
+export const SectionStatus = ({ missing = [], error = null, todo = null, done = null, live = false }) => {
   const { t } = useTranslation();
-  if (error) return <span className="sec-card-status is-error">{error}</span>;
+  const role = live ? 'status' : undefined;
+  if (error) return <span className="sec-card-status is-error" role={role}>{error}</span>;
   if (missing.length) {
-    return <span className="sec-card-status">{t('formUi.requiredEmpty', { count: missing.length, fields: missing.join(', ') })}</span>;
+    return <span className="sec-card-status" role={role}>{t('formUi.requiredEmpty', { count: missing.length, fields: missing.join(', ') })}</span>;
   }
-  return <span className="sec-card-status is-done">{t('formUi.complete')}</span>;
+  if (todo) return <span className="sec-card-status" role={role}>{todo}</span>;
+  return <span className="sec-card-status is-done" role={role}>{done || t('formUi.complete')}</span>;
+};
+
+// A card with a header band: title, optional summary and ⓘ, and a status.
+export const SectionCard = ({ id, title, titleRef, optional = false, summary, tip, tipLabel, status, sectionRef, className = '', children }) => {
+  const { t } = useTranslation();
+  const titleId = `${id}-title`;
+  return (
+    <section id={id} ref={sectionRef} tabIndex={sectionRef ? -1 : undefined} className={`sec-card ${className}`.trim()} aria-labelledby={titleId}>
+      <div className="sec-card-head">
+        <span className="sec-card-text">
+          <span className="flex items-center">
+            <h2 id={titleId} ref={titleRef} tabIndex={titleRef ? -1 : undefined} className="sec-card-title">{title}</h2>
+            {optional && <>{' '}<span className="opt-mark">{t('formUi.optionalMark')}</span></>}
+            {tip && <InfoTip label={tipLabel || title}>{tip}</InfoTip>}
+          </span>
+          {summary && <span className="sec-card-summary">{summary}</span>}
+        </span>
+        {status}
+      </div>
+      <div className="sec-card-body">{children}</div>
+    </section>
+  );
 };
 
 export default FormField;

@@ -495,6 +495,8 @@ Object.assign(locale, {
     wallsMeasured_one: "{{count}} measured wall",
     wallsMeasured_other: "{{count}} measured walls",
     measureRoom: "Measure the room",
+    errWallsCross: "{{wall}} runs into {{other}}. With these widths and corners the walls overlap: check the widths and corner types.",
+    roomClosesAfter: "The room already closes after {{wall}}: remove the extra walls, or tick “Walls form a closed room”.",
     sectionRoll: "Roll",
     sectionPattern: "Pattern",
     pricePerRoll: "Price per roll",
@@ -675,6 +677,7 @@ Object.assign(locale, {
     errOverlap: "Corner overlap must be a whole number between 0 and {{max}} mm.",
   },
   formUi: {
+    checkValues: "Check the highlighted values",
     optionalMark: "(optional)",
     requiredLegend: "Required. Fields that already have a value have a default you can change.",
     requiredEmpty_one: "{{count}} required field empty: {{fields}}",
@@ -686,6 +689,15 @@ Object.assign(locale, {
     toFill_one: "{{count}} to fill",
     toFill_other: "{{count}} to fill",
     fillRequired: "Fill in {{fields}} to continue.",
+  },
+  boardUi: {
+    partsDone_one: "{{count}} part · {{demand}} mm",
+    partsDone_other: "{{count}} parts · {{demand}} mm",
+    emptyRows: "Some rows are not filled in",
+    fillPartRows: "Fill in the length and quantity on every part row to plan the cuts.",
+    fillToPlan: "Fill in {{fields}} to plan the cuts.",
+    addStock: "Add at least one stock length",
+    noPrices: "No prices",
   },
   demo: {
     catalogue: {

@@ -95,7 +95,12 @@ test.describe('Wallpaper planner guardrails', () => {
   });
 
   test('fifteen walls use a numbered legend instead of overlapping labels', async ({ page }) => {
+    // Alternating corners make a staircase; fifteen inside corners would circle
+    // back over the same square, which the planner now refuses.
     await setWidths(page, Array.from({ length: 15 }, () => 2000));
+    await openCorners(page);
+    const types = page.getByLabel('Corner type');
+    for (let index = 0; index < await types.count(); index += 1) await types.nth(index).selectOption(index % 2 ? 'inside' : 'outside');
     await decideCorners(page);
     await createPlan(page);
 
@@ -133,6 +138,9 @@ test.describe('Wallpaper planner guardrails', () => {
   test('an opening that does not fit is explained beside the field and blocks the plan', async ({ page }) => {
     await setWidths(page, [3000]);
     await page.getByRole('button', { name: 'Add opening or obstacle' }).click();
+    // A new window starts empty: nothing is guessed for the user.
+    await expect(page.getByLabel('From left edge (mm)')).toHaveValue('');
+    for (const [label, value] of [['From left edge (mm)', '1000'], ['From floor (mm)', '900'], ['Width (mm)', '1200'], ['Height (mm)', '1200']]) await page.getByLabel(label, { exact: true }).fill(value);
     await expect(page.getByRole('alert')).toHaveCount(0);
     await page.getByLabel('Wall height (mm)').fill('1200');
 
@@ -144,6 +152,14 @@ test.describe('Wallpaper planner guardrails', () => {
     await page.getByLabel('Wall width (mm)').fill('-5');
 
     await expect(page.getByRole('alert')).toContainText('Width must be between');
+    await expect(page.getByRole('button', { name: /Create plan/ })).toBeDisabled();
+  });
+
+  test('a wall that lands on an earlier wall blocks the plan', async ({ page }) => {
+    await setWidths(page, [2400, 2400, 2400, 2400, 2400]);
+
+    await expect(page.getByRole('alert')).toContainText('Wall E runs into Wall A');
+    await expect(page.getByRole('alert')).toContainText('The room already closes after Wall D');
     await expect(page.getByRole('button', { name: /Create plan/ })).toBeDisabled();
   });
 

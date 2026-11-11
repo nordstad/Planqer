@@ -573,6 +573,8 @@ Object.assign(locale, {
     wallsMeasured_one: "{{count}} målt vegg",
     wallsMeasured_other: "{{count}} målte vegger",
     measureRoom: "Mål opp rommet",
+    errWallsCross: "{{wall}} går inn i {{other}}. Med disse breddene og hjørnene overlapper veggene: kontroller breddene og hjørnetypene.",
+    roomClosesAfter: "Rommet lukkes allerede etter {{wall}}: fjern de ekstra veggene, eller kryss av for «Veggene danner et lukket rom».",
     sectionRoll: "Rull",
     sectionPattern: "Mønster",
     pricePerRoll: "Pris per rull",
@@ -753,6 +755,7 @@ Object.assign(locale, {
     errOverlap: "Hjørneoverlappen må være et helt tall mellom 0 og {{max}} mm.",
   },
   formUi: {
+    checkValues: "Kontroller de markerte verdiene",
     optionalMark: "(valgfritt)",
     requiredLegend: "Påkrevd. Felt som allerede har en verdi, har en standardverdi du kan endre.",
     requiredEmpty_one: "{{count}} påkrevd felt er tomt: {{fields}}",
@@ -764,6 +767,15 @@ Object.assign(locale, {
     toFill_one: "{{count}} igjen å fylle ut",
     toFill_other: "{{count}} igjen å fylle ut",
     fillRequired: "Fyll ut {{fields}} for å fortsette.",
+  },
+  boardUi: {
+    partsDone_one: "{{count}} del · {{demand}} mm",
+    partsDone_other: "{{count}} deler · {{demand}} mm",
+    emptyRows: "Noen rader er ikke fylt ut",
+    fillPartRows: "Fyll ut lengde og antall på hver delrad for å planlegge kappingen.",
+    fillToPlan: "Fyll ut {{fields}} for å planlegge kappingen.",
+    addStock: "Legg til minst én lagerlengde",
+    noPrices: "Ingen priser",
   },
   demo: {
     catalogue: {
