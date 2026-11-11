@@ -100,8 +100,9 @@
      too, and only the step you are on is drawn. */
 
   .plan-steps {
-    display: flex; gap: 0 34px; list-style: none; margin: 0 0 28px; padding: 0;
+    display: flex; gap: 0 34px; list-style: none; margin: -12px 0 28px; padding: 12px 0 0;
     border-bottom: 1px solid var(--rule-hair);
+    position: sticky; top: 0; z-index: 10; background: var(--ground);
   }
   /* Segments take their natural width rather than a third of the page each, so
      the amber underline hugs its own label the way the nav's does — and the rail
