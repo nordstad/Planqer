@@ -30,6 +30,7 @@ import CatalogPage from './CatalogPage';
 import Loader from './Loader';
 import Disclosure from './Disclosure';
 import ProjectPicker, { NEW_PROJECT } from './ProjectPicker';
+import MovePlanMenu from './MovePlanMenu';
 import PlanSteps from './PlanSteps';
 import ModelGroupSettings from './ModelGroupSettings';
 import ProductPicker from './ProductPicker';
@@ -43,7 +44,7 @@ import {
   optimizeCutting, saveProject,
   optimizeSheetCutting, saveSheetProject,
   getProjectGroups, createProjectGroup, getUserProjects, getUserSheetProjects,
-  getUserSettings,
+  getUserSettings, movePlanToProject,
 } from '../utils/api';
 import {
   groupBoards, groupSheets, groupLabel, planNameFor, resolveMaterial,
@@ -125,6 +126,7 @@ const ModelCutlistOptimizer = () => {
   // them rather than stacking copies beside them.
   const [existingPlans, setExistingPlans] = useState([]);
   const [replaceExisting, setReplaceExisting] = useState(true);
+  const [savedPlans, setSavedPlans] = useState([]);
 
   const debouncedConfigs = useDebounce(configs, 300);
   // Validation follows the debounced values so errors don't flash while typing; a
@@ -334,9 +336,9 @@ const ModelCutlistOptimizer = () => {
       if (group.kind === 'board') {
         const parts = group.lengths.map((l) => ({ length: String(l.length), quantity: String(l.qty) }));
         const stock = config.boards.map((row) => row.length);
-        const { costData, saved } = boardCostPayloads(config, money);
+        const { costData, saved: savedCosts } = boardCostPayloads(config, money);
         const result = await optimizeCutting(parts, stock, config.kerf, costData);
-        await saveProject({
+        const savedPlan = await saveProject({
           id: replaced?.id,
           name: replaced?.name || planNameOf(group),
           projectGroupId,
@@ -347,16 +349,17 @@ const ModelCutlistOptimizer = () => {
           product,
           boardThickness: group.thickness,
           boardWidth: group.width,
-          boardCosts: saved,
+          boardCosts: savedCosts,
           result,
         });
+        setSavedPlans((previous) => [...previous, { ...savedPlan, projectType: 'board' }]);
       } else {
         const parts = group.sizes.map((s, i) => ({
           width: String(s.width), height: String(s.length), quantity: String(s.qty),
            name: `${group.names[0] || t('ui.sheet')}_${i + 1}`, id: `sheet_${i + 1}`,
         }));
         const result = await optimizeSheetCutting(parts, config.sheetWidth, config.sheetHeight, config.kerf, material, undefined, config.allowRotation);
-        await saveSheetProject({
+        const savedPlan = await saveSheetProject({
           id: replaced?.id,
           name: replaced?.name || planNameOf(group),
           projectGroupId,
@@ -372,6 +375,7 @@ const ModelCutlistOptimizer = () => {
           result,
           pricing: sheetPricingPayload(config, money),
         });
+        setSavedPlans((previous) => [...previous, { ...savedPlan, projectType: 'sheet' }]);
       }
       setStatuses((prev) => ({ ...prev, [group.id]: 'done' }));
     } catch (err) {
@@ -384,6 +388,7 @@ const ModelCutlistOptimizer = () => {
     setApiError('');
     if (selectedGroups.some((g) => errorsOf(g, configs).hasErrors)) return;
     setSaving(true);
+    setSavedPlans([]);
     let projectGroupId;
     try {
       projectGroupId = await resolveProject();
@@ -400,6 +405,19 @@ const ModelCutlistOptimizer = () => {
       await runOne(group, projectGroupId);
     }
     setSaving(false);
+  };
+
+  const moveSavedPlans = async (group) => {
+    try {
+      const moved = await Promise.all(savedPlans.map((plan) => movePlanToProject(plan, group.id)));
+      setSavedPlans(moved.map((plan, index) => ({ ...plan, projectType: savedPlans[index].projectType })));
+      setSelectedGroupId(group.id);
+      localStorage.setItem('planqer.lastProjectGroup', group.id);
+      return true;
+    } catch (err) {
+      setApiError(t('projectUi.moveFailed', { message: err.message }));
+      return false;
+    }
   };
 
   const savedGroupName = allDone ? projectGroups.find((g) => g.id === selectedGroupId)?.name : null;
@@ -836,11 +854,12 @@ const ModelCutlistOptimizer = () => {
               </div>
 
               {allDone && (
-                <p className="synthetic" style={{ marginTop: '16px' }}>
+                <div className="synthetic" style={{ marginTop: '16px' }}>
                    {savedGroupName
-                     ? t('ui.filedUnder', { group: savedGroupName })
-                     : t('ui.unfiled')}
-                </p>
+                      ? t('ui.filedUnder', { group: savedGroupName })
+                      : t('ui.unfiled')}
+                  <MovePlanMenu groups={projectGroups} currentGroupId={selectedGroupId} onMove={moveSavedPlans} />
+                </div>
               )}
             </>
           )}

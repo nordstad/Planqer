@@ -20,7 +20,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { optimizeCutting, saveProject, getProjectGroups, getUserProjects, getUserSettings } from '../utils/api';
+import { optimizeCutting, saveProject, getProjectGroups, getUserProjects, getUserSettings, movePlanToProject } from '../utils/api';
 import { materialLabel } from '../utils/materialLabel';
 import { boardPartCount, restoreBoardParts } from '../utils/boardParts';
 import ProductPicker from './ProductPicker';
@@ -44,6 +44,7 @@ import ConfirmDialog from './ConfirmDialog';
 import CostAnalysisPanel from './CostAnalysisPanel';
 import Disclosure from './Disclosure';
 import ProjectPicker from './ProjectPicker';
+import MovePlanMenu from './MovePlanMenu';
 import { useProjectChoice } from '../hooks/useProjectChoice';
 import Loader from './Loader';
 import PlanSteps from './PlanSteps';
@@ -555,6 +556,17 @@ const CuttingOptimizer = () => {
     ? projectGroups.find(g => g.id === saved.project_group_id)?.name
     : null;
   const selectedGroupName = projectGroups.find(g => g.id === groupId)?.name;
+  const moveSavedPlan = async (group) => {
+    try {
+      const moved = await movePlanToProject({ ...saved, projectType: 'board' }, group.id);
+      setSaved(moved);
+      localStorage.setItem('planqer.lastProjectGroup', group.id);
+      return true;
+    } catch (error) {
+      setApiError(t('projectUi.moveFailed', { message: error.message }));
+      return false;
+    }
+  };
 
   /* ── the rail ──────────────────────────────────────────────────────────── */
   const steps = [
@@ -987,8 +999,9 @@ const CuttingOptimizer = () => {
               <div>
                    <b>{t('ui.savedAs', { name: saved.name })}</b>
                 <p>
-                   {savedGroupName ? t('ui.filedUnder', { group: savedGroupName }) : t('ui.unfiled')}
+                    {savedGroupName ? t('ui.filedUnder', { group: savedGroupName }) : t('ui.unfiled')}
                 </p>
+                <MovePlanMenu groups={projectGroups} currentGroupId={saved.project_group_id} onMove={moveSavedPlan} />
               </div>
             </div>
           ) : (

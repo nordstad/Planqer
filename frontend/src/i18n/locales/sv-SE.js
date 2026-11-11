@@ -340,6 +340,7 @@ Object.assign(locale.ui, {
 });
 Object.assign(locale.projectUi, {
   projectViews: 'Projektvyer', overview: 'Översikt', shoppingList: 'Inköpslista', cutDiagrams: 'Kapdiagram',
+  moveTo: 'Flytta till…', moveToProject: 'Flytta till projekt', moveFailed: 'Kunde inte flytta planen: {{message}}', dropPlanInProject: 'Släpp {{name}} i ett projekt',
   shoppingListIntro: 'Allt som ska köpas till projektet', shoppingListEmpty: 'Det finns inget att köpa till projektet ännu.', diagramViewIntro: 'Öppna ett diagram för att se det i full storlek. Kaplistor visas under plattlayouter.',
 });
 Object.assign(locale.legacy, {

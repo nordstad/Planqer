@@ -285,6 +285,7 @@ Object.assign(locale.ui, { tileSummary: '{{count}} tiles to buy · narrowest cut
 Object.assign(locale.projectUi, {
   projectViews: 'Project views', overview: 'Overview', shoppingList: 'Shopping list', cutDiagrams: 'Cut diagrams',
   shoppingListIntro: 'Everything to buy for this project', shoppingListEmpty: 'There is nothing to buy for this project yet.', diagramViewIntro: 'Open a diagram to inspect it full size. Cut lists appear below tile plans.',
+  moveTo: 'Move to…', moveToProject: 'Move to project', moveFailed: 'Could not move the plan: {{message}}', dropPlanInProject: 'Drop {{name}} into a project',
 });
 
 Object.assign(locale.modelUi, {

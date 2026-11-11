@@ -15,7 +15,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   optimizeTileLayout, getProjectGroups,
-  saveTileProject, getUserTileProjects, getUserSettings,
+  saveTileProject, getUserTileProjects, getUserSettings, movePlanToProject,
 } from '../utils/api';
 import { useDebounce } from '../hooks/useDebounce';
 import { useAuth } from '../contexts/AuthContext';
@@ -26,6 +26,7 @@ import CatalogPage from './CatalogPage';
 import ConfirmDialog from './ConfirmDialog';
 import Disclosure from './Disclosure';
 import ProjectPicker from './ProjectPicker';
+import MovePlanMenu from './MovePlanMenu';
 import { useProjectChoice } from '../hooks/useProjectChoice';
 import Loader from './Loader';
 import PlanSteps from './PlanSteps';
@@ -371,6 +372,17 @@ const TileOptimizer = () => {
     ? projectGroups.find(g => g.id === saved.project_group_id)?.name
     : null;
   const selectedGroupName = projectGroups.find(g => g.id === groupId)?.name;
+  const moveSavedPlan = async (group) => {
+    try {
+      const moved = await movePlanToProject({ ...saved, projectType: 'tile' }, group.id);
+      setSaved(moved);
+      localStorage.setItem('planqer.lastProjectGroup', group.id);
+      return true;
+    } catch (error) {
+      setApiError(t('projectUi.moveFailed', { message: error.message }));
+      return false;
+    }
+  };
 
   /* ── the rail ──────────────────────────────────────────────────────────── */
   const steps = [
@@ -825,11 +837,12 @@ const TileOptimizer = () => {
               <Tick size={16} />
               <div>
                    <b>{t('workflow.savedAs', { name: saved.name })}</b>
-                <p>
-                    {savedGroupName
-                    ? <>{t('ui.filedUnder', { group: savedGroupName })}</>
-                      : <>{t('ui.unfiled')}</>}
-                </p>
+                 <p>
+                     {savedGroupName
+                     ? <>{t('ui.filedUnder', { group: savedGroupName })}</>
+                       : <>{t('ui.unfiled')}</>}
+                 </p>
+                 <MovePlanMenu groups={projectGroups} currentGroupId={saved.project_group_id} onMove={moveSavedPlan} />
               </div>
             </div>
           ) : (

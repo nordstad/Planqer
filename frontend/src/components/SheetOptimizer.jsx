@@ -15,12 +15,13 @@ import { SAW_KERF_MIN, SAW_KERF_MAX } from '../utils/validators';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import CatalogPage from './CatalogPage';
 import ConfirmDialog from './ConfirmDialog';
-import { optimizeSheetCutting, saveSheetProject, getProjectGroups, getUserSheetProjects, getUserSettings } from '../utils/api';
+import { optimizeSheetCutting, saveSheetProject, getProjectGroups, getUserSheetProjects, getUserSettings, movePlanToProject } from '../utils/api';
 import { useDebounce } from '../hooks/useDebounce';
 import { useAuth } from '../contexts/AuthContext';
 import { useAccountContext } from '../contexts/useAccountContext';
 import Disclosure from './Disclosure';
 import ProjectPicker from './ProjectPicker';
+import MovePlanMenu from './MovePlanMenu';
 import { useProjectChoice } from '../hooks/useProjectChoice';
 import ProductPicker from './ProductPicker';
 import { materialLabel } from '../utils/materialLabel';
@@ -367,6 +368,17 @@ const SheetOptimizer = () => {
     ? projectGroups.find(g => g.id === saved.project_group_id)?.name
     : null;
   const selectedGroupName = projectGroups.find(g => g.id === groupId)?.name;
+  const moveSavedPlan = async (group) => {
+    try {
+      const moved = await movePlanToProject({ ...saved, projectType: 'sheet' }, group.id);
+      setSaved(moved);
+      localStorage.setItem('planqer.lastProjectGroup', group.id);
+      return true;
+    } catch (error) {
+      setApiError(t('projectUi.moveFailed', { message: error.message }));
+      return false;
+    }
+  };
 
   /* ── the rail ──────────────────────────────────────────────────────────── */
   const steps = [
@@ -737,8 +749,9 @@ const SheetOptimizer = () => {
               <div>
                    <b>{t('ui.savedAs', { name: saved.name })}</b>
                 <p>
-                   {savedGroupName ? t('ui.filedUnder', { group: savedGroupName }) : t('ui.unfiled')}
+                    {savedGroupName ? t('ui.filedUnder', { group: savedGroupName }) : t('ui.unfiled')}
                 </p>
+                <MovePlanMenu groups={projectGroups} currentGroupId={saved.project_group_id} onMove={moveSavedPlan} />
               </div>
             </div>
           ) : (

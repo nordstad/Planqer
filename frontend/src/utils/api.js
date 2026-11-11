@@ -809,6 +809,19 @@ export const saveWallpaperProject = async (payload) => (await http.post(`${API_U
 export const updateWallpaperProject = async (id, payload) => (await http.put(`${API_URL}/api/wallpaper-projects/${id}`, payload)).data;
 export const deleteWallpaperProject = async (id) => (await http.delete(`${API_URL}/api/wallpaper-projects/${id}`)).data;
 
+const PROJECT_ENDPOINTS = { board: 'projects', sheet: 'sheet-projects', tile: 'tile-projects', wallpaper: 'wallpaper-projects' };
+
+export const movePlanToProject = async (plan, projectGroupId) => {
+  const endpoint = PROJECT_ENDPOINTS[plan.projectType];
+  if (!endpoint) throw new Error(`Unknown project type "${plan.projectType}"`);
+  try {
+    const response = await http.put(`${API_URL}/api/${endpoint}/${plan.id}`, { project_group_id: projectGroupId });
+    return response.data;
+  } catch (error) {
+    throw new Error(extractErrorMessage(error));
+  }
+};
+
 /**
  * Process a 3D STL file to generate a cutting list
  * @param {File} file - The STL file to process

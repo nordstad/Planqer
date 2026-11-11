@@ -337,6 +337,7 @@ Object.assign(locale.ui, {
 });
 Object.assign(locale.projectUi, {
   projectViews: 'Prosjektvisninger', overview: 'Oversikt', shoppingList: 'Innkjøpsliste', cutDiagrams: 'Kappdiagrammer',
+  moveTo: 'Flytt til…', moveToProject: 'Flytt til prosjekt', moveFailed: 'Kunne ikke flytte planen: {{message}}', dropPlanInProject: 'Slipp {{name}} i et prosjekt',
   shoppingListIntro: 'Alt som skal kjøpes til prosjektet', shoppingListEmpty: 'Det er ingenting å kjøpe til dette prosjektet ennå.', diagramViewIntro: 'Åpne et diagram for å se det i full størrelse. Kapplister vises under flisplaner.',
 });
 

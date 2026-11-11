@@ -4,13 +4,14 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import CatalogPage from './CatalogPage';
 import PlanSteps from './PlanSteps';
 import ProjectPicker from './ProjectPicker';
+import MovePlanMenu from './MovePlanMenu';
 import { useProjectChoice } from '../hooks/useProjectChoice';
 import WallOutlineEditor from './WallOutlineEditor';
 import WallpaperPieceGallery from './WallpaperPieceGallery';
 import { KIND_KEYS, pieceFaces } from './WallpaperPieceDiagram';
 import { wallIssues, overlapIssue } from '../utils/wallpaperValidation';
 import RoomOverview, { linkColour } from './RoomOverview';
-import { createWallpaperPlan, getProjectGroups, getUserSettings, getWallpaperProjects, saveWallpaper, saveWallpaperProject, updateWallpaperProject } from '../utils/api';
+import { createWallpaperPlan, getProjectGroups, getUserSettings, getWallpaperProjects, saveWallpaper, saveWallpaperProject, updateWallpaperProject, movePlanToProject } from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useAccountContext } from '../contexts/useAccountContext';
 import { isStaticMode } from '../utils/mode';
@@ -409,6 +410,18 @@ const WallpaperOptimizer = () => {
     } catch (err) { setError(err.message); }
   };
   const planInvalid = !!plan && !!plan.closure && !plan.closure.valid;
+  const moveSavedPlan = async (group) => {
+    try {
+      const moved = await movePlanToProject({ ...saved, projectType: 'wallpaper' }, group.id);
+      setSaved(moved);
+      setProjectGroupId(group.id);
+      localStorage.setItem('planqer.lastProjectGroup', group.id);
+      return true;
+    } catch (err) {
+      setError(t('projectUi.moveFailed', { message: err.message }));
+      return false;
+    }
+  };
   const steps = [
     { label: t('common.wallpaperPlanner'), summary: wallpaper.name || t('wallpaperUi.chooseWallpaper'), locked: t('wallpaperUi.chooseWallpaper'), reachable: true },
     { label: t('wallpaperUi.stepRoom'), summary: t('wallpaperUi.wallsMeasured', { count: walls.length }), locked: t('wallpaperUi.measureRoom'), reachable: step >= 1 },
@@ -466,7 +479,7 @@ const WallpaperOptimizer = () => {
       </section>)}
       <div className="step-foot"><button className="btn-order step-foot-act" onClick={() => setStep(4)}>{`${t('workflow.savePlan')} →`}</button></div>
     </section>}
-    {step === 4 && plan && (saved ? <section className="step-view"><div className="step-head"><div><h1 className="step-h1">{t('workflow.planSaved')}</h1><p className="step-lede">{t('wallpaperUi.savedLede')}</p></div></div><div style={{ marginTop: '24px', padding: '20px', border: '1px solid var(--rule-hair)', background: 'var(--ground-2)' }}><b>{`✓ ${t('workflow.savedAs', { name: projectName })}`}</b><p className="synthetic" style={{ margin: '8px 0 0' }}>{projectGroupId ? t('wallpaperUi.filedUnder', { name: projectGroups.find((group) => String(group.id) === String(projectGroupId))?.name || t('wallpaperUi.selectedProject') }) : `${t('ui.notInProject')}.`}</p></div><div className="step-foot"><button className="btn" onClick={() => setStep(2)}>{`← ${t('workflow.backToPlan')}`}</button><button className="btn-order step-foot-act" onClick={() => navigate('/dashboard')}>{t('wallpaperUi.openDashboard')}</button></div></section> : <section className="step-view is-form"><div className="step-head"><div><h1 className="step-h1">{t('workflow.saveThisPlan')}</h1><p className="step-lede">{t('wallpaperUi.saveLede')}</p>{rollPrice != null && <p className="synthetic" data-testid="save-estimated-cost">{t('wallpaperUi.saveEstimatedCost', { cost: formatMoney(plan.rolls_to_buy * rollPrice), rolls: plan.rolls_to_buy, price: formatMoney(rollPrice) })}</p>}</div></div><label className="form-label" htmlFor="wallpaper-plan-name">{t('workflow.planName')}<input id="wallpaper-plan-name" className="form-input" value={projectName} onChange={(event) => setProjectName(event.target.value)} /></label><div style={{ marginTop: '18px' }}><ProjectPicker groups={projectGroups} value={projectGroupId} onChange={setProjectGroupId} newName={newProjectName} onNewNameChange={setNewProjectName} onSubmit={save} /></div><div className="step-foot"><button className="btn" onClick={() => setStep(2)}>{`← ${t('workflow.backToPlan')}`}</button><button className="btn-order step-foot-act" onClick={save}>{t('workflow.savePlan')}</button></div></section>)}
+    {step === 4 && plan && (saved ? <section className="step-view"><div className="step-head"><div><h1 className="step-h1">{t('workflow.planSaved')}</h1><p className="step-lede">{t('wallpaperUi.savedLede')}</p></div></div><div style={{ marginTop: '24px', padding: '20px', border: '1px solid var(--rule-hair)', background: 'var(--ground-2)' }}><b>{`✓ ${t('workflow.savedAs', { name: projectName })}`}</b><p className="synthetic" style={{ margin: '8px 0 0' }}>{projectGroupId ? t('wallpaperUi.filedUnder', { name: projectGroups.find((group) => String(group.id) === String(projectGroupId))?.name || t('wallpaperUi.selectedProject') }) : `${t('ui.notInProject')}.`}</p><MovePlanMenu groups={projectGroups} currentGroupId={saved.project_group_id} onMove={moveSavedPlan} /></div><div className="step-foot"><button className="btn" onClick={() => setStep(2)}>{`← ${t('workflow.backToPlan')}`}</button><button className="btn-order step-foot-act" onClick={() => navigate('/dashboard')}>{t('wallpaperUi.openDashboard')}</button></div></section> : <section className="step-view is-form"><div className="step-head"><div><h1 className="step-h1">{t('workflow.saveThisPlan')}</h1><p className="step-lede">{t('wallpaperUi.saveLede')}</p>{rollPrice != null && <p className="synthetic" data-testid="save-estimated-cost">{t('wallpaperUi.saveEstimatedCost', { cost: formatMoney(plan.rolls_to_buy * rollPrice), rolls: plan.rolls_to_buy, price: formatMoney(rollPrice) })}</p>}</div></div><label className="form-label" htmlFor="wallpaper-plan-name">{t('workflow.planName')}<input id="wallpaper-plan-name" className="form-input" value={projectName} onChange={(event) => setProjectName(event.target.value)} /></label><div style={{ marginTop: '18px' }}><ProjectPicker groups={projectGroups} value={projectGroupId} onChange={setProjectGroupId} newName={newProjectName} onNewNameChange={setNewProjectName} onSubmit={save} /></div><div className="step-foot"><button className="btn" onClick={save}>{t('workflow.savePlan')}</button></div></section>)}
   </CatalogPage>;
 };
 

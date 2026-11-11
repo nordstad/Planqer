@@ -14,6 +14,7 @@ import {
   deleteProjectGroup,
   downloadProjectImage,
   renameProjectGroup,
+  movePlanToProject,
 } from '../utils/api';
 import { printProjectPlans } from '../utils/printProject';
 
@@ -35,6 +36,7 @@ vi.mock('../utils/api', () => ({
   deleteTileProject: vi.fn(),
   downloadProjectImage: vi.fn(),
   renameProjectGroup: vi.fn(),
+  movePlanToProject: vi.fn(),
 }));
 
 vi.mock('../contexts/AuthContext', () => ({
@@ -124,6 +126,7 @@ beforeEach(() => {
   deleteProject.mockResolvedValue({});
   deleteProjectGroup.mockResolvedValue({});
   downloadProjectImage.mockResolvedValue(new Blob());
+  movePlanToProject.mockResolvedValue({ ...plan, project_group_id: 'group-2' });
   printProjectPlans.mockClear();
 });
 
@@ -152,6 +155,18 @@ it('confirms deletion of a plan on the project detail route', async () => {
   fireEvent.click(within(dialog).getByRole('button', { name: 'Delete', exact: true }));
 
   await waitFor(() => expect(deleteProject).toHaveBeenCalledWith(plan.id));
+});
+
+it('moves a plan to another project from its accessible menu', async () => {
+  const otherGroup = { ...group, id: 'group-2', name: 'Workshop' };
+  getProjectGroups.mockResolvedValue([group, otherGroup]);
+  renderDetail();
+
+  fireEvent.click(await screen.findByRole('button', { name: 'Move to…' }));
+  fireEvent.click(screen.getByRole('menuitem', { name: 'Workshop' }));
+
+  await waitFor(() => expect(movePlanToProject).toHaveBeenCalledWith(expect.objectContaining({ id: plan.id, projectType: 'board' }), otherGroup.id));
+  expect(screen.queryByText(plan.name, { selector: 'h3' })).not.toBeInTheDocument();
 });
 
 it('confirms deletion of a project on the project detail route', async () => {
