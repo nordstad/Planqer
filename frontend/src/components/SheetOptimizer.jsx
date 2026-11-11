@@ -15,12 +15,13 @@ import { SAW_KERF_MIN, SAW_KERF_MAX } from '../utils/validators';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import CatalogPage from './CatalogPage';
 import ConfirmDialog from './ConfirmDialog';
-import { optimizeSheetCutting, saveSheetProject, getProjectGroups, createProjectGroup, getUserSheetProjects, getUserSettings } from '../utils/api';
+import { optimizeSheetCutting, saveSheetProject, getProjectGroups, getUserSheetProjects, getUserSettings } from '../utils/api';
 import { useDebounce } from '../hooks/useDebounce';
 import { useAuth } from '../contexts/AuthContext';
 import { useAccountContext } from '../contexts/useAccountContext';
 import Disclosure from './Disclosure';
 import ProjectPicker from './ProjectPicker';
+import { useProjectChoice } from '../hooks/useProjectChoice';
 import ProductPicker from './ProductPicker';
 import { materialLabel } from '../utils/materialLabel';
 import {
@@ -107,8 +108,12 @@ const SheetOptimizer = () => {
 
   /* the save step */
   const [projectGroups, setProjectGroups] = useState([]);
-  const [selectedGroupId, setSelectedGroupId] = useState('');
   const [projectName, setProjectName] = useState("");
+  const { groupId, setGroupId, newName, setNewName, resolve: resolveProject } = useProjectChoice({
+    groups: projectGroups,
+    onCreated: (group) => setProjectGroups(prev => [group, ...prev]),
+    fallbackName: projectName,
+  });
   const [saveAttempted, setSaveAttempted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(null);
@@ -238,7 +243,7 @@ const SheetOptimizer = () => {
     setSheetThickness(project.sheet_thickness ? String(project.sheet_thickness) : '');
     setAlgorithm(project.algorithm || "");
     setAllowRotation(project.allow_rotation !== false);
-    setSelectedGroupId(project.project_group_id || '');
+    setGroupId(project.project_group_id || '');
     setProjectName(project.name);
     setEditingProject(project);
     setSaveMode('update');
@@ -317,27 +322,13 @@ const SheetOptimizer = () => {
     ? t('workflow.nameAndKeep')
     : '';
 
-  // Returns whether it worked, so the picker knows whether to close its field.
-  const createGroup = async (name) => {
-    try {
-      const group = await createProjectGroup(name);
-      setProjectGroups(prev => [group, ...prev]);
-      setSelectedGroupId(group.id);
-      setApiError("");
-      return true;
-    } catch (err) {
-      setApiError(`${t('auditUi.createProjectFailed')}: ${err.message}`);
-      return false;
-    }
-  };
-
   const savePlan = async () => {
     setSaving(true);
     try {
       const project = await saveSheetProject({
         id: saveMode === 'update' ? editingProject?.id : undefined,
         name: projectName.trim(),
-        projectGroupId: selectedGroupId,
+        projectGroupId: await resolveProject(),
         parts,
         sheetWidth,
         sheetHeight,
@@ -375,7 +366,7 @@ const SheetOptimizer = () => {
   const savedGroupName = saved
     ? projectGroups.find(g => g.id === saved.project_group_id)?.name
     : null;
-  const selectedGroupName = projectGroups.find(g => g.id === selectedGroupId)?.name;
+  const selectedGroupName = projectGroups.find(g => g.id === groupId)?.name;
 
   /* ── the rail ──────────────────────────────────────────────────────────── */
   const steps = [
@@ -787,7 +778,7 @@ const SheetOptimizer = () => {
                     if (mode === 'update' && !editingProject && userProjects.length) {
                       setEditingProject(userProjects[0]);
                       setProjectName(userProjects[0].name);
-                      setSelectedGroupId(userProjects[0].project_group_id || '');
+                      setGroupId(userProjects[0].project_group_id || '');
                     }
                   }}
                 >
@@ -804,7 +795,7 @@ const SheetOptimizer = () => {
                       const target = userProjects.find(p => p.id === e.target.value);
                       setEditingProject(target);
                       setProjectName(target.name);
-                      setSelectedGroupId(target.project_group_id || '');
+                      setGroupId(target.project_group_id || '');
                     }}
                   >
                     {userProjects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -815,9 +806,10 @@ const SheetOptimizer = () => {
               <div style={{ marginBottom: '24px' }}>
                 <ProjectPicker
                   groups={projectGroups}
-                  value={selectedGroupId}
-                  onChange={setSelectedGroupId}
-                  onCreate={createGroup}
+                  value={groupId}
+                  onChange={setGroupId}
+                  newName={newName}
+                  onNewNameChange={setNewName}
                 />
               </div>
 

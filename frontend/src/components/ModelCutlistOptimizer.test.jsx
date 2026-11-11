@@ -442,7 +442,7 @@ describe('save step', () => {
   it('files every plan under a new project named after the model by default', async () => {
     createProjectGroup.mockResolvedValue({ id: 'g1', name: 'bench' });
     await toSaveStep();
-    expect(screen.getByLabelText('Project — optional')).toHaveValue('__new__');
+    expect(screen.getByLabelText('Project')).toHaveValue('__new__');
     expect(screen.getByLabelText(/new project name/i)).toHaveValue('bench');
     expect(createProjectGroup).not.toHaveBeenCalled();
 
@@ -468,7 +468,7 @@ describe('save step', () => {
   it('pre-selects an existing project with the model\'s name instead of creating another', async () => {
     getProjectGroups.mockResolvedValue([{ id: 'g9', name: 'Bench' }]);
     await toSaveStep();
-    await waitFor(() => expect(screen.getByLabelText('Project — optional')).toHaveValue('g9'));
+    await waitFor(() => expect(screen.getByLabelText('Project')).toHaveValue('g9'));
 
     fireEvent.click(screen.getByRole('button', { name: 'Plan 3 cutlists' }));
     await screen.findByRole('link', { name: /open project/i });
@@ -476,13 +476,15 @@ describe('save step', () => {
     expect(saveProject.mock.calls[0][0].projectGroupId).toBe('g9');
   });
 
-  it('still saves without a project when the user chooses so', async () => {
+  it('files the plans under an existing project when one is chosen', async () => {
+    getProjectGroups.mockResolvedValue([{ id: 'g5', name: 'Shed' }]);
     await toSaveStep();
-    fireEvent.change(screen.getByLabelText('Project — optional'), { target: { value: '' } });
+    await waitFor(() => expect(screen.getByLabelText('Project')).toBeInTheDocument());
+    fireEvent.change(screen.getByLabelText('Project'), { target: { value: 'g5' } });
     fireEvent.click(screen.getByRole('button', { name: 'Plan 3 cutlists' }));
     await waitFor(() => expect(saveSheetProject).toHaveBeenCalled());
     expect(createProjectGroup).not.toHaveBeenCalled();
-    expect(saveProject.mock.calls[0][0].projectGroupId).toBe('');
+    expect(saveProject.mock.calls[0][0].projectGroupId).toBe('g5');
   });
 
   it('saves nothing when the project cannot be created', async () => {

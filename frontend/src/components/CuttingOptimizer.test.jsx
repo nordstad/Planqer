@@ -3,7 +3,7 @@ import { MemoryRouter } from 'react-router-dom';
 import CuttingOptimizer from './CuttingOptimizer';
 import { AuthProvider } from '../contexts/AuthContext';
 import i18n from '../i18n';
-import { getCatalogue, getProjectGroups, getUserProjects, getUserSettings, optimizeCutting, saveProject } from '../utils/api';
+import { createProjectGroup, getCatalogue, getProjectGroups, getUserProjects, getUserSettings, optimizeCutting, saveProject } from '../utils/api';
 import { resetCatalogueCache } from '../utils/catalogue';
 
 vi.mock('../utils/api', async () => ({
@@ -11,6 +11,7 @@ vi.mock('../utils/api', async () => ({
   getSetupStatus: vi.fn().mockResolvedValue({ needs_setup: false }),
   getCatalogue: vi.fn(),
   saveProject: vi.fn(),
+  createProjectGroup: vi.fn(),
   getProjectGroups: vi.fn(),
   getUserProjects: vi.fn(),
   getUserSettings: vi.fn(),
@@ -71,6 +72,7 @@ const pickProduct = async (query, optionName) => {
 beforeEach(() => {
   resetCatalogueCache();
   getCatalogue.mockRejectedValue(new Error('offline'));
+  createProjectGroup.mockResolvedValue({ id: 'g1', name: 'My plans' });
   saveProject.mockResolvedValue({ id: 'p1', name: 'Rails', project_group_id: null });
   getProjectGroups.mockResolvedValue([]);
   getUserProjects.mockResolvedValue([]);
@@ -253,7 +255,7 @@ describe('CuttingOptimizer', () => {
     await screen.findByRole('heading', { name: /Your cutting plan/i });
     fireEvent.click(screen.getByRole('button', { name: /Name and save/i }));
     await screen.findByRole('heading', { name: /Save this plan/i });
-    fireEvent.change(screen.getByLabelText(/Plan name|Project name|Name/i), { target: { value: 'Rails' } });
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Rails' } });
     fireEvent.click(screen.getByRole('button', { name: /^Save/i }));
 
     await waitFor(() => expect(saveProject).toHaveBeenCalled());
@@ -265,6 +267,47 @@ describe('CuttingOptimizer', () => {
         suggested: false,
       },
     });
+  });
+
+  it('creates the typed project when the plan is saved, with no separate create step', async () => {
+    createProjectGroup.mockResolvedValue({ id: 'g7', name: 'Matstol' });
+    getCatalogue.mockResolvedValue({ data: catalogue, etag: '"x"' });
+    renderOptimizer();
+    await screen.findByRole('heading', { name: /Required parts/i });
+    await pickProduct('regel 45x95', 'Framing timber / studs 45 × 95 mm');
+    fireEvent.click(screen.getByRole('button', { name: /Plan the cuts/i }));
+    await screen.findByRole('heading', { name: /Your cutting plan/i });
+    fireEvent.click(screen.getByRole('button', { name: /Name and save/i }));
+    await screen.findByRole('heading', { name: /Save this plan/i });
+
+    expect(screen.queryByRole('button', { name: 'Create project' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Not in a project' })).not.toBeInTheDocument();
+    expect(screen.getByLabelText('New project name')).toHaveValue('My plans');
+
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Rails' } });
+    fireEvent.change(screen.getByLabelText('New project name'), { target: { value: 'Matstol' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Save/i }));
+
+    await waitFor(() => expect(saveProject).toHaveBeenCalled());
+    expect(createProjectGroup).toHaveBeenCalledWith('Matstol');
+    expect(saveProject.mock.calls[0][0]).toMatchObject({ name: 'Rails', projectGroupId: 'g7' });
+  });
+
+  it('saves the plan when Enter is pressed in the project name field', async () => {
+    getCatalogue.mockResolvedValue({ data: catalogue, etag: '"x"' });
+    renderOptimizer();
+    await screen.findByRole('heading', { name: /Required parts/i });
+    await pickProduct('regel 45x95', 'Framing timber / studs 45 × 95 mm');
+    fireEvent.click(screen.getByRole('button', { name: /Plan the cuts/i }));
+    await screen.findByRole('heading', { name: /Your cutting plan/i });
+    fireEvent.click(screen.getByRole('button', { name: /Name and save/i }));
+    await screen.findByRole('heading', { name: /Save this plan/i });
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Rails' } });
+
+    fireEvent.keyDown(screen.getByLabelText('New project name'), { key: 'Enter' });
+
+    await waitFor(() => expect(saveProject).toHaveBeenCalled());
+    expect(createProjectGroup).toHaveBeenCalledWith('My plans');
   });
 
   it('ignores a late plan response after the parts change', async () => {

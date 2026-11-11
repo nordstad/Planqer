@@ -4,11 +4,11 @@ import { MemoryRouter } from 'react-router-dom';
 
 vi.mock('../contexts/AuthContext', () => ({ useAuth: () => ({ user: null }) }));
 vi.mock('./CatalogPage', () => ({ default: ({ children }) => <div>{children}</div> }));
-vi.mock('../utils/api', async (importOriginal) => ({ ...(await importOriginal()), createProjectGroup: vi.fn(), getProjectGroups: vi.fn(), createWallpaperPlan: vi.fn() }));
+vi.mock('../utils/api', async (importOriginal) => ({ ...(await importOriginal()), createProjectGroup: vi.fn(), getProjectGroups: vi.fn(), createWallpaperPlan: vi.fn(), saveWallpaperProject: vi.fn() }));
 
 const { default: WallpaperOptimizer } = await import('./WallpaperOptimizer');
 const { default: i18n } = await import('../i18n');
-const { createProjectGroup, createWallpaperPlan } = await import('../utils/api');
+const { createProjectGroup, createWallpaperPlan, saveWallpaperProject } = await import('../utils/api');
 
 const openRoomStep = async () => {
   render(<MemoryRouter><WallpaperOptimizer /></MemoryRouter>);
@@ -199,7 +199,7 @@ describe('WallpaperOptimizer plan step', () => {
     expect(createWallpaperPlan).toHaveBeenLastCalledWith(expect.objectContaining({ start: { wall_index: 0, first_strip_width: 331 } }));
   });
 
-  it('names the saved plan and lets the user create a project for it', async () => {
+  it('creates the project when the plan is saved, with no separate create step', async () => {
     createProjectGroup.mockResolvedValue({ id: 'new-project', name: 'Living room' });
     await openPlanStep();
 
@@ -207,12 +207,26 @@ describe('WallpaperOptimizer plan step', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Save plan/ }));
 
     expect(await screen.findByLabelText('Plan name')).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText('Project — optional'), { target: { value: '__new__' } });
+    expect(screen.queryByRole('button', { name: 'Create project' })).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('New project name'), { target: { value: 'Living room' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Create project' }));
+    fireEvent.click(screen.getAllByRole('button', { name: /^Save plan/ }).at(-1));
 
     await waitFor(() => expect(createProjectGroup).toHaveBeenCalledWith('Living room'));
-    expect(screen.getByLabelText('Project — optional')).toHaveValue('new-project');
+    await waitFor(() => expect(saveWallpaperProject).toHaveBeenCalledWith(expect.objectContaining({ project_group_id: 'new-project' })));
+  });
+
+  it('does not save a plan without a name', async () => {
+    await openPlanStep();
+
+    fireEvent.click(screen.getByRole('button', { name: /Prepare cut sheets/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Save plan/ }));
+
+    fireEvent.change(await screen.findByLabelText('Plan name'), { target: { value: '   ' } });
+    fireEvent.click(screen.getAllByRole('button', { name: /^Save plan/ }).at(-1));
+
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+    expect(saveWallpaperProject).not.toHaveBeenCalled();
+    expect(createProjectGroup).not.toHaveBeenCalled();
   });
 });
 

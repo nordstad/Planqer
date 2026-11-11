@@ -4,12 +4,13 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import CatalogPage from './CatalogPage';
 import PlanSteps from './PlanSteps';
 import ProjectPicker from './ProjectPicker';
+import { useProjectChoice } from '../hooks/useProjectChoice';
 import WallOutlineEditor from './WallOutlineEditor';
 import WallpaperPieceGallery from './WallpaperPieceGallery';
 import { KIND_KEYS, pieceFaces } from './WallpaperPieceDiagram';
 import { wallIssues, overlapIssue } from '../utils/wallpaperValidation';
 import RoomOverview, { linkColour } from './RoomOverview';
-import { createProjectGroup, createWallpaperPlan, getProjectGroups, getUserSettings, getWallpaperProjects, saveWallpaper, saveWallpaperProject, updateWallpaperProject } from '../utils/api';
+import { createWallpaperPlan, getProjectGroups, getUserSettings, getWallpaperProjects, saveWallpaper, saveWallpaperProject, updateWallpaperProject } from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useAccountContext } from '../contexts/useAccountContext';
 import { isStaticMode } from '../utils/mode';
@@ -247,7 +248,11 @@ const WallpaperOptimizer = () => {
   const [projectName, setProjectName] = useState(() => t('wallpaperUi.defaultProjectName'));
   const [saved, setSaved] = useState(null);
   const [projectGroups, setProjectGroups] = useState([]);
-  const [projectGroupId, setProjectGroupId] = useState('');
+  const { groupId: projectGroupId, setGroupId: setProjectGroupId, newName: newProjectName, setNewName: setNewProjectName, resolve: resolveProject } = useProjectChoice({
+    groups: projectGroups,
+    onCreated: (group) => setProjectGroups((current) => [group, ...current]),
+    fallbackName: projectName,
+  });
   const [progress, setProgress] = useState({ cut: [], hung: [] });
   const [cutWallIndex, setCutWallIndex] = useState(0);
   const [selectedPieceId, setSelectedPieceId] = useState(null);
@@ -392,20 +397,11 @@ const WallpaperOptimizer = () => {
   };
   const rollPrice = payload.wallpaper.price_per_roll != null && Number.isFinite(payload.wallpaper.price_per_roll) ? payload.wallpaper.price_per_roll : null;
   const formatMoney = (value) => `${value.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${pricing.currency}`;
-  const createGroup = async (name) => {
-    try {
-      const group = await createProjectGroup(name);
-      setProjectGroups((current) => [group, ...current]);
-      setProjectGroupId(String(group.id));
-      return true;
-    } catch (err) {
-      setError(err.message);
-      return false;
-    }
-  };
   const save = async () => {
+    if (!projectName.trim()) { setError(t('auditUi.nameRequired')); return; }
     try {
-      const body = { name: projectName, project_group_id: projectGroupId || null, wallpaper_data: { ...payload.wallpaper, currency: pricing.currency, vat_rate: pricing.vatRate, prices_include_vat: pricing.pricesIncludeVat }, room_data: payload.room, options_data: { corner_overlap: cornerOverlap, spare_margin: spareMargin, start: startChoice }, plan_result: plan, ordered_rolls: plan.rolls_to_buy, progress_data: progress };
+      setError('');
+      const body = { name: projectName.trim(), project_group_id: await resolveProject(), wallpaper_data: { ...payload.wallpaper, currency: pricing.currency, vat_rate: pricing.vatRate, prices_include_vat: pricing.pricesIncludeVat }, room_data: payload.room, options_data: { corner_overlap: cornerOverlap, spare_margin: spareMargin, start: startChoice }, plan_result: plan, ordered_rolls: plan.rolls_to_buy, progress_data: progress };
       const existingId = saved?.id ?? editingId;
       const result = existingId ? await updateWallpaperProject(existingId, body) : await saveWallpaperProject(body);
       setSaved(result);
@@ -470,7 +466,7 @@ const WallpaperOptimizer = () => {
       </section>)}
       <div className="step-foot"><button className="btn-order step-foot-act" onClick={() => setStep(4)}>{`${t('workflow.savePlan')} →`}</button></div>
     </section>}
-    {step === 4 && plan && (saved ? <section className="step-view"><div className="step-head"><div><h1 className="step-h1">{t('workflow.planSaved')}</h1><p className="step-lede">{t('wallpaperUi.savedLede')}</p></div></div><div style={{ marginTop: '24px', padding: '20px', border: '1px solid var(--rule-hair)', background: 'var(--ground-2)' }}><b>{`✓ ${t('workflow.savedAs', { name: projectName })}`}</b><p className="synthetic" style={{ margin: '8px 0 0' }}>{projectGroupId ? t('wallpaperUi.filedUnder', { name: projectGroups.find((group) => String(group.id) === String(projectGroupId))?.name || t('wallpaperUi.selectedProject') }) : `${t('ui.notInProject')}.`}</p></div><div className="step-foot"><button className="btn" onClick={() => setStep(2)}>{`← ${t('workflow.backToPlan')}`}</button><button className="btn-order step-foot-act" onClick={() => navigate('/dashboard')}>{t('wallpaperUi.openDashboard')}</button></div></section> : <section className="step-view is-form"><div className="step-head"><div><h1 className="step-h1">{t('workflow.saveThisPlan')}</h1><p className="step-lede">{t('wallpaperUi.saveLede')}</p>{rollPrice != null && <p className="synthetic" data-testid="save-estimated-cost">{t('wallpaperUi.saveEstimatedCost', { cost: formatMoney(plan.rolls_to_buy * rollPrice), rolls: plan.rolls_to_buy, price: formatMoney(rollPrice) })}</p>}</div></div><label className="form-label" htmlFor="wallpaper-plan-name">{t('workflow.planName')}<input id="wallpaper-plan-name" className="form-input" value={projectName} onChange={(event) => setProjectName(event.target.value)} /></label><div style={{ marginTop: '18px' }}><ProjectPicker groups={projectGroups} value={projectGroupId} onChange={setProjectGroupId} onCreate={createGroup} /></div><div className="step-foot"><button className="btn" onClick={() => setStep(2)}>{`← ${t('workflow.backToPlan')}`}</button><button className="btn-order step-foot-act" onClick={save}>{t('workflow.savePlan')}</button></div></section>)}
+    {step === 4 && plan && (saved ? <section className="step-view"><div className="step-head"><div><h1 className="step-h1">{t('workflow.planSaved')}</h1><p className="step-lede">{t('wallpaperUi.savedLede')}</p></div></div><div style={{ marginTop: '24px', padding: '20px', border: '1px solid var(--rule-hair)', background: 'var(--ground-2)' }}><b>{`✓ ${t('workflow.savedAs', { name: projectName })}`}</b><p className="synthetic" style={{ margin: '8px 0 0' }}>{projectGroupId ? t('wallpaperUi.filedUnder', { name: projectGroups.find((group) => String(group.id) === String(projectGroupId))?.name || t('wallpaperUi.selectedProject') }) : `${t('ui.notInProject')}.`}</p></div><div className="step-foot"><button className="btn" onClick={() => setStep(2)}>{`← ${t('workflow.backToPlan')}`}</button><button className="btn-order step-foot-act" onClick={() => navigate('/dashboard')}>{t('wallpaperUi.openDashboard')}</button></div></section> : <section className="step-view is-form"><div className="step-head"><div><h1 className="step-h1">{t('workflow.saveThisPlan')}</h1><p className="step-lede">{t('wallpaperUi.saveLede')}</p>{rollPrice != null && <p className="synthetic" data-testid="save-estimated-cost">{t('wallpaperUi.saveEstimatedCost', { cost: formatMoney(plan.rolls_to_buy * rollPrice), rolls: plan.rolls_to_buy, price: formatMoney(rollPrice) })}</p>}</div></div><label className="form-label" htmlFor="wallpaper-plan-name">{t('workflow.planName')}<input id="wallpaper-plan-name" className="form-input" value={projectName} onChange={(event) => setProjectName(event.target.value)} /></label><div style={{ marginTop: '18px' }}><ProjectPicker groups={projectGroups} value={projectGroupId} onChange={setProjectGroupId} newName={newProjectName} onNewNameChange={setNewProjectName} onSubmit={save} /></div><div className="step-foot"><button className="btn" onClick={() => setStep(2)}>{`← ${t('workflow.backToPlan')}`}</button><button className="btn-order step-foot-act" onClick={save}>{t('workflow.savePlan')}</button></div></section>)}
   </CatalogPage>;
 };
 

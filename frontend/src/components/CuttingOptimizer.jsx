@@ -20,7 +20,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { optimizeCutting, saveProject, getProjectGroups, createProjectGroup, getUserProjects, getUserSettings } from '../utils/api';
+import { optimizeCutting, saveProject, getProjectGroups, getUserProjects, getUserSettings } from '../utils/api';
 import { materialLabel } from '../utils/materialLabel';
 import { boardPartCount, restoreBoardParts } from '../utils/boardParts';
 import ProductPicker from './ProductPicker';
@@ -44,6 +44,7 @@ import ConfirmDialog from './ConfirmDialog';
 import CostAnalysisPanel from './CostAnalysisPanel';
 import Disclosure from './Disclosure';
 import ProjectPicker from './ProjectPicker';
+import { useProjectChoice } from '../hooks/useProjectChoice';
 import Loader from './Loader';
 import PlanSteps from './PlanSteps';
 import { ArrowLeft, ArrowRight, Plus, Tick } from './icons';
@@ -93,8 +94,12 @@ const CuttingOptimizer = () => {
 
   /* the save step */
   const [projectGroups, setProjectGroups] = useState([]);
-  const [selectedGroupId, setSelectedGroupId] = useState('');
   const [projectName, setProjectName] = useState("");
+  const { groupId, setGroupId, newName, setNewName, resolve: resolveProject } = useProjectChoice({
+    groups: projectGroups,
+    onCreated: (group) => setProjectGroups(prev => [group, ...prev]),
+    fallbackName: projectName,
+  });
   const [saveAttempted, setSaveAttempted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(null);
@@ -299,7 +304,7 @@ const CuttingOptimizer = () => {
       : selectionFromLegacyMaterial('board', materialLabel(project.material_type || '', t)));
     setBoardThickness(project.board_thickness ? String(project.board_thickness) : '');
     setBoardWidth(project.board_width ? String(project.board_width) : '');
-    setSelectedGroupId(project.project_group_id || '');
+    setGroupId(project.project_group_id || '');
     setProjectName(project.name);
     setEditingProject(project);
     setSaveMode('update');
@@ -497,27 +502,13 @@ const CuttingOptimizer = () => {
     ? t('auditUi.nameRequired')
     : '';
 
-  // Returns whether it worked, so the picker knows whether to close its field.
-  const createGroup = async (name) => {
-    try {
-      const group = await createProjectGroup(name);
-      setProjectGroups(prev => [group, ...prev]);
-      setSelectedGroupId(group.id);
-      setApiError("");
-      return true;
-    } catch (err) {
-      setApiError(`${t('auditUi.createProjectFailed')}: ${err.message}`);
-      return false;
-    }
-  };
-
   const savePlan = async () => {
     setSaving(true);
     try {
       const project = await saveProject({
         id: saveMode === 'update' ? editingProject?.id : undefined,
         name: projectName.trim(),
-        projectGroupId: selectedGroupId,
+        projectGroupId: await resolveProject(),
         parts,
         boards,
         sawKerf,
@@ -563,7 +554,7 @@ const CuttingOptimizer = () => {
   const savedGroupName = saved
     ? projectGroups.find(g => g.id === saved.project_group_id)?.name
     : null;
-  const selectedGroupName = projectGroups.find(g => g.id === selectedGroupId)?.name;
+  const selectedGroupName = projectGroups.find(g => g.id === groupId)?.name;
 
   /* ── the rail ──────────────────────────────────────────────────────────── */
   const steps = [
@@ -1037,7 +1028,7 @@ const CuttingOptimizer = () => {
                     if (mode === 'update' && !editingProject && userProjects.length) {
                       setEditingProject(userProjects[0]);
                       setProjectName(userProjects[0].name);
-                      setSelectedGroupId(userProjects[0].project_group_id || '');
+                      setGroupId(userProjects[0].project_group_id || '');
                     }
                   }}
                 >
@@ -1054,7 +1045,7 @@ const CuttingOptimizer = () => {
                       const target = userProjects.find(p => p.id === e.target.value);
                       setEditingProject(target);
                       setProjectName(target.name);
-                      setSelectedGroupId(target.project_group_id || '');
+                      setGroupId(target.project_group_id || '');
                     }}
                   >
                     {userProjects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -1065,9 +1056,10 @@ const CuttingOptimizer = () => {
               <div style={{ marginBottom: '24px' }}>
                 <ProjectPicker
                   groups={projectGroups}
-                  value={selectedGroupId}
-                  onChange={setSelectedGroupId}
-                  onCreate={createGroup}
+                  value={groupId}
+                  onChange={setGroupId}
+                  newName={newName}
+                  onNewNameChange={setNewName}
                 />
               </div>
 

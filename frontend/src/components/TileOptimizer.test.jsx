@@ -63,7 +63,7 @@ it('renders translated labels on the tile layout save step', async () => {
   expect(screen.getByText(/Give the plan a name/)).toBeInTheDocument();
   expect(screen.queryByLabelText('Save as')).not.toBeInTheDocument();
   expect(screen.getByLabelText('Plan name')).toBeInTheDocument();
-  expect(screen.getByLabelText('Project — optional')).toBeInTheDocument();
+  expect(screen.getByLabelText('Project')).toBeInTheDocument();
   expect(screen.getByText(/Combine board, sheet, and tile plans/)).toBeInTheDocument();
   expect(screen.getByText(/The name appears on the saved diagram/)).toBeInTheDocument();
 });

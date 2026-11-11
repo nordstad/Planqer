@@ -1,111 +1,56 @@
 /*
-  Which project a cutlist gets filed under, plus the way to make a new one.
+  Which project a plan gets filed under. "New project…" is a value like any
+  other: the page holds the name and makes the project when it saves the plan,
+  so there is no separate create step to forget.
 
-  This lived inline on both optimizer pages, which meant two copies of the same
-  two bugs: picking "New project…" snapped the select straight back to "Not in a
-  project" (it is controlled by the selected id, which "New project…" never
-  sets), and pressing Enter in the name field submitted the enclosing save form
-  instead of creating the project — so the obvious way to use it silently did
-  nothing and complained about the plan name. One component, one fix.
-
-  It owns the naming state itself; the page only supplies the groups and does
-  the API call, returning truthy so this knows whether to close.
-
-  Given `onNewNameChange`, it instead leaves creating to the page: "New
-  project…" becomes a value like any other (NEW_PROJECT), the page holds the
-  name, and the project is made when the page saves.
+  Enter in the name field saves the plan — it submits the enclosing form, or
+  calls `onSubmit` where the page has no form.
 */
 
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 export const NEW_PROJECT = '__new__';
-const NEW = NEW_PROJECT;
 
-const ProjectPicker = ({ groups, value, onChange, onCreate, defaultNewName = '', newName, onNewNameChange }) => {
+const ProjectPicker = ({ groups, value, onChange, newName, onNewNameChange, onSubmit }) => {
   const { t } = useTranslation();
-  const [creatingNow, setCreating] = useState(false);
-  const [ownName, setName] = useState(defaultNewName);
-  const deferred = Boolean(onNewNameChange);
-  const creating = deferred ? value === NEW : creatingNow;
-  const name = deferred ? newName : ownName;
-
-  const cancel = () => {
-    setCreating(false);
-    setName(defaultNewName);
-  };
-
-  const create = async () => {
-    if (!name.trim()) return;
-    if (await onCreate(name.trim())) cancel();
-  };
 
   return (
     <div>
-      <label className="form-label" htmlFor="plan-project">{t('ui.projectOptional')}</label>
+      <label className="form-label" htmlFor="plan-project">{t('ui.project')}</label>
 
       <select
         id="plan-project"
         className="form-select"
-        // Holds on NEW while the name field is open, so the control keeps
-        // showing the choice the user actually made.
-        value={creating ? NEW : value}
-        onChange={(e) => {
-          if (deferred) {
-            onChange(e.target.value);
-            return;
-          }
-          if (e.target.value === NEW) {
-            setCreating(true);
-            return;
-          }
-          setCreating(false);
-          onChange(e.target.value);
-        }}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
       >
-        <option value="">{t('ui.notInProject')}</option>
         {groups.map((group) => (
           <option key={group.id} value={group.id}>{group.name}</option>
         ))}
-        <option value={NEW}>{t('ui.newProject')}</option>
+        <option value={NEW_PROJECT}>{t('ui.newProject')}</option>
       </select>
 
       <p className="synthetic" style={{ marginTop: '7px' }}>
         {t('ui.projectSaveHint')}
       </p>
 
-      {creating && (
+      {value === NEW_PROJECT && (
         <div className="flex gap-2" style={{ marginTop: '10px', flexWrap: 'wrap' }}>
           <input
             type="text"
             className="form-input"
             style={{ flex: '1 1 200px', width: 'auto' }}
             placeholder={t('ui.projectPlaceholder')}
-            value={name}
-            onChange={(e) => (deferred ? onNewNameChange(e.target.value) : setName(e.target.value))}
-            // This input sits inside the save form, where Enter would otherwise
-            // try to save the plan. Enter here means "create this project".
+            value={newName}
+            onChange={(e) => onNewNameChange(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                if (!deferred) create();
-              } else if (e.key === 'Escape' && !deferred) {
-                cancel();
-              }
+              if (e.key !== 'Enter') return;
+              e.preventDefault();
+              if (e.currentTarget.form) e.currentTarget.form.requestSubmit();
+              else onSubmit?.();
             }}
             aria-label={t('ui.newProjectName')}
-            autoFocus={!deferred}
           />
-          {!deferred && (
-            <>
-              <button type="button" className="btn" onClick={create} disabled={!name.trim()}>
-                {t('ui.createProject')}
-              </button>
-              <button type="button" className="btn" onClick={cancel}>
-                {t('ui.cancel')}
-              </button>
-            </>
-          )}
         </div>
       )}
     </div>
