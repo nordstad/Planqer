@@ -28,7 +28,7 @@ describe('ViewCube', () => {
   it('turns the cube with the camera', () => {
     const navigator = makeNavigator();
     const { container } = renderCube(navigator);
-    expect(container.querySelector('.view-nav-cube').style.transform)
+    expect(container.querySelector('.view-nav-cube').style.transform.replace(/\s/g, ''))
       .toBe('matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1)');
   });
 
