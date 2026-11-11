@@ -327,7 +327,7 @@ const TileOptimizer = () => {
 
   /* ── keeping a layout ──────────────────────────────────────────────────── */
   const nameError = saveAttempted && !projectName.trim()
-    ? t('workflow.nameAndKeep')
+    ? t('auditUi.nameRequired')
     : '';
 
   const savePlan = async () => {

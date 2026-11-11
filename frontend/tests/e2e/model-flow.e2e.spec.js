@@ -141,7 +141,7 @@ test.describe('Model cutlist flow with example/bench.stl', () => {
     await plywood.getByLabel(/Price per sheet/).fill('350');
 
     // A model's plans go into a new project named after the file by default.
-    await expect(page.getByLabel('Project — optional')).toHaveValue('__new__');
+    await expect(page.getByLabel('Project', { exact: true })).toHaveValue('__new__');
     await expect(page.getByLabel('New project name')).toHaveValue('bench');
 
     const boardPosts = [];
