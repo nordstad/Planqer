@@ -104,6 +104,10 @@
     border-bottom: 1px solid var(--rule-hair);
     position: sticky; top: 0; z-index: 10; background: var(--ground);
   }
+  .plan-steps::after {
+    content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 12px;
+    background: linear-gradient(var(--ground), transparent); pointer-events: none;
+  }
   /* Segments take their natural width rather than a third of the page each, so
      the amber underline hugs its own label the way the nav's does — and the rail
      reads the same whether the step below it is a 620px form or a full-width
