@@ -26,4 +26,32 @@ describe('HelpPage', () => {
       'https://nordstad.github.io/Planqer/',
     );
   });
+
+  it('does not scroll the page on a plain visit so the top nav stays visible', async () => {
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    render(
+      <MemoryRouter initialEntries={['/help']}>
+        <AuthProvider>
+          <HelpPage />
+        </AuthProvider>
+      </MemoryRouter>,
+    );
+    await screen.findByRole('heading', { name: 'Start with the material you have' });
+    expect(scrollIntoView).not.toHaveBeenCalled();
+  });
+
+  it('scrolls to the requested section when the URL has a hash', async () => {
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    render(
+      <MemoryRouter initialEntries={['/help#results']}>
+        <AuthProvider>
+          <HelpPage />
+        </AuthProvider>
+      </MemoryRouter>,
+    );
+    await screen.findByRole('heading', { name: 'Start with the material you have' });
+    expect(scrollIntoView).toHaveBeenCalled();
+  });
 });
