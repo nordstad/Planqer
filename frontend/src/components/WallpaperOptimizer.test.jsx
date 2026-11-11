@@ -10,6 +10,8 @@ const { default: WallpaperOptimizer } = await import('./WallpaperOptimizer');
 const { default: i18n } = await import('../i18n');
 const { createProjectGroup, createWallpaperPlan, saveWallpaperProject } = await import('../utils/api');
 
+const openCorners = () => screen.getAllByRole('button', { name: /^Change corner/ }).forEach((button) => fireEvent.click(button));
+
 const openRoomStep = async () => {
   render(<MemoryRouter><WallpaperOptimizer /></MemoryRouter>);
   fireEvent.change(screen.getByLabelText(/^Wallpaper name|^Name/i), { target: { value: 'Willow' } });
@@ -51,6 +53,7 @@ describe('WallpaperOptimizer room step', () => {
     expect(screen.queryByLabelText(/closed room/)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Add wall' }));
     expect(screen.getAllByText(/Wall [A-Z] → Wall [A-Z]/)).toHaveLength(2);
+    openCorners();
     expect(screen.getAllByRole('option', { name: /start a new wall run/ })).toHaveLength(2);
 
     fireEvent.click(screen.getByLabelText(/closed room/));
@@ -60,18 +63,51 @@ describe('WallpaperOptimizer room step', () => {
     expect(screen.getByText(/Wall C → Wall A/)).toBeInTheDocument();
   });
 
-  it('keeps Add wall before the corner settings', async () => {
+  it('keeps Add wall before the room settings', async () => {
     await openRoomStep();
     fireEvent.click(screen.getByRole('button', { name: 'Add wall' }));
 
     const addWall = screen.getByRole('button', { name: 'Add wall' });
-    const corners = screen.getByRole('heading', { name: 'Corners' });
-    expect(addWall.compareDocumentPosition(corners) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const settings = screen.getByRole('heading', { name: 'Room settings' });
+    expect(addWall.compareDocumentPosition(settings) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('keeps one wall open at a time and summarises the closed ones', async () => {
+    await openRoomStep();
+    fireEvent.click(screen.getByRole('button', { name: 'Add wall' }));
+
+    const [wallA, wallB] = screen.getAllByRole('button', { name: /^Wall [AB],/ });
+    expect(wallA).toHaveAttribute('aria-expanded', 'false');
+    expect(wallA).toHaveTextContent('2400 × 2400 mm');
+    expect(wallB).toHaveAttribute('aria-expanded', 'true');
+
+    fireEvent.click(wallA);
+    expect(wallA).toHaveAttribute('aria-expanded', 'true');
+    expect(wallB).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('treats an empty wall width as missing, not as an error, and links to it from the plan button', async () => {
+    await openRoomStep();
+    fireEvent.change(screen.getByLabelText(/^Wall width/), { target: { value: '' } });
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.getAllByText('1 required field empty: Wall width').length).toBeGreaterThan(0);
+    expect(screen.getByText('Fill in Wall width on Wall A to create the plan.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Create plan/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Go to Wall A' })).toBeInTheDocument();
+  });
+
+  it('marks required fields and keeps the unit in the accessible name', async () => {
+    await openRoomStep();
+
+    expect(screen.getByLabelText('Wall width (mm)')).toHaveAttribute('aria-required', 'true');
   });
 
   it('defaults every inside corner to a 15 mm overlap so a plan can be created at once', async () => {
     await openRoomStep();
     fireEvent.click(screen.getByRole('button', { name: 'Add wall' }));
+    expect(screen.getByText(/Inside corner · overlap 15 mm/)).toBeInTheDocument();
+    openCorners();
 
     expect(screen.getByLabelText('Hanging decision')).toHaveValue('overlap');
     expect(screen.getByRole('option', { name: /Overlap 15 mm at the corner/ })).toBeInTheDocument();
@@ -81,6 +117,7 @@ describe('WallpaperOptimizer room step', () => {
   it('defaults an outside corner to wrapping and returns to the overlap when switched back to inside', async () => {
     await openRoomStep();
     fireEvent.click(screen.getByRole('button', { name: 'Add wall' }));
+    openCorners();
 
     fireEvent.change(screen.getByLabelText('Corner type'), { target: { value: 'outside' } });
     expect(screen.getByLabelText('Hanging decision')).toHaveValue('continue');
@@ -100,7 +137,22 @@ describe('WallpaperOptimizer room step', () => {
   it('offers an optional price per roll on the wallpaper step', () => {
     render(<MemoryRouter><WallpaperOptimizer /></MemoryRouter>);
 
-    expect(screen.getByLabelText(/Price per roll/)).toHaveValue('');
+    expect(screen.getByLabelText(/^Price per roll/)).toHaveValue('');
+    expect(screen.getByLabelText(/^Price per roll/)).not.toHaveAttribute('aria-required');
+    expect(screen.getByText('(optional)')).toBeInTheDocument();
+  });
+
+  it('names the empty required fields and flags them only after Continue', () => {
+    render(<MemoryRouter><WallpaperOptimizer /></MemoryRouter>);
+
+    expect(screen.getByText('2 required fields empty: Name, Manufacturer')).toBeInTheDocument();
+    expect(screen.getByLabelText('Name')).not.toHaveClass('form-input-error');
+
+    fireEvent.click(screen.getByRole('button', { name: /Measure the room →/ }));
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Fill in Name, Manufacturer to continue.');
+    expect(screen.getByLabelText('Name')).toHaveClass('form-input-error');
+    expect(screen.queryByRole('heading', { name: 'Measure the room' })).not.toBeInTheDocument();
   });
 
   it('shows a live room preview with the start marked', async () => {
@@ -123,6 +175,7 @@ describe('WallpaperOptimizer room step', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Add wall' }));
 
     fireEvent.change(screen.getByLabelText('Corner overlap (mm)'), { target: { value: '25' } });
+    openCorners();
     expect(screen.getByRole('option', { name: /Overlap 25 mm at the corner/ })).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText('Corner overlap (mm)'), { target: { value: '-3' } });
@@ -153,7 +206,7 @@ describe('WallpaperOptimizer plan step', () => {
     render(<MemoryRouter><WallpaperOptimizer /></MemoryRouter>);
     fireEvent.change(screen.getByLabelText(/^Name/i), { target: { value: 'Willow' } });
     fireEvent.change(screen.getByLabelText(/Manufacturer/i), { target: { value: 'Example' } });
-    fireEvent.change(screen.getByLabelText(/Price per roll/), { target: { value: '1000' } });
+    fireEvent.change(screen.getByLabelText(/^Price per roll/), { target: { value: '1000' } });
     fireEvent.click(screen.getByRole('button', { name: /Measure the room →/ }));
     await screen.findByRole('heading', { name: 'Measure the room' });
     fireEvent.click(screen.getByRole('button', { name: /Create plan/ }));

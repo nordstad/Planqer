@@ -7,6 +7,7 @@ const MAX_MM = 100000;
 const IMPLAUSIBLE_MM = 100;
 
 const num = (value) => Number(value) || 0;
+const isBlank = (value) => value == null || String(value).trim() === '';
 const fmt = (value) => Math.round(value).toLocaleString('en-GB');
 // Messages are translated with the caller's `t`; without one they follow the active language.
 const defaultT = (key, options) => i18n.t(key, options);
@@ -16,10 +17,17 @@ const GROUPS = [
   ['Height', ['height_left', 'height_middle', 'height_right']],
 ];
 
+// An empty measurement is reported as missing, not as an error: the maker
+// has not got to it yet.
 const dimensionIssues = (wall, t, groups) => {
   const errors = [];
   const warnings = [];
+  const missing = [];
   groups.forEach(([label, fields]) => {
+    if (fields.some((field) => isBlank(wall[field]))) {
+      missing.push(label);
+      return;
+    }
     const values = fields.map((field) => num(wall[field]));
     if (values.some((value) => value < MIN_MM || value > MAX_MM)) {
       errors.push(t(`wallpaperUi.err${label}Range`, { min: MIN_MM, max: fmt(MAX_MM) }));
@@ -27,16 +35,16 @@ const dimensionIssues = (wall, t, groups) => {
       warnings.push(t(`wallpaperUi.warn${label}Small`, { value: fmt(Math.min(...values)) }));
     }
   });
-  return { errors, warnings };
+  return { errors, warnings, missing };
 };
 
 export const wallDimensionIssues = (wall, t = defaultT) => {
-  const { errors, warnings } = dimensionIssues(wall, t, GROUPS);
+  const { errors, warnings, missing } = dimensionIssues(wall, t, GROUPS);
   if (wall.profile === 'sloped') {
     if (num(wall.lower_left) >= num(wall.height_left)) errors.push(t('wallpaperUi.errLowerLeft'));
     if (num(wall.lower_right) >= num(wall.height_right)) errors.push(t('wallpaperUi.errLowerRight'));
   }
-  return { errors, warnings };
+  return { errors, warnings, missing };
 };
 
 const wallWidth = (wall) => Math.max(num(wall.width_top), num(wall.width_middle), num(wall.width_bottom));
@@ -82,10 +90,11 @@ export const overlapIssue = (value, t = defaultT) => {
 export const wallIssues = (wall, t = defaultT) => {
   // An open wall gets no paper, so only its width (used by the room closure) is checked.
   if (wall.skip) {
-    const { errors } = dimensionIssues(wall, t, GROUPS.slice(0, 1));
-    return { errors, warnings: [], cutouts: [], hasErrors: errors.length > 0 };
+    const { errors, missing } = dimensionIssues(wall, t, GROUPS.slice(0, 1));
+    return { errors, warnings: [], missing, cutouts: [], hasErrors: errors.length > 0 };
   }
   const dimensions = wallDimensionIssues(wall, t);
-  const cutouts = (wall.cutouts || []).map((cutout) => cutoutIssue(wall, cutout, t));
+  // Openings cannot be checked against a wall that is not measured yet.
+  const cutouts = (wall.cutouts || []).map((cutout) => (dimensions.missing.length ? null : cutoutIssue(wall, cutout, t)));
   return { ...dimensions, cutouts, hasErrors: dimensions.errors.length > 0 || cutouts.some(Boolean) };
 };

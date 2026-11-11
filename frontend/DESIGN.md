@@ -17,6 +17,8 @@ colors:
   revision: "#cc2200"
   revision-bg: "#fdeeea"
   shop: "#16150f"
+  field: "#fbfaf6"
+  field-line: "#8a846f"
   night-ground: "#17150f"
   night-ground-2: "#201d15"
   night-ground-3: "#322d20"
@@ -31,6 +33,8 @@ colors:
   night-accent-bg: "#3a2413"
   night-revision: "#ff6b45"
   night-revision-bg: "#2e1410"
+  night-field: "#14120d"
+  night-field-line: "#8f8b78"
 typography:
   display:
     fontFamily: "Archivo, system-ui, sans-serif"
@@ -117,14 +121,14 @@ components:
     height: "50px"
     width: "100%"
   input:
-    backgroundColor: "{colors.card}"
+    backgroundColor: "{colors.field}"
     textColor: "{colors.ink}"
-    rounded: "{rounded.lg}"
+    rounded: "{rounded.md}"
     padding: "8px 12px"
-    height: "38px"
+    height: "40px"
     width: "100%"
   input-focus:
-    backgroundColor: "{colors.accent-bg}"
+    backgroundColor: "{colors.field}"
     textColor: "{colors.ink}"
   card:
     backgroundColor: "{colors.card}"
@@ -345,6 +349,11 @@ uses exist and both are deliberately quiet:
   lifted a hair off the page."
 - **Card hover** (`box-shadow: 0 6px 16px -10px rgba(22,21,15,.18)`): The
   homepage launcher cards on hover, paired with the border turning amber.
+- **Recessed field** (`box-shadow: inset 0 2px 3px rgba(0,0,0,.07)`): every
+  `.form-input` and `.form-select`. The one inward shadow: it makes a field read
+  as something to fill in rather than something to press.
+- **Focus ring** (`box-shadow: 0 0 0 3px var(--accent-bg)`): a focused field,
+  beside its amber border.
 - **Inserted sheet** (`box-shadow: 0 24px 48px -24px rgba(22,21,15,.35)`):
   `.cat-sheet` — the one real lift in the system, for a modal floating over
   a dimmed scrim.
@@ -389,6 +398,17 @@ surface → 16px), rather than inventing an in-between value.
   colors rather than a tint shift.
 - **Destructive (`.btn-danger`, `.btn-outline-danger`):** Revision-red
   outline, filling to solid red with white text on hover.
+- **Minor action (`.btn-text`):** Underlined ink text, never a box: "Add
+  opening", "Try an example", "Load a saved plan". `.btn-text.is-quiet` is the
+  destructive variant inside a card ("Remove wall"), ink-2 turning red on hover.
+
+**The Solid Secondary Rule.** Chosen from four mocked button styles (pill,
+offset-shadow block, solid ink, tinted): a step has one amber `.btn-order`,
+its secondary actions are solid ink (`.btn-primary`), and anything lesser is a
+`.btn-text` link. A solid button can never be mistaken for a field, which is
+hollow and recessed. The wallpaper planner follows this rule; the other
+planners still use outlined `.btn` for secondary actions until they are
+rebuilt onto section cards.
 
 ### Cards / Containers
 
@@ -400,22 +420,64 @@ radius, 42px square).
 
 ### Inputs / Fields
 
-- **Style:** Card-colored fill, full 1.5px border (not underline-only),
-  10px radius, 38px minimum height.
-- **Focus:** Border and caret turn amber; fill shifts to `--accent-bg`.
-- **Error:** Border and fill shift to revision red / `--revision-bg`.
+- **Style:** `--field` fill (a hair off the card in day, darker than the card
+  at night, so a field reads as sunk in), a solid 1.5px `--field-line` edge,
+  8px radius, 40px minimum height, the recessed inset shadow. The edge clears
+  3:1 against the card in both editions (3.7:1 day, 4.9:1 night): the earlier
+  hairline edge was too faint to tell a field from text in the night edition.
+- **Dropdown (`.form-select`):** The same field with a divided chevron block on
+  the right, so it reads as "choose" rather than "type". Things you fill in
+  (text and dropdowns) share one family; things you press are buttons.
+- **Focus:** Border turns amber with a 3px `--accent-bg` ring; the fill stays.
+- **Error:** Border and fill shift to revision red / `--revision-bg`. Red means
+  wrong or "you pressed Continue too early", never "not filled in yet": an
+  empty required field stays neutral until then.
+- **Placeholders:** An example must never pass for an entered value. Do not put
+  example values ("e.g. 3200") in measurement or name fields; an empty field
+  stays empty and the section status names it. Search fields may keep an
+  example, rendered italic. Entered values are weight 600.
+- **Units inside the field (`FormField`):** A label translated as
+  "Wall width (mm)" renders as "Wall width" with "mm" inside the field; the unit
+  stays in the accessible name. Pass `unit` for a unit that is not in the label
+  (a currency).
 - **In-table (`.cell-input`):** Transparent, right-aligned, tabular; focus
   fills the cell with `--accent-bg`.
 - **Bounded numbers (`.dimension-input`):** A measurement, rate, percentage,
   or price does not need free-text width and should use a compact 112px control;
   tightly scoped controls such as kerf may use 78px. Names, product search,
   project names, and comma-separated lists remain full-width.
-- **Required and optional fields:** An optional field says “Optional” in its
-  label. Do not invent a one-off visual treatment for required fields; the
-  system-wide distinction is an open design decision and belongs here once
-  adopted.
+- **Required and optional fields:** Every required label carries an ink `*`
+  (`.req-mark`, hidden from screen readers, with `aria-required` on the
+  control), and the form opens with one "* Required" legend. An optional field
+  says "(optional)" in its label (`.opt-mark`). A field with a default is still
+  required. Fields look the same either way: a faded or dashed optional field
+  was tried and rejected, it lost contrast and did not read as optional. Use
+  `FormField` rather than hand-building the label.
 - **Checkbox / Radio:** 16px, 1.5px border, 4px radius (full for radio),
   filling amber when checked.
+
+### Section Cards
+
+`.sec-card` — a step's form is split into cards, each with a `--ground-2`
+header band (`.sec-card-head`) and a status on the right (`SectionStatus`):
+"2 required fields empty: Name, Manufacturer", "Check the measurements" in
+red for a real problem, or "✓ Complete" in `--done` (the built-in green, not a
+new colour). The status names what is missing instead of only counting it.
+Cards do not clip their content, so an ⓘ near the top can open over the edge.
+The disabled primary at the foot of the step repeats the first blocker and
+links to it ("Fill in Wall width on Wall D to create the plan. Go to Wall D").
+
+**Repeated cards (wallpaper walls).** A list of like things — the walls of a
+room — is one card each, with a letter badge, the name, a one-line summary
+("2400 × 2400 mm · 1 opening") and the status. Only one is open at a time;
+opening or adding one closes the others, and a closed card offers "Change".
+The open card gets the amber outline as the active state. A relation between
+two neighbours (a corner) sits between their cards as a one-line
+`.corner-link` that opens on "Change", and opens itself when it needs a
+decision. Settings that belong to the whole list (closed room, corner overlap)
+get their own card after the list. On wide screens a `.room-nav` panel beside
+the cards lists every card's status and jumps to it; on a phone it is not
+shown, because the closed cards are already the overview.
 
 ### The Step Rail
 

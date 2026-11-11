@@ -9,7 +9,16 @@ const door = (overrides = {}) => ({ kind: 'door', x: '500', y: '0', width: '900'
 
 describe('wallDimensionIssues', () => {
   it('accepts a normal wall', () => {
-    expect(wallDimensionIssues(wall())).toEqual({ errors: [], warnings: [] });
+    expect(wallDimensionIssues(wall())).toEqual({ errors: [], warnings: [], missing: [] });
+  });
+
+  it('reports an empty measurement as missing rather than as an error', () => {
+    const issues = wallIssues(wall({ width_top: '', width_middle: '', width_bottom: '', cutouts: [door()] }));
+
+    expect(issues.missing).toEqual(['Width']);
+    expect(issues.errors).toEqual([]);
+    expect(issues.cutouts).toEqual([null]);
+    expect(issues.hasErrors).toBe(false);
   });
 
   it('rejects non-positive and oversized dimensions once per axis', () => {
