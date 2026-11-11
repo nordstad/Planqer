@@ -652,7 +652,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
                 autoFocus
               />
               <label className="synthetic" htmlFor="project-spare-margin">{t('settings.spareMargin')}</label>
-              <input id="project-spare-margin" type="number" min="0" max="100" step="1" className="form-input" value={editingSpareMargin}
+              <input id="project-spare-margin" type="number" min="0" max="100" step="1" className="form-input dimension-input" value={editingSpareMargin}
                 onChange={(event) => setEditingSpareMargin(event.target.value)} />
               <button type="submit" className="btn btn-sm btn-primary">{t('common.saveSettings')}</button>
               <button type="button" className="btn btn-sm" onClick={cancelEditGroup}>{t('ui.cancel')}</button>

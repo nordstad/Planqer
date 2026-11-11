@@ -45,6 +45,21 @@ beforeEach(() => {
   optimizeTileLayout.mockResolvedValue({ candidates: [candidate], recommended_index: 0 });
 });
 
+it('uses compact controls for tile dimensions', async () => {
+  render(
+    <MemoryRouter>
+      <LanguageProvider>
+        <TileOptimizer />
+      </LanguageProvider>
+    </MemoryRouter>,
+  );
+
+  expect(await screen.findByLabelText(/Surface width/i)).toHaveClass('dimension-input');
+  expect(screen.getByLabelText(/Surface height/i)).toHaveClass('dimension-input');
+  expect(screen.getByLabelText(/Tile width/i)).toHaveClass('dimension-input');
+  expect(screen.getByLabelText(/Thickness \(mm\)/i)).toHaveClass('dimension-input');
+});
+
 it('renders translated labels on the tile layout save step', async () => {
   render(
     <MemoryRouter>

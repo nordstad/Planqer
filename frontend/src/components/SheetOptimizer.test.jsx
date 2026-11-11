@@ -119,6 +119,15 @@ it('steps sheet and part dimensions in whole millimetres', () => {
   dimensions.forEach((input) => expect(input).toHaveAttribute('step', '1'));
 });
 
+it('uses compact controls for sheet dimensions', () => {
+  window.history.replaceState({}, '', '/sheet-cutting');
+  renderSheetOptimizer();
+
+  expect(screen.getByLabelText('Sheet width in millimetres')).toHaveClass('dimension-input');
+  expect(screen.getAllByLabelText('Sheet height in millimetres').at(-1)).toHaveClass('dimension-input');
+  expect(document.getElementById('sheet-thickness')).toHaveClass('dimension-input');
+});
+
 it('keeps a new part row clean until a field is touched and shows errors below the row', async () => {
   window.history.replaceState({}, '', '/sheet-cutting');
   renderSheetOptimizer({ loadExample: false, initialEntries: ['/sheet-cutting'] });
@@ -229,7 +238,9 @@ it.each([
     fireEvent.click(strategy);
     fireEvent.change(screen.getByLabelText(i18n.t('ui.algorithm')), { target: { value: algorithm } });
     expect(strategy).toHaveTextContent(i18n.t(labelKey));
-    expect(screen.getByText(i18n.t('ui.rotationDescription'))).toBeInTheDocument();
+    expect(screen.queryByText(i18n.t('ui.rotationDescription'))).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: i18n.t('ui.moreInfo', { label: i18n.t('ui.allowRotation') }) }));
+    expect(screen.getByRole('tooltip')).toHaveTextContent(i18n.t('ui.rotationDescription'));
     fireEvent.click(screen.getByRole('checkbox'));
     expect(strategy).toHaveTextContent(`${i18n.t('ui.allowRotation')}: ${i18n.t('ui.rotationOff')}`);
     optimizeSheetCutting.mockResolvedValue({

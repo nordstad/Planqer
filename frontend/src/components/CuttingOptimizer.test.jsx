@@ -80,14 +80,20 @@ beforeEach(() => {
 });
 
 describe('CuttingOptimizer', () => {
-  it('starts with no required parts and offers an example', async () => {
+  it('starts with no required parts and offers a realistic workshop example', async () => {
     renderOptimizer({ loadExample: false });
     expect(await screen.findByRole('heading', { name: /Required parts/i })).toBeInTheDocument();
     expect(screen.queryByLabelText(/Part length in millimetres/i)).not.toBeInTheDocument();
     expect(screen.getByText(/Add the parts you need/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Plan the cuts/i })).toBeDisabled();
+    expect(screen.getByText('Add at least one part')).toHaveAttribute('role', 'status');
+    expect(screen.getByText('Add at least one required part before planning.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Go to required parts' }));
+    expect(screen.getByRole('heading', { name: /Required parts/i })).toHaveFocus();
     fireEvent.click(screen.getByRole('button', { name: /Try an example/i }));
-    expect(screen.getByDisplayValue('80')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('600')).toBeInTheDocument();
+    expect(screen.queryByDisplayValue('80')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Go to required parts' })).not.toBeInTheDocument();
   });
   it('requests a standalone validation hint without interpolating a plan noun', async () => {
     const translate = vi.spyOn(i18n, 't');
@@ -105,6 +111,12 @@ describe('CuttingOptimizer', () => {
     renderOptimizer();
     expect(await screen.findByRole('heading', { name: /Required parts/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Plan the cuts/i })).toBeInTheDocument();
+  });
+
+  it('uses compact controls for board dimensions', async () => {
+    renderOptimizer({ loadExample: false });
+    expect(await screen.findByLabelText('Thickness (mm)')).toHaveClass('dimension-input');
+    expect(screen.getByLabelText('Width (mm)')).toHaveClass('dimension-input');
   });
 
   it('steps board thickness and width in whole millimetres', async () => {
@@ -322,7 +334,7 @@ describe('CuttingOptimizer', () => {
     fireEvent.click(screen.getByRole('button', { name: /Plan the cuts/i }));
     await waitFor(() => expect(optimizeCutting).toHaveBeenCalled());
 
-    fireEvent.change(screen.getByDisplayValue('80'), { target: { value: '81' } });
+    fireEvent.change(screen.getByDisplayValue('600'), { target: { value: '601' } });
     resolvePlan({
       board_lengths_used: [2500],
       cut_list: [[2000]],

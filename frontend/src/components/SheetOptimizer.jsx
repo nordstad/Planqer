@@ -29,6 +29,7 @@ import {
   emptySelection, selectionName, buildSnapshot, selectionFromSnapshot, selectionFromLegacyMaterial,
 } from '../utils/catalogue';
 import Loader from './Loader';
+import InfoTip from './InfoTip';
 import PlanSteps from './PlanSteps';
 import SheetPartRow from './SheetPartRow';
 import SheetResultDisplay from './SheetResultDisplay';
@@ -527,7 +528,7 @@ const SheetOptimizer = () => {
                        min="100"
                       value={sheetWidth}
                       onChange={(e) => setSheetField(setSheetWidth)(e.target.value)}
-                      className={`cell-input ${inputErrors.sheetWidth ? 'is-error' : ''}`}
+                       className={`cell-input dimension-input ${inputErrors.sheetWidth ? 'is-error' : ''}`}
                       required
                   aria-label={t('ui.sheetWidthAria')}
                     />
@@ -543,7 +544,7 @@ const SheetOptimizer = () => {
                        min="100"
                       value={sheetHeight}
                       onChange={(e) => setSheetField(setSheetHeight)(e.target.value)}
-                      className={`cell-input ${inputErrors.sheetHeight ? 'is-error' : ''}`}
+                       className={`cell-input dimension-input ${inputErrors.sheetHeight ? 'is-error' : ''}`}
                       required
                   aria-label={t('ui.sheetHeightAria')}
                     />
@@ -553,7 +554,7 @@ const SheetOptimizer = () => {
                 <tr>
                     <td style={{ textAlign: 'left' }}>{t('workflow.thickness')}</td>
                   <td>
-                    <input id="sheet-thickness" type="number" min="1" step="1" value={sheetThickness} onChange={(e) => setSheetField(setSheetThickness)(e.target.value)} className={`cell-input ${inputErrors.sheetThickness ? 'is-error' : ''}`} required aria-describedby="sheet-stock-error" />
+                    <input id="sheet-thickness" type="number" min="1" step="1" value={sheetThickness} onChange={(e) => setSheetField(setSheetThickness)(e.target.value)} className={`cell-input dimension-input ${inputErrors.sheetThickness ? 'is-error' : ''}`} required aria-describedby="sheet-stock-error" />
                   </td>
                   <td style={{ color: 'var(--ink-3)' }}>mm</td>
                 </tr>
@@ -578,7 +579,7 @@ const SheetOptimizer = () => {
                 <tr>
                   <td style={{ textAlign: 'left' }}>{t('ui.pricePerSheet', { currency: pricingDefaults.currency })}</td>
                   <td>
-                    <input id="sheet-unit-price" type="number" min="0" step="0.01" className="cell-input" value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} placeholder={t('ui.optional')} aria-label={t('ui.pricePerSheet', { currency: pricingDefaults.currency })} />
+                    <input id="sheet-unit-price" type="number" min="0" step="0.01" className="cell-input dimension-input" value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} placeholder={t('ui.optional')} aria-label={t('ui.pricePerSheet', { currency: pricingDefaults.currency })} />
                   </td>
                   <td />
                 </tr>
@@ -625,9 +626,7 @@ const SheetOptimizer = () => {
                 />
                 <span>
                    <b style={{ fontSize: '13.5px' }}>{t('ui.allowRotation')}</b>
-                  <span className="block synthetic">
-                    {t('ui.rotationDescription')}
-                  </span>
+                  <InfoTip label={t('ui.allowRotation')}>{t('ui.rotationDescription')}</InfoTip>
                 </span>
               </label>
             </Disclosure>

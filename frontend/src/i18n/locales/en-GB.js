@@ -143,7 +143,7 @@ const locale = {
     planning: 'Planning', percentUsed: '{{percent}}% used', sheetPartsCount: '{{width}} × {{height}} mm · {{count}} part', sheetPartsCount_other: '{{width}} × {{height}} mm · {{count}} parts',
     rowOffset: 'Row offset', sliverGuardBreakage: 'Minimum edge width & breakage allowance', sliverThreshold: 'Minimum edge piece width', reuseOffcuts: 'Reuse offcuts',
     backToPlan: 'Back to the plan', backToLayout: 'Back to the layout', saving: 'Saving', updatePlan: 'Update plan', savePlan: 'Save plan',
-    whatToBuy: 'What to buy', cutOrder: 'Cut order', takeToSaw: 'Take this to the saw', downloadDiagram: 'Download diagram', sheetBySheet: 'Sheet by sheet', realProportions: 'Each sheet at its real proportions', sheetNumber: 'Sheet {{number}}', sheetPosition: 'Sheet {{current}} of {{total}}', previousSheet: 'Previous sheet', nextSheet: 'Next sheet', viewFullDiagram: 'View the full diagram', exactPlacements: 'Exact placements', placementsHint: "Where every part sits, in millimetres from the sheet's top-left corner", byTheNumbers: 'By the numbers', candidateInFull: 'Selected layout in detail',
+    whatToBuy: 'What to buy', cutOrder: 'Cut order', downloadDiagram: 'Download diagram', sheetBySheet: 'Sheet by sheet', realProportions: 'Each sheet at its real proportions', sheetNumber: 'Sheet {{number}}', sheetPosition: 'Sheet {{current}} of {{total}}', previousSheet: 'Previous sheet', nextSheet: 'Next sheet', viewFullDiagram: 'View the full diagram', exactPlacements: 'Exact placements', placementsHint: "Where every part sits, in millimetres from the sheet's top-left corner", byTheNumbers: 'By the numbers', candidateInFull: 'Selected layout in detail',
     planTheCuts: 'Plan the cuts', yourCuttingPlan: 'Your cutting plan', cuttingPlanIntro: 'Every board drawn at the same scale, with its cuts in the order you make them.', costAnalysis: 'Cost analysis', planSaved: 'Plan saved', saveThisPlan: 'Save this plan', planName: 'Plan name', yourSheetLayout: 'Your sheet layout', sheetLayoutIntro: 'Every sheet drawn to its real proportions, with each part placed where it should be cut.',
     sheetPartsSummary: '{{count}} parts · {{width}} × {{height}} mm sheet', sheetsSummary: '{{count}} sheets · {{efficiency}}% used', packsFromParts: 'Calculated from your parts',
     parts: 'Parts', thePlan: 'The plan', theLayout: 'The layout', save: 'Save', layout: 'Layout', keep: 'Keep', surface: 'Surface', model: 'Model', cutlists: 'Cutlists',
@@ -270,14 +270,14 @@ Object.assign(locale.projectUi, {
 });
 
 Object.assign(locale.ui, {
-  materialPine: 'Pine', materialSpruce: 'Spruce', materialOak: 'Oak', materialBeech: 'Beech', materialBirch: 'Birch', materialPressureTreated: 'Pressure-treated', materialCustom: 'Custom', customMaterialPlaceholder: 'Enter material', tilesToBuyWithSpare: 'Tiles to buy incl. spare',
+  materialPine: 'Pine', materialSpruce: 'Spruce', materialOak: 'Oak', materialBeech: 'Beech', materialBirch: 'Birch', materialPressureTreated: 'Pressure-treated', materialCustom: 'Custom', customMaterialPlaceholder: 'Enter material', tilesToBuyWithSpare: 'Tiles to buy incl. spare', moreInfo: 'More information about {{label}}',
   materialCeramic: 'Ceramic tile', materialPorcelain: 'Porcelain tile', materialStone: 'Natural stone tile', materialGlass: 'Glass tile',
   updatePlanTitle: 'Update saved plan',
   updatePlanConfirm: 'This will replace the saved result for "{{name}}". Continue?',
 });
 
 Object.assign(locale.workflow, {
-  materialProfile: 'Material and profile', thickness: 'Thickness', thicknessMm: 'Thickness (mm)', widthMm: 'Width (mm)', packSheets: 'Plan the sheet cuts', tilesToBuy: 'tiles to buy', fullTiles: 'Full tiles', cutTiles: 'Cut tiles', used: 'Used', changeSurface: 'Change the surface', nameIt: 'Name it',
+  materialProfile: 'Material and profile', thickness: 'Thickness', thicknessMm: 'Thickness (mm)', widthMm: 'Width (mm)', packSheets: 'Plan the sheet cuts', tilesToBuy: 'tiles to buy', fullTiles: 'Full tiles', cutTiles: 'Cut tiles', used: 'Used', changeSurface: 'Change the surface', nameIt: 'Name it', partsNeeded: 'Add at least one part', partsRequiredBeforePlanning: 'Add at least one required part before planning.', goToRequiredParts: 'Go to required parts',
 });
 
 Object.assign(locale.auditUi, { sheetThicknessRequired: 'Enter the sheet thickness before planning', tileMaterialRequired: 'Choose a tile material and enter its thickness before solving' });

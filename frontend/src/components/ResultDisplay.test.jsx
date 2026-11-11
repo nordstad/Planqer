@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import ResultDisplay from './ResultDisplay';
 
 describe('ResultDisplay', () => {
-  it('renders the diagram and what-to-buy table', () => {
+  it('renders the diagram and what-to-buy table without duplicating its cut order', () => {
     render(
       <ResultDisplay
         result={{
@@ -18,6 +18,7 @@ describe('ResultDisplay', () => {
     );
     expect(screen.getByAltText(/Cutting plan diagram/i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /What to buy/i })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /Cut order/i })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Download diagram/i })).toBeInTheDocument();
     expect(screen.getByText('45 × 45 × 300')).toBeInTheDocument();
     expect(screen.getAllByText('oak').length).toBeGreaterThan(0);

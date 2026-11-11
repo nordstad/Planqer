@@ -29,6 +29,7 @@ import ProjectPicker from './ProjectPicker';
 import MovePlanMenu from './MovePlanMenu';
 import { useProjectChoice } from '../hooks/useProjectChoice';
 import Loader from './Loader';
+import InfoTip from './InfoTip';
 import PlanSteps from './PlanSteps';
 import CutoutRow from './CutoutRow';
 import BondPatternIcon from './BondPatternIcon';
@@ -450,7 +451,7 @@ const TileOptimizer = () => {
                       type="number" step="0.1" min="100"
                       value={surfaceWidth}
                       onChange={(e) => setField(setSurfaceWidth)(e.target.value)}
-                      className={`cell-input ${inputErrors.surfaceWidth ? 'is-error' : ''}`}
+                       className={`cell-input dimension-input ${inputErrors.surfaceWidth ? 'is-error' : ''}`}
                       required
                        aria-label={`${t('tileUi.surfaceWidth')} in millimetres`}
                     />
@@ -464,7 +465,7 @@ const TileOptimizer = () => {
                       type="number" step="0.1" min="100"
                       value={surfaceHeight}
                       onChange={(e) => setField(setSurfaceHeight)(e.target.value)}
-                      className={`cell-input ${inputErrors.surfaceHeight ? 'is-error' : ''}`}
+                       className={`cell-input dimension-input ${inputErrors.surfaceHeight ? 'is-error' : ''}`}
                       required
                        aria-label={`${t('tileUi.surfaceHeight')} in millimetres`}
                     />
@@ -506,9 +507,6 @@ const TileOptimizer = () => {
             <button type="button" className="btn" style={{ marginTop: '12px' }} onClick={addCutout}>
               <Plus /> {t('workflow.addOpening')}
             </button>
-            {cutouts.length === 0 && (
-                <p className="synthetic" style={{ marginTop: '10px' }}>{t('workflow.noOpenings')}</p>
-            )}
           </section>
 
           <section style={{ marginTop: '30px', paddingTop: '22px', borderTop: '1px solid var(--rule-hair)' }}>
@@ -525,7 +523,7 @@ const TileOptimizer = () => {
                       type="number" step="0.1" min="10"
                       value={tileWidth}
                       onChange={(e) => setField(setTileWidth)(e.target.value)}
-                      className={`cell-input ${inputErrors.tileWidth ? 'is-error' : ''}`}
+                       className={`cell-input dimension-input ${inputErrors.tileWidth ? 'is-error' : ''}`}
                       required
                        aria-label={`${t('tileUi.tileWidth')} in millimetres`}
                     />
@@ -539,7 +537,7 @@ const TileOptimizer = () => {
                       type="number" step="0.1" min="10"
                       value={tileHeight}
                       onChange={(e) => setField(setTileHeight)(e.target.value)}
-                      className={`cell-input ${inputErrors.tileHeight ? 'is-error' : ''}`}
+                       className={`cell-input dimension-input ${inputErrors.tileHeight ? 'is-error' : ''}`}
                       required
                        aria-label={`${t('tileUi.tileHeight')} in millimetres`}
                     />
@@ -549,7 +547,7 @@ const TileOptimizer = () => {
                 <tr>
                   <td style={{ textAlign: 'left' }}>{t('ui.pricePerTile', { currency: pricingDefaults.currency })}</td>
                   <td>
-                    <input id="tile-unit-price" type="number" min="0" step="0.01" className="cell-input" value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} placeholder={t('ui.optional')} aria-label={t('ui.pricePerTile', { currency: pricingDefaults.currency })} />
+                    <input id="tile-unit-price" type="number" min="0" step="0.01" className="cell-input dimension-input" value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} placeholder={t('ui.optional')} aria-label={t('ui.pricePerTile', { currency: pricingDefaults.currency })} />
                   </td>
                   <td />
                 </tr>
@@ -572,7 +570,7 @@ const TileOptimizer = () => {
               </div>
               <div>
                 <label className="form-label" htmlFor="tile-thickness">{t('workflow.thicknessMm')}</label>
-                <input id="tile-thickness" type="number" min="0.1" step="0.1" value={tileThickness} onChange={(e) => setField(setTileThickness)(e.target.value)} className={`form-input ${!tileThickness || parseFloat(tileThickness) <= 0 ? 'form-input-error' : ''}`} required />
+                <input id="tile-thickness" type="number" min="0.1" step="0.1" value={tileThickness} onChange={(e) => setField(setTileThickness)(e.target.value)} className={`form-input dimension-input ${!tileThickness || parseFloat(tileThickness) <= 0 ? 'form-input-error' : ''}`} required />
               </div>
             </div>
             {(!tileThickness || parseFloat(tileThickness) <= 0 || (materialType === 'custom' && !customMaterial.trim())) && <p className="text-danger text-[12.5px] font-semibold" style={{ marginTop: '10px' }}>{t('auditUi.tileMaterialRequired')}</p>}
@@ -585,9 +583,7 @@ const TileOptimizer = () => {
               />
               <span>
                 <b style={{ fontSize: '13.5px' }}>{t('workflow.allowRotation')}</b>
-                <span className="block synthetic">
-                  {t('workflow.rotationHintCorrect')}
-                </span>
+                <InfoTip label={t('workflow.allowRotation')}>{t('workflow.rotationHintCorrect')}</InfoTip>
               </span>
             </label>
           </section>
@@ -595,7 +591,7 @@ const TileOptimizer = () => {
           <section style={{ marginTop: '30px', paddingTop: '22px', borderTop: '1px solid var(--rule-hair)' }}>
             <div className="section-rule">
               <h2 className="section-title">{t('workflow.jointBond')}</h2>
-              <span className="folio">{t('tileUi.jointBondHint')}</span>
+              <InfoTip label={t('workflow.jointBond')}>{t('tileUi.jointBondHint')}</InfoTip>
             </div>
             <div className="flex items-end gap-4" style={{ marginTop: '14px', flexWrap: 'wrap' }}>
               <div style={{ flex: 'none' }}>
@@ -666,13 +662,13 @@ const TileOptimizer = () => {
                 </div>
               )}
             </div>
-            <p className={inputErrors.jointWidth || inputErrors.perimeterGap ? 'text-danger text-[12.5px] font-semibold' : 'synthetic'} style={{ marginTop: '10px' }}>
-              {inputErrors.jointWidth || inputErrors.perimeterGap
-                || {
-                   herringbone: t('tileUi.herringboneHint'), diagonal: t('tileUi.diagonalHint'), diagonal_herringbone: t('tileUi.diagonalHerringboneHint'),
-                   double_herringbone: t('tileUi.doubleHerringboneHint'), diagonal_double_herringbone: t('tileUi.diagonalDoubleHerringboneHint'),
-                 }[bondPattern] || t('tileUi.defaultBondHint')}
-            </p>
+            {inputErrors.jointWidth || inputErrors.perimeterGap ? (
+              <p className="text-danger text-[12.5px] font-semibold" style={{ marginTop: '10px' }}>{inputErrors.jointWidth || inputErrors.perimeterGap}</p>
+            ) : (
+              <InfoTip label={t('tileUi.bondPattern')}>
+                {{ herringbone: t('tileUi.herringboneHint'), diagonal: t('tileUi.diagonalHint'), diagonal_herringbone: t('tileUi.diagonalHerringboneHint'), double_herringbone: t('tileUi.doubleHerringboneHint'), diagonal_double_herringbone: t('tileUi.diagonalDoubleHerringboneHint') }[bondPattern] || t('tileUi.defaultBondHint')}
+              </InfoTip>
+            )}
             {isStaticMode() && isHeavyTileJob(bondPattern, surfaceWidth, surfaceHeight) && (
               <p className="synthetic" role="note" style={{ marginTop: '6px', color: 'var(--accent)' }}>{t('demo.solver.heavyTile')}</p>
             )}
@@ -698,9 +694,7 @@ const TileOptimizer = () => {
                 />
                  <span style={{ fontSize: '13.5px', color: 'var(--ink-3)', fontWeight: 600 }}>{t('tileUi.thresholdUnit')}</span>
               </div>
-              <p className="synthetic" style={{ marginTop: '10px' }}>
-                 {t('tileUi.ruleOfThumb')}
-              </p>
+              <InfoTip label={t('workflow.sliverThreshold')}>{t('tileUi.ruleOfThumb')}</InfoTip>
 
                <label className="form-label" style={{ marginTop: '18px' }} htmlFor="tile-waste">{t('tileUi.breakageAllowance')}</label>
               <div className="flex items-center gap-2">

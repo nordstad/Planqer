@@ -124,7 +124,7 @@ const ModelGroupSettings = ({ group, config, errors, label, currency, onChange, 
                   type="number" step="0.1" min="100" max="10000"
                   value={config.sheetWidth}
                   onChange={(e) => onChange({ sheetWidth: e.target.value })}
-                  className={`cell-input ${errors.width ? 'is-error' : ''}`}
+                  className={`cell-input dimension-input ${errors.width ? 'is-error' : ''}`}
                   aria-label={`${t('ui.sheetWidthAria')} — ${label}`}
                 />
               </td>
@@ -137,7 +137,7 @@ const ModelGroupSettings = ({ group, config, errors, label, currency, onChange, 
                   type="number" step="0.1" min="100" max="10000"
                   value={config.sheetHeight}
                   onChange={(e) => onChange({ sheetHeight: e.target.value })}
-                  className={`cell-input ${errors.height ? 'is-error' : ''}`}
+                  className={`cell-input dimension-input ${errors.height ? 'is-error' : ''}`}
                   aria-label={`${t('ui.sheetHeightAria')} — ${label}`}
                 />
               </td>
@@ -150,7 +150,7 @@ const ModelGroupSettings = ({ group, config, errors, label, currency, onChange, 
                   type="number" step="0.1" min={SAW_KERF_MIN} max="50"
                   value={config.kerf}
                   onChange={(e) => onChange({ kerf: e.target.value })}
-                  className={`cell-input ${errors.kerf ? 'is-error' : ''}`}
+                  className={`cell-input dimension-input ${errors.kerf ? 'is-error' : ''}`}
                   aria-label={`${t('modelUi.sheetKerfAria')} — ${label}`}
                 />
               </td>
@@ -163,7 +163,7 @@ const ModelGroupSettings = ({ group, config, errors, label, currency, onChange, 
                   type="number" min="0" step="0.01"
                   value={config.sheetPrice}
                   onChange={(e) => onChange({ sheetPrice: e.target.value })}
-                  className="cell-input"
+                  className="cell-input dimension-input"
                   placeholder={t('ui.optional')}
                   aria-label={`${t('ui.pricePerSheet', { currency })} — ${label}`}
                 />

@@ -47,6 +47,7 @@ import ProjectPicker from './ProjectPicker';
 import MovePlanMenu from './MovePlanMenu';
 import { useProjectChoice } from '../hooks/useProjectChoice';
 import Loader from './Loader';
+import InfoTip from './InfoTip';
 import PlanSteps from './PlanSteps';
 import { ArrowLeft, ArrowRight, Plus, Tick } from './icons';
 import PartInputRow from './PartInputRow';
@@ -61,10 +62,10 @@ const STEP_SAVE = 2;
 const DEFAULT_CURRENCY = 'SEK';
 
 const EXAMPLE_PARTS = [
-  { length: "80", quantity: "10", name: "" },
-  { length: "150", quantity: "10", name: "" },
-  { length: "1550", quantity: "8", name: "" },
-  { length: "2000", quantity: "2", name: "" },
+  { length: "600", quantity: "4", name: "" },
+  { length: "800", quantity: "2", name: "" },
+  { length: "1200", quantity: "4", name: "" },
+  { length: "1800", quantity: "4", name: "" },
 ];
 
 const CuttingOptimizer = () => {
@@ -129,6 +130,7 @@ const CuttingOptimizer = () => {
   // tried to price a plan — flagging every field the instant the panel opens
   // reads as the page scolding the user for its own toggle.
   const stockSectionRef = useRef(null);
+  const partsHeadingRef = useRef(null);
 
   const debouncedBoards = useDebounce(boards, 300);
   const debouncedSawKerf = useDebounce(sawKerf, 300);
@@ -356,6 +358,11 @@ const CuttingOptimizer = () => {
   const pricedBoardCount = uniqueValidBoards.filter((board) => boardCosts[board]?.price_per_meter > 0).length;
   const pricingComplete = uniqueValidBoards.length > 0 && pricedBoardCount === uniqueValidBoards.length;
   const pricingPartial = pricedBoardCount > 0 && !pricingComplete;
+
+  const goToRequiredParts = () => {
+    partsHeadingRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+    partsHeadingRef.current?.focus({ preventScroll: true });
+  };
 
   useEffect(() => {
     if (!pricingComplete && optimizeFor === 'cost') setOptimizeFor('waste');
@@ -606,10 +613,11 @@ const CuttingOptimizer = () => {
         <form className="step-view is-form" onSubmit={handlePlanSubmit} noValidate>
           <div className="step-head">
             <div>
-              <h1 className="step-h1">{t('workflow.requiredParts')}</h1>
+              <h1 ref={partsHeadingRef} className="step-h1" tabIndex="-1" style={{ scrollMarginTop: '96px' }}>{t('workflow.requiredParts')}</h1>
               <p className="step-lede">
                 {t('workflow.requiredPartsIntro')}
               </p>
+              {parts.length === 0 && <p className="folio" style={{ color: 'var(--revision)', marginTop: '8px' }} role="status">{t('workflow.partsNeeded')}</p>}
             </div>
             <button type="button" className="btn" onClick={() => setLoadModalOpen(true)}>
               {t('workflow.loadSavedPlan')}
@@ -661,9 +669,7 @@ const CuttingOptimizer = () => {
               </button>
             )}
           </div>
-          <p className="synthetic" style={{ marginTop: '10px' }}>
-            {t('workflow.pasteParts')}
-          </p>
+          <InfoTip label={t('workflow.parts')}>{t('workflow.pasteParts')}</InfoTip>
 
           <div
             className="flex items-end gap-4"
@@ -719,11 +725,11 @@ const CuttingOptimizer = () => {
             <div className="grid gap-x-8 gap-y-5 md:grid-cols-2">
               <div>
                 <label className="form-label" htmlFor="board-thickness">{t('workflow.thicknessMm')}</label>
-                <input id="board-thickness" type="number" min="1" step="1" value={boardThickness} onChange={(e) => { retirePlan(); setBoardThickness(e.target.value); }} className="form-input" required />
+                <input id="board-thickness" type="number" min="1" step="1" value={boardThickness} onChange={(e) => { retirePlan(); setBoardThickness(e.target.value); }} className="form-input dimension-input" required />
               </div>
               <div>
                 <label className="form-label" htmlFor="board-width">{t('workflow.widthMm')}</label>
-                <input id="board-width" type="number" min="1" step="1" value={boardWidth} onChange={(e) => { retirePlan(); setBoardWidth(e.target.value); }} className="form-input" required />
+                <input id="board-width" type="number" min="1" step="1" value={boardWidth} onChange={(e) => { retirePlan(); setBoardWidth(e.target.value); }} className="form-input dimension-input" required />
               </div>
             </div>
             {(!parseFloat(boardThickness) || !parseFloat(boardWidth)) && <p className="text-danger text-[12.5px] font-semibold" style={{ marginTop: '10px' }}>{t('productUi.dimensionsRequired')}</p>}
@@ -738,8 +744,8 @@ const CuttingOptimizer = () => {
             <div className="section-rule">
               <h2 className="section-title">{t('workflow.stockAvailable')}</h2>
               <span className="folio">{t('workflow.supplierStock')}</span>
+              <InfoTip label={t('ui.pricingOptions')}>{t('ui.stockPricingOptional')}</InfoTip>
             </div>
-            <p className="synthetic" style={{ margin: '8px 0 12px' }}>{t('ui.stockPricingOptional')}</p>
             <div className="stock-table-wrap">
               <table className="cat-table">
                 <thead>
@@ -803,7 +809,7 @@ const CuttingOptimizer = () => {
                     step="0.1"
                     value={uniformPrice}
                     onChange={(e) => handleUniformPriceChange(e.target.value)}
-                    className="form-input"
+                    className="form-input dimension-input"
                     placeholder="35.0"
                   />
                 </div>
@@ -875,10 +881,13 @@ const CuttingOptimizer = () => {
 
           <div className="step-foot">
             <p className="synthetic step-foot-note">
-              {hasErrors
-                 ? t('ui.fixLines')
-                 : t('ui.partsAgainstStock', { parts: partCount, stock: validBoards.length, unit: t(validBoards.length === 1 ? 'ui.stockUnit' : 'ui.stockUnits') })}
-            </p>
+               {parts.length === 0
+                  ? t('workflow.partsRequiredBeforePlanning')
+                  : hasErrors
+                  ? t('ui.fixLines')
+                  : t('ui.partsAgainstStock', { parts: partCount, stock: validBoards.length, unit: t(validBoards.length === 1 ? 'ui.stockUnit' : 'ui.stockUnits') })}
+             </p>
+             {parts.length === 0 && <button type="button" className="btn-link" onClick={goToRequiredParts}>{t('workflow.goToRequiredParts')}</button>}
             <div className="step-foot-act">
               <button type="submit" className="btn-order" disabled={loading || hasErrors}>
                 {loading ? <><Loader /> {t('workflow.planning')}</> : <>{t('workflow.planTheCuts')} <ArrowRight size={15} /></>}
