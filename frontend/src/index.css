@@ -672,6 +672,7 @@
   }
   .field-unit-wrap { position: relative; display: block; width: fit-content; max-width: 100%; }
   .field-unit-wrap > .form-input { padding-right: 46px; }
+  .form-field.is-fill .field-unit-wrap { width: 100%; }
   .field-unit {
     position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
     color: var(--ink-2); font-size: 13px; font-weight: 500; pointer-events: none;
@@ -709,6 +710,7 @@
   button.sec-card-head:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .sec-card-text { min-width: 0; flex: 1 1 auto; }
   .sec-card-title { display: block; margin: 0; font-size: 15px; font-weight: 700; line-height: 1.25; }
+  .sec-card-title[tabindex] { scroll-margin-top: 110px; outline: none; }
   .sec-card-summary {
     display: block; font-size: 12.5px; color: var(--ink-2); font-variant-numeric: tabular-nums;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
