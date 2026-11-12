@@ -53,6 +53,42 @@ the final strip's leftover width round the corner. Outside corners always wrap.
 If the final strip already uses the full roll width there is no room to wrap,
 so the planner prefers a layout that leaves room.
 
+## Rooms with steps, alcoves and partitions
+
+Any room made of straight, square-cornered walls can be planned, not only a
+box. Treat every wall face that carries paper as one wall, in the order you meet
+it walking clockwise, and describe each corner as you reach it:
+
+- **Inside corner**: the wall turns towards you, so the room closes in. The
+  walls of a plain box are all inside corners.
+- **Outside corner**: the wall turns away from you, such as the end of a
+  partition or a chimney breast. A strip always wraps an outside corner, and
+  Planqer never puts a seam on the edge itself.
+
+A free-standing partition is three walls: the face on one side, its short end
+and the face on the other side, joined by two outside corners. The end is a wall
+in its own right, even if it is only 600 mm wide, and it can carry openings.
+
+| Wall | Width | Corner to the next wall |
+| --- | --- | --- |
+| A East | 2650 mm | Inside |
+| B South | 5400 mm | Inside |
+| C West | 2650 mm | Inside |
+| D Partition, first face | 4350 mm | Outside |
+| E Partition, end | 600 mm | Outside |
+| F Partition, second face | 4350 mm | None: start a new wall run |
+| G Top wall | 4250 mm | |
+
+Use **No corner: start a new wall run** where two papered areas do not touch,
+such as a separate alcove. No strip is carried across, and the top view draws
+the runs apart. Leave **Walls form a closed room** unticked unless the last wall
+really meets the first. When it is ticked Planqer checks that the walls close to
+within 10 mm, and warns by how much they do not.
+
+Check the top view before planning. It follows your entry order with square
+corners, so a wall that runs the wrong way or a corner marked inside instead of
+outside shows up as a shape that does not match the room.
+
 ## Read the cut plan
 
 ![Wallpaper plan with rolls to buy, first-strip options and a wall-by-wall layout](../assets/screenshots/wallpaper-plan.png)
