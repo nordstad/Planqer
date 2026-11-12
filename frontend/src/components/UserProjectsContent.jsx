@@ -40,6 +40,7 @@ import ConfirmDialog from './ConfirmDialog';
 import TileCutListTable from './TileCutListTable';
 import ProjectShoppingList from './ProjectShoppingList';
 import MovePlanMenu from './MovePlanMenu';
+import PlanMoreMenu from './PlanMoreMenu';
 import { ArrowLeft, ArrowRight, Pencil } from './icons';
 
 // The plans nobody filed. A route segment, not a group id.
@@ -485,18 +486,22 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
 
   /* ── one saved plan: its own diagram, its facts, its two exports ─────── */
 
-  const renderPlan = (project) => {
+  const renderPlan = (project, _index, collection) => {
     const hasDiagram = Boolean(project.has_svg_image || project.cutlist_image);
     const facts = planFacts(project, t);
     const status = planStatus(project, t);
     const printTitle = groupId === LOOSE
       ? t('projectUi.notInAnyProject')
       : groups.find((g) => g.id === groupId)?.name || project.name;
+    const openPlan = () => project.projectType === 'wallpaper'
+      ? navigate(`/wallpaper/plan/${encodeURIComponent(project.id)}`)
+      : handlePreview(project);
+    const hasMultiplePlans = collection.length > 1;
 
     return (
       <div key={project.id}>
         <article className="plan-item" draggable onDragStart={(event) => startDrag(event, project)} onDragEnd={() => setDraggedPlan(null)}>
-          <label style={{ display: 'flex', alignItems: 'center', padding: '0 4px 0 8px' }}>
+          {hasMultiplePlans && <label style={{ display: 'flex', alignItems: 'center', padding: '0 4px 0 8px' }}>
             <input
               type="checkbox"
               checked={selectedPlanIds.has(project.id)}
@@ -505,14 +510,14 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
               aria-label={t('projectUi.selectPlan', { name: project.name })}
               title={hasDiagram ? undefined : t('projectUi.noPlanDiagram')}
             />
-          </label>
+          </label>}
           <button
             type="button"
             className="plan-item-thumb"
-            onClick={() => handlePreview(project)}
+            onClick={openPlan}
             disabled={!hasDiagram}
             title={hasDiagram ? t('projectUi.openDiagram') : t('projectUi.noPlanDiagram')}
-            aria-label={t('projectUi.openDiagramFor', { name: project.name })}
+            aria-label={t('projectUi.openPlan', { name: project.name })}
           >
             <PlanThumb project={project} />
           </button>
@@ -550,10 +555,10 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
 
           <div className="plan-item-acts">
             <button
-              className="btn btn-sm"
-              onClick={() => handleModify(project)}
+              className="btn btn-primary btn-sm"
+              onClick={openPlan}
             >
-              {t('projectUi.modify')}
+              {t('projectUi.openPlan')}
             </button>
             <button
               className="btn btn-sm"
@@ -562,28 +567,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
             >
               {t('projectUi.printOne')}
             </button>
-            <button
-              className="btn btn-sm"
-              onClick={() => handleDownload(project, 'svg')}
-              disabled={busyId === project.id || !hasDiagram}
-            >
-              SVG
-            </button>
-            <button
-              className="btn btn-sm"
-              onClick={() => handleDownload(project, 'png')}
-              disabled={busyId === project.id || !hasDiagram}
-            >
-              PNG
-            </button>
-            <MovePlanMenu groups={groups} currentGroupId={project.project_group_id} onMove={(group) => movePlan(project, group)} busy={busyId === project.id} />
-            <button
-              className="btn btn-sm btn-outline-danger"
-              onClick={() => handleDelete(project)}
-              disabled={busyId === project.id}
-            >
-              {t('ui.delete')}
-            </button>
+            <PlanMoreMenu><button role="menuitem" className="btn-text" onClick={() => handleModify(project)}>{t('projectUi.modify')}</button><button role="menuitem" className="btn-text" onClick={() => handleDownload(project, 'svg')} disabled={busyId === project.id || !hasDiagram}>SVG</button><button role="menuitem" className="btn-text" onClick={() => handleDownload(project, 'png')} disabled={busyId === project.id || !hasDiagram}>PNG</button><MovePlanMenu groups={groups} currentGroupId={project.project_group_id} onMove={(group) => movePlan(project, group)} busy={busyId === project.id} /><button role="menuitem" className="btn-text is-quiet" onClick={() => handleDelete(project)} disabled={busyId === project.id}>{t('ui.delete')}</button></PlanMoreMenu>
           </div>
         </article>
         {projectView === 'diagrams' && project.projectType === 'tile' && project.layout_result && (
@@ -628,7 +612,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
     const title = group ? group.name : t('projectUi.notInAnyProject');
     const printablePlans = plans.filter((p) => p.has_svg_image || p.cutlist_image);
     const printableCount = printablePlans.length;
-    const selectedPlans = printablePlans.filter((p) => selectedPlanIds.has(p.id));
+    const selectedPlans = plans.length === 1 ? printablePlans : printablePlans.filter((p) => selectedPlanIds.has(p.id));
 
     return (
       <>
@@ -694,13 +678,13 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
                     <option value="a4">A4</option>
                     <option value="letter">Letter</option>
                   </select>
-                  <button
+                  {plans.length > 1 && <button
                     className="btn"
                     onClick={() => handlePrint(selectedPlans, title, 'diagrams')}
                     disabled={printing || selectedPlans.length === 0}
                   >
                     {t('projectUi.printDiagrams', { count: selectedPlans.length })}
-                  </button>
+                  </button>}
                   <button
                     className="btn"
                     onClick={() => handlePrint(selectedPlans, title, 'shopping', plans)}
@@ -722,20 +706,20 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
                   >
                     {t('projectUi.printProject')}
                   </button>
-                  <button
+                  {plans.length > 1 && <button
                     className="btn"
                     onClick={() => setSelectedPlanIds(new Set(printablePlans.map((p) => p.id)))}
                     disabled={printing || selectedPlans.length === printableCount}
                   >
                     {t('projectUi.selectAllPlans')}
-                  </button>
-                  <button
+                  </button>}
+                  {plans.length > 1 && <button
                     className="btn"
                     onClick={() => setSelectedPlanIds(new Set())}
                     disabled={printing || selectedPlans.length === 0}
                   >
                     {t('projectUi.clearSelection')}
-                  </button>
+                  </button>}
                 </span>
               )}
               {group && (

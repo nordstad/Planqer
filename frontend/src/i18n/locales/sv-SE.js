@@ -281,7 +281,7 @@ const locale = {
 };
 
 Object.assign(locale.projectUi, {
-  modify: 'Ändra',
+  modify: 'Ändra', openPlan: 'Öppna plan', moreActions: 'Fler åtgärder',
   selectPlan: 'Välj planen "{{name}}"',
   printOne: 'Skriv ut',
   printDiagrams: 'Skriv ut diagram ({{count}})',
