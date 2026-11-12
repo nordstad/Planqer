@@ -60,8 +60,23 @@ export const buildHtml = ({ title, meta, paper, plans, shoppingListHtml }) => {
   const innerW = spec.width - 2 * MARGIN_MM;
   const innerH = spec.height - 2 * MARGIN_MM;
 
-  const sections = plans.map((plan, i) => {
-    const availPortraitH = innerH - PLAN_HEAD_MM - (i === 0 ? DOC_HEAD_MM : 0);
+   const sections = plans.map((plan, i) => {
+     if (plan.bodyHtml) {
+       return `
+         <section class="plan plan--flow">
+           ${i === 0 ? `
+             <header class="doc-head">
+               <h1>${escapeHtml(title)}</h1>
+               <p>${escapeHtml(meta)}</p>
+             </header>` : ''}
+           <header class="plan-head">
+             <h2>${escapeHtml(plan.name)}</h2>
+             <p>${plan.facts.map(escapeHtml).join(' &nbsp;·&nbsp; ')}</p>
+           </header>
+           ${plan.bodyHtml}
+         </section>`;
+     }
+     const availPortraitH = innerH - PLAN_HEAD_MM - (i === 0 ? DOC_HEAD_MM : 0);
     const availLandscapeH = innerW - PLAN_HEAD_MM - (i === 0 ? DOC_HEAD_MM : 0);
     const landscape = fittedArea(plan.width, plan.height, innerH, availLandscapeH)
       > fittedArea(plan.width, plan.height, innerW, availPortraitH);
@@ -98,7 +113,8 @@ export const buildHtml = ({ title, meta, paper, plans, shoppingListHtml }) => {
   .doc-head p { font-size: 9pt; color: #6b6a60; margin-top: 1.5mm; }
    .plan { break-after: page; page-break-after: always; break-inside: avoid; page-break-inside: avoid; }
   .plan:last-child { break-after: auto; page-break-after: auto; }
-  .plan--landscape { page: landscape; }
+   .plan--landscape { page: landscape; }
+   .plan--flow { break-inside: auto; page-break-inside: auto; }
    .plan-head { padding-bottom: 2.5mm; margin-bottom: 4mm; border-bottom: 0.25mm solid #c9c7ba; break-after: avoid; page-break-after: avoid; }
   .plan-head h2 { font-size: 13pt; font-weight: 700; }
   .plan-head p { font-size: 9pt; color: #6b6a60; margin-top: 1mm; }
@@ -153,13 +169,13 @@ const whenImagesLoaded = (doc) => Promise.all(
  * @param {string} args.title  project name, printed on the first page
  * @param {string} args.meta   one line under the title (plan count, date)
  * @param {string} args.paper  'a4' | 'letter'
- * @param {Array<{name: string, facts: string[], svgBlob: Blob}>} args.plans
+ * @param {Array<{name: string, facts: string[], svgBlob?: Blob, bodyHtml?: string}>} args.plans
  * @param {string} args.shoppingListHtml optional shopping-list markup
  */
 export const printProjectPlans = async ({ title, meta, paper, plans, shoppingListHtml }) => {
-  const measured = await Promise.all(
-    plans.map(async (plan) => ({ ...plan, ...(await measureSvg(plan.svgBlob)) })),
-  );
+  const measured = await Promise.all(plans.map(async (plan) => (
+    plan.bodyHtml ? plan : { ...plan, ...(await measureSvg(plan.svgBlob)) }
+  )));
 
   const iframe = document.createElement('iframe');
   iframe.setAttribute('aria-hidden', 'true');
@@ -167,7 +183,7 @@ export const printProjectPlans = async ({ title, meta, paper, plans, shoppingLis
   document.body.appendChild(iframe);
 
   const cleanup = () => {
-    measured.forEach((plan) => URL.revokeObjectURL(plan.url));
+    measured.filter((plan) => plan.url).forEach((plan) => URL.revokeObjectURL(plan.url));
     iframe.remove();
   };
 

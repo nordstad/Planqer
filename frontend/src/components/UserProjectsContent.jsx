@@ -31,7 +31,7 @@ import { buildMaterialListHtml, buildMaterialCsv, isPlanPriced } from '../utils/
 import { materialLabel, cleanMaterial } from '../utils/materialLabel';
 import { restoreBoardParts } from '../utils/boardParts';
 import { buildCutListHtml } from '../utils/tileCutList';
-import { buildWallpaperCutSheetsHtml } from '../utils/wallpaperCutSheets';
+import { buildWallpaperPlanHtml } from '../utils/wallpaperPlanPrint';
 import { useAuth } from '../contexts/AuthContext';
 import { useAccountContext } from '../contexts/useAccountContext';
 import Loader from './Loader';
@@ -61,6 +61,7 @@ const formatDate = (dateString) => {
 };
 
 const plural = (n, singular, pluralWord = `${singular}s`) => `${n} ${n === 1 ? singular : pluralWord}`;
+const hasPrintableDocument = (project) => Boolean(project.has_svg_image || project.cutlist_image || (project.projectType === 'wallpaper' && project.plan_result));
 
 // The three saved project shapes don't share a "parts" concept — a tile
 // layout has no parts list, just a chosen candidate — so this returns the
@@ -251,7 +252,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
   // dialog — which is also where "save as PDF" lives. See printProject.js
   // for how each diagram picks the page orientation that renders it largest.
   const handlePrint = async (plans, title, mode = 'diagrams', shoppingPlans = plans) => {
-    const printable = plans.filter((p) => p.has_svg_image || p.cutlist_image);
+    const printable = plans.filter(hasPrintableDocument);
     if (mode === 'shopping' ? shoppingPlans.length === 0 : printable.length === 0) return;
 
     try {
@@ -270,15 +271,24 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
             svgBlob: await dataUrlToBlob(visualization),
           })));
         }
+        if (p.projectType === 'wallpaper') {
+          return {
+            name: p.name,
+            facts,
+            bodyHtml: buildWallpaperPlanHtml({
+              plan: p.plan_result,
+              walls: p.room_data?.walls || [],
+              corners: p.room_data?.corners || [],
+              closed: p.room_data?.closed || false,
+              wallpaper: p.wallpaper_data,
+            }, t),
+          };
+        }
         return {
           name: p.name,
           facts,
           svgBlob: await downloadProjectImage(p.id, p.projectType),
-          extraHtml: p.projectType === 'tile'
-            ? buildCutListHtml(p.layout_result, t)
-            : p.projectType === 'wallpaper'
-              ? buildWallpaperCutSheetsHtml(p.plan_result, p.room_data?.walls, p.wallpaper_data?.repeat, t)
-              : undefined,
+          extraHtml: p.projectType === 'tile' ? buildCutListHtml(p.layout_result, t) : undefined,
         };
       }))).flat();
       await printProjectPlans({
@@ -310,7 +320,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
   };
 
   const togglePlanSelection = (project) => {
-    if (!(project.has_svg_image || project.cutlist_image)) return;
+    if (!hasPrintableDocument(project)) return;
     setSelectedPlanIds((prev) => {
       const next = new Set(prev);
       if (next.has(project.id)) next.delete(project.id);
@@ -488,6 +498,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
 
   const renderPlan = (project, _index, collection) => {
     const hasDiagram = Boolean(project.has_svg_image || project.cutlist_image);
+    const printableDocument = hasPrintableDocument(project);
     const facts = planFacts(project, t);
     const status = planStatus(project, t);
     const printTitle = groupId === LOOSE
@@ -515,8 +526,8 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
             type="button"
             className="plan-item-thumb"
             onClick={openPlan}
-            disabled={!hasDiagram}
-            title={hasDiagram ? t('projectUi.openDiagram') : t('projectUi.noPlanDiagram')}
+            disabled={!printableDocument}
+            title={printableDocument ? t('projectUi.openDiagram') : t('projectUi.noPlanDiagram')}
             aria-label={t('projectUi.openPlan', { name: project.name })}
           >
             <PlanThumb project={project} />
@@ -563,7 +574,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
             <button
               className="btn btn-sm"
               onClick={() => handlePrint([project], printTitle)}
-              disabled={printing || !hasDiagram}
+              disabled={printing || !printableDocument}
             >
               {t('projectUi.printOne')}
             </button>
@@ -610,7 +621,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
 
     const plans = plansIn(groupId);
     const title = group ? group.name : t('projectUi.notInAnyProject');
-    const printablePlans = plans.filter((p) => p.has_svg_image || p.cutlist_image);
+    const printablePlans = plans.filter(hasPrintableDocument);
     const printableCount = printablePlans.length;
     const selectedPlans = plans.length === 1 ? printablePlans : printablePlans.filter((p) => selectedPlanIds.has(p.id));
 
