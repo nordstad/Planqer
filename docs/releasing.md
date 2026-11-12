@@ -136,6 +136,28 @@ git push origin vX.Y.Z
 Pushing the tag triggers `.github/workflows/publish-images.yml` and
 `.github/workflows/pages.yml`.
 
+### If `main` is protected
+
+Open the release commit as a pull request instead of pushing it, and tag after
+it merges. Tag the **release commit** (the last commit of the pull request),
+not the merge commit on `main`:
+
+```bash
+git tag vX.Y.Z <sha-of-the-release-commit>
+git push origin vX.Y.Z
+```
+
+The release commit changes `docs/`, so merging the pull request already deploys
+the site from the merge commit, with the demo of the previous release. Pages
+publishes one deployment per commit: a tag on that same merge commit reports
+success but leaves the previous demo live, even though the images are published.
+v0.12.0 hit this, and its footer kept saying v0.11.0. The release commit has not
+been deployed by any push to `main`, so tagging it avoids the clash.
+
+If you tagged the merge commit anyway, merge any change under `docs/` to `main`
+afterwards. That deploys again from a new commit, and the demo is taken from the
+latest release tag.
+
 ## GitHub Release
 
 The tag and the GitHub Release are separate objects. Create the GitHub Release
@@ -232,6 +254,7 @@ gh run list --workflow=pages.yml --limit=1
 
 - The docs are at the root and the demo at `/app/`.
 - Open a deep link under `/app/`, such as `/app/#/tile-layout`, and reload it.
-- The footer's version matches the tag.
+- The footer's version matches the tag. If it shows the previous version, see
+  [If `main` is protected](#if-main-is-protected).
 - The footer shows "Analytics: on", and a visit shows up in Umami. With
   Do Not Track set, the browser loads no request to `cloud.umami.is`.
