@@ -89,7 +89,7 @@ it('restores a saved sheet plan addressed by the edit query', async () => {
   expect(screen.getByDisplayValue('1200')).toBeInTheDocument();
   expect(screen.getByDisplayValue('2400')).toBeInTheDocument();
   expect(screen.getByDisplayValue('3')).toBeInTheDocument();
-  expect(screen.getByLabelText('Price per sheet · NOK')).toHaveValue(650);
+  expect(screen.getByLabelText(/^Price per sheet · NOK/)).toHaveValue(650);
 });
 
 it('starts empty and loads named example parts on request', async () => {
@@ -111,8 +111,9 @@ it('steps sheet and part dimensions in whole millimetres', () => {
 
   const dimensions = [
     ...screen.getAllByLabelText(/Part length in millimetres/i),
-    screen.getByLabelText('Sheet width in millimetres'),
+    screen.getByLabelText('Width (mm)'),
     ...screen.getAllByLabelText('Sheet height in millimetres'),
+    screen.getByLabelText('Height (mm)'),
     document.getElementById('sheet-thickness'),
   ];
 
@@ -123,8 +124,8 @@ it('uses compact controls for sheet dimensions', () => {
   window.history.replaceState({}, '', '/sheet-cutting');
   renderSheetOptimizer();
 
-  expect(screen.getByLabelText('Sheet width in millimetres')).toHaveClass('dimension-input');
-  expect(screen.getAllByLabelText('Sheet height in millimetres').at(-1)).toHaveClass('dimension-input');
+  expect(screen.getByLabelText('Width (mm)')).toHaveClass('dimension-input');
+  expect(screen.getByLabelText('Height (mm)')).toHaveClass('dimension-input');
   expect(document.getElementById('sheet-thickness')).toHaveClass('dimension-input');
 });
 
@@ -147,7 +148,8 @@ it('keeps a new part row clean until a field is touched and shows errors below t
   expect(width).toHaveClass('is-required-empty');
   expect(height).toHaveClass('is-required-empty');
   expect(quantity).toHaveClass('is-required-empty');
-  expect(screen.getByLabelText('Name, item 1')).toHaveAttribute('placeholder', 'Optional');
+  expect(screen.getByLabelText('Name, item 1')).not.toHaveAttribute('placeholder');
+  expect(screen.getByRole('columnheader', { name: /Name \(optional\)/ })).toBeInTheDocument();
   expect(screen.getByLabelText('Name, item 1')).not.toHaveClass('is-required-empty');
 
   fireEvent.change(screen.getByLabelText('Quantity, item 1'), { target: { value: '0' } });
@@ -160,7 +162,7 @@ it('shows the sheet material cost using the configured VAT basis', async () => {
   renderSheetOptimizer();
 
   fireEvent.change(document.getElementById('sheet-thickness'), { target: { value: '18' } });
-  fireEvent.change(screen.getByLabelText('Price per sheet · SEK'), { target: { value: '250' } });
+  fireEvent.change(screen.getByLabelText(/^Price per sheet · SEK/), { target: { value: '250' } });
   const pack = screen.getByRole('button', { name: /plan the sheet cuts/i });
   await waitFor(() => expect(pack).not.toBeDisabled());
   fireEvent.click(pack);
@@ -212,6 +214,19 @@ it('reruns restored rows without collapsing identical names', async () => {
   ));
 });
 
+it('treats an empty sheet thickness as missing, names it and links to the sheet card', () => {
+  window.history.replaceState({}, '', '/sheet-cutting');
+  renderSheetOptimizer();
+
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  expect(screen.getByLabelText('Thickness (mm)')).not.toHaveClass('form-input-error');
+  expect(screen.getByLabelText('Thickness (mm)')).toHaveAttribute('aria-required', 'true');
+  expect(screen.getByText('1 required field empty: Thickness')).toBeInTheDocument();
+  expect(screen.getByText('Fill in Thickness to plan the sheet cuts.')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Go to Sheet' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /plan the sheet cuts/i })).toBeDisabled();
+});
+
 it('explains why sheet planning is disabled when thickness is missing', async () => {
   window.history.replaceState({}, '', '/sheet-cutting');
   renderSheetOptimizer({ loadExample: false, initialEntries: ['/sheet-cutting'] });
@@ -231,7 +246,6 @@ it.each([
   const translate = vi.spyOn(i18n, 't');
   try {
     renderSheetOptimizer();
-    expect(translate).toHaveBeenCalledWith('ui.fixLines', expect.any(Object));
     expect(translate).not.toHaveBeenCalledWith('ui.fixLines', expect.objectContaining({ kind: expect.anything() }));
     const strategy = screen.getByRole('button', { name: new RegExp(i18n.t('ui.packingStrategy')) });
     expect(strategy).toHaveTextContent(`${i18n.t('ui.allowRotation')}: ${i18n.t('ui.rotationAllowed')}`);

@@ -699,6 +699,12 @@ Object.assign(locale, {
     addStock: "Add at least one stock length",
     noPrices: "No prices",
   },
+  sheetUi: {
+    partsDone_one: "{{count}} part",
+    partsDone_other: "{{count}} parts",
+    fillPartRows: "Fill in the size and quantity on every part row to plan the sheet cuts.",
+    fillToPlan: "Fill in {{fields}} to plan the sheet cuts.",
+  },
   demo: {
     catalogue: {
       title: "Catalogue",

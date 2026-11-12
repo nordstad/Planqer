@@ -678,6 +678,8 @@
     color: var(--ink-2); font-size: 13px; font-weight: 500; pointer-events: none;
   }
   .form-legend { font-size: 12.5px; color: var(--ink-2); margin: 10px 0 0; }
+  /* A narrow table keeps its header on screen by putting "(optional)" under it. */
+  @media (max-width: 640px) { .cat-table th .opt-mark { display: block; margin: 2px 0 0; } }
   .form-legend .req-mark::after { margin: 0 5px 0 0; }
 
   /* A minor action: underlined ink text, never a box. */
@@ -830,6 +832,18 @@
   .parts-table .part-remove-col { width: 34px; }
   .parts-table th:nth-child(3), .parts-table td:nth-child(3) { padding-left: 12px; }
   .parts-table th:nth-child(4), .parts-table td:nth-child(4) { padding-left: 12px; }
+  /* On a phone the fixed columns used to take the whole card and left the Name
+     column a few pixels wide; narrower size columns give names room. */
+  @media (max-width: 640px) {
+    .parts-table .part-item-col { width: 30px; }
+    .parts-table .part-size-col { width: 128px; }
+    .parts-table .part-quantity-col { width: 52px; }
+    .parts-table .part-remove-col { width: 30px; }
+    .parts-table th:nth-child(3), .parts-table td:nth-child(3),
+    .parts-table th:nth-child(4), .parts-table td:nth-child(4) { padding-left: 8px; }
+    .board-part-length .cell-input { width: 84px; }
+    .sheet-part-dimension { width: 52px; flex-basis: 52px; }
+  }
   .board-part-length .cell-input { width: 96px; margin-left: auto; }
   .sheet-part-size { width: 172px; }
   .sheet-part-dimensions { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }

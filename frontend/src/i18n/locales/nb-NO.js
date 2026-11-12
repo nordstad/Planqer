@@ -777,6 +777,12 @@ Object.assign(locale, {
     addStock: "Legg til minst én lagerlengde",
     noPrices: "Ingen priser",
   },
+  sheetUi: {
+    partsDone_one: "{{count}} del",
+    partsDone_other: "{{count}} deler",
+    fillPartRows: "Fyll ut størrelse og antall på hver delrad for å planlegge platekappingen.",
+    fillToPlan: "Fyll ut {{fields}} for å planlegge platekappingen.",
+  },
   demo: {
     catalogue: {
       title: "Produktkatalog",
