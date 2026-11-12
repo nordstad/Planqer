@@ -369,6 +369,22 @@ it('does not offer a quick/specified badge or a details prompt for priced tile p
   expect(screen.queryByText('Add missing details or prices')).not.toBeInTheDocument();
 });
 
+it('uses wallpaper rolls and pricing without a details prompt', async () => {
+  getUserProjects.mockResolvedValue([]);
+  getWallpaperProjects.mockResolvedValue([{
+    ...plan,
+    plan_result: { rolls_to_buy: 2 },
+    wallpaper_data: { name: 'Willow', roll_width: 530, roll_length: 10050, price_per_roll: 375, currency: 'SEK' },
+  }]);
+  renderDetail();
+
+  await screen.findByText('Willow', { selector: '.plan-item-material' });
+  expect(screen.getByText(/2 rolls to buy · est\. 750 SEK/)).toBeInTheDocument();
+  expect(screen.queryByText('Quick')).not.toBeInTheDocument();
+  expect(screen.getByText('Priced')).toBeInTheDocument();
+  expect(screen.queryByText('Add missing details or prices')).not.toBeInTheDocument();
+});
+
 it.each([
   [[plan], '1 project · 1 plan'],
   [[plan, secondPlan], '1 project · 2 plans'],

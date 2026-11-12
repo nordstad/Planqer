@@ -279,7 +279,7 @@ const locale = {
 };
 
 Object.assign(locale.projectUi, {
-  modify: 'Endre', openPlan: 'Åpne plan', moreActions: 'Flere handlinger',
+  modify: 'Endre', openPlan: 'Åpne plan', moreActions: 'Flere handlinger', estimatedCost: 'ca. {{cost}} {{currency}}',
   selectPlan: 'Velg planen "{{name}}"',
   printOne: 'Skriv ut',
   printDiagrams: 'Skriv ut diagrammer ({{count}})',

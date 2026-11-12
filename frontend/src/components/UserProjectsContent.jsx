@@ -88,10 +88,13 @@ const planFacts = (project, t) => {
     };
   }
   if (project.projectType === 'wallpaper') {
+    const rolls = project.plan_result?.rolls_to_buy;
+    const price = Number(project.wallpaper_data?.price_per_roll);
+    const currency = project.wallpaper_data?.currency;
     return {
       type: t('common.wallpaperPlanner'),
-      count: `${project.plan_result?.rolls_to_buy ?? '—'} rolls to buy${project.wallpaper_data?.price_per_roll != null && project.plan_result?.rolls_to_buy != null ? ` · est. ${(project.plan_result.rolls_to_buy * project.wallpaper_data.price_per_roll).toLocaleString(undefined, { maximumFractionDigits: 2 })} ${project.wallpaper_data.currency || ''}`.trimEnd() : ''}`,
-      stock: project.wallpaper_data?.name || 'Wallpaper',
+      count: Number.isFinite(rolls) ? `${t('wallpaperUi.rollsToBuy', { rolls })}${Number.isFinite(price) && price > 0 && currency ? ` · ${t('projectUi.estimatedCost', { cost: (rolls * price).toLocaleString(undefined, { maximumFractionDigits: 2 }), currency })}` : ''}` : '—',
+      stock: project.wallpaper_data?.name || t('common.wallpaperPlanner'),
     };
   }
   const parts = restoreBoardParts(project.parts_data);
@@ -121,16 +124,16 @@ const triggerDownload = (blob, filename) => {
 
 const dataUrlToBlob = async (dataUrl) => (await fetch(dataUrl)).blob();
 
-// Tile plans carry no product, so only pricing says anything about their detail.
+// Tile and wallpaper plans carry no product, so only pricing says anything about their detail.
 const planStatus = (project, t) => {
   const priced = isPlanPriced(project);
   const specified = Boolean(project.product && !project.product.suggested);
-  const isTile = project.projectType === 'tile';
+  const noProduct = ['tile', 'wallpaper'].includes(project.projectType);
   const badges = [
-    !isTile && (specified ? ['specified', 'projectUi.badgeSpecified'] : ['quick', 'projectUi.badgeQuick']),
+    !noProduct && (specified ? ['specified', 'projectUi.badgeSpecified'] : ['quick', 'projectUi.badgeQuick']),
     priced && ['priced', 'projectUi.badgePriced'],
   ].filter(Boolean).map(([key, label]) => ({ key, label: t(label) }));
-  return { badges, missing: !priced || (!isTile && !specified) };
+  return { badges, missing: !priced || (!noProduct && !specified) };
 };
 
 const UserProjectsContent = ({ onPreview, groupId }) => {
@@ -237,7 +240,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
       setBusyId(project.id);
       const svg = await downloadProjectImage(project.id, project.projectType);
       const blob = format === 'png' ? await svgBlobToPngBlob(svg) : svg;
-      const kind = project.projectType === 'sheet' ? t('common.sheetCutting') : project.projectType === 'tile' ? t('common.tileLayout') : t('common.boardCutting');
+      const kind = project.projectType === 'sheet' ? t('common.sheetCutting') : project.projectType === 'tile' ? t('common.tileLayout') : project.projectType === 'wallpaper' ? t('common.wallpaperPlanner') : t('common.boardCutting');
       triggerDownload(blob, `${project.name} - ${kind}.${format}`);
     } catch (err) {
       setError(err.message.includes('404')

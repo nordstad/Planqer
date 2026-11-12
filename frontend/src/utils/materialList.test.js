@@ -103,6 +103,23 @@ it('adds at least one spare per board or sheet size, while leaving tiles unchang
   expect(materialRowsForPurchase([{ name: 'Board', optimization_result: { board_lengths_used: [3000] } }], 0)[0].quantityToBuy).toBe(1);
 });
 
+it('lists, prices, and merges wallpaper rolls without adding another spare margin', () => {
+  const wallpaper = { name: 'Willow', manufacturer: 'Acme', roll_width: 530, roll_length: 10050, price_per_roll: 375, currency: 'SEK' };
+  const rows = buildMaterialRows([
+    { name: 'Hall', projectType: 'wallpaper', wallpaper_data: wallpaper, plan_result: { rolls_to_buy: 2 } },
+    { name: 'Kitchen', projectType: 'wallpaper', wallpaper_data: wallpaper, plan_result: { rolls_to_buy: 3 } },
+  ]);
+
+  expect(rows[0]).toMatchObject({ material: 'Willow', quantity: 2, pricePerUnit: 375 });
+  expect(rows[0].size).toContain('530 × 10');
+  const [purchase] = materialRowsForPurchase([
+    { name: 'Hall', projectType: 'wallpaper', wallpaper_data: wallpaper, plan_result: { rolls_to_buy: 2 } },
+    { name: 'Kitchen', projectType: 'wallpaper', wallpaper_data: wallpaper, plan_result: { rolls_to_buy: 3 } },
+  ], 10);
+  expect(purchase).toMatchObject({ quantity: 5, neededQuantity: 5, quantityToBuy: 5, pricePerUnit: 375 });
+  expect(purchase.plans).toEqual(['Hall', 'Kitchen']);
+});
+
 it('merges conflicting saved prices and marks the resulting row', () => {
   const rows = buildMaterialRows([
     { name: 'A', optimization_result: { board_lengths_used: [3000] }, board_costs: { currency: 'SEK', board_costs: { 3000: { price_per_board: 10 } } } },
