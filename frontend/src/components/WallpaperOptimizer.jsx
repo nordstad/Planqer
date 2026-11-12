@@ -109,7 +109,7 @@ const leftoverSentence = (material, t) => {
   return material.largest_leftover > 0 ? t('wallpaperUi.largestLeftover', { reuse, length: Math.round(material.largest_leftover) }) : reuse;
 };
 
-export const WallElevation = ({ wall, wallIndex, plan, wallNames }) => {
+export const WallElevation = ({ wall, wallIndex, plan, wallNames, labels = new Map() }) => {
   const { t } = useTranslation();
   const widthTop = numeric(wall.width_top);
   const widthMiddle = numeric(wall.width_middle);
@@ -162,7 +162,7 @@ export const WallElevation = ({ wall, wallIndex, plan, wallNames }) => {
     {!useStripKey && (plan?.pieces || []).filter((piece) => isOnWall(piece, wallIndex)).map((piece) => {
       const segment = segments.find((item) => item.number === piece.strip_number);
       if (!segment) return null;
-      return <text key={`label-${piece.id}`} data-testid="piece-id" x={(scaleX(segment.x_start) + scaleX(segment.x_end)) / 2} y={scaleY(Math.min(piece.y_end, height)) - 5} textAnchor="middle" className="wallpaper-svg-small" style={{ fontWeight: 700 }}>{piece.id}</text>;
+      return <text key={`label-${piece.id}`} data-testid="piece-id" x={(scaleX(segment.x_start) + scaleX(segment.x_end)) / 2} y={scaleY(Math.min(piece.y_end, height)) - 5} textAnchor="middle" className="wallpaper-svg-small" style={{ fontWeight: 700 }}>{labels.get(piece.id) || piece.id}</text>;
     })}
     {!isSloped && (plan?.pieces || []).filter((piece) => isOnWall(piece, wallIndex) && piece.y_end - piece.y_start < height - 1).map((piece) => {
       const segment = segments.find((item) => item.number === piece.strip_number);
@@ -196,17 +196,17 @@ export const WallElevation = ({ wall, wallIndex, plan, wallNames }) => {
     {segments.map((segment) => {
       const pieces = (plan?.pieces || []).filter((piece) => piece.strip_number === segment.number && isOnWall(piece, wallIndex));
       return <li key={`${segment.number}-${segment.x_start}`}>
-        <b>{stripLabel(t, segment.number)}</b> · {Math.round(segment.x_end - segment.x_start)} mm{pieces.length ? ` · ${pieces.map((piece) => `${piece.id} (${Math.round(piece.y_end - piece.y_start)} mm)`).join(', ')}` : ''}
+        <b>{stripLabel(t, segment.number)}</b> · {Math.round(segment.x_end - segment.x_start)} mm{pieces.length ? ` · ${pieces.map((piece) => `${labels.get(piece.id) || piece.id} (${Math.round(piece.y_end - piece.y_start)} mm)`).join(', ')}` : ''}
       </li>;
     })}
   </ol>}</div>;
 };
 
-const RollDiagram = ({ roll, rollLength, pieces, wallIndex }) => {
+export const RollDiagram = ({ roll, rollLength, pieces, wallIndex, labels = new Map() }) => {
   const { t } = useTranslation();
   return <svg viewBox="0 0 720 130" className="wallpaper-roll-diagram" style={{ width: '100%', maxWidth: '720px', margin: '12px 0' }} role="img" aria-label={t('wallpaperUi.rollAria', { number: roll.number })}>
   <rect x="35" y="36" width="650" height="54" fill="var(--ground-2)" stroke="var(--ink)" />
-  {roll.cuts.filter((cut) => isOnWall(pieces.find((piece) => piece.id === cut.piece_id) || {}, wallIndex)).map((cut) => { const gapStart = 35 + ((cut.start - cut.alignment_gap) / rollLength) * 650; const x = 35 + (cut.start / rollLength) * 650; const width = ((cut.end - cut.start) / rollLength) * 650; return <g key={cut.piece_id}>{cut.alignment_gap > 0 && <rect x={gapStart} y="36" width={(cut.alignment_gap / rollLength) * 650} height="54" fill="var(--accent-bg)" stroke="var(--accent)" strokeDasharray="3 2" />}<rect x={x} y="36" width={width} height="54" fill="var(--card)" stroke="var(--ink)" /><text x={x + width / 2} y="68" textAnchor="middle" className="wallpaper-svg-small">{cut.piece_id}</text></g>; })}
+  {roll.cuts.filter((cut) => wallIndex == null || isOnWall(pieces.find((piece) => piece.id === cut.piece_id) || {}, wallIndex)).map((cut) => { const gapStart = 35 + ((cut.start - cut.alignment_gap) / rollLength) * 650; const x = 35 + (cut.start / rollLength) * 650; const width = ((cut.end - cut.start) / rollLength) * 650; return <g key={cut.piece_id}>{cut.alignment_gap > 0 && <rect x={gapStart} y="36" width={(cut.alignment_gap / rollLength) * 650} height="54" fill="var(--accent-bg)" stroke="var(--accent)" strokeDasharray="3 2" />}<rect x={x} y="36" width={width} height="54" fill="var(--card)" stroke="var(--ink)" /><text x={x + width / 2} y="68" textAnchor="middle" className="wallpaper-svg-small">{labels.get(cut.piece_id) || cut.piece_id}</text></g>; })}
   <text x="35" y="116" className="wallpaper-svg-small">{t('wallpaperUi.gapNote')}</text>
 </svg>;
 };
