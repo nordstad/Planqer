@@ -106,7 +106,8 @@ test("a plan is solved in the browser, saved, and still there after a reload", a
   await page.getByRole("link", { name: /My plans/ }).click();
   await expect(page.getByText("Demo smoke plan")).toBeVisible();
   const savedPlan = page.locator(".plan-item").filter({ hasText: "Demo smoke plan" });
-  await savedPlan.getByRole("button", { name: "Modify" }).click();
+  await savedPlan.getByRole("button", { name: "More actions" }).click();
+  await savedPlan.getByRole("menuitem", { name: "Modify", exact: true }).click();
   await expect(page.getByLabel("Name, item 1")).toHaveValue("Front rail");
 
   expect(seen.outside, "nothing may be loaded from another origin").toEqual([]);
