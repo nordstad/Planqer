@@ -47,17 +47,17 @@ test('reads the bench, plans every cutlist and saves the plans into one project'
   await readBench(page);
   await expect(page.getByTestId('product-summary').filter({ hasText: 'Suggested' })).toHaveCount(3);
 
-  const posts = [];
+  const saves = [];
   page.on('request', (request) => {
-    if (request.method() === 'PUT' && /\/api\/(sheet-)?projects\/[^/]+$/.test(request.url())) posts.push(request.postDataJSON());
+    if (['POST', 'PUT'].includes(request.method()) && /\/api\/(sheet-)?projects\/([^/]+)?$/.test(request.url())) saves.push(request.postDataJSON());
   });
   await page.getByRole('button', { name: 'Plan 3 cutlists', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Plan and save' })).toBeVisible();
   await page.getByRole('button', { name: 'Plan 3 cutlists', exact: true }).click();
   const projectLink = page.getByRole('link', { name: 'Open project' });
   await expect(projectLink).toBeVisible({ timeout: 30000 });
-  expect(posts).toHaveLength(3);
-  expect(JSON.stringify(posts)).not.toMatch(/unknown/i);
+  expect(saves).toHaveLength(3);
+  expect(JSON.stringify(saves)).not.toMatch(/unknown/i);
 
   await projectLink.click();
   await expect(page).toHaveURL(/\/dashboard\/project\/[^/]+$/);
