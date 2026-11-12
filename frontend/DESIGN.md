@@ -406,10 +406,11 @@ surface → 16px), rather than inventing an in-between value.
 offset-shadow block, solid ink, tinted): a step has one amber `.btn-order`,
 its secondary actions are solid ink (`.btn-primary`), and anything lesser is a
 `.btn-text` link. A solid button can never be mistaken for a field, which is
-hollow and recessed. Step 01 of every planner and all three steps of the
-model planner follow this rule. The later steps of board, sheet, tile and
-wallpaper (plan, cut and save) still use outlined `.btn` for back buttons and
-the save form; they are next.
+hollow and recessed. Every step of every planner follows this rule. The
+back button at the foot of a step is a `.btn-text` link with an arrow, so the
+amber primary is the only strong thing in the foot. The save step is a "Plan
+details" `SectionCard` (`SavePlanCard`, wallpaper inline): plan name and project
+are required `FormField`s with no placeholder, and the hint moves into an ⓘ.
 
 ### Cards / Containers
 

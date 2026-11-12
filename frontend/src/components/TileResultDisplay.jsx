@@ -53,7 +53,7 @@ const TileResultDisplay = ({ candidate, projectName }) => {
         <p className="synthetic" style={{ margin: 0 }}>
            {t('ui.amberJoint')}
         </p>
-        <button type="button" className="btn" onClick={downloadDiagram}>
+        <button type="button" className="btn btn-primary" onClick={downloadDiagram}>
            <Download /> {t('workflow.downloadDiagram')}
         </button>
       </div>

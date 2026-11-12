@@ -700,7 +700,7 @@ const ModelCutlistOptimizer = () => {
           })}
 
           <div className="step-foot">
-            <button type="button" className="btn" onClick={() => setStep(STEP_MODEL)}>
+            <button type="button" className="btn-text" onClick={() => setStep(STEP_MODEL)}>
                <ArrowLeft /> {t('ui.chooseFile')}
             </button>
             <div className="step-foot-act">
@@ -810,7 +810,7 @@ const ModelCutlistOptimizer = () => {
               </SectionCard>
 
               <div className="step-foot">
-                <button type="button" className="btn" onClick={() => setStep(STEP_CUTLISTS)}>
+                <button type="button" className="btn-text" onClick={() => setStep(STEP_CUTLISTS)}>
                    <ArrowLeft /> {t('modelUi.backToCutlists')}
                 </button>
                 <div className="step-foot-act">

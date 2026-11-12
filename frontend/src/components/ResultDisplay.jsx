@@ -56,7 +56,7 @@ const ResultDisplay = ({ result, projectName, materialType, boardThickness, boar
           <span className="synthetic">
              {text('ui.diagramCaption', { count: result.cut_list.length })}
           </span>
-          <button type="button" className="btn" onClick={downloadDiagram}>
+          <button type="button" className="btn btn-primary" onClick={downloadDiagram}>
              <Download /> {text('workflow.downloadDiagram')}
           </button>
         </figcaption>

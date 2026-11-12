@@ -8,6 +8,7 @@
 */
 
 import { useTranslation } from 'react-i18next';
+import FormField from './FormField';
 
 export const NEW_PROJECT = '__new__';
 
@@ -16,41 +17,36 @@ const ProjectPicker = ({ groups, value, onChange, newName, onNewNameChange, onSu
 
   return (
     <div>
-      <label className="form-label" htmlFor="plan-project">{t('ui.project')}</label>
-
-      <select
-        id="plan-project"
-        className="form-select"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-      >
-        {groups.map((group) => (
-          <option key={group.id} value={group.id}>{group.name}</option>
-        ))}
-        <option value={NEW_PROJECT}>{t('ui.newProject')}</option>
-      </select>
-
-      <p className="synthetic" style={{ marginTop: '7px' }}>
-        {t('ui.projectSaveHint')}
-      </p>
+      <FormField label={t('ui.project')} required tip={t('ui.projectSaveHint')}>
+        <select
+          id="plan-project"
+          className="form-select"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+        >
+          {groups.map((group) => (
+            <option key={group.id} value={group.id}>{group.name}</option>
+          ))}
+          <option value={NEW_PROJECT}>{t('ui.newProject')}</option>
+        </select>
+      </FormField>
 
       {value === NEW_PROJECT && (
-        <div className="flex gap-2" style={{ marginTop: '10px', flexWrap: 'wrap' }}>
-          <input
-            type="text"
-            className="form-input"
-            style={{ flex: '1 1 200px', width: 'auto' }}
-            placeholder={t('ui.projectPlaceholder')}
-            value={newName}
-            onChange={(e) => onNewNameChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key !== 'Enter') return;
-              e.preventDefault();
-              if (e.currentTarget.form) e.currentTarget.form.requestSubmit();
-              else onSubmit?.();
-            }}
-            aria-label={t('ui.newProjectName')}
-          />
+        <div style={{ marginTop: '14px' }}>
+          <FormField label={t('ui.newProjectName')} required>
+            <input
+              type="text"
+              className="form-input"
+              value={newName}
+              onChange={(e) => onNewNameChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key !== 'Enter') return;
+                e.preventDefault();
+                if (e.currentTarget.form) e.currentTarget.form.requestSubmit();
+                else onSubmit?.();
+              }}
+            />
+          </FormField>
         </div>
       )}
     </div>

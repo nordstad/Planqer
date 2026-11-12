@@ -44,7 +44,7 @@ import ConfirmDialog from './ConfirmDialog';
 import CostAnalysisPanel from './CostAnalysisPanel';
 import Disclosure from './Disclosure';
 import FormField, { SectionCard, SectionStatus, splitUnit } from './FormField';
-import ProjectPicker from './ProjectPicker';
+import SavePlanCard from './SavePlanCard';
 import MovePlanMenu from './MovePlanMenu';
 import { useProjectChoice } from '../hooks/useProjectChoice';
 import Loader from './Loader';
@@ -1011,7 +1011,7 @@ const CuttingOptimizer = () => {
           </div>
 
           <div className="step-foot">
-            <button type="button" className="btn" onClick={() => setStep(STEP_PARTS)}>
+            <button type="button" className="btn-text" onClick={() => setStep(STEP_PARTS)}>
                <ArrowLeft /> {t('ui.changeParts')}
             </button>
             <div className="step-foot-act">
@@ -1049,82 +1049,29 @@ const CuttingOptimizer = () => {
               </div>
             </div>
           ) : (
-            <>
-              <div style={{ marginBottom: '24px' }}>
-                <label className="form-label" htmlFor="plan-name">{t('ui.name')}</label>
-                <input
-                  id="plan-name"
-                  type="text"
-                  className={`form-input ${nameError ? 'form-input-error' : ''}`}
-                  placeholder={t('ui.planNamePlaceholder')}
-                  value={projectName}
-                  onChange={(e) => setProjectName(e.target.value)}
-                  aria-invalid={!!nameError}
-                  aria-describedby="plan-name-hint"
-                  autoFocus
-                />
-                <p
-                  id="plan-name-hint"
-                  className={nameError ? 'text-danger text-[12.5px] font-semibold' : 'synthetic'}
-                  style={{ marginTop: '7px' }}
-                  role={nameError ? 'alert' : undefined}
-                >
-                  {nameError || t('ui.savedNameHint')}
-                </p>
-              </div>
-              {editingProject && (
-                <div style={{ marginBottom: '24px' }}>
-                 <label className="form-label" htmlFor="board-save-mode">{t('ui.saveAs')}</label>
-                <select
-                  id="board-save-mode"
-                  className="form-select"
-                  value={saveMode}
-                  onChange={(e) => {
-                    const mode = e.target.value;
-                    setSaveMode(mode);
-                    if (mode === 'update' && !editingProject && userProjects.length) {
-                      setEditingProject(userProjects[0]);
-                      setProjectName(userProjects[0].name);
-                      setGroupId(userProjects[0].project_group_id || '');
-                    }
-                  }}
-                >
-                   <option value="new">{t('ui.createNewPlan')}</option>
-                   <option value="update" disabled={!userProjects.length}>{t('ui.updateExistingPlan')}</option>
-                </select>
-                {saveMode === 'update' && editingProject && (
-                  <select
-                    className="form-select"
-                    style={{ marginTop: '10px' }}
-                     aria-label={t('ui.planToUpdate')}
-                    value={editingProject.id}
-                    onChange={(e) => {
-                      const target = userProjects.find(p => p.id === e.target.value);
-                      setEditingProject(target);
-                      setProjectName(target.name);
-                      setGroupId(target.project_group_id || '');
-                    }}
-                  >
-                    {userProjects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                  </select>
-                )}
-                </div>
-              )}
-              <div style={{ marginBottom: '24px' }}>
-                <ProjectPicker
-                  groups={projectGroups}
-                  value={groupId}
-                  onChange={setGroupId}
-                  newName={newName}
-                  onNewNameChange={setNewName}
-                />
-              </div>
-
-            </>
+            <SavePlanCard
+              id="board-save"
+              nameId="plan-name"
+              modeId="board-save-mode"
+              nameLabel={t('ui.name')}
+              projectName={projectName}
+              onProjectName={setProjectName}
+              nameError={nameError}
+              editingProject={editingProject}
+              onEditingProject={setEditingProject}
+              saveMode={saveMode}
+              onSaveMode={setSaveMode}
+              userProjects={userProjects}
+              projectGroups={projectGroups}
+              groupId={groupId}
+              onGroupId={setGroupId}
+              newName={newName}
+              onNewName={setNewName}
+            />
           )}
 
           <div className="step-foot">
-            <button type="button" className="btn" onClick={() => setStep(STEP_PLAN)}>
+            <button type="button" className="btn-text" onClick={() => setStep(STEP_PLAN)}>
               <ArrowLeft /> {t('workflow.backToPlan')}
             </button>
             {saved ? (
@@ -1180,7 +1127,7 @@ const CuttingOptimizer = () => {
                           <td style={{ textAlign: 'left', color: 'var(--ink)', fontSize: '13px' }}>{project.name}</td>
                           <td>{boardPartCount(project.parts_data)}</td>
                           <td style={{ width: '90px' }}>
-                            <button className="btn" style={{ padding: '5px 10px', minHeight: 0 }} onClick={() => loadProject(project)}>
+                            <button className="btn btn-primary btn-sm" onClick={() => loadProject(project)}>
                                {t('ui.load')}
                             </button>
                           </td>
