@@ -588,7 +588,6 @@ Object.assign(locale, {
     planTitle: "Your wallpaper plan",
     ledeInvalid: "Invalid draft: the measured walls do not close into a room. Correct the measurements before ordering.",
     ledeSloped: "Sloped-wall draft: inspect the geometry, but do not order from this result yet.",
-    ledeConnected: "Connected-corner draft: inspect the geometry, but do not order from this result yet.",
     ledeBuy: "Buy {{rolls}} rolls. Review every wall below before cutting or ordering.",
     editMeasurements: "Edit measurements",
     cornerPiecesAria: "Corner pieces",

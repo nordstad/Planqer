@@ -668,7 +668,6 @@ Object.assign(locale, {
     planTitle: "Din tapetplan",
     ledeInvalid: "Ogiltigt utkast: de uppmätta väggarna sluter sig inte till ett rum. Rätta måtten innan du beställer.",
     ledeSloped: "Utkast med sluttande vägg: granska geometrin, men beställ inte utifrån det här resultatet ännu.",
-    ledeConnected: "Utkast med våd runt hörn: granska geometrin, men beställ inte utifrån det här resultatet ännu.",
     ledeBuy: "Köp {{rolls}} rullar. Gå igenom varje vägg nedan innan du skär eller beställer.",
     editMeasurements: "Redigera mått",
     cornerPiecesAria: "Hörnbitar",

@@ -88,3 +88,23 @@ def test_validation_warns_when_closed_room_opposite_walls_differ():
     warnings = validate_wallpaper_request(plan_request)
 
     assert any("Opposite walls differ" in warning for warning in warnings)
+
+
+def test_validation_does_not_warn_about_a_door_standing_on_the_floor():
+    plan_request = request(
+        cutouts=[Cutout(kind="door", x=500, y=0, width=900, height=2100)]
+    )
+
+    warnings = validate_wallpaper_request(plan_request)
+
+    assert not any("within 10 mm" in warning for warning in warnings)
+
+
+def test_validation_still_warns_about_a_door_against_a_side_wall():
+    plan_request = request(
+        cutouts=[Cutout(kind="door", x=5, y=0, width=900, height=2100)]
+    )
+
+    warnings = validate_wallpaper_request(plan_request)
+
+    assert any("within 10 mm" in warning for warning in warnings)

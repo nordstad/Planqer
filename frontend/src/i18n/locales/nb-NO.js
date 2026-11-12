@@ -666,7 +666,6 @@ Object.assign(locale, {
     planTitle: "Tapetplanen din",
     ledeInvalid: "Ugyldig utkast: de målte veggene lukker seg ikke til et rom. Rett opp målene før du bestiller.",
     ledeSloped: "Utkast med skrå vegg: kontroller geometrien, men ikke bestill ut fra dette resultatet ennå.",
-    ledeConnected: "Utkast med bane rundt hjørne: kontroller geometrien, men ikke bestill ut fra dette resultatet ennå.",
     ledeBuy: "Kjøp {{rolls}} ruller. Gå gjennom hver vegg nedenfor før du kutter eller bestiller.",
     editMeasurements: "Rediger mål",
     cornerPiecesAria: "Hjørnestykker",
