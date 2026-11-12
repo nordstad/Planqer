@@ -27,6 +27,20 @@ describe('HelpPage', () => {
     );
   });
 
+  it('explains how plans and projects work', async () => {
+    render(
+      <MemoryRouter>
+        <AuthProvider>
+          <HelpPage />
+        </AuthProvider>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByRole('heading', { name: 'How plans and projects work' })).toBeInTheDocument();
+    expect(screen.getByText(/A plan is one saved result/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /How plans and projects work/ })).toHaveAttribute('href', '/help#plans-projects');
+  });
+
   it('does not scroll the page on a plain visit so the top nav stays visible', async () => {
     const scrollIntoView = vi.fn();
     Element.prototype.scrollIntoView = scrollIntoView;

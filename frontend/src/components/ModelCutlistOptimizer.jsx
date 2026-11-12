@@ -834,6 +834,9 @@ const ModelCutlistOptimizer = () => {
                       ? t('ui.filedUnder', { group: savedGroupName })
                       : t('ui.unfiled')}
                   <MovePlanMenu groups={projectGroups} currentGroupId={selectedGroupId} onMove={moveSavedPlans} />
+                  <p className="synthetic">
+                    {t('ui.addMorePlans')} <Link to="/">{t('ui.startAnotherPlan')}</Link>
+                  </p>
                 </div>
               )}
             </>

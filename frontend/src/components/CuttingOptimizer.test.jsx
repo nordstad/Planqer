@@ -327,6 +327,22 @@ describe('CuttingOptimizer', () => {
     expect(createProjectGroup).toHaveBeenCalledWith('My plans');
   });
 
+  it('tells a maker who just saved that more plans can join the same project', async () => {
+    getCatalogue.mockResolvedValue({ data: catalogue, etag: '"x"' });
+    renderOptimizer();
+    await screen.findByRole('heading', { name: /Required parts/i });
+    await pickProduct('regel 45x95', 'Framing timber / studs 45 × 95 mm');
+    fireEvent.click(screen.getByRole('button', { name: /Plan the cuts/i }));
+    await screen.findByRole('heading', { name: /Your cutting plan/i });
+    fireEvent.click(screen.getByRole('button', { name: /Name and save/i }));
+    await screen.findByRole('heading', { name: /Save this plan/i });
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Rails' } });
+    fireEvent.keyDown(screen.getByLabelText('New project name'), { key: 'Enter' });
+
+    expect(await screen.findByText(/Add more plans to this project to get one shopping list/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Start another plan' })).toHaveAttribute('href', '/');
+  });
+
   it('ignores a late plan response after the parts change', async () => {
     let resolvePlan;
     optimizeCutting.mockImplementationOnce(() => new Promise((resolve) => {
