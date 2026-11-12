@@ -467,7 +467,6 @@ Object.assign(locale, {
     cutDone: "Cut",
     markCut: "Mark cut",
     pieceAria: "{{id}} cut diagram",
-    pieceStrip: "{{id}} · strip {{number}}",
     up: "UP",
     markOnWall: "MARK ON WALL",
     tableCut: "TABLE CUT",

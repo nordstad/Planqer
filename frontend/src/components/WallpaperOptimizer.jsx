@@ -18,7 +18,7 @@ import { createWallpaperPlan, getProjectGroups, getUserSettings, getWallpaperPro
 import { useAuth } from '../contexts/AuthContext';
 import { useAccountContext } from '../contexts/useAccountContext';
 import { isStaticMode } from '../utils/mode';
-import { isOnWall, letterOf, segmentsOf, stripLabel } from '../utils/wallpaperPlan';
+import { isOnWall, letterOf, pieceLabels, segmentsOf, stripLabel } from '../utils/wallpaperPlan';
 
 const numeric = (value) => Number(value) || 0;
 const wallLetter = (index, t) => t('wallpaperUi.wallName', { letter: letterOf(index) });
@@ -767,7 +767,7 @@ const WallpaperOptimizer = () => {
         <div className="section-rule"><h2 className="section-title">{walls[cutWallIndex].name}</h2><span className="synthetic">{t('wallpaperUi.originBottomLeftLabel')}</span></div>
         <div className="wallpaper-measured-sheet"><WallElevation wall={walls[cutWallIndex]} wallIndex={cutWallIndex} plan={plan} wallNames={walls.map((item) => item.name)} /></div>
       </section>
-      <WallpaperPieceGallery pieces={plan.pieces.filter((piece) => isOnWall(piece, cutWallIndex))} strips={plan.strips} repeat={numeric(wallpaper.repeat)} wallNames={walls.map((item) => item.name)} openId={selectedPieceId} onOpen={setSelectedPieceId} />
+      <WallpaperPieceGallery pieces={plan.pieces.filter((piece) => isOnWall(piece, cutWallIndex))} strips={plan.strips} repeat={numeric(wallpaper.repeat)} wallNames={walls.map((item) => item.name)} labels={pieceLabels(plan, t)} openId={selectedPieceId} onOpen={setSelectedPieceId} />
       {plan.rolls.filter((roll) => roll.cuts.some((cut) => isOnWall(plan.pieces.find((piece) => piece.id === cut.piece_id) || {}, cutWallIndex))).map((roll) => <section key={roll.number} style={{ marginTop: '24px' }}>
         <div className="section-rule"><h2 className="section-title">{t('wallpaperUi.rollTitle', { number: roll.number })}</h2></div>
         <RollDiagram roll={roll} rollLength={numeric(wallpaper.roll_length)} pieces={plan.pieces} wallIndex={cutWallIndex} />

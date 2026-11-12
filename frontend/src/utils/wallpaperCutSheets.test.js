@@ -15,7 +15,7 @@ describe('buildWallpaperCutSheetsHtml', () => {
     expect(html).toContain('<h3>Wall &lt;A&gt;</h3>');
     expect(html).toContain('<h3>Wall B</h3>');
     expect(html).not.toContain('Empty');
-    expect(html).toContain('aria-label="piece-3 cut diagram"');
+    expect(html).toContain('aria-label="S1c cut diagram"');
   });
 
   it('defines the colours the drawing needs outside the app stylesheet', () => {

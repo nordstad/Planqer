@@ -1,6 +1,7 @@
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import WallpaperPieceDiagram from '../components/WallpaperPieceDiagram';
+import { pieceLabels } from './wallpaperPlan';
 
 /*
   Printable per-piece cut drawings for a wallpaper plan — several to an A4
@@ -25,12 +26,13 @@ const CSS = `
 
 export const buildWallpaperCutSheetsHtml = (plan, walls, repeat, t) => {
   const pieces = plan?.pieces || [];
+  const labels = pieceLabels(plan, t);
   if (!pieces.length) return '';
   const sections = (walls || []).map((wall, wallIndex) => {
     const own = pieces.filter((piece) => piece.wall_index === wallIndex);
     const figures = own.map((piece) => {
       const strip = plan.strips.find((item) => item.number === piece.strip_number);
-      return strip ? `<figure class="wp-piece">${renderToStaticMarkup(createElement(WallpaperPieceDiagram, { piece, strip, repeat: Number(repeat) || 0, wallNames: (walls || []).map((item) => item.name) }))}</figure>` : '';
+      return strip ? `<figure class="wp-piece">${renderToStaticMarkup(createElement(WallpaperPieceDiagram, { piece, strip, repeat: Number(repeat) || 0, wallNames: (walls || []).map((item) => item.name), label: labels.get(piece.id) }))}</figure>` : '';
     }).join('');
     return own.length ? `<h3>${escapeHtml(wall.name)}</h3><div class="wp-grid">${figures}</div>` : '';
   }).join('');

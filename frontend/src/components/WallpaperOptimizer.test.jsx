@@ -326,7 +326,7 @@ describe('WallpaperOptimizer plan step', () => {
     fireEvent.click(screen.getByRole('button', { name: /Prepare cut sheets/ }));
 
     expect(await screen.findAllByTestId('piece-drawing')).toHaveLength(2);
-    fireEvent.click(screen.getByRole('button', { name: 'Open drawing of piece-2' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Open drawing of S1b' }));
     expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 

@@ -16,7 +16,7 @@ export const stripLabel = (t, number) => t('wallpaperUi.stripLabel', { number })
 
 export const pieceLabels = (plan, t) => {
   const byStrip = new Map();
-  (plan.pieces || []).forEach((piece) => {
+  (plan?.pieces || []).forEach((piece) => {
     const pieces = byStrip.get(piece.strip_number) || [];
     pieces.push(piece);
     byStrip.set(piece.strip_number, pieces);

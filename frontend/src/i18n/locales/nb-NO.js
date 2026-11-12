@@ -545,7 +545,6 @@ Object.assign(locale, {
     cutDone: "Kuttet",
     markCut: "Marker som kuttet",
     pieceAria: "{{id}}, kuttskisse",
-    pieceStrip: "{{id}} · bane {{number}}",
     up: "OPP",
     markOnWall: "MARKER PÅ VEGG",
     tableCut: "KUTT PÅ BORD",
