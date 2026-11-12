@@ -155,6 +155,9 @@
   .step-view { min-width: 0; }
   .step-view.is-form { max-width: 620px; }
 
+  /* SVG text has no colour of its own: without this it is black on the dark theme. */
+  .wallpaper-elevation svg text:not([fill]), .wallpaper-roll-diagram text:not([fill]),
+  .wallpaper-room-overview svg text:not([fill]), .wallpaper-svg-small:not([fill]), .wallpaper-svg-strip:not([fill]) { fill: var(--ink-2); }
   /* Elevations reserve their fixed SVG width for the wall itself. When a long
      wall creates narrow strips, their labels move into this wrapping key so
      no text is squeezed into neighbouring strips. */
