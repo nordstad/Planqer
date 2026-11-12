@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 import '../i18n';
 import RoomOverview from './RoomOverview';
 import { WallElevation } from './WallpaperOptimizer';
@@ -58,6 +58,18 @@ describe('RoomOverview', () => {
     render(<RoomOverview walls={walls} corners={corners(6)} plan={{ strips: [] }} />);
 
     expect(screen.getByLabelText('Wall numbers')).toHaveTextContent('Wall 1 · 2000 mm');
+  });
+
+  it('selects a wall by click and keyboard', () => {
+    const onSelectWall = vi.fn();
+    render(<RoomOverview walls={[wall('North', 2400), wall('East', 1000)]} corners={corners(1)} plan={{ strips: [] }} activeWallIndex={0} onSelectWall={onSelectWall} />);
+
+    const eastControls = screen.getAllByRole('button', { name: 'Show East' });
+    fireEvent.click(eastControls[0]);
+    fireEvent.keyDown(eastControls[1], { key: 'Enter' });
+
+    expect(onSelectWall).toHaveBeenNthCalledWith(1, 1);
+    expect(onSelectWall).toHaveBeenNthCalledWith(2, 1);
   });
 
   it('moves labels into a key on a 12 m wall with narrow strips', () => {

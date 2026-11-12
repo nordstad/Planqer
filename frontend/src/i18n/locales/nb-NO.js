@@ -743,6 +743,8 @@ Object.assign(locale, {
     saveEstimatedCost: "Beregnet kostnad lagret sammen med planen: {{cost}} ({{rolls}} ruller × {{price}}).",
     roomOverviewAria: "Romoversikt",
     overviewSvgAria: "Oversikt over veggene sett ovenfra, med skjøter og baner som går rundt hjørner",
+    wallPickerLabel: "Velg vegg",
+    selectWall: "Vis {{name}}",
     noWallpaperShort: "ingen tapet",
     startLabel: "Start",
     wallNumbersAria: "Veggnumre",

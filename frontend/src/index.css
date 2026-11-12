@@ -1154,6 +1154,11 @@
   }
   .project-view-tab:hover { color: var(--ink); }
   .project-view-tab.is-active { background: var(--card); color: var(--ink); box-shadow: 0 1px 2px rgba(22, 21, 15, .08); }
+  .wall-picker { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px; border: 1px solid var(--rule-hair); border-radius: 12px; background: var(--ground-2); width: fit-content; }
+  .wall-picker-tab { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border: 0; border-radius: 9px; background: transparent; color: var(--ink-2); font: inherit; font-weight: 600; cursor: pointer; }
+  .wall-picker-tab:hover { color: var(--ink); }
+  .wall-picker-tab.is-active { background: var(--accent); color: var(--accent-ink); }
+  .wall-picker-letter { display: inline-grid; place-items: center; width: 22px; height: 22px; border: 1px solid currentColor; border-radius: 50%; font-size: 12px; }
   .project-shopping { margin: 0 0 24px; }
   .project-shopping-table { margin-top: 14px; max-width: 760px; }
   .project-shopping-table th:last-child, .project-shopping-table td:last-child { text-align: right; }
