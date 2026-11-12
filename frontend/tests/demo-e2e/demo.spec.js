@@ -52,6 +52,8 @@ test("a wallpaper plan is solved in the browser, saved, and can be modified from
   // Stays inside the demo: a plain /dashboard would leave the hash router.
   await page.getByRole("button", { name: /open your dashboard/i }).click();
   await expect(page).toHaveURL(/#\/dashboard$/);
+  // Saving files the plan in the default project.
+  await page.getByRole("link", { name: /My plans/ }).click();
   const savedPlan = page.locator(".plan-item").filter({ hasText: "Demo wallpaper" });
   await expect(savedPlan).toBeVisible();
 
@@ -92,6 +94,7 @@ test("a plan is solved in the browser, saved, and still there after a reload", a
   await page.reload();
   await page.getByRole("link", { name: "My projects" }).click();
   await expect(page).toHaveURL(/#\/dashboard$/);
+  await page.getByRole("link", { name: /My plans/ }).click();
   await expect(page.getByText("Demo smoke plan")).toBeVisible();
   const savedPlan = page.locator(".plan-item").filter({ hasText: "Demo smoke plan" });
   await savedPlan.getByRole("button", { name: "Modify" }).click();
