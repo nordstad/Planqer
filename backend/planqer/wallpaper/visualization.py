@@ -6,6 +6,14 @@ from xml.sax.saxutils import escape
 _ENTITIES = {'"': "&quot;", "'": "&apos;"}
 
 
+def _wall_letter(index: int) -> str:
+    letters = ""
+    while index >= 0:
+        letters = chr(65 + index % 26) + letters
+        index = index // 26 - 1
+    return letters
+
+
 def render_plan_svg(room: dict, plan: dict, *, project_name: str) -> str:
     """Render the approved room plan without re-solving it.
 
@@ -17,11 +25,11 @@ def render_plan_svg(room: dict, plan: dict, *, project_name: str) -> str:
     strips = plan.get("strips", [])
     width, card_height, columns = 1000, 280, 2
     rows = max(1, (len(walls) + columns - 1) // columns)
-    height = 100 + rows * card_height
+    height = 80 + rows * card_height
     cards = []
     for index, wall in enumerate(walls):
         card_x = 30 + (index % columns) * 480
-        card_y = 85 + (index // columns) * card_height
+        card_y = 65 + (index // columns) * card_height
         wall_width = max(
             float(wall.get(key, 0))
             for key in ("width_top", "width_middle", "width_bottom")
@@ -39,8 +47,7 @@ def render_plan_svg(room: dict, plan: dict, *, project_name: str) -> str:
             160,
         )
         x_scale, y_scale = drawing_width / wall_width, drawing_height / wall_height
-        wall_name = escape(str(wall.get("name", f"Wall {index + 1}")), _ENTITIES)
-        profile = wall.get("profile", "rectangle")
+        wall_name = escape(str(wall.get("name") or _wall_letter(index)), _ENTITIES)
         lower_left = float(wall.get("lower_left", 0))
         lower_right = float(wall.get("lower_right", 0))
         top_left = float(wall.get("height_left", wall_height))
@@ -79,30 +86,29 @@ def render_plan_svg(room: dict, plan: dict, *, project_name: str) -> str:
                 + drawing_height
                 - (float(cutout.get("y", 0)) * y_scale + cutout_height)
             )
-            label = escape(
-                str(cutout.get("label") or cutout.get("kind", "opening")).replace(
-                    "_", " "
-                ),
-                _ENTITIES,
-            )
             card.extend(
                 (
                     f'<rect x="{x:.1f}" y="{y:.1f}" width="{cutout_width:.1f}" height="{cutout_height:.1f}" class="opening"/>',
-                    f'<text x="{x + cutout_width / 2:.1f}" y="{y + cutout_height / 2:.1f}" text-anchor="middle" class="small">{label}</text>',
-                    f'<text x="{x + cutout_width / 2:.1f}" y="{y + cutout_height / 2 + 13:.1f}" text-anchor="middle" class="small">{round(float(cutout.get("width", 0)))} × {round(float(cutout.get("height", 0)))} mm</text>',
                 )
+            )
+            label = cutout.get("label")
+            if label:
+                card.append(
+                    f'<text x="{x + cutout_width / 2:.1f}" y="{y + cutout_height / 2:.1f}" text-anchor="middle" class="small">{escape(str(label), _ENTITIES)}</text>'
+                )
+            card.append(
+                f'<text x="{x + cutout_width / 2:.1f}" y="{y + cutout_height / 2 + (13 if label else 0):.1f}" text-anchor="middle" class="small">{round(float(cutout.get("width", 0)))} × {round(float(cutout.get("height", 0)))} mm</text>'
             )
         card.extend(
             (
-                f'<text x="{drawing_x + drawing_width / 2}" y="{drawing_y + drawing_height + 20}" text-anchor="middle" class="small">width {round(wall_width)} mm · height {round(wall_height)} mm</text>',
-                f'<text x="{drawing_x}" y="{drawing_y + drawing_height + 39}" class="small">Origin: {"local lower edge" if profile == "sloped" else "bottom-left"}</text>',
+                f'<text x="{drawing_x + drawing_width / 2}" y="{drawing_y + drawing_height + 20}" text-anchor="middle" class="small">{round(wall_width)} × {round(wall_height)} mm</text>',
             )
         )
         cards.extend(card)
     title = escape(project_name, _ENTITIES)
     svg = f'''<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">
 <style>.title{{font:700 18px Arial,sans-serif;fill:#16150f}}.small{{font:12px Arial,sans-serif;fill:#5c594c}}.wall{{fill:#f2efe6;stroke:#16150f;stroke-width:2}}.opening{{fill:#fff;stroke:#16150f;stroke-width:1.5}}.seam{{stroke:#a34f18;stroke-width:1.5;stroke-dasharray:5 4}}</style>
-<rect width="100%" height="100%" fill="#fafaf7"/><text x="30" y="38" class="title">{title}</text><text x="30" y="62" class="small">{plan.get("rolls_to_buy", "—")} rolls to buy · dimensioned wall elevations</text>{"".join(cards)}</svg>'''
+ <rect width="100%" height="100%" fill="#fafaf7"/><text x="30" y="38" class="title">{title}</text>{"".join(cards)}</svg>'''
     return f"data:image/svg+xml;base64,{base64.b64encode(svg.encode()).decode()}"
 
 
