@@ -705,6 +705,7 @@ Object.assign(locale, {
     chosen: "Valgt",
     use: "Bruk",
     backToMeasurements: "Tilbake til målene",
+    backToCutSheets: "Tilbake til kuttarkene",
     correctRoomMeasurements: "Rett opp målene for rommet for å lage kuttark.",
     cutTitle: "Kutt én vegg om gangen",
     cutLede: "Velg en vegg, kutt de merkede stykkene i rekkefølgen på rullen, og bruk deretter målene nedenfor for hver åpning.",

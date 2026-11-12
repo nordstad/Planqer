@@ -295,6 +295,18 @@ describe('WallpaperOptimizer plan step', () => {
     await waitFor(() => expect(saveWallpaperProject).toHaveBeenCalledWith(expect.objectContaining({ project_group_id: 'new-project' })));
   });
 
+  it('goes back one step at a time from the save step', async () => {
+    await openPlanStep();
+
+    fireEvent.click(screen.getByRole('button', { name: /Prepare cut sheets/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Save plan/ }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Back to the cut sheets' }));
+
+    expect(await screen.findByRole('heading', { name: 'Cut one wall at a time' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Back to the plan' }));
+    expect(await screen.findByRole('heading', { name: 'Your wallpaper plan' })).toBeInTheDocument();
+  });
+
   it('does not save a plan without a name', async () => {
     await openPlanStep();
 
