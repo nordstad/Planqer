@@ -84,7 +84,8 @@ describe('RoomOverview', () => {
 
     render(<WallElevation wall={longWall} wallIndex={0} plan={{ strips, pieces }} wallNames={['Wall A']} />);
 
-    expect(screen.getByTestId('wallpaper-strip-key')).toHaveTextContent('S1 · 522 mm · piece-1 (1200 mm)');
+    expect(screen.getByTestId('wallpaper-strip-key')).toHaveTextContent('S1 · 522 mm · S1 (1200 mm)');
+    expect(screen.getByTestId('wallpaper-strip-key')).not.toHaveTextContent('piece-1');
     expect(screen.queryByTestId('piece-id')).not.toBeInTheDocument();
     expect(screen.getByTestId('partial-piece')).not.toHaveTextContent('1200 mm piece');
   });
