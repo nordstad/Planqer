@@ -409,7 +409,7 @@ describe('WallpaperOptimizer plan step', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Save plan/ }));
     fireEvent.click(await screen.findByRole('button', { name: 'Back to the cut sheets' }));
 
-    expect(await screen.findByRole('heading', { name: 'Cut one wall at a time' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Your cut plan' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Back to the plan' }));
     expect(await screen.findByRole('heading', { name: 'Your wallpaper plan' })).toBeInTheDocument();
   });
