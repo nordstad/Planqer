@@ -190,10 +190,8 @@ test("Browse files and Import backup open the file picker", async ({ page }) => 
 });
 
 test("a visitor with no country picks one, then browses to a product size, and the numbers fill in", async ({ page }) => {
-  await page.goto(APP);
-  await page.evaluate(() => localStorage.setItem("planqer-catalogue-country-v1", "generic"));
-  await page.reload();
   await page.goto(`${APP}#/cutting`);
+  await page.getByLabel("Catalogue").selectOption("generic");
 
   const prompt = page.getByTestId("generic-catalogue-prompt");
   await expect(prompt).toContainText(/no country is selected/i);
