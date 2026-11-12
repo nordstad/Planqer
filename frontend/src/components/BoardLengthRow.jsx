@@ -49,7 +49,7 @@ const BoardLengthRow = ({ board, index, handleBoardChange, handleBoardsPaste, re
           step="0.1"
           value={price || ''}
           onChange={(e) => handlePriceChange(board, e.target.value)}
-          className="cell-input stock-price-input"
+          className="cell-input stock-price-input is-optional"
         />
       </td>
       <td style={{ width: '34px' }}>

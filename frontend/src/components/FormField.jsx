@@ -18,7 +18,12 @@ const FormField = ({ label, unit: unitOverride, required = false, optional = fal
   const id = control.props.id || generatedId;
   const { text, unit: labelUnit } = splitUnit(label);
   const unit = unitOverride ?? labelUnit;
-  const input = cloneElement(control, { id, ...(required ? { 'aria-required': true } : {}) });
+  // Optional fields get their own look (dashed edge, no recessed fill) on top of the "(optional)" label.
+  const input = cloneElement(control, {
+    id,
+    ...(required ? { 'aria-required': true } : {}),
+    ...(optional ? { className: `${control.props.className || ''} is-optional`.trim() } : {}),
+  });
 
   return (
     <div className={`form-field${fill ? ' is-fill' : ''} ${className}`.trim()}>

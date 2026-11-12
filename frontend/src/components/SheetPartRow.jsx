@@ -64,7 +64,7 @@ const SheetPartRow = ({ part, index, handlePartChange, removePart, error, canRem
           type="text"
           value={part.name || ''}
           onChange={(e) => handlePartChange(index, 'name', e.target.value)}
-          className="cell-input"
+          className="cell-input is-optional"
           style={{ textAlign: 'left' }}
         />
       </td>

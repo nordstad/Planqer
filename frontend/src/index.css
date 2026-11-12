@@ -816,18 +816,24 @@
     .tile-bond-control { margin-left: auto; }
   }
 
+  /* A field inside a table row: the same recessed box and 3:1 edge as every
+     other field, only tighter, so an empty cell is still visibly a field. An
+     empty required cell stays neutral; the section status names it. */
   .cell-input {
-    width: 100%; background: transparent; border: 0; color: var(--ink);
+    width: 100%; background: var(--field); border: 1.5px solid var(--field-line); border-radius: 6px;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.07); color: var(--ink);
     font: inherit; font-size: 14px; font-weight: 600; text-align: right;
-    padding: 2px 4px; min-height: 30px; font-variant-numeric: tabular-nums; border-radius: 4px;
+    padding: 4px 8px; min-height: 32px; font-variant-numeric: tabular-nums;
   }
-  .cell-input:focus { outline: none; background: var(--accent-bg); color: var(--ink); }
-  .cell-input.is-required-empty {
-    background: var(--accent-bg);
-    border: 1px solid var(--accent);
-    border-radius: 6px;
+  .cell-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); color: var(--ink); }
+
+  /* An optional field: the same 3:1+ edge as a required one, but dashed and
+     not recessed, so "may be left empty" reads before the label is read. The
+     "(optional)" label stays: the look is never the only signal. */
+  .form-input.is-optional, .cell-input.is-optional {
+    border-style: dashed; background: var(--card); box-shadow: none;
   }
-  .cell-input.is-required-empty:focus { border-color: var(--accent); }
+  .form-input.is-optional:focus, .cell-input.is-optional:focus { border-style: solid; }
   .parts-table { table-layout: fixed; }
   .parts-table .part-item-col { width: 44px; }
   .parts-table .part-size-col { width: 172px; }
@@ -853,10 +859,7 @@
   .sheet-part-dimension { width: 72px; flex: 0 0 72px; }
   .cat-table .part-error-row td, .cat-table .sheet-part-error-row td { padding-top: 0; text-align: left; }
   .part-error-row p, .sheet-part-error-row p { margin: 0; padding: 0 0 6px; }
-  .stock-table-wrap .stock-price-input {
-    width: 112px; background: var(--card); border: 1px solid var(--rule-hair); border-radius: 6px; padding: 4px 6px;
-  }
-  .stock-table-wrap .stock-price-input:focus { border-color: var(--accent); }
+  .stock-table-wrap .stock-price-input { width: 112px; }
   .kerf-input { appearance: textfield; -moz-appearance: textfield; }
   .kerf-input::-webkit-outer-spin-button, .kerf-input::-webkit-inner-spin-button {
     -webkit-appearance: none; margin: 0;
@@ -867,9 +870,6 @@
 
   /* ── a labelled cell input: "x"/"y"/"w"/"h" tag sitting over the field ── */
   .cutout-field { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-  /* Opening fields are boxed like every other field, so an empty one is visible. */
-  .cutout-field .cell-input { border: 1.5px solid var(--field-line); background: var(--field); border-radius: 6px; }
-  .cutout-field .cell-input.is-error { border-color: var(--revision); background: var(--revision-bg); }
   .cutout-field-tag {
     font-family: 'Archivo Narrow', sans-serif; font-size: 9.5px; font-weight: 700;
     letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3);
@@ -885,7 +885,7 @@
   }
   .cell-strike:hover { color: var(--revision); background: var(--revision-bg); }
   input[type="checkbox"], input[type="radio"] {
-    appearance: none; width: 16px; height: 16px; border: 1.5px solid var(--ink-4);
+    appearance: none; width: 16px; height: 16px; border: 1.5px solid var(--field-line);
     background: var(--card); cursor: pointer; flex: none; position: relative; border-radius: 4px;
   }
   input[type="radio"] { border-radius: 9999px; }

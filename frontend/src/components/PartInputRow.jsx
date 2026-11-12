@@ -54,7 +54,7 @@ const PartInputRow = ({ part, index, handlePartChange, handlePartsPaste, removeP
           type="text"
           value={part.name || ''}
           onChange={(e) => handlePartChange(index, 'name', e.target.value)}
-          className="cell-input"
+          className="cell-input is-optional"
           style={{ textAlign: 'left' }}
         />
       </td>

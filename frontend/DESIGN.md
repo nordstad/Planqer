@@ -441,8 +441,8 @@ radius, 42px square).
   "Wall width (mm)" renders as "Wall width" with "mm" inside the field; the unit
   stays in the accessible name. Pass `unit` for a unit that is not in the label
   (a currency).
-- **In-table (`.cell-input`):** Transparent, right-aligned, tabular; focus
-  fills the cell with `--accent-bg`.
+- **In-table (`.cell-input`):** Right-aligned and tabular, boxed like any
+  other field (see below).
 - **Bounded numbers (`.dimension-input`):** A measurement, rate, percentage,
   or price does not need free-text width and should use a compact 112px control;
   tightly scoped controls such as kerf may use 78px. Names, product search,
@@ -451,11 +451,18 @@ radius, 42px square).
   (`.req-mark`, hidden from screen readers, with `aria-required` on the
   control), and the form opens with one "* Required" legend. An optional field
   says "(optional)" in its label (`.opt-mark`). A field with a default is still
-  required. Fields look the same either way: a faded or dashed optional field
-  was tried and rejected, it lost contrast and did not read as optional. Use
+  required. An optional field also looks different (`.is-optional`, added by
+  `FormField optional` and used on optional table cells): the same
+  `--field-line` edge but dashed, on the card colour instead of the recessed
+  fill, turning solid on focus. An earlier version drew the dash in `--ink-4`
+  and was rejected for low contrast; the edge colour is load-bearing. Use
   `FormField` rather than hand-building the label.
-- **Checkbox / Radio:** 16px, 1.5px border, 4px radius (full for radio),
-  filling amber when checked.
+- **Fields in tables (`.cell-input`):** the same recessed box and 3:1+ edge as
+  any other field, only tighter (32px). An empty required cell stays neutral
+  (no amber), like every other empty required field.
+- **Checkbox / Radio:** 16px, 1.5px `--field-line` border (the `--ink-4`
+  edge was under 3:1), 4px radius (full for radio), filling amber when
+  checked.
 
 ### Section Cards
 

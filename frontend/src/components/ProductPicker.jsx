@@ -323,7 +323,7 @@ const ProductPicker = ({
       <input
         type="text"
         role="combobox"
-        className="form-input"
+        className="form-input is-optional"
         aria-label={label}
         aria-expanded={open}
         aria-controls={listId}
