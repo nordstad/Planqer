@@ -56,6 +56,25 @@ test.describe('Wallpaper planner guardrails', () => {
     await expect(page.getByRole('alert')).toHaveCount(0);
   });
 
+  test('starts with a full-width strip by default and balances the ends when asked', async ({ page }) => {
+    await setWidths(page, [4400]);
+    await createPlan(page);
+
+    const start = page.getByTestId('start-options');
+    await expect(start).toContainText('Every wall run starts with a full-width strip');
+    await expect(start).toContainText('Full-width strip first');
+    await expect(start).toContainText('1 strip cut lengthwise');
+
+    await page.getByRole('button', { name: /^01/ }).click();
+    await page.getByRole('combobox', { name: /^Start each wall with/ }).selectOption('even');
+    await page.getByRole('button', { name: 'Measure the room →' }).click();
+    await createPlan(page);
+
+    await expect(start).toContainText('Pieces are balanced at both ends, as you chose');
+    await expect(start).toContainText('345 mm first strip');
+    await expect(start).toContainText('2 strips cut lengthwise');
+  });
+
   test('walls that do not close are an invalid draft with a visible gap', async ({ page }) => {
     await setWidths(page, [2400, 1000, 2400, 900]);
     await page.getByLabel(/closed room/).check();
