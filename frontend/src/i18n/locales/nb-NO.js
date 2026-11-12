@@ -292,7 +292,7 @@ Object.assign(locale.projectUi, {
 
 Object.assign(locale.ui, {
   needed: 'Behøves', toBuy: 'Å kjøpe', conflictingPrices: 'Motstridende lagrede priser', conflictingPricesCount: '{{count}} sammenslåtte linje(r) har motstridende lagrede priser.',
-  materialPine: 'Furu', materialSpruce: 'Gran', materialOak: 'Eik', materialBeech: 'Bøk', materialBirch: 'Bjørk', materialPressureTreated: 'Trykkimpregnert', materialCustom: 'Egendefinert', customMaterialPlaceholder: 'Skriv inn materiale', tilesToBuyWithSpare: 'Fliser å kjøpe inkl. ekstra', moreInfo: 'Mer informasjon om {{label}}',
+  materialPine: 'Furu', materialSpruce: 'Gran', materialOak: 'Eik', materialBeech: 'Bøk', materialBirch: 'Bjørk', materialPressureTreated: 'Trykkimpregnert', materialCustom: 'Egendefinert', tilesToBuyWithSpare: 'Fliser å kjøpe inkl. ekstra', moreInfo: 'Mer informasjon om {{label}}',
   materialCeramic: 'Keramiske fliser', materialPorcelain: 'Porselensfliser', materialStone: 'Natursteinfliser', materialGlass: 'Glassfliser',
   boardLengthAria: 'Bordlengde i millimeter, rad {{row}}', removeBoardAria: 'Fjern bordlengde, rad {{row}}', strikeLine: 'Fjern denne raden',
   partLengthAria: 'Dellengde i millimeter, del {{item}}', quantityAria: 'Antall, del {{item}}', removePartAria: 'Fjern del, del {{item}}',
@@ -329,7 +329,7 @@ Object.assign(locale.workflow, {
   materialProfile: 'Materiale og profil', thickness: 'Tykkelse', thicknessMm: 'Tykkelse (mm)', widthMm: 'Bredde (mm)', packSheets: 'Planlegg platekappingen', tilesToBuy: 'fliser å kjøpe', fullTiles: 'Hele fliser', cutTiles: 'Kappede fliser', used: 'Brukt', changeSurface: 'Endre overflaten', nameIt: 'Gi den et navn', partsNeeded: 'Legg til minst én del', partsRequiredBeforePlanning: 'Legg til minst én nødvendig del før du planlegger kappingen.', goToRequiredParts: 'Gå til deler som trengs',
 });
 
-Object.assign(locale.auditUi, { sheetThicknessRequired: 'Skriv inn platetykkelsen før du planlegger', tileMaterialRequired: 'Velg flismateriale og skriv inn tykkelsen før du løser layouten' });
+Object.assign(locale.auditUi, { sheetThicknessRequired: 'Skriv inn platetykkelsen før du planlegger' });
 Object.assign(locale.ui, { waste: 'Svinn', strategy: 'Strategi' });
 Object.assign(locale.ui, {
   updatePlanTitle: 'Oppdater lagret plan',
@@ -782,6 +782,13 @@ Object.assign(locale, {
     partsDone_other: "{{count}} deler",
     fillPartRows: "Fyll ut størrelse og antall på hver delrad for å planlegge platekappingen.",
     fillToPlan: "Fyll ut {{fields}} for å planlegge platekappingen.",
+  },
+  tileForm: {
+    emptyOpening: "Fyll ut eller fjern den tomme åpningen",
+    customMaterial: "Materialnavn",
+    fillToSolve: "Fyll ut {{fields}} for å beregne leggingen.",
+    fixOpenings: "Fyll ut eller rett de markerte åpningene, eller fjern de tomme.",
+    emptyMeansOff: "La feltet stå tomt for å slå av kontrollen.",
   },
   demo: {
     catalogue: {

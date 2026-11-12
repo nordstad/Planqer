@@ -270,7 +270,7 @@ Object.assign(locale.projectUi, {
 });
 
 Object.assign(locale.ui, {
-  materialPine: 'Pine', materialSpruce: 'Spruce', materialOak: 'Oak', materialBeech: 'Beech', materialBirch: 'Birch', materialPressureTreated: 'Pressure-treated', materialCustom: 'Custom', customMaterialPlaceholder: 'Enter material', tilesToBuyWithSpare: 'Tiles to buy incl. spare', moreInfo: 'More information about {{label}}',
+  materialPine: 'Pine', materialSpruce: 'Spruce', materialOak: 'Oak', materialBeech: 'Beech', materialBirch: 'Birch', materialPressureTreated: 'Pressure-treated', materialCustom: 'Custom', tilesToBuyWithSpare: 'Tiles to buy incl. spare', moreInfo: 'More information about {{label}}',
   materialCeramic: 'Ceramic tile', materialPorcelain: 'Porcelain tile', materialStone: 'Natural stone tile', materialGlass: 'Glass tile',
   updatePlanTitle: 'Update saved plan',
   updatePlanConfirm: 'This will replace the saved result for "{{name}}". Continue?',
@@ -280,7 +280,7 @@ Object.assign(locale.workflow, {
   materialProfile: 'Material and profile', thickness: 'Thickness', thicknessMm: 'Thickness (mm)', widthMm: 'Width (mm)', packSheets: 'Plan the sheet cuts', tilesToBuy: 'tiles to buy', fullTiles: 'Full tiles', cutTiles: 'Cut tiles', used: 'Used', changeSurface: 'Change the surface', nameIt: 'Name it', partsNeeded: 'Add at least one part', partsRequiredBeforePlanning: 'Add at least one required part before planning.', goToRequiredParts: 'Go to required parts',
 });
 
-Object.assign(locale.auditUi, { sheetThicknessRequired: 'Enter the sheet thickness before planning', tileMaterialRequired: 'Choose a tile material and enter its thickness before solving' });
+Object.assign(locale.auditUi, { sheetThicknessRequired: 'Enter the sheet thickness before planning' });
 Object.assign(locale.ui, { tileSummary: '{{count}} tiles to buy · narrowest cut {{cut}} · offcuts reused: {{offcuts}}', waste: 'Waste', strategy: 'Strategy' });
 Object.assign(locale.projectUi, {
   projectViews: 'Project views', overview: 'Overview', shoppingList: 'Shopping list', cutDiagrams: 'Cut diagrams',
@@ -704,6 +704,13 @@ Object.assign(locale, {
     partsDone_other: "{{count}} parts",
     fillPartRows: "Fill in the size and quantity on every part row to plan the sheet cuts.",
     fillToPlan: "Fill in {{fields}} to plan the sheet cuts.",
+  },
+  tileForm: {
+    emptyOpening: "Fill in or remove the empty opening",
+    customMaterial: "Material name",
+    fillToSolve: "Fill in {{fields}} to calculate the layout.",
+    fixOpenings: "Fill in or correct the highlighted openings, or remove the empty ones.",
+    emptyMeansOff: "Leave it empty to turn the check off.",
   },
   demo: {
     catalogue: {

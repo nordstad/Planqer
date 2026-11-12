@@ -125,7 +125,7 @@ it('restores a saved tile plan addressed by the edit query', async () => {
   expect(screen.getByDisplayValue('1200')).toBeInTheDocument();
   expect(screen.getByDisplayValue('300')).toBeInTheDocument();
     expect(screen.getByDisplayValue('600')).toBeInTheDocument();
-    expect(await screen.findByLabelText('Price per tile · NOK')).toHaveValue(42);
+    expect(await screen.findByLabelText(/^Price per tile · NOK/)).toHaveValue(42);
 });
 
 it('shows the tile material cost using the configured VAT basis', async () => {
@@ -133,7 +133,7 @@ it('shows the tile material cost using the configured VAT basis', async () => {
   render(<MemoryRouter><LanguageProvider><TileOptimizer /></LanguageProvider></MemoryRouter>);
 
   fireEvent.change(await screen.findByLabelText('Thickness (mm)'), { target: { value: '10' } });
-  fireEvent.change(screen.getByLabelText('Price per tile · SEK'), { target: { value: '25' } });
+  fireEvent.change(screen.getByLabelText(/^Price per tile · SEK/), { target: { value: '25' } });
   fireEvent.click(screen.getByRole('button', { name: /Calculate layout/i }));
 
   expect(await screen.findByText('250.00 SEK · including VAT (25%)')).toBeInTheDocument();
@@ -170,3 +170,23 @@ describe('the demo warning for large diagonal layouts', () => {
     expect(screen.queryByText(/can take ten seconds or more/i)).not.toBeInTheDocument();
   });
 });
+
+it('names an empty tile thickness as missing instead of flagging it red', async () => {
+  render(
+    <MemoryRouter>
+      <LanguageProvider>
+        <TileOptimizer />
+      </LanguageProvider>
+    </MemoryRouter>,
+  );
+
+  const thickness = await screen.findByLabelText('Thickness (mm)');
+  expect(thickness).toHaveValue(null);
+  expect(thickness).not.toHaveClass('form-input-error');
+  expect(thickness).toHaveAttribute('aria-required', 'true');
+  expect(screen.getByText('1 required field empty: Thickness')).toBeInTheDocument();
+  expect(screen.getByText('Fill in Thickness to calculate the layout.')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Go to Tile' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /Calculate layout/i })).toBeDisabled();
+});
+

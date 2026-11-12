@@ -294,7 +294,7 @@ Object.assign(locale.projectUi, {
 
 Object.assign(locale.ui, {
   needed: 'Behövs', toBuy: 'Att köpa', conflictingPrices: 'Motstridiga sparade priser', conflictingPricesCount: '{{count}} sammanslagen rad har motstridiga sparade priser.',
-  materialPine: 'Furu', materialSpruce: 'Gran', materialOak: 'Ek', materialBeech: 'Bok', materialBirch: 'Björk', materialPressureTreated: 'Tryckimpregnerat', materialCustom: 'Anpassat', customMaterialPlaceholder: 'Ange material', tilesToBuyWithSpare: 'Plattor att köpa inkl. extra', moreInfo: 'Mer information om {{label}}',
+  materialPine: 'Furu', materialSpruce: 'Gran', materialOak: 'Ek', materialBeech: 'Bok', materialBirch: 'Björk', materialPressureTreated: 'Tryckimpregnerat', materialCustom: 'Anpassat', tilesToBuyWithSpare: 'Plattor att köpa inkl. extra', moreInfo: 'Mer information om {{label}}',
   materialCeramic: 'Keramiska plattor', materialPorcelain: 'Granitkeramik', materialStone: 'Naturstensplattor', materialGlass: 'Glasplattor',
   boardLengthAria: 'Brädlängd i millimeter, rad {{row}}', removeBoardAria: 'Ta bort brädlängd, rad {{row}}', strikeLine: 'Ta bort den här raden',
   partLengthAria: 'Dellängd i millimeter, del {{item}}', quantityAria: 'Antal, del {{item}}', removePartAria: 'Ta bort del, del {{item}}',
@@ -331,7 +331,7 @@ Object.assign(locale.workflow, {
   materialProfile: 'Material och profil', thickness: 'Tjocklek', thicknessMm: 'Tjocklek (mm)', widthMm: 'Bredd (mm)', packSheets: 'Planera skivkapningen', tilesToBuy: 'plattor att köpa', fullTiles: 'Hela plattor', cutTiles: 'Kapade plattor', used: 'Använt', changeSurface: 'Ändra ytan', nameIt: 'Ge den ett namn', partsNeeded: 'Lägg till minst en del', partsRequiredBeforePlanning: 'Lägg till minst en del som behövs innan du planerar kapningarna.', goToRequiredParts: 'Gå till delar som behövs',
 });
 
-Object.assign(locale.auditUi, { sheetThicknessRequired: 'Ange skivans tjocklek innan du planerar', tileMaterialRequired: 'Välj plattmaterial och ange tjockleken innan du löser layouten' });
+Object.assign(locale.auditUi, { sheetThicknessRequired: 'Ange skivans tjocklek innan du planerar' });
 Object.assign(locale.ui, { waste: 'Spill', strategy: 'Strategi' });
 
 Object.assign(locale.ui, {
@@ -784,6 +784,13 @@ Object.assign(locale, {
     partsDone_other: "{{count}} delar",
     fillPartRows: "Fyll i storlek och antal på varje delrad för att planera skivkapningen.",
     fillToPlan: "Fyll i {{fields}} för att planera skivkapningen.",
+  },
+  tileForm: {
+    emptyOpening: "Fyll i eller ta bort den tomma öppningen",
+    customMaterial: "Materialnamn",
+    fillToSolve: "Fyll i {{fields}} för att beräkna läggningen.",
+    fixOpenings: "Fyll i eller rätta de markerade öppningarna, eller ta bort de tomma.",
+    emptyMeansOff: "Lämna tomt för att stänga av kontrollen.",
   },
   demo: {
     catalogue: {

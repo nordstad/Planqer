@@ -406,9 +406,9 @@ surface → 16px), rather than inventing an in-between value.
 offset-shadow block, solid ink, tinted): a step has one amber `.btn-order`,
 its secondary actions are solid ink (`.btn-primary`), and anything lesser is a
 `.btn-text` link. A solid button can never be mistaken for a field, which is
-hollow and recessed. The wallpaper, board and sheet planners follow this
-rule; the tile and model planners still use outlined `.btn` for secondary
-actions until they are rebuilt onto section cards.
+hollow and recessed. The wallpaper, board, sheet and tile planners follow
+this rule; the model planner still uses outlined `.btn` for secondary actions
+until it is rebuilt onto section cards.
 
 ### Cards / Containers
 
