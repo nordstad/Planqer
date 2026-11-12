@@ -17,7 +17,7 @@ const ProjectPicker = ({ groups, value, onChange, newName, onNewNameChange, onSu
 
   return (
     <div>
-      <FormField label={t('ui.project')} required tip={t('ui.projectSaveHint')}>
+      <FormField label={t('ui.project')} required>
         <select
           id="plan-project"
           className="form-select"
@@ -30,6 +30,7 @@ const ProjectPicker = ({ groups, value, onChange, newName, onNewNameChange, onSu
           <option value={NEW_PROJECT}>{t('ui.newProject')}</option>
         </select>
       </FormField>
+      <p className="synthetic" style={{ marginTop: '7px' }}>{t('ui.projectExplain')}</p>
 
       {value === NEW_PROJECT && (
         <div style={{ marginTop: '14px' }}>
@@ -47,6 +48,7 @@ const ProjectPicker = ({ groups, value, onChange, newName, onNewNameChange, onSu
               }}
             />
           </FormField>
+          {groups.length === 0 && <p className="synthetic" style={{ marginTop: '7px' }}>{t('ui.firstProjectHint')}</p>}
         </div>
       )}
     </div>

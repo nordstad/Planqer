@@ -14,6 +14,26 @@ Planning and saving the resulting cutlist also require that account.
     your saved plans are under **My projects**. This page describes the
     advanced install.
 
+## Plans and projects
+
+A **plan** is one saved result: the cuts for one set of boards, one sheet
+layout, one tile layout or one wallpaper plan. A **project** is the job those
+plans belong to, such as a chair or a customer. A chair's rails (a board plan)
+and its seat (a sheet plan) can sit in the same project, and the project gives
+you one shopping list and one printable job pack for all of them.
+
+Every plan is saved into a project, so there is no separate "create project"
+step:
+
+1. Plan something, then press **Name and save**.
+2. Give the plan a name, and choose a project. Your first save has no projects
+   to choose from, so **New project…** is preselected with the name *My plans*;
+   change the name if you like. The project is made when you press **Save**.
+3. Next time the project you used last is preselected. Choose **New project…**
+   to start another job.
+4. Changed your mind? **Move to…** on a plan, or dragging it onto a project on the
+   dashboard, files it somewhere else.
+
 ## Dashboard
 
 Your dashboard (`/dashboard`) lists everything you've saved, optionally
@@ -21,7 +41,7 @@ grouped into projects — so a chair's rails and its seat can live together.
 
 ![Dashboard](../assets/screenshots/dashboard.png)
 
-- **Projects** group related plans; a plan can also be left unfiled.
+- **Projects** group the plans for one job. Every plan is in one; plans saved before projects were required may still be listed as unfiled.
 - Each saved plan shows its type (board/sheet), part count, the stock/kerf it
   used, and when it was saved.
 - Download the diagram again as SVG or PNG, or delete the plan.
