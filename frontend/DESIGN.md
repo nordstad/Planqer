@@ -406,9 +406,9 @@ surface → 16px), rather than inventing an in-between value.
 offset-shadow block, solid ink, tinted): a step has one amber `.btn-order`,
 its secondary actions are solid ink (`.btn-primary`), and anything lesser is a
 `.btn-text` link. A solid button can never be mistaken for a field, which is
-hollow and recessed. The wallpaper planner follows this rule; the other
-planners still use outlined `.btn` for secondary actions until they are
-rebuilt onto section cards.
+hollow and recessed. The wallpaper and board planners follow this rule; the
+sheet, tile and model planners still use outlined `.btn` for secondary actions
+until they are rebuilt onto section cards.
 
 ### Cards / Containers
 
@@ -466,6 +466,13 @@ new colour). The status names what is missing instead of only counting it.
 Cards do not clip their content, so an ⓘ near the top can open over the edge.
 The disabled primary at the foot of the step repeats the first blocker and
 links to it ("Fill in Wall width on Wall D to create the plan. Go to Wall D").
+
+Optional work gets its own card marked "(optional)" in the title, with a
+summary of its current setting instead of a status (board cutting's "Prices &
+cost optimisation · No prices · Least waste"). A card's title is the section's
+heading, so the step's `h1` names the tool ("Board cutting"), not the first
+card. In a table, required columns carry the `*` and optional ones
+"(optional)" in the header; cells never use "Optional" as a placeholder.
 
 **Repeated cards (wallpaper walls).** A list of like things — the walls of a
 room — is one card each, with a letter badge, the name, a one-line summary

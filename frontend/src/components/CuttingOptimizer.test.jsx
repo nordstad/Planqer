@@ -1,4 +1,4 @@
-import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { act, within, render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import CuttingOptimizer from './CuttingOptimizer';
 import { AuthProvider } from '../contexts/AuthContext';
@@ -86,7 +86,7 @@ describe('CuttingOptimizer', () => {
     expect(screen.queryByLabelText(/Part length in millimetres/i)).not.toBeInTheDocument();
     expect(screen.getByText(/Add the parts you need/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Plan the cuts/i })).toBeDisabled();
-    expect(screen.getByText('Add at least one part')).toHaveAttribute('role', 'status');
+    expect(within(screen.getByRole('region', { name: 'Required parts' })).getByText('Add at least one part')).toHaveAttribute('role', 'status');
     expect(screen.getByText('Add at least one required part before planning.')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Go to required parts' }));
     expect(screen.getByRole('heading', { name: /Required parts/i })).toHaveFocus();
@@ -100,6 +100,7 @@ describe('CuttingOptimizer', () => {
     try {
       renderOptimizer();
       await screen.findByRole('heading', { name: /Required parts/i });
+      fireEvent.change(screen.getByLabelText(/Quantity, item 1/i), { target: { value: '0' } });
       expect(translate).toHaveBeenCalledWith('ui.fixLines', expect.any(Object));
       expect(translate).not.toHaveBeenCalledWith('ui.fixLines', expect.objectContaining({ kind: expect.anything() }));
     } finally {
@@ -144,7 +145,9 @@ describe('CuttingOptimizer', () => {
     expect(quantity).toHaveClass('is-required-empty');
     expect(length).not.toHaveAttribute('placeholder');
     expect(quantity).not.toHaveAttribute('placeholder');
-    expect(screen.getByLabelText(/Name, item 1/i)).toHaveAttribute('placeholder', 'Optional');
+    // Optional is said once in the column header, not as a placeholder that looks like a value.
+    expect(screen.getByLabelText(/Name, item 1/i)).not.toHaveAttribute('placeholder');
+    expect(screen.getByRole('columnheader', { name: /Name \(optional\)/ })).toBeInTheDocument();
     expect(screen.getByLabelText(/Name, item 1/i)).not.toHaveClass('is-required-empty');
     fireEvent.change(length, { target: { value: '60' } });
     fireEvent.change(quantity, { target: { value: '5' } });
@@ -184,7 +187,8 @@ describe('CuttingOptimizer', () => {
       renderOptimizer();
       await screen.findByLabelText('Pris per meter i SEK för längden 2500 mm');
 
-      expect(screen.getByLabelText('Pris per meter i SEK för längden 2500 mm')).toHaveAttribute('placeholder', 'Valfritt');
+      expect(screen.getByLabelText('Pris per meter i SEK för längden 2500 mm')).not.toHaveAttribute('placeholder');
+      expect(screen.getByRole('columnheader', { name: 'Pris / m (valfritt)' })).toBeInTheDocument();
     } finally {
       await act(() => i18n.changeLanguage('en-GB'));
     }
@@ -229,7 +233,8 @@ describe('CuttingOptimizer', () => {
     expect(screen.queryByText(/Choose a material/i)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Plan the cuts/i }));
     expect(optimizeCutting).not.toHaveBeenCalled();
-    expect(screen.getByText(/thickness and width/i)).toBeInTheDocument();
+    expect(screen.getByText('Fill in Thickness, Width to plan the cuts.')).toBeInTheDocument();
+    expect(screen.getByText('2 required fields empty: Thickness, Width')).toBeInTheDocument();
 
     fillMaterial();
     fireEvent.click(screen.getByRole('button', { name: /Plan the cuts/i }));

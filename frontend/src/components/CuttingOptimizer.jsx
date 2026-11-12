@@ -43,6 +43,7 @@ import CatalogPage from './CatalogPage';
 import ConfirmDialog from './ConfirmDialog';
 import CostAnalysisPanel from './CostAnalysisPanel';
 import Disclosure from './Disclosure';
+import FormField, { SectionCard, SectionStatus, splitUnit } from './FormField';
 import ProjectPicker from './ProjectPicker';
 import MovePlanMenu from './MovePlanMenu';
 import { useProjectChoice } from '../hooks/useProjectChoice';
@@ -364,6 +365,38 @@ const CuttingOptimizer = () => {
     partsHeadingRef.current?.focus({ preventScroll: true });
   };
 
+  /* ── section status and the first thing blocking the plan ──────────────── */
+  const unitless = (key) => splitUnit(t(key)).text;
+  const materialMissing = [
+    !parseFloat(boardThickness) && unitless('workflow.thicknessMm'),
+    !parseFloat(boardWidth) && unitless('workflow.widthMm'),
+  ].filter(Boolean);
+  const partRowsWrong = parts.some((part, index) => visiblePartError(part, index));
+  const partRowsBlank = currentPartErrors.some((errors, index) => errors && Object.keys(errors).some((field) => parts[index][field] === ''));
+  const stockWrong = inputErrors.boards.some(Boolean);
+  const goToSection = (id) => window.setTimeout(() => {
+    const section = document.getElementById(id);
+    if (!section) return;
+    section.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+    const fields = [...section.querySelectorAll('input:not([type=checkbox]):not([type=radio]), select')];
+    (fields.find((field) => !field.value) || fields[0])?.focus({ preventScroll: true });
+  }, 0);
+  const toParts = { name: t('workflow.goToRequiredParts'), go: goToRequiredParts };
+  const toMaterial = { name: t('formUi.goTo', { name: t('workflow.materialProfile') }), go: () => goToSection('board-material') };
+  const blocker = parts.length === 0 ? { text: t('workflow.partsRequiredBeforePlanning'), ...toParts }
+    : partRowsWrong ? { text: t('ui.fixLines'), ...toParts }
+    : partRowsBlank ? { text: t('boardUi.fillPartRows'), ...toParts }
+    : inputErrors.sawKerf ? { text: inputErrors.sawKerf, ...toMaterial }
+    : materialMissing.length ? { text: t('boardUi.fillToPlan', { fields: materialMissing.join(', ') }), ...toMaterial }
+    : stockWrong ? { text: t('ui.fixLines'), name: t('formUi.goTo', { name: t('workflow.stockAvailable') }), go: () => goToSection('board-stock') }
+    : null;
+  const pricingSummary = [
+    pricingComplete ? t('ui.pricesComplete', { total: uniqueValidBoards.length })
+      : pricingPartial ? t('ui.pricesProgress', { priced: pricedBoardCount, total: uniqueValidBoards.length })
+        : t('boardUi.noPrices'),
+    optimizeFor === 'cost' ? t('ui.leastMoney') : t('ui.leastWaste'),
+  ].join(' · ');
+
   useEffect(() => {
     if (!pricingComplete && optimizeFor === 'cost') setOptimizeFor('waste');
   }, [pricingComplete, optimizeFor]);
@@ -580,9 +613,13 @@ const CuttingOptimizer = () => {
     {
       label: t('workflow.parts'),
       reachable: true,
-      summary: hasErrors
-        ? t('workflow.someLinesNeedFixing')
-        : t('workflow.partsSummary', { count: partCount, demand: mm(demand), kerf: sawKerf || 0 }),
+      // Name the actual state: no parts, something wrong, or the parts so far
+      // (a missing board size is shown on its own card, not as a broken row).
+      summary: parts.length === 0
+        ? t('workflow.partsNeeded')
+        : partRowsWrong || stockWrong || inputErrors.sawKerf
+          ? t('workflow.someLinesNeedFixing')
+          : t('workflow.partsSummary', { count: partCount, demand: mm(demand), kerf: sawKerf || 0 }),
     },
     {
       label: t('workflow.thePlan'),
@@ -613,101 +650,85 @@ const CuttingOptimizer = () => {
         <form className="step-view is-form" onSubmit={handlePlanSubmit} noValidate>
           <div className="step-head">
             <div>
-              <h1 ref={partsHeadingRef} className="step-h1" tabIndex="-1" style={{ scrollMarginTop: '96px' }}>{t('workflow.requiredParts')}</h1>
-              <p className="step-lede">
-                {t('workflow.requiredPartsIntro')}
-              </p>
-              {parts.length === 0 && <p className="folio" style={{ color: 'var(--revision)', marginTop: '8px' }} role="status">{t('workflow.partsNeeded')}</p>}
+              <h1 className="step-h1">{t('common.boardCutting')}</h1>
+              <p className="step-lede">{t('workflow.requiredPartsIntro')}</p>
+              <p className="form-legend"><span className="req-mark" aria-hidden="true" />{t('formUi.requiredLegend')}</p>
             </div>
-            <button type="button" className="btn" onClick={() => setLoadModalOpen(true)}>
+            <button type="button" className="btn-text" onClick={() => setLoadModalOpen(true)}>
               {t('workflow.loadSavedPlan')}
             </button>
           </div>
 
-          <table className="cat-table parts-table">
-            <colgroup>
-              <col className="part-item-col" />
-              <col className="part-size-col" />
-              <col className="part-quantity-col" />
-              <col />
-              <col className="part-remove-col" />
-            </colgroup>
-            <thead>
-              <tr><th>{t('workflow.item')}</th><th>{t('workflow.lengthMm')}</th><th>{t('workflow.qty')}</th><th>{t('workflow.name')}</th><th aria-label={t('common.remove')} /></tr>
-            </thead>
-            <tbody>
-              {parts.map((part, index) => (
-                <PartInputRow
-                  key={index}
-                  part={part}
-                  index={index}
-                  handlePartChange={handlePartChange}
-                  handlePartsPaste={handlePartsPaste}
-                  removePart={removePart}
-                  error={visiblePartError(part, index)}
-                  canRemove={parts.length > 1}
-                />
-              ))}
-              {parts.length > 0 ? (
-                <tr className="is-sum">
-                  <td>Σ</td><td>{mm(demand)}</td><td>{partCount}</td><td /><td />
-                </tr>
-              ) : (
-                <tr>
-                  <td colSpan="5" className="synthetic">{t('workflow.emptyParts')}</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-          <div className="flex items-center gap-3" style={{ marginTop: '12px', flexWrap: 'wrap' }}>
-            <button type="button" className="btn" onClick={addPart}>
-              <Plus /> {t('workflow.addPart')}
-            </button>
-            {parts.length === 0 && (
-              <button type="button" className="btn" onClick={loadExample}>
-                {t('workflow.tryExample')}
-              </button>
-            )}
-          </div>
-          <InfoTip label={t('workflow.parts')}>{t('workflow.pasteParts')}</InfoTip>
-
-          <div
-            className="flex items-end gap-4"
-            style={{ marginTop: '26px', paddingTop: '22px', borderTop: '1px solid var(--rule-hair)', flexWrap: 'wrap' }}
+          <SectionCard
+            id="board-parts"
+            title={t('workflow.requiredParts')}
+            titleRef={partsHeadingRef}
+            status={parts.length === 0 ? <SectionStatus todo={t('workflow.partsNeeded')} live />
+              : partRowsWrong ? <SectionStatus error={t('formUi.checkValues')} />
+                : partRowsBlank ? <SectionStatus todo={t('boardUi.emptyRows')} />
+                  : <SectionStatus done={t('boardUi.partsDone', { count: partCount, demand: mm(demand) })} />}
           >
-            <div style={{ flex: 'none' }}>
-              <label className="form-label" htmlFor="saw-kerf">{t('workflow.sawBlade')}</label>
-              <div className="flex items-center gap-2">
-                <input
-                  id="saw-kerf"
-                  type="number"
-                  min={SAW_KERF_MIN}
-                   max={SAW_KERF_MAX}
-                   step="0.1"
-                  value={sawKerf}
-                  onChange={(e) => handleKerfChange(e.target.value)}
-                  className={`form-input kerf-input ${inputErrors.sawKerf ? 'form-input-error' : ''}`}
-                  style={{ width: '78px' }}
-                  required
-                  placeholder="3"
-                  aria-describedby="saw-kerf-hint"
-                />
-                <span style={{ fontSize: '13.5px', color: 'var(--ink-3)', fontWeight: 600 }}>mm</span>
-              </div>
+            <table className="cat-table parts-table">
+              <colgroup>
+                <col className="part-item-col" />
+                <col className="part-size-col" />
+                <col className="part-quantity-col" />
+                <col />
+                <col className="part-remove-col" />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>{t('workflow.item')}</th>
+                  <th>{t('workflow.lengthMm')}<span className="req-mark" aria-hidden="true" /></th>
+                  <th>{t('workflow.qty')}<span className="req-mark" aria-hidden="true" /></th>
+                  <th>{t('workflow.name')}{' '}<span className="opt-mark">{t('formUi.optionalMark')}</span></th>
+                  <th aria-label={t('common.remove')} />
+                </tr>
+              </thead>
+              <tbody>
+                {parts.map((part, index) => (
+                  <PartInputRow
+                    key={index}
+                    part={part}
+                    index={index}
+                    handlePartChange={handlePartChange}
+                    handlePartsPaste={handlePartsPaste}
+                    removePart={removePart}
+                    error={visiblePartError(part, index)}
+                    canRemove={parts.length > 1}
+                  />
+                ))}
+                {parts.length > 0 ? (
+                  <tr className="is-sum">
+                    <td>Σ</td><td>{mm(demand)}</td><td>{partCount}</td><td /><td />
+                  </tr>
+                ) : (
+                  <tr>
+                    <td colSpan="5" className="synthetic">{t('workflow.emptyParts')}</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+            <div className="flex items-center gap-3" style={{ marginTop: '14px', flexWrap: 'wrap' }}>
+              <button type="button" className="btn-primary" onClick={addPart}>
+                <Plus /> {t('workflow.addPart')}
+              </button>
+              {parts.length === 0 && (
+                <button type="button" className="btn-text" onClick={loadExample}>
+                  {t('workflow.tryExample')}
+                </button>
+              )}
+              <InfoTip label={t('workflow.parts')}>{t('workflow.pasteParts')}</InfoTip>
             </div>
-            <p
-              id="saw-kerf-hint"
-              className={inputErrors.sawKerf ? 'text-danger text-[12.5px] font-semibold' : 'synthetic'}
-              style={{ flex: '1 1 220px', margin: 0, paddingBottom: '11px' }}
-            >
-              {inputErrors.sawKerf || t('workflow.kerfHint')}
-            </p>
-          </div>
+          </SectionCard>
 
-          <section style={{ marginTop: '26px', paddingTop: '22px', borderTop: '1px solid var(--rule-hair)' }}>
-            <div className="section-rule"><h2 className="section-title">{t('workflow.materialProfile')}</h2></div>
-            <div style={{ marginBottom: '18px', maxWidth: '640px' }}>
-              <span className="form-label" style={{ display: 'block' }}>{t('productUi.product')}</span>
+          <SectionCard
+            id="board-material"
+            title={t('workflow.materialProfile')}
+            status={inputErrors.sawKerf ? <SectionStatus error={t('formUi.checkValues')} /> : <SectionStatus missing={materialMissing} />}
+          >
+            <div style={{ marginBottom: '18px' }}>
+              <span className="form-label" style={{ display: 'block' }}>{t('productUi.product')}{' '}<span className="opt-mark">{t('formUi.optionalMark')}</span></span>
               <ProductPicker
                 kind="board"
                 value={productSel}
@@ -722,34 +743,56 @@ const CuttingOptimizer = () => {
                 onUseLengths={(lengths) => { retirePlan(); setBoards(lengths.map(String)); }}
               />
             </div>
-            <div className="grid gap-x-8 gap-y-5 md:grid-cols-2">
-              <div>
-                <label className="form-label" htmlFor="board-thickness">{t('workflow.thicknessMm')}</label>
-                <input id="board-thickness" type="number" min="1" step="1" value={boardThickness} onChange={(e) => { retirePlan(); setBoardThickness(e.target.value); }} className="form-input dimension-input" required />
-              </div>
-              <div>
-                <label className="form-label" htmlFor="board-width">{t('workflow.widthMm')}</label>
-                <input id="board-width" type="number" min="1" step="1" value={boardWidth} onChange={(e) => { retirePlan(); setBoardWidth(e.target.value); }} className="form-input dimension-input" required />
+            <div className="grid gap-x-6 gap-y-4 md:grid-cols-2">
+              <FormField label={t('workflow.thicknessMm')} required>
+                <input id="board-thickness" type="number" min="1" step="1" value={boardThickness} onChange={(e) => { retirePlan(); setBoardThickness(e.target.value); }} className="form-input dimension-input" />
+              </FormField>
+              <FormField label={t('workflow.widthMm')} required>
+                <input id="board-width" type="number" min="1" step="1" value={boardWidth} onChange={(e) => { retirePlan(); setBoardWidth(e.target.value); }} className="form-input dimension-input" />
+              </FormField>
+              <div className="md:col-span-2">
+                <FormField label={t('workflow.sawBlade')} unit="mm" required tip={t('workflow.kerfHint')}>
+                  <input
+                    id="saw-kerf"
+                    type="number"
+                    min={SAW_KERF_MIN}
+                    max={SAW_KERF_MAX}
+                    step="0.1"
+                    value={sawKerf}
+                    onChange={(e) => handleKerfChange(e.target.value)}
+                    className={`form-input kerf-input dimension-input ${inputErrors.sawKerf ? 'form-input-error' : ''}`}
+                    aria-invalid={!!inputErrors.sawKerf || undefined}
+                    aria-describedby={inputErrors.sawKerf ? 'saw-kerf-error' : undefined}
+                  />
+                </FormField>
+                {inputErrors.sawKerf && <p id="saw-kerf-error" className="text-danger text-[12.5px] font-semibold" style={{ marginTop: '6px' }}>{inputErrors.sawKerf}</p>}
               </div>
             </div>
-            {(!parseFloat(boardThickness) || !parseFloat(boardWidth)) && <p className="text-danger text-[12.5px] font-semibold" style={{ marginTop: '10px' }}>{t('productUi.dimensionsRequired')}</p>}
-          </section>
+          </SectionCard>
 
           {/* Stock stays in plain sight. It was folded away on the first pass on
               the theory that most people never touch it, which is wrong: what a
               yard actually stocks changes between jobs, and a plan against the
               wrong lengths is wrong at the till. Mirrors the sheet page, where
               the sheet's own dimensions are visible for the same reason. */}
-          <section ref={stockSectionRef} tabIndex="-1" style={{ marginTop: '30px', paddingTop: '22px', borderTop: '1px solid var(--rule-hair)' }}>
-            <div className="section-rule">
-              <h2 className="section-title">{t('workflow.stockAvailable')}</h2>
-              <span className="folio">{t('workflow.supplierStock')}</span>
-              <InfoTip label={t('ui.pricingOptions')}>{t('ui.stockPricingOptional')}</InfoTip>
-            </div>
+          <SectionCard
+            id="board-stock"
+            sectionRef={stockSectionRef}
+            title={t('workflow.stockAvailable')}
+            summary={t('workflow.supplierStock')}
+            status={stockWrong ? <SectionStatus error={t('formUi.checkValues')} />
+              : validBoards.length === 0 ? <SectionStatus todo={t('boardUi.addStock')} />
+                : <SectionStatus done={t('workflow.lengthCount', { count: validBoards.length })} />}
+          >
             <div className="stock-table-wrap">
               <table className="cat-table">
                 <thead>
-                  <tr><th>{t('workflow.lengthMm')}</th><th>{t('workflow.metres')}</th><th>{t('ui.stockPrice')}</th><th aria-label={t('common.remove')} /></tr>
+                  <tr>
+                    <th>{t('workflow.lengthMm')}<span className="req-mark" aria-hidden="true" /></th>
+                    <th>{t('workflow.metres')}</th>
+                    <th>{t('ui.stockPrice')}{' '}<span className="opt-mark">{t('formUi.optionalMark')}</span></th>
+                    <th aria-label={t('common.remove')} />
+                  </tr>
                 </thead>
                 <tbody>
                   {boards.map((board, index) => (
@@ -777,81 +820,77 @@ const CuttingOptimizer = () => {
                 </tbody>
               </table>
             </div>
-            <button type="button" className="btn" style={{ marginTop: '12px' }} onClick={addBoard}>
+            <button type="button" className="btn-primary" style={{ marginTop: '14px' }} onClick={addBoard}>
               <Plus /> {t('workflow.addStockLength')}
             </button>
             <p className="synthetic" style={{ marginTop: '10px' }}>
-               {t('ui.checkStock')}
+              {t('ui.checkStock')}
             </p>
-            <div style={{ marginTop: '22px', paddingTop: '18px', borderTop: '1px solid var(--rule-hair)' }}>
-              <div className="flex items-center justify-between" style={{ gap: '12px', flexWrap: 'wrap' }}>
-                <span className="kicker">{t('ui.pricingOptions')}</span>
-                <label className="flex items-center gap-2" style={{ cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={samePriceForAll}
-                    onChange={(e) => {
-                      retirePlan();
-                      setSamePriceForAll(e.target.checked);
-                      if (e.target.checked && uniformPrice) priceEveryBoard(parseFloat(uniformPrice) || 0);
-                    }}
-                  />
-                  <span className="kicker" style={{ color: 'var(--ink)' }}>{t('ui.onePriceAll')}</span>
-                </label>
-              </div>
-              {samePriceForAll && (
-                <div style={{ marginTop: '10px', maxWidth: '280px' }}>
-                  <label className="form-label" htmlFor="uniform-stock-price">{t('ui.uniformPrice', { currency })}</label>
-                  <input
-                    id="uniform-stock-price"
-                    type="number"
-                    min="0"
-                    step="0.1"
-                    value={uniformPrice}
-                    onChange={(e) => handleUniformPriceChange(e.target.value)}
-                    className="form-input dimension-input"
-                    placeholder="35.0"
-                  />
-                </div>
-              )}
-              {pricingPartial && <p className="synthetic" style={{ marginTop: '10px' }}>
-                {t('ui.pricesProgress', { priced: pricedBoardCount, total: uniqueValidBoards.length })}
-              </p>}
-              {pricingComplete && <p className="synthetic" style={{ marginTop: '10px' }} role="status">
-                {t('ui.pricesComplete', { total: uniqueValidBoards.length })}
-              </p>}
-              <fieldset style={{ marginTop: '16px', border: 0, padding: 0, minWidth: 0 }}>
-                <legend className="form-label" style={{ padding: 0 }}>{t('ui.whatChase')}</legend>
-                <label className="flex items-start gap-3" style={{ cursor: 'pointer', padding: '5px 0' }}>
-                  <input
-                    type="radio"
-                    name="optimizeFor-input"
-                    value="waste"
-                    checked={optimizeFor === 'waste'}
-                    onChange={() => { retirePlan(); setOptimizeFor('waste'); }}
-                    style={{ marginTop: '3px' }}
-                  />
-                  <span><b style={{ fontSize: '13.5px' }}>{t('ui.leastWaste')}</b><span className="block synthetic">{t('ui.leastWasteHint')}</span></span>
-                </label>
-                <label className="flex items-start gap-3" style={{ cursor: pricingComplete ? 'pointer' : 'default', padding: '5px 0' }}>
-                  <input
-                    type="radio"
-                    name="optimizeFor-input"
-                    value="cost"
-                    checked={optimizeFor === 'cost'}
-                    onChange={() => { retirePlan(); setOptimizeFor('cost'); }}
-                    disabled={!pricingComplete}
-                    aria-describedby="lowest-cost-help"
-                    style={{ marginTop: '3px' }}
-                  />
-                  <span><b style={{ fontSize: '13.5px' }}>{t('ui.leastMoney')}</b><span className="block synthetic">{t('ui.leastMoneyHint')}</span></span>
-                </label>
-                {!pricingComplete && <p id="lowest-cost-help" className="synthetic" style={{ margin: '4px 0 0 28px' }}>{t('ui.lowestCostNeedsPrices')}</p>}
-              </fieldset>
-            </div>
-          </section>
+          </SectionCard>
 
-          <div style={{ marginTop: '26px' }}>
+          <SectionCard
+            id="board-pricing"
+            title={t('ui.pricesAndCost')}
+            optional
+            tip={t('ui.stockPricingOptional')}
+            summary={pricingSummary}
+          >
+            <label className="flex items-center gap-2" style={{ cursor: 'pointer', fontSize: '13.5px', fontWeight: 600 }}>
+              <input
+                type="checkbox"
+                checked={samePriceForAll}
+                onChange={(e) => {
+                  retirePlan();
+                  setSamePriceForAll(e.target.checked);
+                  if (e.target.checked && uniformPrice) priceEveryBoard(parseFloat(uniformPrice) || 0);
+                }}
+              />
+              {t('ui.onePriceAll')}
+            </label>
+            {samePriceForAll && (
+              <FormField label={t('ui.uniformPrice', { currency })} className="mt-3">
+                <input
+                  id="uniform-stock-price"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={uniformPrice}
+                  onChange={(e) => handleUniformPriceChange(e.target.value)}
+                  className="form-input dimension-input"
+                />
+              </FormField>
+            )}
+            <fieldset style={{ marginTop: '16px', border: 0, padding: 0, minWidth: 0 }}>
+              <legend className="form-label" style={{ padding: 0 }}>{t('ui.whatChase')}</legend>
+              <label className="flex items-start gap-3" style={{ cursor: 'pointer', padding: '5px 0' }}>
+                <input
+                  type="radio"
+                  name="optimizeFor-input"
+                  value="waste"
+                  checked={optimizeFor === 'waste'}
+                  onChange={() => { retirePlan(); setOptimizeFor('waste'); }}
+                  style={{ marginTop: '3px' }}
+                />
+                <span><b style={{ fontSize: '13.5px' }}>{t('ui.leastWaste')}</b><span className="block synthetic">{t('ui.leastWasteHint')}</span></span>
+              </label>
+              <label className="flex items-start gap-3" style={{ cursor: pricingComplete ? 'pointer' : 'default', padding: '5px 0' }}>
+                <input
+                  type="radio"
+                  name="optimizeFor-input"
+                  value="cost"
+                  checked={optimizeFor === 'cost'}
+                  onChange={() => { retirePlan(); setOptimizeFor('cost'); }}
+                  disabled={!pricingComplete}
+                  aria-describedby="lowest-cost-help"
+                  style={{ marginTop: '3px' }}
+                />
+                <span><b style={{ fontSize: '13.5px' }}>{t('ui.leastMoney')}</b><span className="block synthetic">{t('ui.leastMoneyHint')}</span></span>
+              </label>
+              {!pricingComplete && <p id="lowest-cost-help" className="synthetic" style={{ margin: '4px 0 0 28px' }}>{t('ui.lowestCostNeedsPrices')}</p>}
+            </fieldset>
+          </SectionCard>
+
+          <div style={{ marginTop: '22px' }}>
             <Disclosure
                title={t('ui.whatPageReturns')}
                hint={t('ui.boardsHint')}
@@ -881,13 +920,9 @@ const CuttingOptimizer = () => {
 
           <div className="step-foot">
             <p className="synthetic step-foot-note">
-               {parts.length === 0
-                  ? t('workflow.partsRequiredBeforePlanning')
-                  : hasErrors
-                  ? t('ui.fixLines')
-                  : t('ui.partsAgainstStock', { parts: partCount, stock: validBoards.length, unit: t(validBoards.length === 1 ? 'ui.stockUnit' : 'ui.stockUnits') })}
-             </p>
-             {parts.length === 0 && <button type="button" className="btn-link" onClick={goToRequiredParts}>{t('workflow.goToRequiredParts')}</button>}
+              {blocker ? blocker.text : t('ui.partsAgainstStock', { parts: partCount, stock: validBoards.length, unit: t(validBoards.length === 1 ? 'ui.stockUnit' : 'ui.stockUnits') })}
+              {blocker && <> <button type="button" className="btn-link" onClick={blocker.go}>{blocker.name}</button></>}
+            </p>
             <div className="step-foot-act">
               <button type="submit" className="btn-order" disabled={loading || hasErrors}>
                 {loading ? <><Loader /> {t('workflow.planning')}</> : <>{t('workflow.planTheCuts')} <ArrowRight size={15} /></>}

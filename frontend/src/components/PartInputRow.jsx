@@ -52,7 +52,6 @@ const PartInputRow = ({ part, index, handlePartChange, handlePartsPaste, removeP
         <input
           aria-label={`${text('workflow.name')}, ${text('workflow.item').toLowerCase()} ${index + 1}`}
           type="text"
-          placeholder={text('ui.optional')}
           value={part.name || ''}
           onChange={(e) => handlePartChange(index, 'name', e.target.value)}
           className="cell-input"

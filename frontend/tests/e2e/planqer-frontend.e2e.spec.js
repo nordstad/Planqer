@@ -287,7 +287,7 @@ test.describe('Planqer Frontend E2E Tests', () => {
     await page.goto('/cutting');
     const planButton = page.getByRole('button', { name: /plan the cuts/i });
     await expect(planButton).toBeDisabled();
-    await expect(page.getByText(/thickness and width before planning/i)).toBeVisible();
+    await expect(page.locator('#board-material').getByText('2 required fields empty: Thickness, Width')).toBeVisible();
     await page.getByLabel('Thickness (mm)').fill('30');
     await page.getByLabel('Width (mm)').fill('80');
     await page.getByRole('button', { name: /try an example/i }).click();

@@ -21,7 +21,6 @@ const BoardLengthRow = ({ board, index, handleBoardChange, handleBoardsPaste, re
           aria-label={text('ui.boardLengthAria', { row: index + 1 })}
           type="number"
           step="any"
-          placeholder="3000"
           value={board}
           onChange={(e) => handleBoardChange(index, e.target.value)}
           onPaste={(e) => handleBoardsPaste(index, e)}
@@ -42,13 +41,12 @@ const BoardLengthRow = ({ board, index, handleBoardChange, handleBoardsPaste, re
         </td>
       )}
       <td>
-        <span className="stock-price-label">{currency} / m</span>
+        <span className="stock-price-label">{currency} / m{' '}<span className="opt-mark">{text('formUi.optionalMark')}</span></span>
         <input
           aria-label={text('ui.priceLengthAria', { currency, length: board })}
           type="number"
           min="0"
           step="0.1"
-          placeholder={text('ui.optional')}
           value={price || ''}
           onChange={(e) => handlePriceChange(board, e.target.value)}
           className="cell-input stock-price-input"
