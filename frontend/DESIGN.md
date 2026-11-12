@@ -406,9 +406,10 @@ surface → 16px), rather than inventing an in-between value.
 offset-shadow block, solid ink, tinted): a step has one amber `.btn-order`,
 its secondary actions are solid ink (`.btn-primary`), and anything lesser is a
 `.btn-text` link. A solid button can never be mistaken for a field, which is
-hollow and recessed. The wallpaper, board, sheet and tile planners follow
-this rule; the model planner still uses outlined `.btn` for secondary actions
-until it is rebuilt onto section cards.
+hollow and recessed. Step 01 of every planner and all three steps of the
+model planner follow this rule. The later steps of board, sheet, tile and
+wallpaper (plan, cut and save) still use outlined `.btn` for back buttons and
+the save form; they are next.
 
 ### Cards / Containers
 
@@ -473,6 +474,10 @@ cost optimisation · No prices · Least waste"). A card's title is the section's
 heading, so the step's `h1` names the tool ("Board cutting"), not the first
 card. In a table, required columns carry the `*` and optional ones
 "(optional)" in the header; cells never use "Optional" as a placeholder.
+
+A page-wide setting is shown once, not inside each card: the 3D model page's
+catalogue choice sits above the cutlist cards (`CatalogueChoice`, with
+`showCatalogue={false}` on each `ProductPicker`).
 
 **Repeated cards (wallpaper walls).** A list of like things — the walls of a
 room — is one card each, with a letter badge, the name, a one-line summary

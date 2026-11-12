@@ -792,6 +792,14 @@ Object.assign(locale, {
     fixOpenings: "Fyll i eller rätta de markerade öppningarna, eller ta bort de tomma.",
     emptyMeansOff: "Lämna tomt för att stänga av kontrollen.",
   },
+  modelForm: {
+    partCount_one: "{{count}} del",
+    partCount_other: "{{count}} delar",
+    included: "Med",
+    notIncluded: "Inte med",
+    somePrices: "Vissa priser",
+    priced: "Prissatt",
+  },
   demo: {
     catalogue: {
       title: "Produktkatalog",

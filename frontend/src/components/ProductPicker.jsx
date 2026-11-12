@@ -62,6 +62,19 @@ const GenericPrompt = ({ kind }) => {
   );
 };
 
+/* The catalogue choice is one setting for the whole page. A page with several
+   pickers shows it once, here, and passes showCatalogue={false} to each picker. */
+export const CatalogueChoice = ({ kind = 'board' }) => {
+  const { catalogue } = useCatalogue();
+  const idBase = useId().replace(/:/g, '');
+  return (
+    <div data-testid="catalogue-choice">
+      <CatalogueLine catalogue={catalogue} idBase={idBase} kind={kind} />
+      {catalogue && !catalogue.country && <GenericPrompt kind={kind} />}
+    </div>
+  );
+};
+
 const spaced = (n) => Math.round(n).toLocaleString('sv-SE');
 const DETAIL_LABEL_KEYS = {
   species: 'productUi.species',
@@ -203,7 +216,7 @@ const DetailFields = ({ catalogue, value, onChange, idBase, label }) => {
 
 const ProductPicker = ({
   kind, value, onChange, dims, memoryKey, label,
-  onUseDimensions, onUseLengths, onUseFormat,
+  onUseDimensions, onUseLengths, onUseFormat, showCatalogue = true,
 }) => {
   const { t, i18n } = useTranslation();
   const { catalogue, failed, reload } = useCatalogue();
@@ -383,8 +396,8 @@ const ProductPicker = ({
         </div>
       )}
 
-      {showSearch && <CatalogueLine catalogue={catalogue} idBase={idBase} kind={kind} />}
-      {showSearch && catalogue && !catalogue.country && <GenericPrompt kind={kind} />}
+      {showSearch && showCatalogue && <CatalogueLine catalogue={catalogue} idBase={idBase} kind={kind} />}
+      {showSearch && showCatalogue && catalogue && !catalogue.country && <GenericPrompt kind={kind} />}
 
       {isAdmin && free && catalogue && (
         <SaveToCatalogue

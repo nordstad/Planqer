@@ -174,7 +174,7 @@ const ModelPartsPreview = ({ groups, selectedIds, highlightedGroupId, highlighte
     <section aria-label={t('modelUi.partsPreviewTitle')} style={{ marginBottom: '24px' }}>
       <div className="section-rule" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
         <h2 className="section-title">{t('modelUi.partsPreviewTitle')}</h2>
-        <button type="button" className="btn btn-sm" aria-expanded={open} onClick={() => setOpen((value) => !value)}>
+        <button type="button" className="btn-text" aria-expanded={open} onClick={() => setOpen((value) => !value)}>
           {t(open ? 'modelUi.hidePartsPreview' : 'modelUi.showPartsPreview')}
         </button>
       </div>

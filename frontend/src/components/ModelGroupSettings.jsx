@@ -13,6 +13,7 @@ import { Plus } from './icons';
 import { SAW_KERF_MIN, SAW_KERF_MAX } from '../utils/validators';
 import { StockSuggestions } from './ProductPicker';
 import { pricingState } from '../utils/modelGroups';
+import FormField, { SectionCard, SectionStatus } from './FormField';
 
 const PRICING_MESSAGE = {
   board: {
@@ -25,6 +26,8 @@ const PRICING_MESSAGE = {
     complete: 'modelUi.pricingComplete',
   },
 };
+
+const PRICING_SHORT = { none: 'boardUi.noPrices', partial: 'modelForm.somePrices', complete: 'modelForm.priced' };
 
 const ModelGroupSettings = ({ group, config, errors, label, currency, onChange, onApplyAll }) => {
   const { t } = useTranslation();
@@ -50,151 +53,137 @@ const ModelGroupSettings = ({ group, config, errors, label, currency, onChange, 
     onChange({ boards: next });
   };
 
+  const hasErrors = errors.kerf || errors.width || errors.height || errors.boards?.some(Boolean);
+
   return (
-    <section style={{ marginBottom: '30px' }} aria-label={label} data-testid={`group-settings-${idBase}`}>
-      <div className="section-rule">
-        <h2 className="section-title">{label}</h2>
-        <span className="folio">{group.kind === 'board' ? t('legacy.stockAvailable') : t('legacy.sheetFrom')}</span>
-      </div>
-
-      {group.kind === 'board' ? (
-        <>
-          <div className="stock-table-wrap" style={{ marginTop: '10px' }}>
-            <table className="cat-table">
-              <thead>
-                <tr>
-                  <th>{t('workflow.lengthMm')}</th>
-                  <th>{t('legacy.metres')}</th>
-                  <th>{t('ui.stockPrice')}</th>
-                  <th aria-label={t('common.remove')} />
-                </tr>
-              </thead>
-              <tbody>
-                {config.boards.map((row, index) => (
-                  <BoardLengthRow
-                    key={index}
-                    board={row.length}
-                    index={index}
-                    handleBoardChange={(i, value) => setBoardRow(i, { length: value })}
-                    handleBoardsPaste={pasteBoards}
-                    removeBoard={removeBoard}
-                    error={errors.boards[index]}
-                    canRemove={config.boards.length > 1}
-                    inPlan={null}
-                    currency={currency}
-                    price={row.price}
-                    handlePriceChange={(_, value) => setBoardRow(index, { price: value })}
-                  />
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <button type="button" className="btn" style={{ marginTop: '12px' }} onClick={addBoard}>
-            <Plus /> {t('workflow.addStockLength')}
-          </button>
-          <StockSuggestions
-            selection={config.product}
-            onUseLengths={(lengths) => onChange({ boards: lengths.map((length) => ({ length: String(length), price: '' })) })}
-          />
-
-          <div className="flex items-center gap-2" style={{ marginTop: '18px' }}>
-            <label className="form-label" htmlFor={`${idBase}-kerf`} style={{ marginBottom: 0 }}>{t('legacy.sawBlade')}</label>
-            <input
-              id={`${idBase}-kerf`}
-              type="number"
-              min={SAW_KERF_MIN}
-              max={SAW_KERF_MAX}
-              step="0.1"
-              value={config.kerf}
-              onChange={(e) => onChange({ kerf: e.target.value })}
-              className={`form-input kerf-input ${errors.kerf ? 'form-input-error' : ''}`}
-              style={{ width: '78px' }}
+    <SectionCard
+      id={`group-${idBase}`}
+      title={label}
+      summary={group.kind === 'board' ? t('legacy.stockAvailable') : t('legacy.sheetFrom')}
+      status={hasErrors ? <SectionStatus error={t('formUi.checkValues')} />
+        : state === 'complete' ? <SectionStatus done={t(PRICING_SHORT[state])} />
+          : <SectionStatus todo={t(PRICING_SHORT[state])} />}
+      className="model-group-settings"
+    >
+      <div data-testid={`group-settings-${idBase}`}>
+        {group.kind === 'board' ? (
+          <>
+            <div className="stock-table-wrap">
+              <table className="cat-table">
+                <thead>
+                  <tr>
+                    <th>{t('workflow.lengthMm')}<span className="req-mark" aria-hidden="true" /></th>
+                    <th>{t('legacy.metres')}</th>
+                    <th>{t('ui.stockPrice')}{' '}<span className="opt-mark">{t('formUi.optionalMark')}</span></th>
+                    <th aria-label={t('common.remove')} />
+                  </tr>
+                </thead>
+                <tbody>
+                  {config.boards.map((row, index) => (
+                    <BoardLengthRow
+                      key={index}
+                      board={row.length}
+                      index={index}
+                      handleBoardChange={(i, value) => setBoardRow(i, { length: value })}
+                      handleBoardsPaste={pasteBoards}
+                      removeBoard={removeBoard}
+                      error={errors.boards[index]}
+                      canRemove={config.boards.length > 1}
+                      inPlan={null}
+                      currency={currency}
+                      price={row.price}
+                      handlePriceChange={(_, value) => setBoardRow(index, { price: value })}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <button type="button" className="btn-primary" style={{ marginTop: '14px' }} onClick={addBoard}>
+              <Plus /> {t('workflow.addStockLength')}
+            </button>
+            <StockSuggestions
+              selection={config.product}
+              onUseLengths={(lengths) => onChange({ boards: lengths.map((length) => ({ length: String(length), price: '' })) })}
             />
-            <span style={{ fontSize: '13.5px', color: 'var(--ink-3)', fontWeight: 600 }}>mm</span>
-          </div>
-          {errors.kerf && <p className="text-danger text-[12.5px] font-semibold" style={{ marginTop: '5px' }}>{errors.kerf}</p>}
-        </>
-      ) : (
-        <table className="cat-table" style={{ marginTop: '10px' }}>
-          <tbody>
-            <tr>
-              <td style={{ textAlign: 'left' }}>{t('legacy.width')}</td>
-              <td>
+            <div style={{ marginTop: '18px' }}>
+              <FormField label={t('legacy.sawBlade')} unit="mm" required>
+                <input
+                  id={`${idBase}-kerf`}
+                  type="number"
+                  min={SAW_KERF_MIN}
+                  max={SAW_KERF_MAX}
+                  step="0.1"
+                  value={config.kerf}
+                  onChange={(e) => onChange({ kerf: e.target.value })}
+                  className={`form-input kerf-input dimension-input ${errors.kerf ? 'form-input-error' : ''}`}
+                />
+              </FormField>
+              {errors.kerf && <p className="text-danger text-[12.5px] font-semibold" style={{ marginTop: '5px' }}>{errors.kerf}</p>}
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="grid gap-x-6 gap-y-4 md:grid-cols-2">
+              <FormField label={t('legacy.width')} unit="mm" required>
                 <input
                   type="number" step="0.1" min="100" max="10000"
                   value={config.sheetWidth}
                   onChange={(e) => onChange({ sheetWidth: e.target.value })}
-                  className={`cell-input dimension-input ${errors.width ? 'is-error' : ''}`}
+                  className={`form-input dimension-input ${errors.width ? 'form-input-error' : ''}`}
                   aria-label={`${t('ui.sheetWidthAria')} — ${label}`}
                 />
-              </td>
-              <td style={{ width: '40px', color: 'var(--ink-3)' }}>mm</td>
-            </tr>
-            <tr>
-              <td style={{ textAlign: 'left' }}>{t('legacy.height')}</td>
-              <td>
+              </FormField>
+              <FormField label={t('legacy.height')} unit="mm" required>
                 <input
                   type="number" step="0.1" min="100" max="10000"
                   value={config.sheetHeight}
                   onChange={(e) => onChange({ sheetHeight: e.target.value })}
-                  className={`cell-input dimension-input ${errors.height ? 'is-error' : ''}`}
+                  className={`form-input dimension-input ${errors.height ? 'form-input-error' : ''}`}
                   aria-label={`${t('ui.sheetHeightAria')} — ${label}`}
                 />
-              </td>
-              <td style={{ color: 'var(--ink-3)' }}>mm</td>
-            </tr>
-            <tr>
-              <td style={{ textAlign: 'left' }}>{t('legacy.kerf')}</td>
-              <td>
+              </FormField>
+              <FormField label={t('legacy.kerf')} unit="mm" required>
                 <input
                   type="number" step="0.1" min={SAW_KERF_MIN} max="50"
                   value={config.kerf}
                   onChange={(e) => onChange({ kerf: e.target.value })}
-                  className={`cell-input dimension-input ${errors.kerf ? 'is-error' : ''}`}
+                  className={`form-input dimension-input ${errors.kerf ? 'form-input-error' : ''}`}
                   aria-label={`${t('modelUi.sheetKerfAria')} — ${label}`}
                 />
-              </td>
-              <td style={{ color: 'var(--ink-3)' }}>mm</td>
-            </tr>
-            <tr>
-              <td style={{ textAlign: 'left' }}>{t('ui.pricePerSheet', { currency })}</td>
-              <td>
+              </FormField>
+              <FormField label={t('ui.pricePerSheet', { currency })} optional>
                 <input
                   type="number" min="0" step="0.01"
                   value={config.sheetPrice}
                   onChange={(e) => onChange({ sheetPrice: e.target.value })}
-                  className="cell-input dimension-input"
-                  placeholder={t('ui.optional')}
+                  className="form-input dimension-input"
                   aria-label={`${t('ui.pricePerSheet', { currency })} — ${label}`}
                 />
-              </td>
-              <td />
-            </tr>
-          </tbody>
-        </table>
-      )}
-      {group.kind === 'sheet' && (
-        <StockSuggestions
-          selection={config.product}
-          onUseFormat={(format) => onChange({ sheetWidth: String(format.width), sheetHeight: String(format.height) })}
-        />
-      )}
-      {group.kind === 'sheet' && (errors.width || errors.height || errors.kerf) && (
-        <p className="text-danger text-[12.5px] font-semibold" style={{ marginTop: '10px' }}>
-          {errors.width || errors.height || errors.kerf}
+              </FormField>
+            </div>
+            <StockSuggestions
+              selection={config.product}
+              onUseFormat={(format) => onChange({ sheetWidth: String(format.width), sheetHeight: String(format.height) })}
+            />
+            {(errors.width || errors.height || errors.kerf) && (
+              <p className="text-danger text-[12.5px] font-semibold" style={{ marginTop: '10px' }}>
+                {errors.width || errors.height || errors.kerf}
+              </p>
+            )}
+          </>
+        )}
+
+        <p className="synthetic" style={{ marginTop: '12px' }} role="status" data-testid={`pricing-state-${idBase}`}>
+          {t(PRICING_MESSAGE[group.kind][state])}
         </p>
-      )}
 
-      <p className="synthetic" style={{ marginTop: '12px' }} role="status" data-testid={`pricing-state-${idBase}`}>
-        {t(PRICING_MESSAGE[group.kind][state])}
-      </p>
-
-      {onApplyAll && (
-        <button type="button" className="btn btn-sm" style={{ marginTop: '10px' }} onClick={onApplyAll}>
-          {t(group.kind === 'board' ? 'modelUi.applyAllBoards' : 'modelUi.applyAllSheets')}
-        </button>
-      )}
-    </section>
+        {onApplyAll && (
+          <button type="button" className="btn-text" style={{ marginTop: '6px' }} onClick={onApplyAll}>
+            {t(group.kind === 'board' ? 'modelUi.applyAllBoards' : 'modelUi.applyAllSheets')}
+          </button>
+        )}
+      </div>
+    </SectionCard>
   );
 };
 

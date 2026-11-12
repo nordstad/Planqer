@@ -790,6 +790,14 @@ Object.assign(locale, {
     fixOpenings: "Fyll ut eller rett de markerte åpningene, eller fjern de tomme.",
     emptyMeansOff: "La feltet stå tomt for å slå av kontrollen.",
   },
+  modelForm: {
+    partCount_one: "{{count}} del",
+    partCount_other: "{{count}} deler",
+    included: "Med",
+    notIncluded: "Ikke med",
+    somePrices: "Noen priser",
+    priced: "Priset",
+  },
   demo: {
     catalogue: {
       title: "Produktkatalog",

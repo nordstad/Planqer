@@ -712,6 +712,14 @@ Object.assign(locale, {
     fixOpenings: "Fill in or correct the highlighted openings, or remove the empty ones.",
     emptyMeansOff: "Leave it empty to turn the check off.",
   },
+  modelForm: {
+    partCount_one: "{{count}} part",
+    partCount_other: "{{count}} parts",
+    included: "Included",
+    notIncluded: "Not included",
+    somePrices: "Some prices",
+    priced: "Priced",
+  },
   demo: {
     catalogue: {
       title: "Catalogue",
