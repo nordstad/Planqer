@@ -19,6 +19,7 @@ from planqer.wallpaper.validation import validate_wallpaper_request
 # that one cut decides where every seam, and so every corner piece, falls.
 _FIRST_WIDTH_STEPS = 8
 _FINE_WIDTH_STEP = 5
+_EPSILON = 1e-6
 
 
 def create_wallpaper_plan(request: WallpaperPlanRequest) -> dict:
@@ -36,6 +37,7 @@ def create_wallpaper_plan(request: WallpaperPlanRequest) -> dict:
     runs, room_notes = connected_runs(request.room, start_wall)
 
     minimum_corner = request.minimum_corner_piece
+    style = request.start_style
 
     def lay(
         first_widths: tuple[float, ...],
@@ -78,21 +80,24 @@ def create_wallpaper_plan(request: WallpaperPlanRequest) -> dict:
         {*range(_FINE_WIDTH_STEP, int(roll_width), _FINE_WIDTH_STEP), *options},
         reverse=True,
     )
+
+    def lay_one(run: ConnectedRun, width: float):
+        return lay_run_strips(
+            walls,
+            run.wall_indices,
+            run.corners,
+            roll_width,
+            allowances,
+            minimums,
+            first_strip_width=width,
+            **_end_overlap(run, allowances),
+        )
+
     per_run_best = tuple(
         min(
             fine_options,
             key=lambda width, run=run: _run_rank(
-                lay_run_strips(
-                    walls,
-                    run.wall_indices,
-                    run.corners,
-                    roll_width,
-                    allowances,
-                    minimums,
-                    first_strip_width=width,
-                    **_end_overlap(run, allowances),
-                ),
-                minimum_corner,
+                lay_one(run, width), minimum_corner, style, roll_width
             ),
         )
         for run in runs
@@ -118,31 +123,13 @@ def create_wallpaper_plan(request: WallpaperPlanRequest) -> dict:
             (first_widths, strips, notes, narrowest, plan, narrowest_corner)
         )
     candidates.sort(
-        key=lambda item: (
-            # A width the user asked for wins over the automatic ranking.
-            bool(preferred) and not all(width == preferred for width in item[0]),
-            bool(item[2]),
-            _corner_shortfall(item[5], minimum_corner),
-            item[4]["rolls_needed"],
-            -item[5],
-            -item[3],
-            item[4]["candidate_waste"],
+        key=lambda item: _candidate_rank(
+            item, preferred, minimum_corner, style, roll_width
         )
     )
-    start_candidates = [
-        {
-            "wall_index": start_wall,
-            "direction": request.start.direction if request.start else "clockwise",
-            "offset": request.start.offset if request.start else 0,
-            "first_strip_widths": list(first_widths),
-            "rolls_needed": plan["rolls_needed"],
-            "waste": plan["candidate_waste"],
-            "narrowest_strip": narrowest,
-            "feasible": not notes,
-            "seam_notes": notes,
-        }
-        for first_widths, _, notes, narrowest, plan, _ in candidates
-    ]
+    start_candidates = _start_candidates(
+        candidates, runs, roll_width, minimum_corner, start_wall, request
+    )
     selected = candidates[0][4]
     selected.pop("candidate_waste")
     warnings = warnings + _corner_piece_warnings(
@@ -155,6 +142,9 @@ def create_wallpaper_plan(request: WallpaperPlanRequest) -> dict:
         "closure": closure.as_dict() if closure else None,
         "corner_quality": corner_quality(candidates[0][1], walls, minimum_corner),
         "start_candidates": start_candidates,
+        "start": _start_summary(
+            candidates, runs, walls, roll_width, minimum_corner, request, lay_one
+        ),
         "corners": [corner.model_dump(mode="json") for corner in request.room.corners],
     }
 
@@ -221,18 +211,199 @@ def _corner_piece_warnings(strips, walls, minimum: float) -> list[str]:
     ]
 
 
-def _run_rank(layout, minimum_corner: float) -> tuple:
+def _cut_strips(strips, roll_width: float) -> int:
+    """Strips that must be trimmed lengthwise because they are narrower than the roll."""
+    return sum(1 for strip in strips if strip.width < roll_width - _EPSILON)
+
+
+def _edge_shortfall(narrowest: float, minimum: float, has_strips: bool) -> float:
+    """How far the narrowest cut strip falls below a piece that is comfortable to hang."""
+    return _corner_shortfall(narrowest, minimum) if has_strips else 0.0
+
+
+def _run_rank(
+    layout, minimum_corner: float, style: str = "even", roll_width: float = 0
+) -> tuple:
+    """Order first-strip widths for one run, best first.
+
+    ``even`` is the original balance of pieces at both ends. ``recommended``
+    first rules out layouts that leave a piece too narrow to hang, then prefers
+    fewer strips and fewer lengthwise cuts. A full-width first strip leaves
+    only the last strip to cut, so it wins whenever it is acceptable.
+    """
     precut_area = sum(
         strip.precut_width * strip.precut_length for strip in layout.strips
     )
-    return (
+    if style == "even":
+        return (
+            bool(layout.notes),
+            _corner_shortfall(layout.narrowest_corner, minimum_corner),
+            len(layout.strips),
+            -layout.narrowest_corner,
+            -layout.narrowest,
+            precut_area,
+        )
+    acceptable = (
         bool(layout.notes),
         _corner_shortfall(layout.narrowest_corner, minimum_corner),
+        _edge_shortfall(layout.narrowest, minimum_corner, bool(layout.strips)),
+    )
+    ordering = (
         len(layout.strips),
+        _cut_strips(layout.strips, roll_width),
         -layout.narrowest_corner,
         -layout.narrowest,
         precut_area,
     )
+    return acceptable + ordering
+
+
+def _candidate_rank(
+    item, preferred, minimum_corner: float, style: str, roll_width: float
+) -> tuple:
+    """Order whole-room candidates, best first. A width the user asked for wins."""
+    first_widths, strips, notes, narrowest, plan, narrowest_corner = item
+    asked_for = bool(preferred) and not all(
+        width == preferred for width in first_widths
+    )
+    corner = _corner_shortfall(narrowest_corner, minimum_corner)
+    if style == "even":
+        return (
+            asked_for,
+            bool(notes),
+            corner,
+            plan["rolls_needed"],
+            -narrowest_corner,
+            -narrowest,
+            plan["candidate_waste"],
+        )
+    acceptable = (
+        asked_for,
+        bool(notes),
+        corner,
+        _edge_shortfall(narrowest, minimum_corner, bool(strips)),
+    )
+    return acceptable + (
+        plan["rolls_needed"],
+        _cut_strips(strips, roll_width),
+        -narrowest_corner,
+        -narrowest,
+        plan["candidate_waste"],
+    )
+
+
+def _is_acceptable(layout, minimum_corner: float) -> bool:
+    return (
+        not layout.notes
+        and not _corner_shortfall(layout.narrowest_corner, minimum_corner)
+        and not _edge_shortfall(layout.narrowest, minimum_corner, bool(layout.strips))
+    )
+
+
+def _usable(item, minimum_corner: float) -> bool:
+    """A candidate with no seam problem and no piece too narrow to hang."""
+    _, strips, notes, narrowest, _, narrowest_corner = item
+    return (
+        not notes
+        and not _corner_shortfall(narrowest_corner, minimum_corner)
+        and not _edge_shortfall(narrowest, minimum_corner, bool(strips))
+    )
+
+
+def _start_candidates(
+    candidates, runs, roll_width: float, minimum_corner: float, start_wall, request
+) -> list[dict]:
+    """Describe every start tried, with the facts that decide between them."""
+    usable = [item for item in candidates if _usable(item, minimum_corner)]
+    fewest_rolls = min((item[4]["rolls_needed"] for item in usable), default=None)
+    fewest_cuts = min(
+        (_cut_strips(item[1], roll_width) for item in usable), default=None
+    )
+    described = []
+    for first_widths, strips, notes, narrowest, plan, _ in candidates:
+        full_runs = sum(width == roll_width for width in first_widths)
+        cuts = _cut_strips(strips, roll_width)
+        is_usable = any(item[0] == first_widths for item in usable)
+        tags = []
+        if is_usable and plan["rolls_needed"] == fewest_rolls:
+            tags.append("fewest_rolls")
+        if is_usable and cuts == fewest_cuts:
+            tags.append("fewest_cuts")
+        if is_usable and full_runs == len(runs):
+            tags.append("full_width_start")
+        described.append(
+            {
+                "wall_index": start_wall,
+                "direction": request.start.direction if request.start else "clockwise",
+                "offset": request.start.offset if request.start else 0,
+                "first_strip_widths": list(first_widths),
+                "rolls_needed": plan["rolls_needed"],
+                "waste": plan["candidate_waste"],
+                "narrowest_strip": narrowest,
+                "feasible": not notes,
+                "seam_notes": notes,
+                "cut_strips": cuts,
+                "full_width_runs": full_runs,
+                "runs": len(runs),
+                "tags": tags,
+            }
+        )
+    return described
+
+
+def _fallback_reason(full_layout, minimum_corner: float, style: str) -> str:
+    """Why a run does not start with a full-width strip."""
+    if not _is_acceptable(full_layout, minimum_corner):
+        return "narrow_piece"
+    return "style" if style == "even" else "saves_material"
+
+
+def _start_summary(
+    candidates, runs, walls, roll_width: float, minimum_corner: float, request, lay_one
+) -> dict:
+    """Say how the chosen start was reached and what a full-width start would cost."""
+    first_widths, strips, _, _, plan, _ = candidates[0]
+    not_full = [
+        (run, width) for run, width in zip(runs, first_widths) if width != roll_width
+    ]
+    fallback = [
+        {
+            "wall": walls[run.wall_indices[0]].name,
+            "reason": _fallback_reason(
+                lay_one(run, roll_width), minimum_corner, request.start_style
+            ),
+        }
+        for run, _ in not_full
+    ]
+    all_full = next(
+        (
+            item
+            for item in candidates
+            if all(w == roll_width for w in item[0]) and _usable(item, minimum_corner)
+        ),
+        None,
+    )
+    extra_rolls = None
+    if all_full is not None and not_full:
+        extra_rolls = all_full[4]["rolls_needed"] - plan["rolls_needed"]
+    cheapest = min(
+        (
+            item[4]["rolls_needed"]
+            for item in candidates
+            if _usable(item, minimum_corner)
+        ),
+        default=plan["rolls_needed"],
+    )
+    return {
+        "style": request.start_style,
+        "asked_for": bool(request.start and request.start.first_strip_width),
+        "runs": len(runs),
+        "full_width_runs": len(runs) - len(not_full),
+        "cut_strips": _cut_strips(strips, roll_width),
+        "fallback": fallback,
+        "full_width_extra_rolls": extra_rolls,
+        "rolls_saved_elsewhere": max(0, plan["rolls_needed"] - cheapest),
+    }
 
 
 def _plan_strips(

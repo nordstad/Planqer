@@ -1,14 +1,15 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 
-vi.mock('../contexts/AuthContext', () => ({ useAuth: () => ({ user: null }) }));
+const auth = vi.hoisted(() => ({ user: null }));
+vi.mock('../contexts/AuthContext', () => ({ useAuth: () => auth }));
 vi.mock('./CatalogPage', () => ({ default: ({ children }) => <div>{children}</div> }));
-vi.mock('../utils/api', async (importOriginal) => ({ ...(await importOriginal()), createProjectGroup: vi.fn(), getProjectGroups: vi.fn(), createWallpaperPlan: vi.fn(), saveWallpaperProject: vi.fn() }));
+vi.mock('../utils/api', async (importOriginal) => ({ ...(await importOriginal()), createProjectGroup: vi.fn(), getProjectGroups: vi.fn(), createWallpaperPlan: vi.fn(), saveWallpaperProject: vi.fn(), getWallpaperProjects: vi.fn(), getUserSettings: vi.fn().mockResolvedValue({}) }));
 
 const { default: WallpaperOptimizer } = await import('./WallpaperOptimizer');
 const { default: i18n } = await import('../i18n');
-const { createProjectGroup, createWallpaperPlan, saveWallpaperProject } = await import('../utils/api');
+const { createProjectGroup, createWallpaperPlan, getProjectGroups, getUserSettings, getWallpaperProjects, saveWallpaperProject } = await import('../utils/api');
 
 const openCorners = () => screen.getAllByRole('button', { name: /^Change corner/ }).forEach((button) => fireEvent.click(button));
 
@@ -227,6 +228,65 @@ const planFixture = {
   rolls: [{ number: 1, cuts: [], offcut_length: 0 }],
 };
 
+describe('WallpaperOptimizer start style', () => {
+  const sentStyle = async (choose) => {
+    createWallpaperPlan.mockResolvedValue(planFixture);
+    render(<MemoryRouter><WallpaperOptimizer /></MemoryRouter>);
+    fireEvent.change(screen.getByLabelText(/^Name/i), { target: { value: 'Willow' } });
+    fireEvent.change(screen.getByLabelText(/Manufacturer/i), { target: { value: 'Example' } });
+    choose?.();
+    fireEvent.click(screen.getByRole('button', { name: /Measure the room →/ }));
+    await screen.findByRole('heading', { name: 'Measure the room' });
+    fireEvent.click(screen.getByRole('button', { name: /Create plan/ }));
+    await screen.findByRole('heading', { name: 'Your wallpaper plan' });
+    return createWallpaperPlan.mock.calls.at(-1)[0].start_style;
+  };
+
+  it('recommends the start by default', async () => {
+    expect(await sentStyle()).toBe('recommended');
+  });
+
+  it('sends even when even pieces are chosen', async () => {
+    expect(await sentStyle(() => fireEvent.change(screen.getByRole('combobox', { name: /^Start each wall with/ }), { target: { value: 'even' } }))).toBe('even');
+  });
+
+  it('names both ways to start', () => {
+    render(<MemoryRouter><WallpaperOptimizer /></MemoryRouter>);
+
+    const options = within(screen.getByRole('combobox', { name: /^Start each wall with/ })).getAllByRole('option').map((option) => option.textContent);
+
+    expect(options).toEqual(['Recommended (fewest rolls and cuts)', 'Even pieces at both ends']);
+  });
+});
+
+describe('WallpaperOptimizer reopening a saved plan', () => {
+  const reopen = async (options) => {
+    auth.user = { email: 'a@example.com' };
+    getUserSettings.mockResolvedValue({});
+    getProjectGroups.mockResolvedValue([]);
+    getWallpaperProjects.mockResolvedValue([{
+      id: 'w1', name: 'Hall', project_group_id: null,
+      wallpaper_data: { name: 'Willow', manufacturer: 'Example', roll_width: 530, roll_length: 10050, repeat: 0 },
+      room_data: { walls: [{ name: 'A', profile: 'rectangle', width_top: 3000, width_middle: 3000, width_bottom: 3000, height_left: 2400, height_middle: 2400, height_right: 2400, cutouts: [] }], corners: [], closed: false },
+      options_data: options, plan_result: planFixture,
+    }]);
+    render(<MemoryRouter initialEntries={['/wallpaper?edit=w1']}><WallpaperOptimizer /></MemoryRouter>);
+    await screen.findByRole('heading', { name: 'Your wallpaper plan' });
+    fireEvent.click(screen.getByRole('button', { name: /Wallpaper/ }));
+    return screen.getByRole('combobox', { name: /^Start each wall with/ });
+  };
+
+  afterEach(() => { auth.user = null; });
+
+  it('keeps the start a plan was saved with', async () => {
+    expect(await reopen({ start_style: 'recommended' })).toHaveValue('recommended');
+  });
+
+  it('reopens a plan saved before the start style existed with even pieces, as it was planned', async () => {
+    expect(await reopen({ corner_overlap: '15' })).toHaveValue('even');
+  });
+});
+
 describe('WallpaperOptimizer plan step', () => {
   const openPlanStep = async (plan = planFixture) => {
     createWallpaperPlan.mockResolvedValue(plan);
@@ -277,6 +337,53 @@ describe('WallpaperOptimizer plan step', () => {
 
     await screen.findByTestId('start-options');
     expect(createWallpaperPlan).toHaveBeenLastCalledWith(expect.objectContaining({ start: { wall_index: 0, first_strip_width: 331 } }));
+  });
+
+  it('shows how the start was chosen, what each option costs and which one is best at what', async () => {
+    await openPlanStep({
+      ...planFixture,
+      corner_quality: { minimum: 100, smallest: null, short_corners: [] },
+      start: { style: 'recommended', asked_for: false, runs: 2, full_width_runs: 1, cut_strips: 3, fallback: [{ wall: 'B', reason: 'narrow_piece' }], full_width_extra_rolls: null },
+      start_candidates: [
+        { wall_index: 0, first_strip_widths: [530, 275], rolls_needed: 5, narrowest_strip: 160, feasible: true, cut_strips: 3, full_width_runs: 1, runs: 2, tags: ['fewest_rolls', 'fewest_cuts'] },
+        { wall_index: 0, first_strip_widths: [275, 275], rolls_needed: 5, narrowest_strip: 275, feasible: true, cut_strips: 4, full_width_runs: 0, runs: 2, tags: ['fewest_rolls'] },
+      ],
+    });
+
+    expect(screen.getByTestId('start-summary')).toHaveTextContent('1 of 2 wall runs start with a full-width strip.');
+    expect(screen.getByTestId('start-options')).toHaveTextContent('B: a full-width start would leave a piece under 100 mm');
+    expect(screen.getByTestId('start-options')).toHaveTextContent('Full-width start on 1 of 2 wall runs');
+    expect(screen.getByTestId('start-options')).toHaveTextContent('5 rolls · narrowest 160 mm · 3 strips cut lengthwise');
+    expect(screen.getByTestId('start-options')).toHaveTextContent('Fewest rolls · Fewest cuts');
+    expect(screen.getAllByRole('button', { name: 'Use' })).toHaveLength(1);
+  });
+
+  it('says when starting every wall with a full-width strip would cost more rolls', async () => {
+    await openPlanStep({
+      ...planFixture,
+      start: { style: 'recommended', asked_for: false, runs: 1, full_width_runs: 0, cut_strips: 2, fallback: [{ wall: 'A', reason: 'saves_material' }], full_width_extra_rolls: 1 },
+    });
+
+    expect(screen.getByTestId('start-summary')).toHaveTextContent('No wall run starts with a full-width strip.');
+    expect(screen.getByTestId('start-options')).toHaveTextContent('A: another start needs less wallpaper.');
+    expect(screen.getByTestId('start-extra-rolls')).toHaveTextContent('would need 1 more roll.');
+  });
+
+  it('says when another start would need fewer rolls than the one that was forced', async () => {
+    await openPlanStep({
+      ...planFixture,
+      start: { style: 'recommended', asked_for: true, runs: 1, full_width_runs: 0, cut_strips: 2, fallback: [], full_width_extra_rolls: null, rolls_saved_elsewhere: 2 },
+    });
+
+    expect(screen.getByTestId('start-summary')).toHaveTextContent('first-strip width you chose');
+    expect(screen.getByTestId('start-saves-rolls')).toHaveTextContent('Another start needs 2 fewer rolls.');
+  });
+
+  it('still shows a plan saved before the start summary existed', async () => {
+    await openPlanStep();
+
+    expect(screen.queryByTestId('start-summary')).not.toBeInTheDocument();
+    expect(screen.getAllByText(/narrowest 405 mm$/).length).toBeGreaterThan(0);
   });
 
   it('creates the project when the plan is saved, with no separate create step', async () => {
