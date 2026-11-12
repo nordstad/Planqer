@@ -63,10 +63,12 @@ dev = [
 concurrency = ["thread", "greenlet"]
 
 [tool.ruff.lint]
+extend-select = ["UP"]
 # FastAPI dependencies are intentionally declared as parameter defaults, and
 # these handlers deliberately catch/log broad failures at API boundaries.
 # Database timestamps are naive because the schema uses timezone=False.
-ignore = ["B008", "BLE001", "DTZ005"]
+# (str, Enum) classes stay as they are: StrEnum changes str()/format() output.
+ignore = ["B008", "BLE001", "DTZ005", "UP042"]
 
 [tool.pytest.ini_options]
 markers = [

@@ -81,8 +81,6 @@ the user to hard-refresh (`⌘⇧R`). A Vite `Failed to resolve import` error fr
 - For every user-visible frontend change, review `frontend/DESIGN.md`. Update
   it in the same change when design-system, interaction, or intentional-
   exception rules change.
-- Use built-in `dict`, `list`, and `tuple` generics, not `Dict`, `List`, or
-  `Tuple` from `typing`.
 - This repository is hosted on GitHub: use `gh` for pull requests, issues, and
   releases.
 
