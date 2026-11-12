@@ -58,6 +58,14 @@ groups, and admin endpoints require authentication.
 | `GET /algorithms` | List available 1D optimization algorithms. |
 | `GET /sheet-algorithms` | List available 2D packing strategies. |
 
+`POST /api/wallpaper-plans` accepts an optional `start_style` that decides where
+each wall run starts: `"recommended"` (the default) favours the fewest rolls and
+lengthwise cuts, which usually means a full-width first strip, and `"even"`
+balances the first and last strip. A `start.first_strip_width` overrides both.
+The response adds a `start` summary and, on every entry of `start_candidates`,
+its `cut_strips`, `full_width_runs` and `tags`. See
+[Wallpaper planning](../guide/wallpaper.md#where-the-first-strip-goes).
+
 ### Example: board cutting
 
 ```json

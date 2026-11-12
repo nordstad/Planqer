@@ -50,8 +50,14 @@ def _validate_cutout_inside_wall(cutout: Cutout, wall_name: str, outline) -> Non
         raise ValueError(f"Cutout is outside wall '{wall_name}'")
 
 
+# Doors and openings stand on the floor, so touching the bottom edge is normal.
+_FLOOR_STANDING = {"door", "opening"}
+
+
 def _is_near_wall_edge(cutout: Cutout, width: float, height: float) -> bool:
     left, bottom, right, top = cutout_bounds(cutout)
+    if cutout.kind in _FLOOR_STANDING:
+        bottom = height
     return min(left, bottom, width - right, height - top) < 10
 
 

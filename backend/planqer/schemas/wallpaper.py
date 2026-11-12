@@ -219,6 +219,10 @@ class WallpaperPlanRequest(WallpaperSchema):
     safety_margin_percent: float = 10
     minimum_strip_width: float = 50
     minimum_corner_piece: float = 100
+    # "recommended" weighs rolls, lengthwise cuts and hangable piece widths,
+    # which favours a full-width first strip; "even" balances the pieces at
+    # both ends instead.
+    start_style: Literal["recommended", "even"] = "recommended"
     start: StartPosition | None = None
     anchor: PatternAnchor | None = None
 
