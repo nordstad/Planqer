@@ -281,6 +281,8 @@ const locale = {
 Object.assign(locale.projectUi, {
   modify: 'Endre', openPlan: 'Åpne plan', moreActions: 'Flere handlinger', estimatedCost: 'ca. {{cost}} {{currency}}',
   selectPlan: 'Velg planen "{{name}}"',
+  downloadSvg: 'Last ned SVG',
+  downloadPng: 'Last ned PNG',
   printOne: 'Skriv ut',
   printDiagrams: 'Skriv ut diagrammer ({{count}})',
   printShoppingList: 'Å kjøpe',
@@ -730,7 +732,7 @@ Object.assign(locale, {
     chosen: "Valgt",
     use: "Bruk",
     backToMeasurements: "Tilbake til målene",
-    backToCutSheets: "Tilbake til kuttarkene",
+    backToCutSheets: "Tilbake til gjennomgangen",
     correctRoomMeasurements: "Rett opp målene for rommet for å lage kuttark.",
     cutTitle: "Kutt én vegg om gangen",
     cutLede: "Velg en vegg, kutt de merkede stykkene i rekkefølgen på rullen, og bruk deretter målene nedenfor for hver åpning.",

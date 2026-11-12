@@ -260,6 +260,8 @@ const locale = {
 Object.assign(locale.projectUi, {
   modify: 'Modify', openPlan: 'Open plan', moreActions: 'More actions', estimatedCost: 'est. {{cost}} {{currency}}',
   selectPlan: 'Select plan "{{name}}"',
+  downloadSvg: 'Download SVG',
+  downloadPng: 'Download PNG',
   printOne: 'Print',
   printDiagrams: 'Print diagrams ({{count}})',
   printShoppingList: 'What to buy',
@@ -652,7 +654,7 @@ Object.assign(locale, {
     chosen: "Chosen",
     use: "Use",
     backToMeasurements: "Back to measurements",
-    backToCutSheets: "Back to the cut sheets",
+    backToCutSheets: "Back to the review",
     correctRoomMeasurements: "Correct the room measurements to prepare cut sheets.",
     cutTitle: "Cut one wall at a time",
     cutLede: "Select a wall, cut its labelled pieces in roll order, then use the measurements below for each opening.",

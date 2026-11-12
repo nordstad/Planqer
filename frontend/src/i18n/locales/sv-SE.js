@@ -283,6 +283,8 @@ const locale = {
 Object.assign(locale.projectUi, {
   modify: 'Ändra', openPlan: 'Öppna plan', moreActions: 'Fler åtgärder', estimatedCost: 'ca {{cost}} {{currency}}',
   selectPlan: 'Välj planen "{{name}}"',
+  downloadSvg: 'Ladda ner SVG',
+  downloadPng: 'Ladda ner PNG',
   printOne: 'Skriv ut',
   printDiagrams: 'Skriv ut diagram ({{count}})',
   printShoppingList: 'Att köpa',
@@ -732,7 +734,7 @@ Object.assign(locale, {
     chosen: "Vald",
     use: "Använd",
     backToMeasurements: "Tillbaka till måtten",
-    backToCutSheets: "Tillbaka till skärbladen",
+    backToCutSheets: "Tillbaka till granskningen",
     correctRoomMeasurements: "Rätta rummets mått för att förbereda skärblad.",
     cutTitle: "Skär en vägg i taget",
     cutLede: "Välj en vägg, skär de märkta bitarna i ordning på rullen och använd sedan måtten nedan för varje öppning.",
