@@ -204,7 +204,7 @@ template with every option is [`.env.example`](.env.example); see
 #### Upgrading
 
 Back up first, then pull and recreate in the same folder. To pin a version, set
-`PLANQER_VERSION` in `.env` (for example `PLANQER_VERSION=0.11.0`):
+`PLANQER_VERSION` in `.env` (for example `PLANQER_VERSION=0.12.0`):
 
 ```bash
 docker compose -f docker-compose.release.yml exec backend planqer backup
