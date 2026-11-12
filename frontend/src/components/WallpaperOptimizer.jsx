@@ -18,17 +18,9 @@ import { createWallpaperPlan, getProjectGroups, getUserSettings, getWallpaperPro
 import { useAuth } from '../contexts/AuthContext';
 import { useAccountContext } from '../contexts/useAccountContext';
 import { isStaticMode } from '../utils/mode';
+import { isOnWall, letterOf, segmentsOf, stripLabel } from '../utils/wallpaperPlan';
 
 const numeric = (value) => Number(value) || 0;
-// Plans saved before connected strips have no segments; treat them as one face.
-const segmentsOf = (item) => (item.segments?.length ? item.segments : [item]);
-const isOnWall = (item, wallIndex) => segmentsOf(item).some((segment) => segment.wall_index === wallIndex);
-// Drawing-style letters: Wall A, B, … Z, AA. Walls are lettered clockwise from the first wall.
-const letterOf = (index) => {
-  let letters = '';
-  for (let n = index; n >= 0; n = Math.floor(n / 26) - 1) letters = String.fromCharCode(65 + (n % 26)) + letters;
-  return letters;
-};
 const wallLetter = (index, t) => t('wallpaperUi.wallName', { letter: letterOf(index) });
 const isBlank = (value) => value == null || String(value).trim() === '';
 const isDesktop = () => window.matchMedia?.('(min-width: 1024px)').matches ?? true;
@@ -45,8 +37,6 @@ const SHAPE_PATHS = {
 const ShapeIcon = ({ profile }) => <svg width="34" height="24" viewBox="0 0 28 22" aria-hidden="true"><polygon points={SHAPE_PATHS[profile]} fill="var(--ground-2)" stroke="var(--ink)" strokeWidth="1.5" strokeLinejoin="round" /></svg>;
 
 const wallShapes = [['rectangle', 'wallpaperUi.shapeRectangle'], ['sloped', 'wallpaperUi.shapeSloped']];
-
-const stripLabel = (t, number) => t('wallpaperUi.stripLabel', { number });
 
 // The middle height is not asked for on sloped walls; keep it consistent with the measured edges.
 const withDerivedMiddle = (wall) => {
