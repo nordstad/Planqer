@@ -2,7 +2,6 @@ import { test, expect } from '@playwright/test';
 import { fileURLToPath } from 'node:url';
 
 const STEP = fileURLToPath(new URL('../../../example/Bench.step', import.meta.url));
-// Needs a backend run with PLANQER_CATALOGUE_COUNTRY=SE.
 const API = process.env.PLAYWRIGHT_API_URL || 'http://localhost:8002';
 
 /* The material names a CAD tool wrote into the STEP file. The upload is replaced
@@ -32,6 +31,8 @@ test.describe('Model materials read against the catalogue', () => {
     await page.request.post(`${API}/api/auth/register`, { data: { email, password: credential } });
     const login = await page.request.post(`${API}/api/auth/login`, { data: { email, password: credential } });
     const { access_token: accessToken } = await login.json();
+    // The catalogue suggestions follow the account's catalogue country.
+    await page.request.put(`${API}/api/settings/`, { headers: { Authorization: `Bearer ${accessToken}` }, data: { catalogue_country: 'SE' } });
     await page.addInitScript((token) => localStorage.setItem('auth_token', token), accessToken);
     await page.route('**/api/step-cutlist', (route) => route.fulfill({ json: cutlist }));
 

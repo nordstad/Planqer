@@ -3,7 +3,6 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const BENCH = fileURLToPath(new URL('../../../example/bench.stl', import.meta.url));
-// The catalogue tests need a backend run with PLANQER_CATALOGUE_COUNTRY=SE.
 const API = process.env.PLAYWRIGHT_API_URL || 'http://localhost:8002';
 
 /* /api/3d-cutlist is rate limited to 5 a minute, so the bench is measured by the
@@ -21,6 +20,8 @@ test.beforeAll(async () => {
   await api.post(`${API}/api/auth/register`, { data: { email, password: credential } });
   const login = await api.post(`${API}/api/auth/login`, { data: { email, password: credential } });
   ({ access_token: accessToken } = await login.json());
+  // The catalogue suggestions follow the account's catalogue country.
+  await api.put(`${API}/api/settings/`, { headers: { Authorization: `Bearer ${accessToken}` }, data: { catalogue_country: 'SE' } });
   const response = await api.post(`${API}/api/3d-cutlist`, {
     headers: { Authorization: `Bearer ${accessToken}` },
     multipart: { file: { name: 'bench.stl', mimeType: 'model/stl', buffer: readFileSync(BENCH) } },
@@ -48,7 +49,7 @@ test.describe('Model cutlist flow with example/bench.stl', () => {
 
     await expect(page.locator('body')).not.toContainText(/unknown/i);
     await expect(page.locator('body')).not.toContainText('SPF-');
-    await expect(page.getByLabel('Name for Framing timber / studs 45 × 95 mm')).toHaveAttribute('placeholder', 'Framing timber / studs 45 × 95 mm');
+    await expect(page.getByLabel('Name for Framing timber / studs 45 × 95 mm')).toHaveValue('Framing timber / studs 45 × 95 mm');
     await expect(page.getByLabel('Name for Planed timber 95 × 95 mm')).toBeVisible();
     await expect(page.getByLabel('Name for Plywood 15 mm')).toBeVisible();
     await expect(page.getByTestId('product-summary').filter({ hasText: 'Suggested' })).toHaveCount(3);
@@ -190,7 +191,7 @@ test.describe('Model cutlist flow with example/bench.stl', () => {
   test('plans and saves with no prices, no project and no product', async ({ page }) => {
     // A catalogue with no sized entries (the generic default): nothing to suggest.
     const real = await (await page.request.get(`${API}/api/catalogue/`)).json();
-    await page.route('**/api/catalogue/', (route) => route.fulfill({
+    await page.route(/\/api\/catalogue\/(\?.*)?$/, (route) => route.fulfill({
       json: { ...real, country: null, country_name: null, products: [] },
       headers: { etag: '"generic"' },
     }));
