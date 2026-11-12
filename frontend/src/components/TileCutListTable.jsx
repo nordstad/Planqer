@@ -113,7 +113,7 @@ const TileCutListTable = ({ candidate }) => {
                   )
                   : (group.kind === 'notched' ? text('ui.openingDiagram') : text('ui.straightCut'))}
                 {candidate.piece_diagrams?.[group.label] && (
-                  <button type="button" className="btn btn-small" style={{ marginLeft: '8px' }} onClick={() => setTemplate({ ...group, image: candidate.piece_diagrams[group.label] })}>
+                  <button type="button" className="btn btn-primary btn-sm" style={{ marginLeft: '8px' }} onClick={() => setTemplate({ ...group, image: candidate.piece_diagrams[group.label] })}>
                     {text('ui.viewCut', { label: group.label })}
                   </button>
                 )}

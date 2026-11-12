@@ -110,14 +110,16 @@ test.describe('Planqer Frontend E2E Tests', () => {
     page.on('request', (request) => {
       if (request.method() === 'POST' && request.url().endsWith('/api/projects/')) savedPayload = request.postDataJSON();
     });
+    const saveResponse = page.waitForResponse((r) => r.request().method() === 'POST' && r.url().endsWith('/api/projects/'));
     await page.getByRole('button', { name: /^save plan$/i }).click();
     await expect(page.getByRole('heading', { name: /plan saved/i })).toBeVisible();
+    const { project_group_id: groupId } = await (await saveResponse).json();
     expect(savedPayload).toMatchObject({
       material_type: 'Oak', board_thickness: 45, board_width: 45,
       product: { type: 'custom', name: 'Oak', catalogue_id: null },
     });
 
-    await page.goto('/dashboard/project/none');
+    await page.goto(`/dashboard/project/${groupId}`);
     await expect(page.getByText('E2E modify plan')).toBeVisible();
     await expect(page.locator('.plan-item-material')).toContainText('Oak · 45×45mm');
     const planCheckbox = page.getByRole('checkbox', { name: 'Select plan "E2E modify plan"' });
@@ -243,10 +245,12 @@ test.describe('Planqer Frontend E2E Tests', () => {
     await page.getByRole('button', { name: /plan the cuts/i }).click();
     await page.getByRole('button', { name: /name and save/i }).click();
     await page.locator('#plan-name').fill('E2E workspace plan');
+    const saveResponse = page.waitForResponse((r) => r.request().method() === 'POST' && r.url().endsWith('/api/projects/'));
     await page.getByRole('button', { name: /^save plan$/i }).click();
     await expect(page.getByRole('heading', { name: /plan saved/i })).toBeVisible();
+    const { project_group_id: groupId } = await (await saveResponse).json();
 
-    await page.goto('/dashboard/project/none');
+    await page.goto(`/dashboard/project/${groupId}`);
     await expect(page.getByRole('button', { name: 'Overview' })).toHaveAttribute('aria-current', 'page');
     await expect(page.getByTestId('project-shopping-list')).toBeVisible();
 
@@ -287,7 +291,7 @@ test.describe('Planqer Frontend E2E Tests', () => {
     await page.goto('/cutting');
     const planButton = page.getByRole('button', { name: /plan the cuts/i });
     await expect(planButton).toBeDisabled();
-    await expect(page.getByText(/thickness and width before planning/i)).toBeVisible();
+    await expect(page.locator('#board-material').getByText('2 required fields empty: Thickness, Width')).toBeVisible();
     await page.getByLabel('Thickness (mm)').fill('30');
     await page.getByLabel('Width (mm)').fill('80');
     await page.getByRole('button', { name: /try an example/i }).click();

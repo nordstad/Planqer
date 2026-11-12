@@ -23,7 +23,7 @@ import {
   getUserSheetProjects, updateSheetProject, deleteSheetProject,
    getUserTileProjects, updateTileProject, deleteTileProject,
    getWallpaperProjects, updateWallpaperProject, deleteWallpaperProject,
-  downloadProjectImage, getProjectGroups, renameProjectGroup, deleteProjectGroup, getUserSettings,
+   downloadProjectImage, getProjectGroups, renameProjectGroup, deleteProjectGroup, getUserSettings, movePlanToProject,
 } from '../utils/api';
 import { svgBlobToPngBlob } from '../utils/svgToPng';
 import { printProjectPlans } from '../utils/printProject';
@@ -39,6 +39,7 @@ import PlanThumb from './PlanThumb';
 import ConfirmDialog from './ConfirmDialog';
 import TileCutListTable from './TileCutListTable';
 import ProjectShoppingList from './ProjectShoppingList';
+import MovePlanMenu from './MovePlanMenu';
 import { ArrowLeft, ArrowRight, Pencil } from './icons';
 
 // The plans nobody filed. A route segment, not a group id.
@@ -151,6 +152,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
   const [selectedPlanIds, setSelectedPlanIds] = useState(() => new Set());
   const [projectView, setProjectView] = useState('overview');
   const [userSpareMargin, setUserSpareMargin] = useState(10);
+  const [draggedPlan, setDraggedPlan] = useState(null);
 
   useEffect(() => {
     if (user) loadProjects();
@@ -336,6 +338,36 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
     if (route) navigate(`${route}?edit=${encodeURIComponent(project.id)}`);
   };
 
+  const movePlan = async (project, group) => {
+    if (project.project_group_id === group.id) return true;
+    try {
+      setBusyId(project.id);
+      const moved = await movePlanToProject(project, group.id);
+      setAllProjects((previous) => previous.map((item) => (item.id === project.id && item.projectType === project.projectType
+        ? { ...item, ...moved, projectType: project.projectType }
+        : item)));
+      localStorage.setItem('planqer.lastProjectGroup', group.id);
+      return true;
+    } catch (err) {
+      setError(t('projectUi.moveFailed', { message: err.message }));
+      return false;
+    } finally {
+      setBusyId(null);
+      setDraggedPlan(null);
+    }
+  };
+
+  const startDrag = (event, project) => {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', project.id);
+    setDraggedPlan(project);
+  };
+
+  const dropOnGroup = (event, group) => {
+    event.preventDefault();
+    if (draggedPlan) movePlan(draggedPlan, group);
+  };
+
   const startEdit = (project) => {
     setEditingId(project.id);
     setEditingName(project.name);
@@ -463,7 +495,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
 
     return (
       <div key={project.id}>
-        <article className="plan-item">
+        <article className="plan-item" draggable onDragStart={(event) => startDrag(event, project)} onDragEnd={() => setDraggedPlan(null)}>
           <label style={{ display: 'flex', alignItems: 'center', padding: '0 4px 0 8px' }}>
             <input
               type="checkbox"
@@ -544,6 +576,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
             >
               PNG
             </button>
+            <MovePlanMenu groups={groups} currentGroupId={project.project_group_id} onMove={(group) => movePlan(project, group)} busy={busyId === project.id} />
             <button
               className="btn btn-sm btn-outline-danger"
               onClick={() => handleDelete(project)}
@@ -576,7 +609,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
 
   /* ── inside one project ─────────────────────────────────────────────── */
 
-  if (groupId) {
+    if (groupId) {
     const group = groupId === LOOSE ? null : groups.find((g) => g.id === groupId);
 
     if (groupId !== LOOSE && !group) {
@@ -619,7 +652,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
                 autoFocus
               />
               <label className="synthetic" htmlFor="project-spare-margin">{t('settings.spareMargin')}</label>
-              <input id="project-spare-margin" type="number" min="0" max="100" step="1" className="form-input" value={editingSpareMargin}
+              <input id="project-spare-margin" type="number" min="0" max="100" step="1" className="form-input dimension-input" value={editingSpareMargin}
                 onChange={(event) => setEditingSpareMargin(event.target.value)} />
               <button type="submit" className="btn btn-sm btn-primary">{t('common.saveSettings')}</button>
               <button type="button" className="btn btn-sm" onClick={cancelEditGroup}>{t('ui.cancel')}</button>
@@ -736,6 +769,19 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
           ))}
         </nav>
 
+        {draggedPlan && (
+          <section className="plan-drop-targets" aria-label={t('projectUi.moveToProject')}>
+            <b>{t('projectUi.dropPlanInProject', { name: draggedPlan.name })}</b>
+            <div>
+              {groups.filter((candidate) => candidate.id !== draggedPlan.project_group_id).map((candidate) => (
+                <button key={candidate.id} type="button" onDragOver={(event) => event.preventDefault()} onDrop={(event) => dropOnGroup(event, candidate)}>
+                  {candidate.name}
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
         {projectView !== 'diagrams' && (
           <ProjectShoppingList
             projects={plans}
@@ -794,7 +840,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
       {shelves.length > 0 && (
         <div className="proj-grid">
           {shelves.map((shelf) => (
-            <Link key={shelf.id} to={`/dashboard/project/${shelf.id}`} className="proj-card">
+            <Link key={shelf.id} to={`/dashboard/project/${shelf.id}`} className={`proj-card${draggedPlan ? ' is-drop-target' : ''}`} onDragOver={(event) => event.preventDefault()} onDrop={(event) => dropOnGroup(event, shelf)}>
               <span className="proj-card-cover">
                 {shelf.plans.length > 0
                   ? <PlanThumb project={shelf.plans[0]} />

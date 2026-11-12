@@ -23,16 +23,18 @@
   doesn't need a project at all.
 */
 
-import { Fragment, lazy, Suspense, useState, useCallback, useEffect } from 'react';
+import { lazy, Suspense, useState, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import CatalogPage from './CatalogPage';
 import Loader from './Loader';
 import Disclosure from './Disclosure';
 import ProjectPicker, { NEW_PROJECT } from './ProjectPicker';
+import MovePlanMenu from './MovePlanMenu';
 import PlanSteps from './PlanSteps';
 import ModelGroupSettings from './ModelGroupSettings';
-import ProductPicker from './ProductPicker';
+import ProductPicker, { CatalogueChoice } from './ProductPicker';
+import FormField, { SectionCard, SectionStatus } from './FormField';
 import AuthModal from './auth/AuthModal';
 import { useAuth } from '../contexts/AuthContext';
 import { demoContext } from '../utils/mode';
@@ -43,7 +45,7 @@ import {
   optimizeCutting, saveProject,
   optimizeSheetCutting, saveSheetProject,
   getProjectGroups, createProjectGroup, getUserProjects, getUserSheetProjects,
-  getUserSettings,
+  getUserSettings, movePlanToProject,
 } from '../utils/api';
 import {
   groupBoards, groupSheets, groupLabel, planNameFor, resolveMaterial,
@@ -125,6 +127,7 @@ const ModelCutlistOptimizer = () => {
   // them rather than stacking copies beside them.
   const [existingPlans, setExistingPlans] = useState([]);
   const [replaceExisting, setReplaceExisting] = useState(true);
+  const [savedPlans, setSavedPlans] = useState([]);
 
   const debouncedConfigs = useDebounce(configs, 300);
   // Validation follows the debounced values so errors don't flash while typing; a
@@ -334,9 +337,9 @@ const ModelCutlistOptimizer = () => {
       if (group.kind === 'board') {
         const parts = group.lengths.map((l) => ({ length: String(l.length), quantity: String(l.qty) }));
         const stock = config.boards.map((row) => row.length);
-        const { costData, saved } = boardCostPayloads(config, money);
+        const { costData, saved: savedCosts } = boardCostPayloads(config, money);
         const result = await optimizeCutting(parts, stock, config.kerf, costData);
-        await saveProject({
+        const savedPlan = await saveProject({
           id: replaced?.id,
           name: replaced?.name || planNameOf(group),
           projectGroupId,
@@ -347,16 +350,17 @@ const ModelCutlistOptimizer = () => {
           product,
           boardThickness: group.thickness,
           boardWidth: group.width,
-          boardCosts: saved,
+          boardCosts: savedCosts,
           result,
         });
+        setSavedPlans((previous) => [...previous, { ...savedPlan, projectType: 'board' }]);
       } else {
         const parts = group.sizes.map((s, i) => ({
           width: String(s.width), height: String(s.length), quantity: String(s.qty),
            name: `${group.names[0] || t('ui.sheet')}_${i + 1}`, id: `sheet_${i + 1}`,
         }));
         const result = await optimizeSheetCutting(parts, config.sheetWidth, config.sheetHeight, config.kerf, material, undefined, config.allowRotation);
-        await saveSheetProject({
+        const savedPlan = await saveSheetProject({
           id: replaced?.id,
           name: replaced?.name || planNameOf(group),
           projectGroupId,
@@ -372,6 +376,7 @@ const ModelCutlistOptimizer = () => {
           result,
           pricing: sheetPricingPayload(config, money),
         });
+        setSavedPlans((previous) => [...previous, { ...savedPlan, projectType: 'sheet' }]);
       }
       setStatuses((prev) => ({ ...prev, [group.id]: 'done' }));
     } catch (err) {
@@ -384,6 +389,7 @@ const ModelCutlistOptimizer = () => {
     setApiError('');
     if (selectedGroups.some((g) => errorsOf(g, configs).hasErrors)) return;
     setSaving(true);
+    setSavedPlans([]);
     let projectGroupId;
     try {
       projectGroupId = await resolveProject();
@@ -400,6 +406,19 @@ const ModelCutlistOptimizer = () => {
       await runOne(group, projectGroupId);
     }
     setSaving(false);
+  };
+
+  const moveSavedPlans = async (group) => {
+    try {
+      const moved = await Promise.all(savedPlans.map((plan) => movePlanToProject(plan, group.id)));
+      setSavedPlans(moved.map((plan, index) => ({ ...plan, projectType: savedPlans[index].projectType })));
+      setSelectedGroupId(group.id);
+      localStorage.setItem('planqer.lastProjectGroup', group.id);
+      return true;
+    } catch (err) {
+      setApiError(t('projectUi.moveFailed', { message: err.message }));
+      return false;
+    }
   };
 
   const savedGroupName = allDone ? projectGroups.find((g) => g.id === selectedGroupId)?.name : null;
@@ -466,7 +485,7 @@ const ModelCutlistOptimizer = () => {
               <div>
                 <p style={{ fontSize: '15px', fontWeight: 700, marginBottom: '4px' }}>{file.name}</p>
                 <p className="synthetic" style={{ margin: '0 auto 16px' }}>{formatFileSize(file.size)}</p>
-                <button type="button" onClick={removeFile} className="btn" style={{ color: 'var(--revision)', borderColor: 'var(--revision)' }}>
+                <button type="button" onClick={removeFile} className="btn-text is-quiet">
                   {t('workflow.removeFile')}
                 </button>
               </div>
@@ -570,140 +589,118 @@ const ModelCutlistOptimizer = () => {
             />
           </Suspense>
 
-           <table className="cat-table model-cutlists">
-            <thead>
-              <tr>
-                 <th aria-label={t('ui.include')} style={{ width: '30px' }} />
-                 <th style={{ textAlign: 'left' }}>{t('ui.cutlist')}</th>
-                 <th style={{ textAlign: 'left' }}>{t('productUi.product')}</th>
-                 <th>{t('workflow.qty')}</th>
-                 <th aria-label={t('ui.planAlone')} />
-              </tr>
-            </thead>
-            <tbody>
-              {groups.map((group) => {
-                const config = configs[group.id];
-                const label = labelOf(group);
-                const expanded = expandedIds.has(group.id);
-                return (
-                  <Fragment key={group.id}>
-                    <tr
-                      onMouseEnter={() => setHighlightedGroupId(group.id)}
-                      onMouseLeave={() => setHighlightedGroupId(null)}
-                      onFocus={() => setHighlightedGroupId(group.id)}
-                      onBlur={(event) => {
-                        if (!event.currentTarget.contains(event.relatedTarget)) setHighlightedGroupId(null);
-                      }}
-                    >
-                      <td>
-                        <input
-                          type="checkbox"
-                          checked={selectedIds.has(group.id)}
-                          onChange={() => toggleGroup(group.id)}
-                          aria-label={`${t('ui.include')} ${label}`}
-                        />
-                      </td>
-                      <td style={{ textAlign: 'left' }}>
-                        <span
-                          aria-hidden="true"
-                          data-testid="model-group-colour"
-                          style={{
-                            display: 'inline-block',
-                            width: '9px',
-                            height: '9px',
-                            borderRadius: '50%',
-                            background: colourForModelGroup(group.id),
-                            marginRight: '7px',
-                            verticalAlign: '1px',
-                          }}
-                        />
-                        <input
-                          type="text"
-                          className="form-input"
-                          style={{ fontWeight: 700, fontSize: '13.5px', maxWidth: '260px' }}
-                          value={config.label}
-                          placeholder={groupLabel(group, { ...config, label: '' }, t)}
-                          onChange={(e) => updateConfig(group.id, { label: e.target.value })}
-                          aria-label={t('modelUi.renameCutlist', { name: groupLabel(group, { ...config, label: '' }, t) })}
-                        />
-                        <p className="synthetic" style={{ marginTop: '4px', whiteSpace: 'normal' }}>
-                          {group.names.join(', ')}
-                        </p>
-                        <button
-                          type="button"
-                          className="btn btn-sm"
-                          style={{ marginTop: '6px' }}
-                          aria-expanded={expanded}
-                          onClick={() => toggleExpanded(group.id)}
-                        >
-                          {t(expanded
-                            ? (group.kind === 'board' ? 'modelUi.hideLengths' : 'modelUi.hideSizes')
-                            : (group.kind === 'board' ? 'modelUi.showLengths' : 'modelUi.showSizes'))}
-                        </button>
-                      </td>
-                      <td style={{ textAlign: 'left', minWidth: '260px' }}>
-                        <ProductPicker
-                          kind={group.kind}
-                          value={config.product}
-                          onChange={(product) => updateConfig(group.id, { product })}
-                          dims={groupDimensions(group)}
-                          memoryKey={groupMemoryKey(group)}
-                          label={t('productUi.chooseProductFor', { name: label })}
-                        />
-                      </td>
-                      <td>{group.quantity}×</td>
-                      <td style={{ width: '110px' }}>
-                        <button type="button" className="btn btn-sm" onClick={() => planGroupAlone(group)}>
-                           {t('ui.planAlone')}
-                        </button>
-                      </td>
-                    </tr>
-                    {expanded && (
-                      <tr data-testid={`breakdown-${group.id}`}>
-                        <td />
-                        <td colSpan={4} style={{ textAlign: 'left' }}>
-                          <ul className="synthetic" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-                            {(group.kind === 'board' ? group.lengths : group.sizes).map((entry, index, entries) => {
-                              const key = partKey(group, entry);
-                              return (
-                                <li
-                                  key={key}
-                                  tabIndex={0}
-                                  onMouseEnter={() => highlightPart(group.id, key)}
-                                  onMouseLeave={clearHighlight}
-                                  onFocus={() => highlightPart(group.id, key)}
-                                  onBlur={clearHighlight}
-                                >
-                                  <span
-                                    aria-hidden="true"
-                                    data-testid="model-part-swatch"
-                                    style={{
-                                      display: 'inline-block',
-                                      width: '9px',
-                                      height: '9px',
-                                      borderRadius: '2px',
-                                      background: colourForModelPart(group.id, index, entries.length),
-                                      marginRight: '7px',
-                                    }}
-                                  />
-                                  {group.kind === 'board'
-                                    ? <>{spaced(entry.length)} mm × {entry.qty}</>
-                                    : <>{spaced(entry.length)} × {spaced(entry.width)} mm × {entry.qty}</>}
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        </td>
-                      </tr>
-                    )}
-                  </Fragment>
-                );
-              })}
-            </tbody>
-          </table>
+          <div style={{ margin: '18px 0 14px' }}>
+            <CatalogueChoice kind={groups.some((group) => group.kind === 'board') ? 'board' : 'sheet'} />
+          </div>
+
+          {groups.map((group) => {
+            const config = configs[group.id];
+            const label = labelOf(group);
+            const expanded = expandedIds.has(group.id);
+            const included = selectedIds.has(group.id);
+            const idBase = `cutlist-${group.id.replace(/[^a-z0-9]+/gi, '-')}`;
+            return (
+              <section
+                key={group.id}
+                className={`sec-card${included ? '' : ' is-excluded'}`}
+                aria-labelledby={`${idBase}-title`}
+                onMouseEnter={() => setHighlightedGroupId(group.id)}
+                onMouseLeave={() => setHighlightedGroupId(null)}
+                onFocus={() => setHighlightedGroupId(group.id)}
+                onBlur={(event) => {
+                  if (!event.currentTarget.contains(event.relatedTarget)) setHighlightedGroupId(null);
+                }}
+              >
+                <div className="sec-card-head">
+                  <input
+                    type="checkbox"
+                    checked={included}
+                    onChange={() => toggleGroup(group.id)}
+                    aria-label={`${t('ui.include')} ${label}`}
+                  />
+                  <span
+                    aria-hidden="true"
+                    data-testid="model-group-colour"
+                    style={{ flex: 'none', width: '10px', height: '10px', borderRadius: '50%', background: colourForModelGroup(group.id) }}
+                  />
+                  <span className="sec-card-text">
+                    <h2 id={`${idBase}-title`} className="sec-card-title">{label}</h2>
+                    <span className="sec-card-summary">{t('modelForm.partCount', { count: group.quantity })} · {group.names.join(', ')}</span>
+                  </span>
+                  <SectionStatus todo={included ? null : t('modelForm.notIncluded')} done={t('modelForm.included')} />
+                </div>
+                <div className="sec-card-body">
+                  <div className="grid gap-x-6 gap-y-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+                    <FormField label={t('workflow.name')} required>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={config.labelEdited ? config.label : label}
+                        onChange={(e) => updateConfig(group.id, { label: e.target.value, labelEdited: true })}
+                        // An emptied name goes back to the automatic one rather than staying blank.
+                        onBlur={(e) => { if (!e.target.value.trim()) updateConfig(group.id, { label: '', labelEdited: false }); }}
+                        aria-label={t('modelUi.renameCutlist', { name: groupLabel(group, { ...config, label: '' }, t) })}
+                      />
+                    </FormField>
+                    <div>
+                      <span className="form-label" style={{ display: 'block' }}>{t('productUi.product')}{' '}<span className="opt-mark">{t('formUi.optionalMark')}</span></span>
+                      <ProductPicker
+                        kind={group.kind}
+                        value={config.product}
+                        onChange={(product) => updateConfig(group.id, { product })}
+                        dims={groupDimensions(group)}
+                        memoryKey={groupMemoryKey(group)}
+                        label={t('productUi.chooseProductFor', { name: label })}
+                        showCatalogue={false}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-5 gap-y-1" style={{ marginTop: '12px' }}>
+                    <button type="button" className="btn-text" aria-expanded={expanded} onClick={() => toggleExpanded(group.id)}>
+                      {t(expanded
+                        ? (group.kind === 'board' ? 'modelUi.hideLengths' : 'modelUi.hideSizes')
+                        : (group.kind === 'board' ? 'modelUi.showLengths' : 'modelUi.showSizes'))}
+                    </button>
+                    <button type="button" className="btn-text" onClick={() => planGroupAlone(group)}>
+                      {t('ui.planAlone')}
+                    </button>
+                  </div>
+                  {expanded && (
+                    <ul className="synthetic" data-testid={`breakdown-${group.id}`} style={{ listStyle: 'none', margin: '8px 0 0', padding: 0 }}>
+                      {(group.kind === 'board' ? group.lengths : group.sizes).map((entry, index, entries) => {
+                        const key = partKey(group, entry);
+                        return (
+                          <li
+                            key={key}
+                            tabIndex={0}
+                            onMouseEnter={() => highlightPart(group.id, key)}
+                            onMouseLeave={clearHighlight}
+                            onFocus={() => highlightPart(group.id, key)}
+                            onBlur={clearHighlight}
+                          >
+                            <span
+                              aria-hidden="true"
+                              data-testid="model-part-swatch"
+                              style={{
+                                display: 'inline-block', width: '9px', height: '9px', borderRadius: '2px',
+                                background: colourForModelPart(group.id, index, entries.length), marginRight: '7px',
+                              }}
+                            />
+                            {group.kind === 'board'
+                              ? <>{spaced(entry.length)} mm × {entry.qty}</>
+                              : <>{spaced(entry.length)} × {spaced(entry.width)} mm × {entry.qty}</>}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+              </section>
+            );
+          })}
 
           <div className="step-foot">
-            <button type="button" className="btn" onClick={() => setStep(STEP_MODEL)}>
+            <button type="button" className="btn-text" onClick={() => setStep(STEP_MODEL)}>
                <ArrowLeft /> {t('ui.chooseFile')}
             </button>
             <div className="step-foot-act">
@@ -760,7 +757,16 @@ const ModelCutlistOptimizer = () => {
                   ))}
                   {appliedNote && <p className="synthetic" role="status" style={{ marginBottom: '20px' }}>{appliedNote}</p>}
 
-                  <section style={{ marginBottom: '26px' }}>
+                </>
+              )}
+
+              <SectionCard
+                id="model-save"
+                title={allDone ? t('modelUi.saved') : t('modelUi.willBeSaved')}
+                className="mt-4"
+              >
+                {!allDone && (
+                  <div style={{ marginBottom: '18px' }}>
                     <ProjectPicker
                       groups={projectGroups}
                       value={selectedGroupId}
@@ -774,14 +780,8 @@ const ModelCutlistOptimizer = () => {
                         <span>{t('modelUi.replaceExisting')}</span>
                       </label>
                     )}
-                  </section>
-                </>
-              )}
-
-              <section>
-                <div className="section-rule">
-                   <h2 className="section-title">{allDone ? t('modelUi.saved') : t('modelUi.willBeSaved')}</h2>
-                </div>
+                  </div>
+                )}
                 <table className="cat-table">
                   <tbody>
                     {selectedGroups.map((group) => {
@@ -807,17 +807,10 @@ const ModelCutlistOptimizer = () => {
                     })}
                   </tbody>
                 </table>
-                {Object.entries(statusMessages).map(([id, message]) => (
-                  statuses[id] === 'error' && (
-                    <p key={id} className="text-danger text-[12.5px] font-semibold" style={{ marginTop: '8px' }}>
-                      {planNameOf(groups.find((g) => g.id === id))}: {message}
-                    </p>
-                  )
-                ))}
-              </section>
+              </SectionCard>
 
               <div className="step-foot">
-                <button type="button" className="btn" onClick={() => setStep(STEP_CUTLISTS)}>
+                <button type="button" className="btn-text" onClick={() => setStep(STEP_CUTLISTS)}>
                    <ArrowLeft /> {t('modelUi.backToCutlists')}
                 </button>
                 <div className="step-foot-act">
@@ -836,11 +829,12 @@ const ModelCutlistOptimizer = () => {
               </div>
 
               {allDone && (
-                <p className="synthetic" style={{ marginTop: '16px' }}>
+                <div className="synthetic" style={{ marginTop: '16px' }}>
                    {savedGroupName
-                     ? t('ui.filedUnder', { group: savedGroupName })
-                     : t('ui.unfiled')}
-                </p>
+                      ? t('ui.filedUnder', { group: savedGroupName })
+                      : t('ui.unfiled')}
+                  <MovePlanMenu groups={projectGroups} currentGroupId={selectedGroupId} onMove={moveSavedPlans} />
+                </div>
               )}
             </>
           )}

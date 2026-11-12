@@ -24,7 +24,7 @@ const CostAnalysisPanel = ({ appliedCost, optimizeFor, previous, boardsUsed, off
         <p className="synthetic" style={{ marginTop: '4px' }}>
           {t('ui.noPrices')}
         </p>
-        <button type="button" className="btn" style={{ marginTop: '12px' }} onClick={onAddStockPrices}>
+        <button type="button" className="btn btn-primary" style={{ marginTop: '12px' }} onClick={onAddStockPrices}>
           {t('ui.addStockPrices')}
         </button>
       </div>

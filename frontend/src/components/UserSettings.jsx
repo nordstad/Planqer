@@ -114,7 +114,7 @@ const UserSettings = () => {
             type="number"
             step="0.1"
             min="0"
-            className="form-input"
+            className="form-input dimension-input"
             value={settings.default_saw_blade_width}
             onChange={(e) => setSettings((prev) => ({ ...prev, default_saw_blade_width: parseFloat(e.target.value) || 0 }))}
             disabled={saving}
@@ -123,7 +123,7 @@ const UserSettings = () => {
 
         <div className="space-y-2" style={{ marginBottom: '20px' }}>
           <label className="form-label" htmlFor="spare-margin">{t('settings.spareMargin')}</label>
-          <input id="spare-margin" type="number" min="0" max="100" step="1" className="form-input" value={settings.spare_margin_percent}
+          <input id="spare-margin" type="number" min="0" max="100" step="1" className="form-input dimension-input" value={settings.spare_margin_percent}
             onChange={(e) => setSettings((prev) => ({ ...prev, spare_margin_percent: parseFloat(e.target.value) || 0 }))} disabled={saving} />
           <p className="synthetic">{t('settings.spareMarginHelp')}</p>
         </div>
@@ -147,7 +147,7 @@ const UserSettings = () => {
 
         <div className="space-y-2" style={{ marginBottom: '20px' }}>
           <label className="form-label" htmlFor="vat-rate">{t('settings.vatRate')}</label>
-          <input id="vat-rate" type="number" min="0" max="100" step="0.1" className="form-input" value={settings.default_vat_rate}
+          <input id="vat-rate" type="number" min="0" max="100" step="0.1" className="form-input dimension-input" value={settings.default_vat_rate}
             onChange={(e) => setSettings((prev) => ({ ...prev, default_vat_rate: parseFloat(e.target.value) || 0 }))} disabled={saving} />
           <label className="flex items-center gap-2" style={{ cursor: 'pointer' }}>
             <input type="checkbox" checked={settings.default_prices_include_vat}

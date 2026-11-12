@@ -72,6 +72,13 @@ it('offers a backup on the project page', async () => {
   expect(await screen.findByRole('button', { name: 'Export backup' })).toBeInTheDocument();
 });
 
+it('puts the backup panel below the projects, not above them', async () => {
+  await renderAtHash('#/dashboard');
+  const backup = await screen.findByRole('region', { name: 'Back up your projects' });
+  const tabs = screen.getByRole('button', { name: /^(Projects|My projects)/ });
+  expect(tabs.compareDocumentPosition(backup) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+});
+
 it('links to the catalogue instead of an admin page', async () => {
   await renderAtHash('#/');
   await screen.findByRole('heading', { level: 1 });

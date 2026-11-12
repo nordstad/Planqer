@@ -30,8 +30,9 @@ const HelpPage = () => {
     : 'getting-started';
 
   useEffect(() => {
+    if (requestedSection !== activeSection) return;
     document.getElementById(activeSection)?.scrollIntoView?.();
-  }, [activeSection]);
+  }, [activeSection, requestedSection]);
 
   return (
     <CatalogPage>

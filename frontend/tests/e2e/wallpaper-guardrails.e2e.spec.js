@@ -26,11 +26,20 @@ test.describe('Wallpaper planner guardrails', () => {
     await expect(page.getByRole('heading', { name: 'Measure the room' })).toBeVisible();
   });
 
+  // One wall card is open at a time, and adding a wall opens the new one.
   const setWidths = async (page, widths) => {
-    for (let index = 1; index < widths.length; index += 1) await page.getByRole('button', { name: 'Add wall' }).click();
-    for (const [index, width] of widths.entries()) await page.getByLabel('Wall width (mm)').nth(index).fill(String(width));
+    for (const [index, width] of widths.entries()) {
+      if (index) await page.getByRole('button', { name: 'Add wall' }).click();
+      await page.getByLabel('Wall width (mm)').fill(String(width));
+    }
+  };
+  // Decided corners are folded to one line until "Change" opens them.
+  const openCorners = async (page) => {
+    const change = page.getByRole('button', { name: /^Change corner/ });
+    while (await change.count()) await change.first().click();
   };
   const decideCorners = async (page, decision = 'start_new') => {
+    await openCorners(page);
     const selects = page.getByLabel('Hanging decision');
     for (let index = 0; index < await selects.count(); index += 1) await selects.nth(index).selectOption(decision);
   };
@@ -75,6 +84,7 @@ test.describe('Wallpaper planner guardrails', () => {
 
   test('a wall run can be started without a corner', async ({ page }) => {
     await setWidths(page, [2400, 2400, 2400]);
+    await openCorners(page);
     await page.getByLabel('Corner type').nth(1).selectOption('none');
     await expect(page.getByLabel('Hanging decision')).toHaveCount(1);
     await decideCorners(page);
@@ -85,7 +95,12 @@ test.describe('Wallpaper planner guardrails', () => {
   });
 
   test('fifteen walls use a numbered legend instead of overlapping labels', async ({ page }) => {
+    // Alternating corners make a staircase; fifteen inside corners would circle
+    // back over the same square, which the planner now refuses.
     await setWidths(page, Array.from({ length: 15 }, () => 2000));
+    await openCorners(page);
+    const types = page.getByLabel('Corner type');
+    for (let index = 0; index < await types.count(); index += 1) await types.nth(index).selectOption(index % 2 ? 'inside' : 'outside');
     await decideCorners(page);
     await createPlan(page);
 
@@ -110,6 +125,8 @@ test.describe('Wallpaper planner guardrails', () => {
 
   test('inside corners overlap by 15 mm without any extra decision', async ({ page }) => {
     await setWidths(page, [2400, 2400]);
+    await expect(page.getByText(/Inside corner · overlap 15 mm/)).toBeVisible();
+    await openCorners(page);
     await expect(page.getByLabel('Hanging decision')).toHaveValue('overlap');
     await createPlan(page);
 
@@ -121,6 +138,9 @@ test.describe('Wallpaper planner guardrails', () => {
   test('an opening that does not fit is explained beside the field and blocks the plan', async ({ page }) => {
     await setWidths(page, [3000]);
     await page.getByRole('button', { name: 'Add opening or obstacle' }).click();
+    // A new window starts empty: nothing is guessed for the user.
+    await expect(page.getByLabel('From left edge (mm)')).toHaveValue('');
+    for (const [label, value] of [['From left edge (mm)', '1000'], ['From floor (mm)', '900'], ['Width (mm)', '1200'], ['Height (mm)', '1200']]) await page.getByLabel(label, { exact: true }).fill(value);
     await expect(page.getByRole('alert')).toHaveCount(0);
     await page.getByLabel('Wall height (mm)').fill('1200');
 
@@ -132,6 +152,14 @@ test.describe('Wallpaper planner guardrails', () => {
     await page.getByLabel('Wall width (mm)').fill('-5');
 
     await expect(page.getByRole('alert')).toContainText('Width must be between');
+    await expect(page.getByRole('button', { name: /Create plan/ })).toBeDisabled();
+  });
+
+  test('a wall that lands on an earlier wall blocks the plan', async ({ page }) => {
+    await setWidths(page, [2400, 2400, 2400, 2400, 2400]);
+
+    await expect(page.getByRole('alert')).toContainText('Wall E runs into Wall A');
+    await expect(page.getByRole('alert')).toContainText('The room already closes after Wall D');
     await expect(page.getByRole('button', { name: /Create plan/ })).toBeDisabled();
   });
 

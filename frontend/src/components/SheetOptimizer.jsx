@@ -15,23 +15,28 @@ import { SAW_KERF_MIN, SAW_KERF_MAX } from '../utils/validators';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import CatalogPage from './CatalogPage';
 import ConfirmDialog from './ConfirmDialog';
-import { optimizeSheetCutting, saveSheetProject, getProjectGroups, createProjectGroup, getUserSheetProjects, getUserSettings } from '../utils/api';
+import { optimizeSheetCutting, saveSheetProject, getProjectGroups, getUserSheetProjects, getUserSettings, movePlanToProject } from '../utils/api';
 import { useDebounce } from '../hooks/useDebounce';
 import { useAuth } from '../contexts/AuthContext';
 import { useAccountContext } from '../contexts/useAccountContext';
 import Disclosure from './Disclosure';
-import ProjectPicker from './ProjectPicker';
+import FormField, { SectionCard, SectionStatus } from './FormField';
+import SavePlanCard from './SavePlanCard';
+import MovePlanMenu from './MovePlanMenu';
+import { useProjectChoice } from '../hooks/useProjectChoice';
 import ProductPicker from './ProductPicker';
 import { materialLabel } from '../utils/materialLabel';
 import {
   emptySelection, selectionName, buildSnapshot, selectionFromSnapshot, selectionFromLegacyMaterial,
 } from '../utils/catalogue';
 import Loader from './Loader';
+import InfoTip from './InfoTip';
 import PlanSteps from './PlanSteps';
 import SheetPartRow from './SheetPartRow';
 import SheetResultDisplay from './SheetResultDisplay';
 import { ArrowLeft, ArrowRight, Plus, Tick } from './icons';
 
+const isBlank = (value) => value == null || String(value).trim() === '';
 const mm = (n) => (Number.isFinite(n) ? Math.round(n).toLocaleString('sv-SE') : '—');
 
 const nextPartId = (parts) => {
@@ -107,8 +112,12 @@ const SheetOptimizer = () => {
 
   /* the save step */
   const [projectGroups, setProjectGroups] = useState([]);
-  const [selectedGroupId, setSelectedGroupId] = useState('');
   const [projectName, setProjectName] = useState("");
+  const { groupId, setGroupId, newName, setNewName, resolve: resolveProject } = useProjectChoice({
+    groups: projectGroups,
+    onCreated: (group) => setProjectGroups(prev => [group, ...prev]),
+    fallbackName: projectName,
+  });
   const [saveAttempted, setSaveAttempted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(null);
@@ -137,17 +146,18 @@ const SheetOptimizer = () => {
     const height = parseFloat(debouncedSheetHeight);
     const kerf = parseFloat(debouncedKerfWidth);
 
+     // An empty field is reported as missing on its card, not as an error.
      setInputErrors({
-       sheetWidth: !debouncedSheetWidth || isNaN(width) || width < 100
+       sheetWidth: isBlank(debouncedSheetWidth) ? "" : isNaN(width) || width < 100
          ? t('tileUi.positiveWidth')
          : width > 10000 ? t('tileUi.cannotExceed', { label: t('workflow.width'), max: '10 000 mm' }) : "",
-       sheetHeight: !debouncedSheetHeight || isNaN(height) || height < 100
+       sheetHeight: isBlank(debouncedSheetHeight) ? "" : isNaN(height) || height < 100
          ? t('tileUi.positiveHeight')
          : height > 10000 ? t('tileUi.cannotExceed', { label: t('workflow.height'), max: '10 000 mm' }) : "",
-       kerfWidth: !debouncedKerfWidth || isNaN(kerf) || kerf < SAW_KERF_MIN
+       kerfWidth: isBlank(debouncedKerfWidth) ? "" : isNaN(kerf) || kerf < SAW_KERF_MIN
           ? t('modelUi.kerfZero')
           : kerf > 50 ? t('modelUi.kerfWide') : "",
-        sheetThickness: sheetFieldsTouched && (!sheetThickness || isNaN(parseFloat(sheetThickness)) || parseFloat(sheetThickness) <= 0)
+        sheetThickness: sheetFieldsTouched && !isBlank(sheetThickness) && (isNaN(parseFloat(sheetThickness)) || parseFloat(sheetThickness) <= 0)
           ? t('auditUi.sheetThicknessRequired') : "",
       });
     }, [debouncedSheetWidth, debouncedSheetHeight, debouncedKerfWidth, sheetFieldsTouched, sheetThickness, t]);
@@ -238,7 +248,7 @@ const SheetOptimizer = () => {
     setSheetThickness(project.sheet_thickness ? String(project.sheet_thickness) : '');
     setAlgorithm(project.algorithm || "");
     setAllowRotation(project.allow_rotation !== false);
-    setSelectedGroupId(project.project_group_id || '');
+    setGroupId(project.project_group_id || '');
     setProjectName(project.name);
     setEditingProject(project);
     setSaveMode('update');
@@ -269,11 +279,35 @@ const SheetOptimizer = () => {
     return Object.keys(visible).length > 0 ? visible : null;
   };
   const partCount = parts.reduce((n, p) => n + (parseInt(p.quantity, 10) || 0), 0);
+  const sheetMissing = [
+    isBlank(sheetWidth) && t('workflow.width'),
+    isBlank(sheetHeight) && t('workflow.height'),
+    isBlank(sheetThickness) && t('workflow.thickness'),
+    isBlank(kerfWidth) && t('workflow.sawBlade'),
+  ].filter(Boolean);
   const hasErrors = parts.length === 0 || currentPartErrors.some(Boolean)
     || !!inputErrors.sheetWidth || !!inputErrors.sheetHeight || !!inputErrors.kerfWidth
-    || !!inputErrors.sheetThickness || !sheetThickness;
+    || !!inputErrors.sheetThickness || sheetMissing.length > 0;
   const sheetError = inputErrors.sheetWidth || inputErrors.sheetHeight || inputErrors.sheetThickness;
   const sectionDims = { thickness: parseFloat(sheetThickness) };
+  const partRowsWrong = parts.some((part, index) => visiblePartError(part, index));
+  const partRowsBlank = currentPartErrors.some((errors, index) => errors && Object.keys(errors).some((field) => parts[index][field] === ''));
+  const sheetWrong = !!(sheetError || inputErrors.kerfWidth);
+  const goToSection = (id) => window.setTimeout(() => {
+    const section = document.getElementById(id);
+    if (!section) return;
+    section.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+    const fields = [...section.querySelectorAll('input:not([type=checkbox]):not([type=radio]), select')];
+    (fields.find((field) => !field.value) || fields[0])?.focus({ preventScroll: true });
+  }, 0);
+  const toParts = { name: t('formUi.goTo', { name: t('workflow.partsToCut') }), go: () => goToSection('sheet-parts') };
+  const toSheet = { name: t('formUi.goTo', { name: t('ui.sheet') }), go: () => goToSection('sheet-stock') };
+  const blocker = parts.length === 0 ? { text: t('workflow.partsRequiredBeforePlanning'), ...toParts }
+    : partRowsWrong ? { text: t('ui.fixLines'), ...toParts }
+    : partRowsBlank ? { text: t('sheetUi.fillPartRows'), ...toParts }
+    : sheetWrong ? { text: t('ui.fixLines'), ...toSheet }
+    : sheetMissing.length ? { text: t('sheetUi.fillToPlan', { fields: sheetMissing.join(', ') }), ...toSheet }
+    : null;
   const material = selectionName(productSel, i18n.language, sectionDims);
 
   /* ── running a layout ──────────────────────────────────────────────────── */
@@ -314,22 +348,8 @@ const SheetOptimizer = () => {
 
   /* ── keeping a layout ──────────────────────────────────────────────────── */
   const nameError = saveAttempted && !projectName.trim()
-    ? t('workflow.nameAndKeep')
+    ? t('auditUi.nameRequired')
     : '';
-
-  // Returns whether it worked, so the picker knows whether to close its field.
-  const createGroup = async (name) => {
-    try {
-      const group = await createProjectGroup(name);
-      setProjectGroups(prev => [group, ...prev]);
-      setSelectedGroupId(group.id);
-      setApiError("");
-      return true;
-    } catch (err) {
-      setApiError(`${t('auditUi.createProjectFailed')}: ${err.message}`);
-      return false;
-    }
-  };
 
   const savePlan = async () => {
     setSaving(true);
@@ -337,7 +357,7 @@ const SheetOptimizer = () => {
       const project = await saveSheetProject({
         id: saveMode === 'update' ? editingProject?.id : undefined,
         name: projectName.trim(),
-        projectGroupId: selectedGroupId,
+        projectGroupId: await resolveProject(),
         parts,
         sheetWidth,
         sheetHeight,
@@ -375,16 +395,29 @@ const SheetOptimizer = () => {
   const savedGroupName = saved
     ? projectGroups.find(g => g.id === saved.project_group_id)?.name
     : null;
-  const selectedGroupName = projectGroups.find(g => g.id === selectedGroupId)?.name;
+  const selectedGroupName = projectGroups.find(g => g.id === groupId)?.name;
+  const moveSavedPlan = async (group) => {
+    try {
+      const moved = await movePlanToProject({ ...saved, projectType: 'sheet' }, group.id);
+      setSaved(moved);
+      localStorage.setItem('planqer.lastProjectGroup', group.id);
+      return true;
+    } catch (error) {
+      setApiError(t('projectUi.moveFailed', { message: error.message }));
+      return false;
+    }
+  };
 
   /* ── the rail ──────────────────────────────────────────────────────────── */
   const steps = [
     {
       label: t('workflow.parts'),
       reachable: true,
-      summary: hasErrors
-        ? t('workflow.someLinesNeedFixing')
-        : t('workflow.sheetPartsSummary', { count: partCount, width: mm(parseFloat(sheetWidth)), height: mm(parseFloat(sheetHeight)) }),
+      summary: parts.length === 0
+        ? t('workflow.partsNeeded')
+        : partRowsWrong || sheetWrong
+          ? t('workflow.someLinesNeedFixing')
+          : t('workflow.sheetPartsSummary', { count: partCount, width: mm(parseFloat(sheetWidth)), height: mm(parseFloat(sheetHeight)) }),
     },
     {
       label: t('workflow.theLayout'),
@@ -417,181 +450,136 @@ const SheetOptimizer = () => {
         <form className="step-view is-form" onSubmit={handleLayoutSubmit} noValidate>
           <div className="step-head">
             <div>
-              <h1 className="step-h1">{t('workflow.partsToCut')}</h1>
-              <p className="step-lede">
-                {t('workflow.partsToCutIntro')}
-              </p>
+              <h1 className="step-h1">{t('common.sheetCutting')}</h1>
+              <p className="step-lede">{t('workflow.partsToCutIntro')}</p>
+              <p className="form-legend"><span className="req-mark" aria-hidden="true" />{t('formUi.requiredLegend')}</p>
             </div>
-            <button type="button" className="btn" onClick={() => setLoadModalOpen(true)}>
+            <button type="button" className="btn-text" onClick={() => setLoadModalOpen(true)}>
               {t('workflow.loadSavedPlan')}
             </button>
           </div>
 
-          <table className="cat-table parts-table">
-            <colgroup>
-              <col className="part-item-col" />
-              <col className="part-size-col" />
-              <col className="part-quantity-col" />
-              <col />
-              <col className="part-remove-col" />
-            </colgroup>
-            <thead>
-              <tr><th>{t('workflow.item')}</th><th>{t('workflow.sizeMm')}</th><th>{t('workflow.qty')}</th><th>{t('workflow.name')}</th><th aria-label={t('common.remove')} /></tr>
-            </thead>
-            <tbody>
-              {parts.map((part, index) => (
-                <SheetPartRow
-                  key={part.id}
-                  part={part}
-                  index={index}
-                  handlePartChange={handlePartChange}
-                  removePart={removePart}
-                  error={visiblePartError(part, index)}
-                  canRemove={parts.length > 1}
-                />
-              ))}
-              {parts.length > 0 ? (
-                <tr className="is-sum">
-                  <td>Σ</td><td /><td>{partCount}</td><td /><td />
-                </tr>
-              ) : (
-                <tr>
-                  <td colSpan="5" className="synthetic">{t('workflow.emptyParts')}</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-          <div className="flex items-center gap-3" style={{ marginTop: '12px', flexWrap: 'wrap' }}>
-            <button type="button" className="btn" onClick={addPart}>
-              <Plus /> {t('workflow.addPart')}
-            </button>
-            {parts.length === 0 && (
-              <button type="button" className="btn" onClick={loadExample}>
-                {t('workflow.tryExample')}
-              </button>
-            )}
-          </div>
-
-          {/* Kerf gets the same standalone bordered field as the board page,
-              rather than a borderless row inside the sheet table — the same
-              input on two sibling pages should not look like two controls. */}
-          <div
-            className="flex items-end gap-4"
-            style={{ marginTop: '26px', paddingTop: '22px', borderTop: '1px solid var(--rule-hair)', flexWrap: 'wrap' }}
+          <SectionCard
+            id="sheet-parts"
+            title={t('workflow.partsToCut')}
+            status={parts.length === 0 ? <SectionStatus todo={t('workflow.partsNeeded')} live />
+              : partRowsWrong ? <SectionStatus error={t('formUi.checkValues')} />
+                : partRowsBlank ? <SectionStatus todo={t('boardUi.emptyRows')} />
+                  : <SectionStatus done={t('sheetUi.partsDone', { count: partCount })} />}
           >
-            <div style={{ flex: 'none' }}>
-              <label className="form-label" htmlFor="sheet-kerf">{t('workflow.sawBlade')}</label>
-              <div className="flex items-center gap-2">
-                <input
-                  id="sheet-kerf"
-                  type="number"
-                   step="0.1"
-                   min={SAW_KERF_MIN}
-                   max={SAW_KERF_MAX}
-                  value={kerfWidth}
-                  onChange={(e) => setSheetField(setKerfWidth)(e.target.value)}
-                  className={`form-input ${inputErrors.kerfWidth ? 'form-input-error' : ''}`}
-                  style={{ width: '78px' }}
-                  required
-                  placeholder="3"
-                  aria-describedby="sheet-kerf-hint"
-                />
-                <span style={{ fontSize: '13.5px', color: 'var(--ink-3)', fontWeight: 600 }}>mm</span>
-              </div>
-            </div>
-            <p
-              id="sheet-kerf-hint"
-              className={inputErrors.kerfWidth ? 'text-danger text-[12.5px] font-semibold' : 'synthetic'}
-              style={{ flex: '1 1 220px', margin: 0, paddingBottom: '11px' }}
-            >
-              {inputErrors.kerfWidth || t('auditUi.sheetKerfHint')}
-            </p>
-          </div>
-
-          <section style={{ marginTop: '30px', paddingTop: '22px', borderTop: '1px solid var(--rule-hair)' }}>
-            <div className="section-rule">
-              <h2 className="section-title">{t('workflow.sheetSource')}</h2>
-              <span className="folio">{t('workflow.sheetSourceHint')}</span>
-            </div>
-            <table className="cat-table">
+            <table className="cat-table parts-table">
+              <colgroup>
+                <col className="part-item-col" />
+                <col className="part-size-col" />
+                <col className="part-quantity-col" />
+                <col />
+                <col className="part-remove-col" />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>{t('workflow.item')}</th>
+                  <th>{t('workflow.sizeMm')}<span className="req-mark" aria-hidden="true" /></th>
+                  <th>{t('workflow.qty')}<span className="req-mark" aria-hidden="true" /></th>
+                  <th>{t('workflow.name')}{' '}<span className="opt-mark">{t('formUi.optionalMark')}</span></th>
+                  <th aria-label={t('common.remove')} />
+                </tr>
+              </thead>
               <tbody>
-                <tr>
-                    <td style={{ textAlign: 'left' }}>{t('workflow.width')}</td>
-                  <td>
-                    <input
-                      type="number"
-                      step="1"
-                       min="100"
-                      value={sheetWidth}
-                      onChange={(e) => setSheetField(setSheetWidth)(e.target.value)}
-                      className={`cell-input ${inputErrors.sheetWidth ? 'is-error' : ''}`}
-                      required
-                  aria-label={t('ui.sheetWidthAria')}
-                    />
-                  </td>
-                  <td style={{ width: '40px', color: 'var(--ink-3)' }}>mm</td>
-                </tr>
-                <tr>
-                    <td style={{ textAlign: 'left' }}>{t('workflow.height')}</td>
-                  <td>
-                    <input
-                      type="number"
-                      step="1"
-                       min="100"
-                      value={sheetHeight}
-                      onChange={(e) => setSheetField(setSheetHeight)(e.target.value)}
-                      className={`cell-input ${inputErrors.sheetHeight ? 'is-error' : ''}`}
-                      required
-                  aria-label={t('ui.sheetHeightAria')}
-                    />
-                  </td>
-                  <td style={{ color: 'var(--ink-3)' }}>mm</td>
-                </tr>
-                <tr>
-                    <td style={{ textAlign: 'left' }}>{t('workflow.thickness')}</td>
-                  <td>
-                    <input id="sheet-thickness" type="number" min="1" step="1" value={sheetThickness} onChange={(e) => setSheetField(setSheetThickness)(e.target.value)} className={`cell-input ${inputErrors.sheetThickness ? 'is-error' : ''}`} required aria-describedby="sheet-stock-error" />
-                  </td>
-                  <td style={{ color: 'var(--ink-3)' }}>mm</td>
-                </tr>
-                <tr>
-                  <td style={{ textAlign: 'left', verticalAlign: 'top' }}>{t('productUi.product')}</td>
-                  <td colSpan={2} style={{ textAlign: 'left', minWidth: '280px' }}>
-                    <ProductPicker
-                      kind="sheet"
-                      value={productSel}
-                      onChange={(next) => setSheetField(setProductSel)(next)}
-                      dims={sectionDims}
-                      label={t('productUi.product')}
-                      onUseDimensions={(entry) => setSheetField(setSheetThickness)(String(entry.thickness))}
-                      onUseFormat={(format) => {
-                        retireLayout();
-                        setSheetWidth(String(format.width));
-                        setSheetHeight(String(format.height));
-                      }}
-                    />
-                  </td>
-                </tr>
-                <tr>
-                  <td style={{ textAlign: 'left' }}>{t('ui.pricePerSheet', { currency: pricingDefaults.currency })}</td>
-                  <td>
-                    <input id="sheet-unit-price" type="number" min="0" step="0.01" className="cell-input" value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} placeholder={t('ui.optional')} aria-label={t('ui.pricePerSheet', { currency: pricingDefaults.currency })} />
-                  </td>
-                  <td />
-                </tr>
+                {parts.map((part, index) => (
+                  <SheetPartRow
+                    key={part.id}
+                    part={part}
+                    index={index}
+                    handlePartChange={handlePartChange}
+                    removePart={removePart}
+                    error={visiblePartError(part, index)}
+                    canRemove={parts.length > 1}
+                  />
+                ))}
+                {parts.length > 0 ? (
+                  <tr className="is-sum">
+                    <td>Σ</td><td /><td>{partCount}</td><td /><td />
+                  </tr>
+                ) : (
+                  <tr>
+                    <td colSpan="5" className="synthetic">{t('workflow.emptyParts')}</td>
+                  </tr>
+                )}
               </tbody>
             </table>
-            {/* Kerf reports next to its own field now, so this line carries only
-                the sheet's own errors. */}
-            <p
-              id="sheet-stock-error"
-              className={sheetError ? 'text-danger text-[12.5px] font-semibold' : 'synthetic'}
-              style={{ marginTop: '10px' }}
-            >
-               {sheetError
-                 || t('auditUi.sheetStockHint')}
+            <div className="flex items-center gap-3" style={{ marginTop: '14px', flexWrap: 'wrap' }}>
+              <button type="button" className="btn-primary" onClick={addPart}>
+                <Plus /> {t('workflow.addPart')}
+              </button>
+              {parts.length === 0 && (
+                <button type="button" className="btn-text" onClick={loadExample}>
+                  {t('workflow.tryExample')}
+                </button>
+              )}
+            </div>
+          </SectionCard>
+
+          {/* The sheet's own dimensions stay in plain sight: a layout against a
+              sheet size the yard does not sell is wrong at the till. */}
+          <SectionCard
+            id="sheet-stock"
+            title={t('ui.sheet')}
+            summary={t('workflow.sheetSourceHint')}
+            status={sheetWrong ? <SectionStatus error={t('formUi.checkValues')} /> : <SectionStatus missing={sheetMissing} />}
+          >
+            <div style={{ marginBottom: '18px' }}>
+              <span className="form-label" style={{ display: 'block' }}>{t('productUi.product')}{' '}<span className="opt-mark">{t('formUi.optionalMark')}</span></span>
+              <ProductPicker
+                kind="sheet"
+                value={productSel}
+                onChange={(next) => setSheetField(setProductSel)(next)}
+                dims={sectionDims}
+                label={t('productUi.product')}
+                onUseDimensions={(entry) => setSheetField(setSheetThickness)(String(entry.thickness))}
+                onUseFormat={(format) => {
+                  retireLayout();
+                  setSheetWidth(String(format.width));
+                  setSheetHeight(String(format.height));
+                }}
+              />
+            </div>
+            <div className="grid gap-x-6 gap-y-4 md:grid-cols-3">
+              <FormField label={t('workflow.width')} unit="mm" required>
+                <input id="sheet-width" type="number" step="1" min="100" value={sheetWidth} onChange={(e) => setSheetField(setSheetWidth)(e.target.value)} className={`form-input dimension-input ${inputErrors.sheetWidth ? 'form-input-error' : ''}`} aria-invalid={!!inputErrors.sheetWidth || undefined} aria-describedby={sheetError ? 'sheet-stock-error' : undefined} />
+              </FormField>
+              <FormField label={t('workflow.height')} unit="mm" required>
+                <input id="sheet-height" type="number" step="1" min="100" value={sheetHeight} onChange={(e) => setSheetField(setSheetHeight)(e.target.value)} className={`form-input dimension-input ${inputErrors.sheetHeight ? 'form-input-error' : ''}`} aria-invalid={!!inputErrors.sheetHeight || undefined} aria-describedby={sheetError ? 'sheet-stock-error' : undefined} />
+              </FormField>
+              <FormField label={t('workflow.thickness')} unit="mm" required>
+                <input id="sheet-thickness" type="number" min="1" step="1" value={sheetThickness} onChange={(e) => setSheetField(setSheetThickness)(e.target.value)} className={`form-input dimension-input ${inputErrors.sheetThickness ? 'form-input-error' : ''}`} aria-invalid={!!inputErrors.sheetThickness || undefined} aria-describedby={sheetError ? 'sheet-stock-error' : undefined} />
+              </FormField>
+            </div>
+            <p id="sheet-stock-error" className={sheetError ? 'text-danger text-[12.5px] font-semibold' : 'synthetic'} style={{ marginTop: '10px' }}>
+              {sheetError || t('auditUi.sheetStockHint')}
             </p>
-          </section>
+            <div className="grid gap-x-6 gap-y-4 md:grid-cols-2" style={{ marginTop: '16px' }}>
+              <div>
+                <FormField label={t('workflow.sawBlade')} unit="mm" required tip={t('auditUi.sheetKerfHint')}>
+                  <input
+                    id="sheet-kerf"
+                    type="number"
+                    step="0.1"
+                    min={SAW_KERF_MIN}
+                    max={SAW_KERF_MAX}
+                    value={kerfWidth}
+                    onChange={(e) => setSheetField(setKerfWidth)(e.target.value)}
+                    className={`form-input dimension-input ${inputErrors.kerfWidth ? 'form-input-error' : ''}`}
+                    aria-invalid={!!inputErrors.kerfWidth || undefined}
+                    aria-describedby={inputErrors.kerfWidth ? 'sheet-kerf-error' : undefined}
+                  />
+                </FormField>
+                {inputErrors.kerfWidth && <p id="sheet-kerf-error" className="text-danger text-[12.5px] font-semibold" style={{ marginTop: '6px' }}>{inputErrors.kerfWidth}</p>}
+              </div>
+              <FormField label={t('ui.pricePerSheet', { currency: pricingDefaults.currency })} optional>
+                <input id="sheet-unit-price" type="number" min="0" step="0.01" className="form-input dimension-input" value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} />
+              </FormField>
+            </div>
+          </SectionCard>
 
           <div style={{ marginTop: '26px' }}>
             <Disclosure
@@ -622,9 +610,7 @@ const SheetOptimizer = () => {
                 />
                 <span>
                    <b style={{ fontSize: '13.5px' }}>{t('ui.allowRotation')}</b>
-                  <span className="block synthetic">
-                    {t('ui.rotationDescription')}
-                  </span>
+                  <InfoTip label={t('ui.allowRotation')}>{t('ui.rotationDescription')}</InfoTip>
                 </span>
               </label>
             </Disclosure>
@@ -658,9 +644,8 @@ const SheetOptimizer = () => {
 
           <div className="step-foot">
             <p className="synthetic step-foot-note">
-              {hasErrors
-                 ? t('ui.fixLines')
-                : t('workflow.sheetPartsSummary', { count: partCount, width: mm(parseFloat(sheetWidth)), height: mm(parseFloat(sheetHeight)) })}
+              {blocker ? blocker.text : t('workflow.sheetPartsSummary', { count: partCount, width: mm(parseFloat(sheetWidth)), height: mm(parseFloat(sheetHeight)) })}
+              {blocker && <> <button type="button" className="btn-link" onClick={blocker.go}>{blocker.name}</button></>}
             </p>
             <div className="step-foot-act">
               <button type="submit" className="btn-order" disabled={loading || hasErrors}>
@@ -714,7 +699,7 @@ const SheetOptimizer = () => {
           <SheetResultDisplay result={result} projectName={projectName} />
 
           <div className="step-foot">
-            <button type="button" className="btn" onClick={() => setStep(STEP_PARTS)}>
+            <button type="button" className="btn-text" onClick={() => setStep(STEP_PARTS)}>
                <ArrowLeft /> {t('ui.changeParts')}
             </button>
             <div className="step-foot-act">
@@ -746,86 +731,35 @@ const SheetOptimizer = () => {
               <div>
                    <b>{t('ui.savedAs', { name: saved.name })}</b>
                 <p>
-                   {savedGroupName ? t('ui.filedUnder', { group: savedGroupName }) : t('ui.unfiled')}
+                    {savedGroupName ? t('ui.filedUnder', { group: savedGroupName }) : t('ui.unfiled')}
                 </p>
+                <MovePlanMenu groups={projectGroups} currentGroupId={saved.project_group_id} onMove={moveSavedPlan} />
               </div>
             </div>
           ) : (
-            <>
-              <div style={{ marginBottom: '24px' }}>
-                <label className="form-label" htmlFor="plan-name">{t('workflow.planName')}</label>
-                <input
-                  id="plan-name"
-                  type="text"
-                  className={`form-input ${nameError ? 'form-input-error' : ''}`}
-                  placeholder={t('ui.planNamePlaceholder')}
-                  value={projectName}
-                  onChange={(e) => setProjectName(e.target.value)}
-                  aria-invalid={!!nameError}
-                  aria-describedby="plan-name-hint"
-                  autoFocus
-                />
-                <p
-                  id="plan-name-hint"
-                  className={nameError ? 'text-danger text-[12.5px] font-semibold' : 'synthetic'}
-                  style={{ marginTop: '7px' }}
-                  role={nameError ? 'alert' : undefined}
-                >
-                  {nameError || t('ui.savedNameHint')}
-                </p>
-              </div>
-              {editingProject && (
-                <div style={{ marginBottom: '24px' }}>
-                  <label className="form-label" htmlFor="sheet-save-mode">{t('ui.saveAs')}</label>
-                <select
-                  id="sheet-save-mode"
-                  className="form-select"
-                  value={saveMode}
-                  onChange={(e) => {
-                    const mode = e.target.value;
-                    setSaveMode(mode);
-                    if (mode === 'update' && !editingProject && userProjects.length) {
-                      setEditingProject(userProjects[0]);
-                      setProjectName(userProjects[0].name);
-                      setSelectedGroupId(userProjects[0].project_group_id || '');
-                    }
-                  }}
-                >
-                   <option value="new">{t('ui.createNewPlan')}</option>
-                   <option value="update" disabled={!userProjects.length}>{t('ui.updateExistingPlan')}</option>
-                </select>
-                {saveMode === 'update' && editingProject && (
-                  <select
-                    className="form-select"
-                    style={{ marginTop: '10px' }}
-                     aria-label={t('ui.planToUpdate')}
-                    value={editingProject.id}
-                    onChange={(e) => {
-                      const target = userProjects.find(p => p.id === e.target.value);
-                      setEditingProject(target);
-                      setProjectName(target.name);
-                      setSelectedGroupId(target.project_group_id || '');
-                    }}
-                  >
-                    {userProjects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                  </select>
-                )}
-                </div>
-              )}
-              <div style={{ marginBottom: '24px' }}>
-                <ProjectPicker
-                  groups={projectGroups}
-                  value={selectedGroupId}
-                  onChange={setSelectedGroupId}
-                  onCreate={createGroup}
-                />
-              </div>
-
-            </>
+            <SavePlanCard
+              id="sheet-save"
+              nameId="plan-name"
+              modeId="sheet-save-mode"
+              nameLabel={t('workflow.planName')}
+              projectName={projectName}
+              onProjectName={setProjectName}
+              nameError={nameError}
+              editingProject={editingProject}
+              onEditingProject={setEditingProject}
+              saveMode={saveMode}
+              onSaveMode={setSaveMode}
+              userProjects={userProjects}
+              projectGroups={projectGroups}
+              groupId={groupId}
+              onGroupId={setGroupId}
+              newName={newName}
+              onNewName={setNewName}
+            />
           )}
 
           <div className="step-foot">
-            <button type="button" className="btn" onClick={() => setStep(STEP_PLAN)}>
+            <button type="button" className="btn-text" onClick={() => setStep(STEP_PLAN)}>
                <ArrowLeft /> {t('workflow.backToLayout')}
             </button>
             {saved ? (
@@ -880,7 +814,7 @@ const SheetOptimizer = () => {
                         <td style={{ textAlign: 'left', color: 'var(--ink)', fontSize: '13px' }}>{project.name}</td>
                         <td>{project.parts_data.reduce((sum, p) => sum + (p.quantity || 0), 0)}</td>
                         <td style={{ width: '90px' }}>
-                          <button className="btn" style={{ padding: '5px 10px', minHeight: 0 }} onClick={() => loadProject(project)}>
+                          <button className="btn btn-primary btn-sm" onClick={() => loadProject(project)}>
                              {t('ui.load')}
                           </button>
                         </td>

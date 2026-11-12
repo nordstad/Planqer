@@ -47,7 +47,7 @@ const SheetResultDisplay = ({ result, projectName }) => {
           <div className="sheet-navigator">
             <button
               type="button"
-              className="btn btn-sm"
+              className="btn btn-primary btn-sm"
               onClick={() => setSelectedSheetIndex(activeSheetIndex - 1)}
               disabled={activeSheetIndex === 0}
               aria-label={t('workflow.previousSheet')}
@@ -68,7 +68,7 @@ const SheetResultDisplay = ({ result, projectName }) => {
             </label>
             <button
               type="button"
-              className="btn btn-sm"
+              className="btn btn-primary btn-sm"
               onClick={() => setSelectedSheetIndex(activeSheetIndex + 1)}
               disabled={activeSheetIndex === result.sheets.length - 1}
               aria-label={t('workflow.nextSheet')}
@@ -107,7 +107,7 @@ const SheetResultDisplay = ({ result, projectName }) => {
               {t('ui.hatchingWaste')}
            </p>
           {hasDiagram && (
-            <button type="button" className="btn" onClick={downloadDiagram}>
+            <button type="button" className="btn btn-primary" onClick={downloadDiagram}>
               <Download /> {t('workflow.downloadDiagram')}
             </button>
           )}

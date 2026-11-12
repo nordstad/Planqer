@@ -35,6 +35,9 @@
     --builtin-bg:  #eaf2e3;
     --shop:        #16150f;   /* saved / confirmed — ink, not a fifth colour */
     --waste-dot:   rgba(22,21,15,.16);
+    --field:       #fbfaf6;   /* a field you fill in: recessed, a hair off the card */
+    --field-line:  #8a846f;   /* field and dropdown edge — 3.5:1+ on card and field */
+    --done:        var(--builtin);   /* a section whose required fields are filled: the same green, not a new colour */
   }
 
   .dark {
@@ -60,6 +63,9 @@
     --builtin-bg:  #1c2716;
     --shop:        #ece7d8;
     --waste-dot:   rgba(236,231,216,.16);
+    --field:       #14120d;   /* darker than the card, so a field reads as sunk in */
+    --field-line:  #8f8b78;   /* 4.9:1 on card */
+    --done:        var(--builtin);
   }
 
   html { scroll-behavior: auto; scrollbar-gutter: stable; }
@@ -100,8 +106,13 @@
      too, and only the step you are on is drawn. */
 
   .plan-steps {
-    display: flex; gap: 0 34px; list-style: none; margin: 0 0 28px; padding: 0;
+    display: flex; gap: 0 34px; list-style: none; margin: -12px 0 28px; padding: 12px 0 0;
     border-bottom: 1px solid var(--rule-hair);
+    position: sticky; top: 0; z-index: 10; background: var(--ground);
+  }
+  .plan-steps::after {
+    content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 12px;
+    background: linear-gradient(var(--ground), transparent); pointer-events: none;
   }
   /* Segments take their natural width rather than a third of the page each, so
      the amber underline hugs its own label the way the nav's does — and the rail
@@ -144,6 +155,9 @@
   .step-view { min-width: 0; }
   .step-view.is-form { max-width: 620px; }
 
+  /* SVG text has no colour of its own: without this it is black on the dark theme. */
+  .wallpaper-elevation svg text:not([fill]), .wallpaper-roll-diagram text:not([fill]),
+  .wallpaper-room-overview svg text:not([fill]), .wallpaper-svg-small:not([fill]), .wallpaper-svg-strip:not([fill]) { fill: var(--ink-2); }
   /* Elevations reserve their fixed SVG width for the wall itself. When a long
      wall creates narrow strips, their labels move into this wrapping key so
      no text is squeezed into neighbouring strips. */
@@ -162,6 +176,19 @@
   .step-lede {
     font-size: 14.5px; line-height: 1.5; color: var(--ink-2); margin: 0; max-width: 58ch;
   }
+  .info-tip { position: relative; display: inline-flex; vertical-align: middle; margin-left: 5px; }
+  .info-tip-button {
+    display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px;
+    padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--ink-3);
+    font: inherit; font-size: 15px; line-height: 1; cursor: help;
+  }
+  .info-tip-button:hover, .info-tip-button:focus-visible { color: var(--accent); background: var(--accent-bg); }
+  .info-tip-content {
+    position: absolute; z-index: 12; top: calc(100% + 6px); left: 0; width: min(280px, 75vw);
+    padding: 9px 11px; border: 1px solid var(--rule-hair); border-radius: 8px; background: var(--card);
+    box-shadow: 0 8px 20px rgba(22, 21, 15, .14); color: var(--ink-2); font-size: 12.5px;
+    font-weight: 400; line-height: 1.4; text-align: left;
+  }
   .step-head {
     display: flex; align-items: flex-start; justify-content: space-between;
     gap: 12px 20px; flex-wrap: wrap; margin-bottom: 26px;
@@ -173,6 +200,12 @@
     margin-top: 32px; padding-top: 20px; border-top: 1px solid var(--rule-hair);
   }
   .step-foot-note { flex: 1 1 240px; margin: 0; }
+  .btn-link {
+    padding: 0; border: 0; background: transparent; color: var(--accent); font: inherit;
+    font-size: 13px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
+  }
+  .btn-link:hover { color: var(--ink); }
+  .btn-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
   .step-foot-act { flex: 0 1 320px; min-width: 200px; margin-left: auto; }
 
   /* ── the answer, on the plan step: the one figure, then plain facts ──── */
@@ -584,25 +617,194 @@
   .btn-order:hover { background: var(--ink); color: var(--ground); }
   .btn-order:disabled { background: var(--ground-3); color: var(--ink-2); cursor: not-allowed; }
 
-  /* ── form fields: bordered and rounded, not underline-only ───────────── */
+  /* ── form fields: things you fill in ─────────────────────────────────────
+     A recessed fill and a solid edge at 3:1+ against the card in both
+     editions, so a field never reads as a button or as plain text. A dropdown
+     is the same field with a divided chevron block. */
   .form-input, .form-select {
-    display: block; width: 100%; background: var(--card); color: var(--ink);
-    border: 1.5px solid var(--rule-hair); border-radius: 10px;
+    display: block; width: 100%; background: var(--field); color: var(--ink);
+    border: 1.5px solid var(--field-line); border-radius: 8px;
+    box-shadow: inset 0 2px 3px rgba(0,0,0,.07);
     padding: 8px 12px; font-size: 14.5px; font-weight: 600; font-family: inherit;
-    min-height: 38px;
+    min-height: 40px;
   }
+  /* An example in a field must never pass for an entered value. */
+  .form-input::placeholder { color: var(--ink-3); font-weight: 400; font-style: italic; opacity: 1; }
   .form-input:focus, .form-select:focus {
-    outline: none; border-color: var(--accent); background: var(--accent-bg);
+    outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg);
+  }
+  .form-select {
+    appearance: none; -webkit-appearance: none; cursor: pointer; padding-right: 52px;
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none' stroke='%2316150f' stroke-width='2'%3E%3Cpath d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E"),
+      linear-gradient(var(--field-line), var(--field-line));
+    background-repeat: no-repeat;
+    background-position: right 14px center, right 40px center;
+    background-size: 12px 8px, 1px 22px;
+  }
+  .dark .form-select {
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none' stroke='%23ece7d8' stroke-width='2'%3E%3Cpath d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E"),
+      linear-gradient(var(--field-line), var(--field-line));
   }
   .form-input-error, .form-input-error:focus {
     border-color: var(--revision); background: var(--revision-bg); color: var(--ink);
   }
+  .dimension-input { width: 112px; max-width: 100%; }
+  .cell-input.dimension-input { width: 112px; display: block; margin-left: auto; }
   .form-label {
     display: block; font-family: 'Archivo Narrow', sans-serif; font-size: 11px;
     font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
     color: var(--ink-3); margin-bottom: 5px;
   }
   .form-label .synthetic { text-transform: none; font-weight: 400; }
+
+  /* ── a labelled field: required star, "(optional)", unit inside ──────────
+     Required is marked, optional is named, so no field relies on its look
+     alone to say whether it must be filled. */
+  .form-field { min-width: 0; }
+  .form-field-head { display: flex; align-items: center; min-height: 24px; margin-bottom: 3px; }
+  .form-field-head .form-label { margin: 0; }
+  .req-mark::after {
+    content: '*'; margin-left: 3px; color: var(--ink);
+    font-family: 'Archivo', sans-serif; font-size: 13px; font-weight: 800; letter-spacing: 0;
+  }
+  .opt-mark {
+    margin-left: 2px; font-family: 'Archivo', sans-serif; font-size: 12px; font-weight: 400;
+    letter-spacing: 0; text-transform: none; color: var(--ink-3);
+  }
+  .field-unit-wrap { position: relative; display: block; width: fit-content; max-width: 100%; }
+  .field-unit-wrap > .form-input { padding-right: 46px; }
+  .form-field.is-fill .field-unit-wrap { width: 100%; }
+  .field-unit {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    color: var(--ink-2); font-size: 13px; font-weight: 500; pointer-events: none;
+  }
+  .form-legend { font-size: 12.5px; color: var(--ink-2); margin: 10px 0 0; }
+  /* A narrow table keeps its header on screen by putting "(optional)" under it. */
+  @media (max-width: 640px) { .cat-table th .opt-mark { display: block; margin: 2px 0 0; } }
+  .form-legend .req-mark::after { margin: 0 5px 0 0; }
+
+  /* A minor action: underlined ink text, never a box. */
+  .btn-text {
+    display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 4px 2px;
+    border: 0; background: none; color: var(--ink); font: inherit; font-size: 13.5px; font-weight: 700;
+    text-decoration: underline; text-decoration-color: var(--ink-4); text-underline-offset: 4px; cursor: pointer;
+  }
+  .btn-text:hover { color: var(--accent); text-decoration-color: var(--accent); }
+  .btn-text:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+  .btn-text.is-quiet { color: var(--ink-2); font-size: 13px; font-weight: 500; }
+  .btn-text.is-quiet:hover { color: var(--revision); text-decoration-color: var(--revision); }
+
+  /* ── a section card: a header band that says what is still missing ──────
+     No overflow clipping, so an ⓘ tip near the top can still open over the
+     card edge. */
+  .sec-card {
+    background: var(--card); border: 1px solid var(--rule-hair); border-radius: 16px;
+    box-shadow: 0 1px 2px rgba(22,21,15,.05); scroll-margin-top: 140px;
+  }
+  .sec-card + .sec-card { margin-top: 16px; }
+  /* A list item left out of the batch stays readable but steps back. */
+  .sec-card.is-excluded { opacity: .62; }
+  .sec-card.is-excluded:focus-within, .sec-card.is-excluded:hover { opacity: 1; }
+  .sec-card-head {
+    display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 18px;
+    background: var(--ground-2); border: 0; border-bottom: 1px solid var(--rule-hair);
+    border-radius: 15px 15px 0 0; color: var(--ink); font: inherit; font-weight: 400; text-align: left;
+  }
+  .sec-card-head.is-closed { border-bottom: 0; border-radius: 15px; }
+  button.sec-card-head { cursor: pointer; }
+  button.sec-card-head:hover { background: var(--ground-3); }
+  button.sec-card-head:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .sec-card-text { min-width: 0; flex: 1 1 auto; }
+  .sec-card-title { display: block; margin: 0; font-size: 15px; font-weight: 700; line-height: 1.25; }
+  .sec-card-title[tabindex] { scroll-margin-top: 110px; outline: none; }
+  .sec-card-summary {
+    display: block; font-size: 12.5px; color: var(--ink-2); font-variant-numeric: tabular-nums;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .sec-card-status {
+    flex: none; display: inline-flex; align-items: center; gap: 6px; max-width: 55%;
+    font-size: 12.5px; color: var(--ink-2); text-align: right;
+  }
+  .sec-card-status::before {
+    content: ''; flex: none; width: 10px; height: 10px; border-radius: 9999px; border: 1.5px solid var(--ink-3);
+  }
+  .sec-card-status.is-done { color: var(--done); font-weight: 600; }
+  .sec-card-status.is-done::before { content: '✓'; width: auto; height: auto; border: 0; font-weight: 700; }
+  .sec-card-status.is-error { color: var(--revision); font-weight: 600; }
+  .sec-card-status.is-error::before { background: var(--revision); border-color: var(--revision); }
+  .sec-card-badge {
+    flex: none; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 6px;
+    background: var(--ink); color: var(--ground); font-size: 13px; font-weight: 800;
+  }
+  .sec-card-badge.is-skip { background: transparent; color: var(--ink-3); border: 1.5px dashed var(--field-line); }
+  .sec-card-change {
+    flex: none; font-size: 13px; font-weight: 700;
+    text-decoration: underline; text-decoration-color: var(--ink-4); text-underline-offset: 4px;
+  }
+  .sec-card-chevron {
+    flex: none; width: 9px; height: 9px; margin: 0 4px; border-right: 2px solid var(--ink);
+    border-bottom: 2px solid var(--ink); transform: rotate(225deg) translate(-2px, -2px);
+  }
+  .sec-card.is-open { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .sec-card-body { padding: 18px; }
+  .sec-card-foot { display: flex; justify-content: flex-end; margin-top: 14px; }
+  @media (max-width: 640px) {
+    .sec-card-head { flex-wrap: wrap; row-gap: 4px; padding: 12px 14px; }
+    .sec-card-status { order: 3; max-width: none; width: 100%; padding-left: 40px; text-align: left; }
+    .sec-card-body { padding: 16px 14px; }
+  }
+
+  /* Two or three mutually exclusive choices drawn as tiles. */
+  .choice-tile {
+    display: flex; align-items: center; gap: 10px; min-height: 46px; padding: 0 12px;
+    border: 1.5px solid var(--field-line); border-radius: 8px; background: var(--field);
+    cursor: pointer; font-weight: 600;
+  }
+  .choice-tile:has(input:checked) { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); background: var(--card); }
+
+  /* ── a corner between two wall cards: one line, details on request ─────── */
+  .corner-link { position: relative; margin-left: 31px; padding: 9px 0 9px 24px; border-left: 2px solid var(--ink-4); }
+  .corner-link::before {
+    content: ''; position: absolute; left: -7px; top: 15px; width: 12px; height: 12px;
+    border: 2px solid var(--ink); border-radius: 3px; background: var(--ground); transform: rotate(45deg);
+  }
+  .corner-link.is-quiet::before { border-style: dashed; border-color: var(--ink-3); }
+  .corner-link.is-pending::before { background: var(--accent); border-color: var(--accent); }
+  .corner-link-row { display: flex; align-items: center; gap: 4px 10px; flex-wrap: wrap; font-size: 13px; color: var(--ink-2); }
+  .corner-link-row b { color: var(--ink); }
+  .corner-link-row .btn-text { margin-left: auto; font-size: 13px; min-height: 28px; }
+  .corner-link-body {
+    margin-top: 10px; padding: 14px; border: 1px solid var(--rule-hair); border-radius: 12px; background: var(--card);
+  }
+
+  /* ── the room at a glance, beside the walls on wide screens ──────────────
+     On a phone the closed wall cards are the overview, so this is not shown. */
+  .room-nav { background: var(--card); border: 1px solid var(--rule-hair); border-radius: 16px; margin-bottom: 16px; }
+  .room-nav-head {
+    display: flex; justify-content: space-between; gap: 10px; padding: 10px 16px; background: var(--ground-2);
+    border-radius: 15px 15px 0 0; font-family: 'Archivo Narrow', sans-serif; font-size: 11px; font-weight: 700;
+    letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3);
+  }
+  .room-nav ol { list-style: none; margin: 0; padding: 6px 0; }
+  .room-nav-item {
+    display: flex; align-items: center; gap: 10px; width: 100%; padding: 7px 16px; border: 0; background: none;
+    color: var(--ink); font: inherit; font-size: 13.5px; text-align: left; cursor: pointer;
+  }
+  .room-nav-item:hover { background: var(--ground-2); }
+  .room-nav-item[aria-current="true"] { box-shadow: inset 3px 0 0 var(--accent); font-weight: 700; }
+  .room-nav-item .sec-card-badge { width: 20px; height: 20px; font-size: 11px; border-radius: 4px; }
+  .room-nav-state { margin-left: auto; font-size: 12px; color: var(--ink-2); }
+  .room-nav-state.is-done { color: var(--done); }
+  .room-nav-state.is-error { color: var(--revision); }
+  .room-preview-fold > summary {
+    list-style: none; cursor: pointer; display: flex; justify-content: center; gap: 8px; padding: 10px;
+    border: 1px solid var(--rule-hair); border-radius: 12px; background: var(--card); font-size: 13px; font-weight: 700;
+  }
+  .room-preview-fold > summary::-webkit-details-marker { display: none; }
+  @media (max-width: 1023px) { .room-nav { display: none; } }
+  @media (min-width: 1024px) { .room-preview-fold > summary { display: none; } }
 
   /* ── a swatch of what the selected bond pattern looks like ───────────── */
   .bond-preview {
@@ -617,18 +819,24 @@
     .tile-bond-control { margin-left: auto; }
   }
 
+  /* A field inside a table row: the same recessed box and 3:1 edge as every
+     other field, only tighter, so an empty cell is still visibly a field. An
+     empty required cell stays neutral; the section status names it. */
   .cell-input {
-    width: 100%; background: transparent; border: 0; color: var(--ink);
+    width: 100%; background: var(--field); border: 1.5px solid var(--field-line); border-radius: 6px;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.07); color: var(--ink);
     font: inherit; font-size: 14px; font-weight: 600; text-align: right;
-    padding: 2px 4px; min-height: 30px; font-variant-numeric: tabular-nums; border-radius: 4px;
+    padding: 4px 8px; min-height: 32px; font-variant-numeric: tabular-nums;
   }
-  .cell-input:focus { outline: none; background: var(--accent-bg); color: var(--ink); }
-  .cell-input.is-required-empty {
-    background: var(--accent-bg);
-    border: 1px solid var(--accent);
-    border-radius: 6px;
+  .cell-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); color: var(--ink); }
+
+  /* An optional field: the same 3:1+ edge as a required one, but dashed and
+     not recessed, so "may be left empty" reads before the label is read. The
+     "(optional)" label stays: the look is never the only signal. */
+  .form-input.is-optional, .cell-input.is-optional {
+    border-style: dashed; background: var(--card); box-shadow: none;
   }
-  .cell-input.is-required-empty:focus { border-color: var(--accent); }
+  .form-input.is-optional:focus, .cell-input.is-optional:focus { border-style: solid; }
   .parts-table { table-layout: fixed; }
   .parts-table .part-item-col { width: 44px; }
   .parts-table .part-size-col { width: 172px; }
@@ -636,16 +844,25 @@
   .parts-table .part-remove-col { width: 34px; }
   .parts-table th:nth-child(3), .parts-table td:nth-child(3) { padding-left: 12px; }
   .parts-table th:nth-child(4), .parts-table td:nth-child(4) { padding-left: 12px; }
+  /* On a phone the fixed columns used to take the whole card and left the Name
+     column a few pixels wide; narrower size columns give names room. */
+  @media (max-width: 640px) {
+    .parts-table .part-item-col { width: 30px; }
+    .parts-table .part-size-col { width: 128px; }
+    .parts-table .part-quantity-col { width: 52px; }
+    .parts-table .part-remove-col { width: 30px; }
+    .parts-table th:nth-child(3), .parts-table td:nth-child(3),
+    .parts-table th:nth-child(4), .parts-table td:nth-child(4) { padding-left: 8px; }
+    .board-part-length .cell-input { width: 84px; }
+    .sheet-part-dimension { width: 52px; flex-basis: 52px; }
+  }
   .board-part-length .cell-input { width: 96px; margin-left: auto; }
   .sheet-part-size { width: 172px; }
   .sheet-part-dimensions { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
   .sheet-part-dimension { width: 72px; flex: 0 0 72px; }
   .cat-table .part-error-row td, .cat-table .sheet-part-error-row td { padding-top: 0; text-align: left; }
   .part-error-row p, .sheet-part-error-row p { margin: 0; padding: 0 0 6px; }
-  .stock-table-wrap .stock-price-input {
-    width: 112px; background: var(--card); border: 1px solid var(--rule-hair); border-radius: 6px; padding: 4px 6px;
-  }
-  .stock-table-wrap .stock-price-input:focus { border-color: var(--accent); }
+  .stock-table-wrap .stock-price-input { width: 112px; }
   .kerf-input { appearance: textfield; -moz-appearance: textfield; }
   .kerf-input::-webkit-outer-spin-button, .kerf-input::-webkit-inner-spin-button {
     -webkit-appearance: none; margin: 0;
@@ -671,7 +888,7 @@
   }
   .cell-strike:hover { color: var(--revision); background: var(--revision-bg); }
   input[type="checkbox"], input[type="radio"] {
-    appearance: none; width: 16px; height: 16px; border: 1.5px solid var(--ink-4);
+    appearance: none; width: 16px; height: 16px; border: 1.5px solid var(--field-line);
     background: var(--card); cursor: pointer; flex: none; position: relative; border-radius: 4px;
   }
   input[type="radio"] { border-radius: 9999px; }
@@ -901,6 +1118,7 @@
   }
   .proj-card-foot svg { flex: none; color: var(--ink-4); transition: color .12s linear; }
   .proj-card:hover .proj-card-foot svg { color: var(--accent); }
+  .proj-card.is-drop-target { border-color: var(--accent); border-style: dashed; }
 
   /* ── back out of a project: an exit, not a second navigation ──────────── */
   .crumb-back {
@@ -995,6 +1213,16 @@
     font-family: 'Archivo Narrow', sans-serif; font-size: 12px; color: var(--ink-3); margin: 5px 0 0;
   }
   .plan-item-acts { display: flex; flex-wrap: wrap; gap: 8px; flex: none; margin-left: auto; }
+  .plan-item[draggable="true"] { cursor: grab; }
+  .plan-item[draggable="true"]:active { cursor: grabbing; }
+  .move-plan-menu { position: relative; }
+  .move-plan-options { position: absolute; z-index: 2; right: 0; top: calc(100% + 5px); min-width: 160px; padding: 5px; border: 1px solid var(--rule-hair); border-radius: 8px; background: var(--card); box-shadow: 0 8px 20px rgba(22, 21, 15, .14); }
+  .move-plan-options button { display: block; width: 100%; padding: 7px 9px; border: 0; border-radius: 5px; background: transparent; color: var(--ink); font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
+  .move-plan-options button:hover, .move-plan-options button:focus-visible { background: var(--ground-2); }
+  .plan-drop-targets { margin: -8px 0 22px; padding: 12px 14px; border: 1px dashed var(--accent); border-radius: 10px; background: var(--accent-bg); }
+  .plan-drop-targets b { display: block; margin-bottom: 8px; }
+  .plan-drop-targets div { display: flex; flex-wrap: wrap; gap: 8px; }
+  .plan-drop-targets button { padding: 6px 10px; border: 1px solid var(--rule-hair); border-radius: 7px; background: var(--card); color: var(--ink); font: inherit; cursor: pointer; }
   @media (max-width: 767px) {
     .project-view-nav { width: 100%; }
     .project-view-tab { flex: 1; padding-inline: 8px; }

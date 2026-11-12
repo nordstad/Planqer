@@ -1,224 +1,98 @@
-# CLAUDE.md
+# Planqer contributor guide
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Planqer is a self-hosted cutting-optimisation application for boards, sheets,
+tiles, wallpaper, and 3D-model cutlists. It has a FastAPI backend, React/Vite
+frontend, and MCP server.
 
-## Overview
+## Commands
 
-Planqer is a self-hosted cutting optimization application that minimizes material waste when cutting boards to specific lengths. The project consists of three main components:
+Run commands from the relevant directory.
 
-1. **Backend** (`/backend`) - FastAPI service with optimization algorithms
-2. **Frontend** (`/frontend`) - React application for user interface  
-3. **MCP Server** (`/mcp-server`) - Model Context Protocol server for AI assistant integration
-
-## Development Commands
-
-### Backend (Python/FastAPI)
-
-Located in `/backend` directory:
+### Backend (`backend/`)
 
 ```bash
-# Install dependencies
 uv sync
-
-# Run tests
 pytest
-
-# Start development server
 uvicorn planqer.api:app --reload --host 0.0.0.0 --port 8002
 ```
 
-### Frontend (React/Vite)
-
-Located in `/frontend` directory:
+### Frontend (`frontend/`)
 
 ```bash
-# Install dependencies
 npm install
-
-# Start development server
-npm run dev     # or npm start
-
-# Run unit tests
+npm run dev
 npm test
-
-# Run E2E tests
 npm run test:e2e
-
-# Build for production
 npm run build
 ```
 
-### MCP Server (TypeScript/Python hybrid)
-
-Located in `/mcp-server` directory:
+### MCP server (`mcp-server/`)
 
 ```bash
-# Install dependencies
 uv sync
-
-# Build TypeScript
 npm run build
-
-# Run server
 uv run planqer-mcp-server
-
-# Test with MCP Inspector
 npx @modelcontextprotocol/inspector uv run planqer-mcp-server
 ```
 
-### Docker Development
+## Docker development
 
-Run the full stack:
+`localhost:3001` (frontend) and `localhost:8002` (backend) may be long-lived
+containers. Do not assume they match the checkout or start another local server
+on those ports.
 
 ```bash
 docker compose up -d --build
 ```
 
-#### Testing local changes in Docker
+Before asking someone to test:
 
-`localhost:3001` (frontend) and `localhost:8002` (backend) are usually served by
-long-running containers that may be days old. Never assume they match the
-checkout, and do not start a second `npm start` or `uvicorn` on the same ports.
-Before telling the user to test, rebuild what changed:
+- Changes to `frontend/package.json`, lock/config files, or files outside
+  `frontend/src/` and `frontend/public/`: run
+  `docker compose up -d --build frontend`.
+- Any backend code, configuration, migrations, or dependencies: run
+  `docker compose up -d --build backend`.
+- Changes only under `frontend/src/` or `frontend/public/`: Vite hot-reloads.
 
-- **Frontend dependencies or config** (`frontend/package.json`,
-  `package-lock.json`, `vite.config.mjs`, anything outside `src/` and
-  `public/`): rebuild with `docker compose up -d --build frontend`. Only
-  `src/` and `public/` are bind-mounted, and `npm ci` runs at image build
-  time, so a new dependency is missing at runtime.
-- **Anything under `backend/`** (code, `pyproject.toml`, `uv.lock`,
-  `config.yaml`, `alembic/`): rebuild with
-  `docker compose up -d --build backend`. The backend image copies the code
-  in and has no source mount.
-- **Only `frontend/src/` or `frontend/public/`**: no rebuild. They are
-  bind-mounted, so Vite hot-reloads.
+The frontend container serves the checked-out branch. Rebuilding preserves the
+`backend_data` volume. Verify the relevant page and container health, then ask
+the user to hard-refresh (`⌘⇧R`). A Vite `Failed to resolve import` error from
+`/app/node_modules` usually means the frontend image is stale.
 
-A symptom of a stale image is a Vite error such as
-`Failed to resolve import "<package>"` with `/app/node_modules` in the path.
-It is not a code bug; rebuild the frontend.
+## Architecture at a glance
 
-The frontend container serves whichever branch is currently checked out, so
-confirm the branch before testing. Rebuilding never touches the `backend_data`
-volume, so accounts and saved projects survive.
-
-After rebuilding, verify rather than assume:
-
-```bash
-# new dependency is present in the container
-docker exec planqer-web-frontend ls node_modules/<package>
-# pages are served
-curl -s -o /dev/null -w "%{http_code}\n" http://localhost:3001/model-cutlist
-# backend is healthy
-docker ps --filter name=planqer-web --format '{{.Names}}\t{{.Status}}'
-```
-
-Then give the user the URL to open, and tell them to hard-refresh (⌘⇧R).
-
-## Architecture
-
-### Backend Architecture
-
-- **Core Logic**: `/backend/planqer/` contains the optimization algorithms
-- **API Layer**: `/backend/planqer/api.py` - FastAPI endpoints with rate limiting
-- **Services**: `/backend/planqer/services.py` - Business logic orchestration
-- **Cutting Logic**: `/backend/planqer/cutting.py` - Core optimization algorithms
-- **Visualization**: `/backend/planqer/svg_visualization.py`, `sheet_visualization.py` - Generate cutting diagrams
-- **Configuration**: `/backend/config.yaml` - Application settings
-
-### Frontend Architecture
-
-- **Router**: React Router routes the homepage, board/sheet/tile/wallpaper/model-cutlist
-  optimizers, help, user dashboard, and admin dashboard
-- **Components**:
-  - `CuttingOptimizer.jsx` - Main optimization interface
-  - `HomePage.jsx` - Landing page
-  - `ResultDisplay.jsx` - Show optimization results and visualizations
-  - `PartInputRow.jsx` / `BoardLengthRow.jsx` - Input components
-- **API Integration**: `/frontend/src/utils/api.js` - Backend communication
-- **Testing**: Component tests using React Testing Library + Vitest
-- **E2E Testing**: Playwright tests in `/frontend/tests/e2e/`
-
-### MCP Server Architecture
-
-- **Tools**: Five main tools for AI assistants:
-  - `optimize_cutting` - Custom cutting optimization
-  - `search_products` - Search the product catalogue
-  - `optimize_demo` - Pre-configured demos
-  - `get_demo_payloads` - Sample data
-  - `get_cutting_example` - API format examples
-- **API Integration**: Connects to the backend at `PLANQER_API_URL`, defaulting
-  to `http://localhost:8002/api` (both `src/index.ts` and
-  `src/planqer_mcp_server/server.py`)
-- **Response Formatting**: Formats optimization results for AI consumption
-
-## API Endpoints
-
-### Main Optimization Endpoint
-
-- **POST** `/api/cutting-plans` - Generate optimal cutting plans
-- **Rate Limited**: 10 requests per minute
-- **Request Format**:
-
-  ```json
-  {
-    "parts": {"270": 4, "179": 8, "90": 16, "81": 4},
-    "available_board_lengths": [300, 360, 500],
-    "saw_blade_width": 3,
-    "project_name": "My Project"
-  }
-  ```
-
-## Testing Strategy
-
-### Backend Tests
-
-- **Unit and API tests**: `pytest` runs the full suite — pure functions in `cutting.py`/`helpers.py`/`svg_visualization.py` alongside FastAPI endpoint tests using `TestClient`.
-- **Location**: `/backend/tests/`
-- **Run**: `pytest`
-
-### Frontend Tests
-
-- **Component Tests**: React Testing Library tests for all components
-- **E2E Tests**: Playwright tests covering user workflows
-- **Location**: `/frontend/src/components/*.test.jsx`, `/frontend/tests/e2e/`
-- **Run**: `npm test` (unit), `npm run test:e2e` (E2E)
-
-## Configuration Files
-
-- **Backend**: `pyproject.toml` (Python deps), `config.yaml` (app settings)
-- **Frontend**: `package.json` (Node deps), `vite.config.mjs` (build config)
-- **MCP Server**: `package.json` (Node deps), `pyproject.toml` (Python deps), `tsconfig.json` (TypeScript)
-- **Docker**: `docker-compose.yml`, individual `Dockerfile`s in each service
-
-## Development Workflow
-
-1. **Backend Changes**: Modify code in `/backend/planqer/`, run tests with `pytest`
-2. **Frontend Changes**: Modify components in `/frontend/src/`, test with `npm test`
-3. **Full Stack Testing**: Use `docker compose up -d --build` to test integration
-4. **MCP Server Testing**: Use MCP Inspector for debugging AI tool interactions
-
-## Release Workflow
-
-Follow [`docs/releasing.md`](docs/releasing.md) for release checks, version
-updates, tagging, and GitHub Release creation. Do not invent a separate release
-procedure in this file.
-
-## Key Algorithms
-
-The core optimization logic is in `/backend/planqer/cutting.py` with the main function `min_boards_required_with_cut_list()`. This implements a cutting stock problem solver that:
-
-- Minimizes the number of boards needed
-- Accounts for saw blade kerf (material loss)
-- Generates visual cutting diagrams
-- Provides detailed waste calculations
+- Backend logic: `backend/planqer/`; HTTP API: `backend/planqer/api.py`.
+- Cutting solver: `backend/planqer/cutting.py`; diagrams:
+  `svg_visualization.py` and `sheet_visualization.py`.
+- Frontend routes and components: `frontend/src/`; API client:
+  `frontend/src/utils/api.js`.
+- Frontend unit tests: `frontend/src/**/*.test.{js,jsx}`; E2E:
+  `frontend/tests/e2e/`.
+- MCP tools connect to `PLANQER_API_URL`, defaulting to
+  `http://localhost:8002/api`.
 
 ## Conventions
 
-- Use `uv` instead of `pip` for Python dependency management.
-- Use Pytest for unit tests, written as functions, not classes.
-- Always lint markdown to remove lint warnings.
-- Always update every locale file when adding or changing translation keys; do not rely on English fallback strings.
-- Don't import `Dict`, `List`, `Tuple` from `typing` — use the built-in
-  `dict`, `list`, `tuple` generics instead.
-- This repository is hosted on GitHub: use `gh` for pull requests, issues and
+- Use `uv`, not `pip`, for Python dependencies.
+- Write backend tests as Pytest functions, not classes.
+- Update every locale when adding or changing translation keys; do not rely on
+  English fallbacks.
+- Lint Markdown after changing it. Existing lint debt should not be extended.
+- For every user-visible frontend change, review `frontend/DESIGN.md`. Update
+  it in the same change when design-system, interaction, or intentional-
+  exception rules change.
+- Use built-in `dict`, `list`, and `tuple` generics, not `Dict`, `List`, or
+  `Tuple` from `typing`.
+- This repository is hosted on GitHub: use `gh` for pull requests, issues, and
   releases.
+
+## Further reading
+
+- API contract: [`docs/reference/api.md`](docs/reference/api.md)
+- User and feature guides: [`docs/guide/`](docs/guide/)
+- Configuration: [`docs/reference/configuration.md`](docs/reference/configuration.md)
+- Frontend design system: [`frontend/DESIGN.md`](frontend/DESIGN.md)
+- Release process: [`docs/releasing.md`](docs/releasing.md)
+
+Read the linked document when the task concerns that area; do not duplicate its
+reference material here.

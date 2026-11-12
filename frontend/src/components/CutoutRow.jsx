@@ -101,10 +101,9 @@ const CutoutRow = ({ cutout, index, handleCutoutChange, removeCutout, error, att
           <input
             aria-label={t('ui.cutoutLabelAria', { item: index + 1 })}
             type="text"
-            placeholder={t('ui.window')}
             value={cutout.label || ''}
             onChange={(e) => handleCutoutChange(index, 'label', e.target.value)}
-            className="cell-input"
+            className="cell-input is-optional"
             style={{ textAlign: 'left' }}
           />
         </td>

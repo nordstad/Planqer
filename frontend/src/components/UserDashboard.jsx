@@ -86,7 +86,6 @@ const UserDashboard = () => {
               <a href={FULL_VERSION_URL} target="_blank" rel="noopener noreferrer">{t('demo.fullVersionNote.cta')}</a>
             </p>
           )}
-          {BackupPanel && isStaticMode() && <Suspense fallback={null}><BackupPanel /></Suspense>}
           {!isStaticMode() && !singleUser && (
             <dl className="job-block">
               <div className="job-cell" style={{ flex: '1 1 260px' }}>
@@ -115,6 +114,12 @@ const UserDashboard = () => {
         <UserProjectsContent onPreview={setPreviewProject} groupId={groupId} />
       )}
       {!inProject && activeTab === 'settings' && <UserSettings />}
+
+      {!inProject && BackupPanel && isStaticMode() && (
+        <div style={{ marginTop: '28px' }}>
+          <Suspense fallback={null}><BackupPanel /></Suspense>
+        </div>
+      )}
 
       {previewProject && (
          <div className="cat-overlay" role="dialog" aria-modal="true" aria-label={t('ui.projectPreview')} onClick={() => setPreviewProject(null)}>

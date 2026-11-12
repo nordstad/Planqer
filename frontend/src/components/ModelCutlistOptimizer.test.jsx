@@ -158,16 +158,33 @@ beforeEach(() => {
 describe('cutlists step', () => {
   it('shows neutral labels and never the word unknown', async () => {
     await readBench();
-    expect(screen.getByLabelText(/Name for Board 45 × 95 mm/)).toHaveAttribute('placeholder', 'Board 45 × 95 mm');
+    // The automatic name is a real, editable value, not a placeholder that looks like one.
+    expect(screen.getByLabelText(/Name for Board 45 × 95 mm/)).toHaveValue('Board 45 × 95 mm');
+    expect(screen.getByLabelText(/Name for Board 45 × 95 mm/)).not.toHaveAttribute('placeholder');
     expect(screen.getByLabelText(/Name for Board 95 × 95 mm/)).toBeInTheDocument();
     expect(screen.getByLabelText(/Name for Sheet 15 mm/)).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/unknown/i);
     expect(document.body.textContent).not.toMatch(/SPF-/);
   });
 
+  it('shows the catalogue choice once for all cutlists', async () => {
+    await readBench();
+    expect(screen.getAllByTestId('catalogue-choice')).toHaveLength(1);
+  });
+
+  it('goes back to the automatic name when the name is emptied', async () => {
+    await readBench();
+    const name = screen.getByLabelText(/Name for Board 45 × 95 mm/);
+    fireEvent.change(name, { target: { value: 'Legs' } });
+    expect(name).toHaveValue('Legs');
+    fireEvent.change(name, { target: { value: '' } });
+    fireEvent.blur(name);
+    expect(screen.getByLabelText(/Name for Board 45 × 95 mm/)).toHaveValue('Board 45 × 95 mm');
+  });
+
   it('lists part names in natural order', async () => {
     await readBench();
-    expect(screen.getByText('board_1, board_2, board_10')).toBeInTheDocument();
+    expect(screen.getByText(/board_1, board_2, board_10/)).toBeInTheDocument();
   });
 
   it('expands and collapses the length breakdown', async () => {
@@ -246,7 +263,7 @@ describe('model preview', () => {
     expect(screen.getByTestId('model-parts-preview')).toBeInTheDocument();
     expect(screen.getAllByTestId('model-group-colour')).toHaveLength(3);
 
-    const row = screen.getByLabelText(/Name for Board 45 × 95 mm/).closest('tr');
+    const row = screen.getByLabelText(/Name for Board 45 × 95 mm/).closest('section');
     fireEvent.mouseEnter(row);
     expect(screen.getByTestId('model-parts-preview')).toHaveAttribute(
       'data-highlighted-group',
@@ -442,7 +459,7 @@ describe('save step', () => {
   it('files every plan under a new project named after the model by default', async () => {
     createProjectGroup.mockResolvedValue({ id: 'g1', name: 'bench' });
     await toSaveStep();
-    expect(screen.getByLabelText('Project — optional')).toHaveValue('__new__');
+    expect(screen.getByLabelText('Project')).toHaveValue('__new__');
     expect(screen.getByLabelText(/new project name/i)).toHaveValue('bench');
     expect(createProjectGroup).not.toHaveBeenCalled();
 
@@ -468,7 +485,7 @@ describe('save step', () => {
   it('pre-selects an existing project with the model\'s name instead of creating another', async () => {
     getProjectGroups.mockResolvedValue([{ id: 'g9', name: 'Bench' }]);
     await toSaveStep();
-    await waitFor(() => expect(screen.getByLabelText('Project — optional')).toHaveValue('g9'));
+    await waitFor(() => expect(screen.getByLabelText('Project')).toHaveValue('g9'));
 
     fireEvent.click(screen.getByRole('button', { name: 'Plan 3 cutlists' }));
     await screen.findByRole('link', { name: /open project/i });
@@ -476,13 +493,15 @@ describe('save step', () => {
     expect(saveProject.mock.calls[0][0].projectGroupId).toBe('g9');
   });
 
-  it('still saves without a project when the user chooses so', async () => {
+  it('files the plans under an existing project when one is chosen', async () => {
+    getProjectGroups.mockResolvedValue([{ id: 'g5', name: 'Shed' }]);
     await toSaveStep();
-    fireEvent.change(screen.getByLabelText('Project — optional'), { target: { value: '' } });
+    await waitFor(() => expect(screen.getByLabelText('Project')).toBeInTheDocument());
+    fireEvent.change(screen.getByLabelText('Project'), { target: { value: 'g5' } });
     fireEvent.click(screen.getByRole('button', { name: 'Plan 3 cutlists' }));
     await waitFor(() => expect(saveSheetProject).toHaveBeenCalled());
     expect(createProjectGroup).not.toHaveBeenCalled();
-    expect(saveProject.mock.calls[0][0].projectGroupId).toBe('');
+    expect(saveProject.mock.calls[0][0].projectGroupId).toBe('g5');
   });
 
   it('saves nothing when the project cannot be created', async () => {

@@ -20,7 +20,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { optimizeCutting, saveProject, getProjectGroups, createProjectGroup, getUserProjects, getUserSettings } from '../utils/api';
+import { optimizeCutting, saveProject, getProjectGroups, getUserProjects, getUserSettings, movePlanToProject } from '../utils/api';
 import { materialLabel } from '../utils/materialLabel';
 import { boardPartCount, restoreBoardParts } from '../utils/boardParts';
 import ProductPicker from './ProductPicker';
@@ -43,8 +43,12 @@ import CatalogPage from './CatalogPage';
 import ConfirmDialog from './ConfirmDialog';
 import CostAnalysisPanel from './CostAnalysisPanel';
 import Disclosure from './Disclosure';
-import ProjectPicker from './ProjectPicker';
+import FormField, { SectionCard, SectionStatus, splitUnit } from './FormField';
+import SavePlanCard from './SavePlanCard';
+import MovePlanMenu from './MovePlanMenu';
+import { useProjectChoice } from '../hooks/useProjectChoice';
 import Loader from './Loader';
+import InfoTip from './InfoTip';
 import PlanSteps from './PlanSteps';
 import { ArrowLeft, ArrowRight, Plus, Tick } from './icons';
 import PartInputRow from './PartInputRow';
@@ -59,10 +63,10 @@ const STEP_SAVE = 2;
 const DEFAULT_CURRENCY = 'SEK';
 
 const EXAMPLE_PARTS = [
-  { length: "80", quantity: "10", name: "" },
-  { length: "150", quantity: "10", name: "" },
-  { length: "1550", quantity: "8", name: "" },
-  { length: "2000", quantity: "2", name: "" },
+  { length: "600", quantity: "4", name: "" },
+  { length: "800", quantity: "2", name: "" },
+  { length: "1200", quantity: "4", name: "" },
+  { length: "1800", quantity: "4", name: "" },
 ];
 
 const CuttingOptimizer = () => {
@@ -93,8 +97,12 @@ const CuttingOptimizer = () => {
 
   /* the save step */
   const [projectGroups, setProjectGroups] = useState([]);
-  const [selectedGroupId, setSelectedGroupId] = useState('');
   const [projectName, setProjectName] = useState("");
+  const { groupId, setGroupId, newName, setNewName, resolve: resolveProject } = useProjectChoice({
+    groups: projectGroups,
+    onCreated: (group) => setProjectGroups(prev => [group, ...prev]),
+    fallbackName: projectName,
+  });
   const [saveAttempted, setSaveAttempted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(null);
@@ -123,6 +131,7 @@ const CuttingOptimizer = () => {
   // tried to price a plan — flagging every field the instant the panel opens
   // reads as the page scolding the user for its own toggle.
   const stockSectionRef = useRef(null);
+  const partsHeadingRef = useRef(null);
 
   const debouncedBoards = useDebounce(boards, 300);
   const debouncedSawKerf = useDebounce(sawKerf, 300);
@@ -299,7 +308,7 @@ const CuttingOptimizer = () => {
       : selectionFromLegacyMaterial('board', materialLabel(project.material_type || '', t)));
     setBoardThickness(project.board_thickness ? String(project.board_thickness) : '');
     setBoardWidth(project.board_width ? String(project.board_width) : '');
-    setSelectedGroupId(project.project_group_id || '');
+    setGroupId(project.project_group_id || '');
     setProjectName(project.name);
     setEditingProject(project);
     setSaveMode('update');
@@ -350,6 +359,43 @@ const CuttingOptimizer = () => {
   const pricedBoardCount = uniqueValidBoards.filter((board) => boardCosts[board]?.price_per_meter > 0).length;
   const pricingComplete = uniqueValidBoards.length > 0 && pricedBoardCount === uniqueValidBoards.length;
   const pricingPartial = pricedBoardCount > 0 && !pricingComplete;
+
+  const goToRequiredParts = () => {
+    partsHeadingRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+    partsHeadingRef.current?.focus({ preventScroll: true });
+  };
+
+  /* ── section status and the first thing blocking the plan ──────────────── */
+  const unitless = (key) => splitUnit(t(key)).text;
+  const materialMissing = [
+    !parseFloat(boardThickness) && unitless('workflow.thicknessMm'),
+    !parseFloat(boardWidth) && unitless('workflow.widthMm'),
+  ].filter(Boolean);
+  const partRowsWrong = parts.some((part, index) => visiblePartError(part, index));
+  const partRowsBlank = currentPartErrors.some((errors, index) => errors && Object.keys(errors).some((field) => parts[index][field] === ''));
+  const stockWrong = inputErrors.boards.some(Boolean);
+  const goToSection = (id) => window.setTimeout(() => {
+    const section = document.getElementById(id);
+    if (!section) return;
+    section.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+    const fields = [...section.querySelectorAll('input:not([type=checkbox]):not([type=radio]), select')];
+    (fields.find((field) => !field.value) || fields[0])?.focus({ preventScroll: true });
+  }, 0);
+  const toParts = { name: t('workflow.goToRequiredParts'), go: goToRequiredParts };
+  const toMaterial = { name: t('formUi.goTo', { name: t('workflow.materialProfile') }), go: () => goToSection('board-material') };
+  const blocker = parts.length === 0 ? { text: t('workflow.partsRequiredBeforePlanning'), ...toParts }
+    : partRowsWrong ? { text: t('ui.fixLines'), ...toParts }
+    : partRowsBlank ? { text: t('boardUi.fillPartRows'), ...toParts }
+    : inputErrors.sawKerf ? { text: inputErrors.sawKerf, ...toMaterial }
+    : materialMissing.length ? { text: t('boardUi.fillToPlan', { fields: materialMissing.join(', ') }), ...toMaterial }
+    : stockWrong ? { text: t('ui.fixLines'), name: t('formUi.goTo', { name: t('workflow.stockAvailable') }), go: () => goToSection('board-stock') }
+    : null;
+  const pricingSummary = [
+    pricingComplete ? t('ui.pricesComplete', { total: uniqueValidBoards.length })
+      : pricingPartial ? t('ui.pricesProgress', { priced: pricedBoardCount, total: uniqueValidBoards.length })
+        : t('boardUi.noPrices'),
+    optimizeFor === 'cost' ? t('ui.leastMoney') : t('ui.leastWaste'),
+  ].join(' · ');
 
   useEffect(() => {
     if (!pricingComplete && optimizeFor === 'cost') setOptimizeFor('waste');
@@ -497,27 +543,13 @@ const CuttingOptimizer = () => {
     ? t('auditUi.nameRequired')
     : '';
 
-  // Returns whether it worked, so the picker knows whether to close its field.
-  const createGroup = async (name) => {
-    try {
-      const group = await createProjectGroup(name);
-      setProjectGroups(prev => [group, ...prev]);
-      setSelectedGroupId(group.id);
-      setApiError("");
-      return true;
-    } catch (err) {
-      setApiError(`${t('auditUi.createProjectFailed')}: ${err.message}`);
-      return false;
-    }
-  };
-
   const savePlan = async () => {
     setSaving(true);
     try {
       const project = await saveProject({
         id: saveMode === 'update' ? editingProject?.id : undefined,
         name: projectName.trim(),
-        projectGroupId: selectedGroupId,
+        projectGroupId: await resolveProject(),
         parts,
         boards,
         sawKerf,
@@ -563,16 +595,31 @@ const CuttingOptimizer = () => {
   const savedGroupName = saved
     ? projectGroups.find(g => g.id === saved.project_group_id)?.name
     : null;
-  const selectedGroupName = projectGroups.find(g => g.id === selectedGroupId)?.name;
+  const selectedGroupName = projectGroups.find(g => g.id === groupId)?.name;
+  const moveSavedPlan = async (group) => {
+    try {
+      const moved = await movePlanToProject({ ...saved, projectType: 'board' }, group.id);
+      setSaved(moved);
+      localStorage.setItem('planqer.lastProjectGroup', group.id);
+      return true;
+    } catch (error) {
+      setApiError(t('projectUi.moveFailed', { message: error.message }));
+      return false;
+    }
+  };
 
   /* ── the rail ──────────────────────────────────────────────────────────── */
   const steps = [
     {
       label: t('workflow.parts'),
       reachable: true,
-      summary: hasErrors
-        ? t('workflow.someLinesNeedFixing')
-        : t('workflow.partsSummary', { count: partCount, demand: mm(demand), kerf: sawKerf || 0 }),
+      // Name the actual state: no parts, something wrong, or the parts so far
+      // (a missing board size is shown on its own card, not as a broken row).
+      summary: parts.length === 0
+        ? t('workflow.partsNeeded')
+        : partRowsWrong || stockWrong || inputErrors.sawKerf
+          ? t('workflow.someLinesNeedFixing')
+          : t('workflow.partsSummary', { count: partCount, demand: mm(demand), kerf: sawKerf || 0 }),
     },
     {
       label: t('workflow.thePlan'),
@@ -603,102 +650,85 @@ const CuttingOptimizer = () => {
         <form className="step-view is-form" onSubmit={handlePlanSubmit} noValidate>
           <div className="step-head">
             <div>
-              <h1 className="step-h1">{t('workflow.requiredParts')}</h1>
-              <p className="step-lede">
-                {t('workflow.requiredPartsIntro')}
-              </p>
+              <h1 className="step-h1">{t('common.boardCutting')}</h1>
+              <p className="step-lede">{t('workflow.requiredPartsIntro')}</p>
+              <p className="form-legend"><span className="req-mark" aria-hidden="true" />{t('formUi.requiredLegend')}</p>
             </div>
-            <button type="button" className="btn" onClick={() => setLoadModalOpen(true)}>
+            <button type="button" className="btn-text" onClick={() => setLoadModalOpen(true)}>
               {t('workflow.loadSavedPlan')}
             </button>
           </div>
 
-          <table className="cat-table parts-table">
-            <colgroup>
-              <col className="part-item-col" />
-              <col className="part-size-col" />
-              <col className="part-quantity-col" />
-              <col />
-              <col className="part-remove-col" />
-            </colgroup>
-            <thead>
-              <tr><th>{t('workflow.item')}</th><th>{t('workflow.lengthMm')}</th><th>{t('workflow.qty')}</th><th>{t('workflow.name')}</th><th aria-label={t('common.remove')} /></tr>
-            </thead>
-            <tbody>
-              {parts.map((part, index) => (
-                <PartInputRow
-                  key={index}
-                  part={part}
-                  index={index}
-                  handlePartChange={handlePartChange}
-                  handlePartsPaste={handlePartsPaste}
-                  removePart={removePart}
-                  error={visiblePartError(part, index)}
-                  canRemove={parts.length > 1}
-                />
-              ))}
-              {parts.length > 0 ? (
-                <tr className="is-sum">
-                  <td>Σ</td><td>{mm(demand)}</td><td>{partCount}</td><td /><td />
-                </tr>
-              ) : (
-                <tr>
-                  <td colSpan="5" className="synthetic">{t('workflow.emptyParts')}</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-          <div className="flex items-center gap-3" style={{ marginTop: '12px', flexWrap: 'wrap' }}>
-            <button type="button" className="btn" onClick={addPart}>
-              <Plus /> {t('workflow.addPart')}
-            </button>
-            {parts.length === 0 && (
-              <button type="button" className="btn" onClick={loadExample}>
-                {t('workflow.tryExample')}
-              </button>
-            )}
-          </div>
-          <p className="synthetic" style={{ marginTop: '10px' }}>
-            {t('workflow.pasteParts')}
-          </p>
-
-          <div
-            className="flex items-end gap-4"
-            style={{ marginTop: '26px', paddingTop: '22px', borderTop: '1px solid var(--rule-hair)', flexWrap: 'wrap' }}
+          <SectionCard
+            id="board-parts"
+            title={t('workflow.requiredParts')}
+            titleRef={partsHeadingRef}
+            status={parts.length === 0 ? <SectionStatus todo={t('workflow.partsNeeded')} live />
+              : partRowsWrong ? <SectionStatus error={t('formUi.checkValues')} />
+                : partRowsBlank ? <SectionStatus todo={t('boardUi.emptyRows')} />
+                  : <SectionStatus done={t('boardUi.partsDone', { count: partCount, demand: mm(demand) })} />}
           >
-            <div style={{ flex: 'none' }}>
-              <label className="form-label" htmlFor="saw-kerf">{t('workflow.sawBlade')}</label>
-              <div className="flex items-center gap-2">
-                <input
-                  id="saw-kerf"
-                  type="number"
-                  min={SAW_KERF_MIN}
-                   max={SAW_KERF_MAX}
-                   step="0.1"
-                  value={sawKerf}
-                  onChange={(e) => handleKerfChange(e.target.value)}
-                  className={`form-input kerf-input ${inputErrors.sawKerf ? 'form-input-error' : ''}`}
-                  style={{ width: '78px' }}
-                  required
-                  placeholder="3"
-                  aria-describedby="saw-kerf-hint"
-                />
-                <span style={{ fontSize: '13.5px', color: 'var(--ink-3)', fontWeight: 600 }}>mm</span>
-              </div>
+            <table className="cat-table parts-table">
+              <colgroup>
+                <col className="part-item-col" />
+                <col className="part-size-col" />
+                <col className="part-quantity-col" />
+                <col />
+                <col className="part-remove-col" />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>{t('workflow.item')}</th>
+                  <th>{t('workflow.lengthMm')}<span className="req-mark" aria-hidden="true" /></th>
+                  <th>{t('workflow.qty')}<span className="req-mark" aria-hidden="true" /></th>
+                  <th>{t('workflow.name')}{' '}<span className="opt-mark">{t('formUi.optionalMark')}</span></th>
+                  <th aria-label={t('common.remove')} />
+                </tr>
+              </thead>
+              <tbody>
+                {parts.map((part, index) => (
+                  <PartInputRow
+                    key={index}
+                    part={part}
+                    index={index}
+                    handlePartChange={handlePartChange}
+                    handlePartsPaste={handlePartsPaste}
+                    removePart={removePart}
+                    error={visiblePartError(part, index)}
+                    canRemove={parts.length > 1}
+                  />
+                ))}
+                {parts.length > 0 ? (
+                  <tr className="is-sum">
+                    <td>Σ</td><td>{mm(demand)}</td><td>{partCount}</td><td /><td />
+                  </tr>
+                ) : (
+                  <tr>
+                    <td colSpan="5" className="synthetic">{t('workflow.emptyParts')}</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+            <div className="flex items-center gap-3" style={{ marginTop: '14px', flexWrap: 'wrap' }}>
+              <button type="button" className="btn-primary" onClick={addPart}>
+                <Plus /> {t('workflow.addPart')}
+              </button>
+              {parts.length === 0 && (
+                <button type="button" className="btn-text" onClick={loadExample}>
+                  {t('workflow.tryExample')}
+                </button>
+              )}
+              <InfoTip label={t('workflow.parts')}>{t('workflow.pasteParts')}</InfoTip>
             </div>
-            <p
-              id="saw-kerf-hint"
-              className={inputErrors.sawKerf ? 'text-danger text-[12.5px] font-semibold' : 'synthetic'}
-              style={{ flex: '1 1 220px', margin: 0, paddingBottom: '11px' }}
-            >
-              {inputErrors.sawKerf || t('workflow.kerfHint')}
-            </p>
-          </div>
+          </SectionCard>
 
-          <section style={{ marginTop: '26px', paddingTop: '22px', borderTop: '1px solid var(--rule-hair)' }}>
-            <div className="section-rule"><h2 className="section-title">{t('workflow.materialProfile')}</h2></div>
-            <div style={{ marginBottom: '18px', maxWidth: '640px' }}>
-              <span className="form-label" style={{ display: 'block' }}>{t('productUi.product')}</span>
+          <SectionCard
+            id="board-material"
+            title={t('workflow.materialProfile')}
+            status={inputErrors.sawKerf ? <SectionStatus error={t('formUi.checkValues')} /> : <SectionStatus missing={materialMissing} />}
+          >
+            <div style={{ marginBottom: '18px' }}>
+              <span className="form-label" style={{ display: 'block' }}>{t('productUi.product')}{' '}<span className="opt-mark">{t('formUi.optionalMark')}</span></span>
               <ProductPicker
                 kind="board"
                 value={productSel}
@@ -713,34 +743,56 @@ const CuttingOptimizer = () => {
                 onUseLengths={(lengths) => { retirePlan(); setBoards(lengths.map(String)); }}
               />
             </div>
-            <div className="grid gap-x-8 gap-y-5 md:grid-cols-2">
-              <div>
-                <label className="form-label" htmlFor="board-thickness">{t('workflow.thicknessMm')}</label>
-                <input id="board-thickness" type="number" min="1" step="1" value={boardThickness} onChange={(e) => { retirePlan(); setBoardThickness(e.target.value); }} className="form-input" required />
-              </div>
-              <div>
-                <label className="form-label" htmlFor="board-width">{t('workflow.widthMm')}</label>
-                <input id="board-width" type="number" min="1" step="1" value={boardWidth} onChange={(e) => { retirePlan(); setBoardWidth(e.target.value); }} className="form-input" required />
+            <div className="grid gap-x-6 gap-y-4 md:grid-cols-2">
+              <FormField label={t('workflow.thicknessMm')} required>
+                <input id="board-thickness" type="number" min="1" step="1" value={boardThickness} onChange={(e) => { retirePlan(); setBoardThickness(e.target.value); }} className="form-input dimension-input" />
+              </FormField>
+              <FormField label={t('workflow.widthMm')} required>
+                <input id="board-width" type="number" min="1" step="1" value={boardWidth} onChange={(e) => { retirePlan(); setBoardWidth(e.target.value); }} className="form-input dimension-input" />
+              </FormField>
+              <div className="md:col-span-2">
+                <FormField label={t('workflow.sawBlade')} unit="mm" required tip={t('workflow.kerfHint')}>
+                  <input
+                    id="saw-kerf"
+                    type="number"
+                    min={SAW_KERF_MIN}
+                    max={SAW_KERF_MAX}
+                    step="0.1"
+                    value={sawKerf}
+                    onChange={(e) => handleKerfChange(e.target.value)}
+                    className={`form-input kerf-input dimension-input ${inputErrors.sawKerf ? 'form-input-error' : ''}`}
+                    aria-invalid={!!inputErrors.sawKerf || undefined}
+                    aria-describedby={inputErrors.sawKerf ? 'saw-kerf-error' : undefined}
+                  />
+                </FormField>
+                {inputErrors.sawKerf && <p id="saw-kerf-error" className="text-danger text-[12.5px] font-semibold" style={{ marginTop: '6px' }}>{inputErrors.sawKerf}</p>}
               </div>
             </div>
-            {(!parseFloat(boardThickness) || !parseFloat(boardWidth)) && <p className="text-danger text-[12.5px] font-semibold" style={{ marginTop: '10px' }}>{t('productUi.dimensionsRequired')}</p>}
-          </section>
+          </SectionCard>
 
           {/* Stock stays in plain sight. It was folded away on the first pass on
               the theory that most people never touch it, which is wrong: what a
               yard actually stocks changes between jobs, and a plan against the
               wrong lengths is wrong at the till. Mirrors the sheet page, where
               the sheet's own dimensions are visible for the same reason. */}
-          <section ref={stockSectionRef} tabIndex="-1" style={{ marginTop: '30px', paddingTop: '22px', borderTop: '1px solid var(--rule-hair)' }}>
-            <div className="section-rule">
-              <h2 className="section-title">{t('workflow.stockAvailable')}</h2>
-              <span className="folio">{t('workflow.supplierStock')}</span>
-            </div>
-            <p className="synthetic" style={{ margin: '8px 0 12px' }}>{t('ui.stockPricingOptional')}</p>
+          <SectionCard
+            id="board-stock"
+            sectionRef={stockSectionRef}
+            title={t('workflow.stockAvailable')}
+            summary={t('workflow.supplierStock')}
+            status={stockWrong ? <SectionStatus error={t('formUi.checkValues')} />
+              : validBoards.length === 0 ? <SectionStatus todo={t('boardUi.addStock')} />
+                : <SectionStatus done={t('workflow.lengthCount', { count: validBoards.length })} />}
+          >
             <div className="stock-table-wrap">
               <table className="cat-table">
                 <thead>
-                  <tr><th>{t('workflow.lengthMm')}</th><th>{t('workflow.metres')}</th><th>{t('ui.stockPrice')}</th><th aria-label={t('common.remove')} /></tr>
+                  <tr>
+                    <th>{t('workflow.lengthMm')}<span className="req-mark" aria-hidden="true" /></th>
+                    <th>{t('workflow.metres')}</th>
+                    <th>{t('ui.stockPrice')}{' '}<span className="opt-mark">{t('formUi.optionalMark')}</span></th>
+                    <th aria-label={t('common.remove')} />
+                  </tr>
                 </thead>
                 <tbody>
                   {boards.map((board, index) => (
@@ -768,81 +820,77 @@ const CuttingOptimizer = () => {
                 </tbody>
               </table>
             </div>
-            <button type="button" className="btn" style={{ marginTop: '12px' }} onClick={addBoard}>
+            <button type="button" className="btn-primary" style={{ marginTop: '14px' }} onClick={addBoard}>
               <Plus /> {t('workflow.addStockLength')}
             </button>
             <p className="synthetic" style={{ marginTop: '10px' }}>
-               {t('ui.checkStock')}
+              {t('ui.checkStock')}
             </p>
-            <div style={{ marginTop: '22px', paddingTop: '18px', borderTop: '1px solid var(--rule-hair)' }}>
-              <div className="flex items-center justify-between" style={{ gap: '12px', flexWrap: 'wrap' }}>
-                <span className="kicker">{t('ui.pricingOptions')}</span>
-                <label className="flex items-center gap-2" style={{ cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={samePriceForAll}
-                    onChange={(e) => {
-                      retirePlan();
-                      setSamePriceForAll(e.target.checked);
-                      if (e.target.checked && uniformPrice) priceEveryBoard(parseFloat(uniformPrice) || 0);
-                    }}
-                  />
-                  <span className="kicker" style={{ color: 'var(--ink)' }}>{t('ui.onePriceAll')}</span>
-                </label>
-              </div>
-              {samePriceForAll && (
-                <div style={{ marginTop: '10px', maxWidth: '280px' }}>
-                  <label className="form-label" htmlFor="uniform-stock-price">{t('ui.uniformPrice', { currency })}</label>
-                  <input
-                    id="uniform-stock-price"
-                    type="number"
-                    min="0"
-                    step="0.1"
-                    value={uniformPrice}
-                    onChange={(e) => handleUniformPriceChange(e.target.value)}
-                    className="form-input"
-                    placeholder="35.0"
-                  />
-                </div>
-              )}
-              {pricingPartial && <p className="synthetic" style={{ marginTop: '10px' }}>
-                {t('ui.pricesProgress', { priced: pricedBoardCount, total: uniqueValidBoards.length })}
-              </p>}
-              {pricingComplete && <p className="synthetic" style={{ marginTop: '10px' }} role="status">
-                {t('ui.pricesComplete', { total: uniqueValidBoards.length })}
-              </p>}
-              <fieldset style={{ marginTop: '16px', border: 0, padding: 0, minWidth: 0 }}>
-                <legend className="form-label" style={{ padding: 0 }}>{t('ui.whatChase')}</legend>
-                <label className="flex items-start gap-3" style={{ cursor: 'pointer', padding: '5px 0' }}>
-                  <input
-                    type="radio"
-                    name="optimizeFor-input"
-                    value="waste"
-                    checked={optimizeFor === 'waste'}
-                    onChange={() => { retirePlan(); setOptimizeFor('waste'); }}
-                    style={{ marginTop: '3px' }}
-                  />
-                  <span><b style={{ fontSize: '13.5px' }}>{t('ui.leastWaste')}</b><span className="block synthetic">{t('ui.leastWasteHint')}</span></span>
-                </label>
-                <label className="flex items-start gap-3" style={{ cursor: pricingComplete ? 'pointer' : 'default', padding: '5px 0' }}>
-                  <input
-                    type="radio"
-                    name="optimizeFor-input"
-                    value="cost"
-                    checked={optimizeFor === 'cost'}
-                    onChange={() => { retirePlan(); setOptimizeFor('cost'); }}
-                    disabled={!pricingComplete}
-                    aria-describedby="lowest-cost-help"
-                    style={{ marginTop: '3px' }}
-                  />
-                  <span><b style={{ fontSize: '13.5px' }}>{t('ui.leastMoney')}</b><span className="block synthetic">{t('ui.leastMoneyHint')}</span></span>
-                </label>
-                {!pricingComplete && <p id="lowest-cost-help" className="synthetic" style={{ margin: '4px 0 0 28px' }}>{t('ui.lowestCostNeedsPrices')}</p>}
-              </fieldset>
-            </div>
-          </section>
+          </SectionCard>
 
-          <div style={{ marginTop: '26px' }}>
+          <SectionCard
+            id="board-pricing"
+            title={t('ui.pricesAndCost')}
+            optional
+            tip={t('ui.stockPricingOptional')}
+            summary={pricingSummary}
+          >
+            <label className="flex items-center gap-2" style={{ cursor: 'pointer', fontSize: '13.5px', fontWeight: 600 }}>
+              <input
+                type="checkbox"
+                checked={samePriceForAll}
+                onChange={(e) => {
+                  retirePlan();
+                  setSamePriceForAll(e.target.checked);
+                  if (e.target.checked && uniformPrice) priceEveryBoard(parseFloat(uniformPrice) || 0);
+                }}
+              />
+              {t('ui.onePriceAll')}
+            </label>
+            {samePriceForAll && (
+              <FormField label={t('ui.uniformPrice', { currency })} className="mt-3">
+                <input
+                  id="uniform-stock-price"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={uniformPrice}
+                  onChange={(e) => handleUniformPriceChange(e.target.value)}
+                  className="form-input dimension-input"
+                />
+              </FormField>
+            )}
+            <fieldset style={{ marginTop: '16px', border: 0, padding: 0, minWidth: 0 }}>
+              <legend className="form-label" style={{ padding: 0 }}>{t('ui.whatChase')}</legend>
+              <label className="flex items-start gap-3" style={{ cursor: 'pointer', padding: '5px 0' }}>
+                <input
+                  type="radio"
+                  name="optimizeFor-input"
+                  value="waste"
+                  checked={optimizeFor === 'waste'}
+                  onChange={() => { retirePlan(); setOptimizeFor('waste'); }}
+                  style={{ marginTop: '3px' }}
+                />
+                <span><b style={{ fontSize: '13.5px' }}>{t('ui.leastWaste')}</b><span className="block synthetic">{t('ui.leastWasteHint')}</span></span>
+              </label>
+              <label className="flex items-start gap-3" style={{ cursor: pricingComplete ? 'pointer' : 'default', padding: '5px 0' }}>
+                <input
+                  type="radio"
+                  name="optimizeFor-input"
+                  value="cost"
+                  checked={optimizeFor === 'cost'}
+                  onChange={() => { retirePlan(); setOptimizeFor('cost'); }}
+                  disabled={!pricingComplete}
+                  aria-describedby="lowest-cost-help"
+                  style={{ marginTop: '3px' }}
+                />
+                <span><b style={{ fontSize: '13.5px' }}>{t('ui.leastMoney')}</b><span className="block synthetic">{t('ui.leastMoneyHint')}</span></span>
+              </label>
+              {!pricingComplete && <p id="lowest-cost-help" className="synthetic" style={{ margin: '4px 0 0 28px' }}>{t('ui.lowestCostNeedsPrices')}</p>}
+            </fieldset>
+          </SectionCard>
+
+          <div style={{ marginTop: '22px' }}>
             <Disclosure
                title={t('ui.whatPageReturns')}
                hint={t('ui.boardsHint')}
@@ -872,9 +920,8 @@ const CuttingOptimizer = () => {
 
           <div className="step-foot">
             <p className="synthetic step-foot-note">
-              {hasErrors
-                 ? t('ui.fixLines')
-                 : t('ui.partsAgainstStock', { parts: partCount, stock: validBoards.length, unit: t(validBoards.length === 1 ? 'ui.stockUnit' : 'ui.stockUnits') })}
+              {blocker ? blocker.text : t('ui.partsAgainstStock', { parts: partCount, stock: validBoards.length, unit: t(validBoards.length === 1 ? 'ui.stockUnit' : 'ui.stockUnits') })}
+              {blocker && <> <button type="button" className="btn-link" onClick={blocker.go}>{blocker.name}</button></>}
             </p>
             <div className="step-foot-act">
               <button type="submit" className="btn-order" disabled={loading || hasErrors}>
@@ -964,7 +1011,7 @@ const CuttingOptimizer = () => {
           </div>
 
           <div className="step-foot">
-            <button type="button" className="btn" onClick={() => setStep(STEP_PARTS)}>
+            <button type="button" className="btn-text" onClick={() => setStep(STEP_PARTS)}>
                <ArrowLeft /> {t('ui.changeParts')}
             </button>
             <div className="step-foot-act">
@@ -996,86 +1043,35 @@ const CuttingOptimizer = () => {
               <div>
                    <b>{t('ui.savedAs', { name: saved.name })}</b>
                 <p>
-                   {savedGroupName ? t('ui.filedUnder', { group: savedGroupName }) : t('ui.unfiled')}
+                    {savedGroupName ? t('ui.filedUnder', { group: savedGroupName }) : t('ui.unfiled')}
                 </p>
+                <MovePlanMenu groups={projectGroups} currentGroupId={saved.project_group_id} onMove={moveSavedPlan} />
               </div>
             </div>
           ) : (
-            <>
-              <div style={{ marginBottom: '24px' }}>
-                <label className="form-label" htmlFor="plan-name">{t('ui.name')}</label>
-                <input
-                  id="plan-name"
-                  type="text"
-                  className={`form-input ${nameError ? 'form-input-error' : ''}`}
-                  placeholder={t('ui.planNamePlaceholder')}
-                  value={projectName}
-                  onChange={(e) => setProjectName(e.target.value)}
-                  aria-invalid={!!nameError}
-                  aria-describedby="plan-name-hint"
-                  autoFocus
-                />
-                <p
-                  id="plan-name-hint"
-                  className={nameError ? 'text-danger text-[12.5px] font-semibold' : 'synthetic'}
-                  style={{ marginTop: '7px' }}
-                  role={nameError ? 'alert' : undefined}
-                >
-                  {nameError || t('ui.savedNameHint')}
-                </p>
-              </div>
-              {editingProject && (
-                <div style={{ marginBottom: '24px' }}>
-                 <label className="form-label" htmlFor="board-save-mode">{t('ui.saveAs')}</label>
-                <select
-                  id="board-save-mode"
-                  className="form-select"
-                  value={saveMode}
-                  onChange={(e) => {
-                    const mode = e.target.value;
-                    setSaveMode(mode);
-                    if (mode === 'update' && !editingProject && userProjects.length) {
-                      setEditingProject(userProjects[0]);
-                      setProjectName(userProjects[0].name);
-                      setSelectedGroupId(userProjects[0].project_group_id || '');
-                    }
-                  }}
-                >
-                   <option value="new">{t('ui.createNewPlan')}</option>
-                   <option value="update" disabled={!userProjects.length}>{t('ui.updateExistingPlan')}</option>
-                </select>
-                {saveMode === 'update' && editingProject && (
-                  <select
-                    className="form-select"
-                    style={{ marginTop: '10px' }}
-                     aria-label={t('ui.planToUpdate')}
-                    value={editingProject.id}
-                    onChange={(e) => {
-                      const target = userProjects.find(p => p.id === e.target.value);
-                      setEditingProject(target);
-                      setProjectName(target.name);
-                      setSelectedGroupId(target.project_group_id || '');
-                    }}
-                  >
-                    {userProjects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                  </select>
-                )}
-                </div>
-              )}
-              <div style={{ marginBottom: '24px' }}>
-                <ProjectPicker
-                  groups={projectGroups}
-                  value={selectedGroupId}
-                  onChange={setSelectedGroupId}
-                  onCreate={createGroup}
-                />
-              </div>
-
-            </>
+            <SavePlanCard
+              id="board-save"
+              nameId="plan-name"
+              modeId="board-save-mode"
+              nameLabel={t('ui.name')}
+              projectName={projectName}
+              onProjectName={setProjectName}
+              nameError={nameError}
+              editingProject={editingProject}
+              onEditingProject={setEditingProject}
+              saveMode={saveMode}
+              onSaveMode={setSaveMode}
+              userProjects={userProjects}
+              projectGroups={projectGroups}
+              groupId={groupId}
+              onGroupId={setGroupId}
+              newName={newName}
+              onNewName={setNewName}
+            />
           )}
 
           <div className="step-foot">
-            <button type="button" className="btn" onClick={() => setStep(STEP_PLAN)}>
+            <button type="button" className="btn-text" onClick={() => setStep(STEP_PLAN)}>
               <ArrowLeft /> {t('workflow.backToPlan')}
             </button>
             {saved ? (
@@ -1131,7 +1127,7 @@ const CuttingOptimizer = () => {
                           <td style={{ textAlign: 'left', color: 'var(--ink)', fontSize: '13px' }}>{project.name}</td>
                           <td>{boardPartCount(project.parts_data)}</td>
                           <td style={{ width: '90px' }}>
-                            <button className="btn" style={{ padding: '5px 10px', minHeight: 0 }} onClick={() => loadProject(project)}>
+                            <button className="btn btn-primary btn-sm" onClick={() => loadProject(project)}>
                                {t('ui.load')}
                             </button>
                           </td>

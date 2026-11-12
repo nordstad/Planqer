@@ -31,6 +31,9 @@ describe('UserSettings', () => {
     renderSettings();
     expect(await screen.findByLabelText(/Default board lengths/i)).toHaveValue('2500, 3600');
     expect(screen.getByLabelText(/Default cut width \(kerf\)/i)).toHaveValue(3);
+    expect(screen.getByLabelText(/Default cut width \(kerf\)/i)).toHaveClass('dimension-input');
+    expect(screen.getByLabelText(/Default spare margin/i)).toHaveClass('dimension-input');
+    expect(screen.getByLabelText(/VAT rate/i)).toHaveClass('dimension-input');
   });
 
   it('saves the edited defaults', async () => {

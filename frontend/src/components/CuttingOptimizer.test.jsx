@@ -1,9 +1,9 @@
-import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { act, within, render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import CuttingOptimizer from './CuttingOptimizer';
 import { AuthProvider } from '../contexts/AuthContext';
 import i18n from '../i18n';
-import { getCatalogue, getProjectGroups, getUserProjects, getUserSettings, optimizeCutting, saveProject } from '../utils/api';
+import { createProjectGroup, getCatalogue, getProjectGroups, getUserProjects, getUserSettings, optimizeCutting, saveProject } from '../utils/api';
 import { resetCatalogueCache } from '../utils/catalogue';
 
 vi.mock('../utils/api', async () => ({
@@ -11,6 +11,7 @@ vi.mock('../utils/api', async () => ({
   getSetupStatus: vi.fn().mockResolvedValue({ needs_setup: false }),
   getCatalogue: vi.fn(),
   saveProject: vi.fn(),
+  createProjectGroup: vi.fn(),
   getProjectGroups: vi.fn(),
   getUserProjects: vi.fn(),
   getUserSettings: vi.fn(),
@@ -71,6 +72,7 @@ const pickProduct = async (query, optionName) => {
 beforeEach(() => {
   resetCatalogueCache();
   getCatalogue.mockRejectedValue(new Error('offline'));
+  createProjectGroup.mockResolvedValue({ id: 'g1', name: 'My plans' });
   saveProject.mockResolvedValue({ id: 'p1', name: 'Rails', project_group_id: null });
   getProjectGroups.mockResolvedValue([]);
   getUserProjects.mockResolvedValue([]);
@@ -78,20 +80,27 @@ beforeEach(() => {
 });
 
 describe('CuttingOptimizer', () => {
-  it('starts with no required parts and offers an example', async () => {
+  it('starts with no required parts and offers a realistic workshop example', async () => {
     renderOptimizer({ loadExample: false });
     expect(await screen.findByRole('heading', { name: /Required parts/i })).toBeInTheDocument();
     expect(screen.queryByLabelText(/Part length in millimetres/i)).not.toBeInTheDocument();
     expect(screen.getByText(/Add the parts you need/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Plan the cuts/i })).toBeDisabled();
+    expect(within(screen.getByRole('region', { name: 'Required parts' })).getByText('Add at least one part')).toHaveAttribute('role', 'status');
+    expect(screen.getByText('Add at least one required part before planning.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Go to required parts' }));
+    expect(screen.getByRole('heading', { name: /Required parts/i })).toHaveFocus();
     fireEvent.click(screen.getByRole('button', { name: /Try an example/i }));
-    expect(screen.getByDisplayValue('80')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('600')).toBeInTheDocument();
+    expect(screen.queryByDisplayValue('80')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Go to required parts' })).not.toBeInTheDocument();
   });
   it('requests a standalone validation hint without interpolating a plan noun', async () => {
     const translate = vi.spyOn(i18n, 't');
     try {
       renderOptimizer();
       await screen.findByRole('heading', { name: /Required parts/i });
+      fireEvent.change(screen.getByLabelText(/Quantity, item 1/i), { target: { value: '0' } });
       expect(translate).toHaveBeenCalledWith('ui.fixLines', expect.any(Object));
       expect(translate).not.toHaveBeenCalledWith('ui.fixLines', expect.objectContaining({ kind: expect.anything() }));
     } finally {
@@ -103,6 +112,12 @@ describe('CuttingOptimizer', () => {
     renderOptimizer();
     expect(await screen.findByRole('heading', { name: /Required parts/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Plan the cuts/i })).toBeInTheDocument();
+  });
+
+  it('uses compact controls for board dimensions', async () => {
+    renderOptimizer({ loadExample: false });
+    expect(await screen.findByLabelText('Thickness (mm)')).toHaveClass('dimension-input');
+    expect(screen.getByLabelText('Width (mm)')).toHaveClass('dimension-input');
   });
 
   it('steps board thickness and width in whole millimetres', async () => {
@@ -130,7 +145,9 @@ describe('CuttingOptimizer', () => {
     expect(quantity).toHaveClass('is-required-empty');
     expect(length).not.toHaveAttribute('placeholder');
     expect(quantity).not.toHaveAttribute('placeholder');
-    expect(screen.getByLabelText(/Name, item 1/i)).toHaveAttribute('placeholder', 'Optional');
+    // Optional is said once in the column header, not as a placeholder that looks like a value.
+    expect(screen.getByLabelText(/Name, item 1/i)).not.toHaveAttribute('placeholder');
+    expect(screen.getByRole('columnheader', { name: /Name \(optional\)/ })).toBeInTheDocument();
     expect(screen.getByLabelText(/Name, item 1/i)).not.toHaveClass('is-required-empty');
     fireEvent.change(length, { target: { value: '60' } });
     fireEvent.change(quantity, { target: { value: '5' } });
@@ -170,7 +187,8 @@ describe('CuttingOptimizer', () => {
       renderOptimizer();
       await screen.findByLabelText('Pris per meter i SEK för längden 2500 mm');
 
-      expect(screen.getByLabelText('Pris per meter i SEK för längden 2500 mm')).toHaveAttribute('placeholder', 'Valfritt');
+      expect(screen.getByLabelText('Pris per meter i SEK för längden 2500 mm')).not.toHaveAttribute('placeholder');
+      expect(screen.getByRole('columnheader', { name: 'Pris / m (valfritt)' })).toBeInTheDocument();
     } finally {
       await act(() => i18n.changeLanguage('en-GB'));
     }
@@ -215,7 +233,8 @@ describe('CuttingOptimizer', () => {
     expect(screen.queryByText(/Choose a material/i)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Plan the cuts/i }));
     expect(optimizeCutting).not.toHaveBeenCalled();
-    expect(screen.getByText(/thickness and width/i)).toBeInTheDocument();
+    expect(screen.getByText('Fill in Thickness, Width to plan the cuts.')).toBeInTheDocument();
+    expect(screen.getByText('2 required fields empty: Thickness, Width')).toBeInTheDocument();
 
     fillMaterial();
     fireEvent.click(screen.getByRole('button', { name: /Plan the cuts/i }));
@@ -253,7 +272,7 @@ describe('CuttingOptimizer', () => {
     await screen.findByRole('heading', { name: /Your cutting plan/i });
     fireEvent.click(screen.getByRole('button', { name: /Name and save/i }));
     await screen.findByRole('heading', { name: /Save this plan/i });
-    fireEvent.change(screen.getByLabelText(/Plan name|Project name|Name/i), { target: { value: 'Rails' } });
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Rails' } });
     fireEvent.click(screen.getByRole('button', { name: /^Save/i }));
 
     await waitFor(() => expect(saveProject).toHaveBeenCalled());
@@ -265,6 +284,47 @@ describe('CuttingOptimizer', () => {
         suggested: false,
       },
     });
+  });
+
+  it('creates the typed project when the plan is saved, with no separate create step', async () => {
+    createProjectGroup.mockResolvedValue({ id: 'g7', name: 'Matstol' });
+    getCatalogue.mockResolvedValue({ data: catalogue, etag: '"x"' });
+    renderOptimizer();
+    await screen.findByRole('heading', { name: /Required parts/i });
+    await pickProduct('regel 45x95', 'Framing timber / studs 45 × 95 mm');
+    fireEvent.click(screen.getByRole('button', { name: /Plan the cuts/i }));
+    await screen.findByRole('heading', { name: /Your cutting plan/i });
+    fireEvent.click(screen.getByRole('button', { name: /Name and save/i }));
+    await screen.findByRole('heading', { name: /Save this plan/i });
+
+    expect(screen.queryByRole('button', { name: 'Create project' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Not in a project' })).not.toBeInTheDocument();
+    expect(screen.getByLabelText('New project name')).toHaveValue('My plans');
+
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Rails' } });
+    fireEvent.change(screen.getByLabelText('New project name'), { target: { value: 'Matstol' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Save/i }));
+
+    await waitFor(() => expect(saveProject).toHaveBeenCalled());
+    expect(createProjectGroup).toHaveBeenCalledWith('Matstol');
+    expect(saveProject.mock.calls[0][0]).toMatchObject({ name: 'Rails', projectGroupId: 'g7' });
+  });
+
+  it('saves the plan when Enter is pressed in the project name field', async () => {
+    getCatalogue.mockResolvedValue({ data: catalogue, etag: '"x"' });
+    renderOptimizer();
+    await screen.findByRole('heading', { name: /Required parts/i });
+    await pickProduct('regel 45x95', 'Framing timber / studs 45 × 95 mm');
+    fireEvent.click(screen.getByRole('button', { name: /Plan the cuts/i }));
+    await screen.findByRole('heading', { name: /Your cutting plan/i });
+    fireEvent.click(screen.getByRole('button', { name: /Name and save/i }));
+    await screen.findByRole('heading', { name: /Save this plan/i });
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Rails' } });
+
+    fireEvent.keyDown(screen.getByLabelText('New project name'), { key: 'Enter' });
+
+    await waitFor(() => expect(saveProject).toHaveBeenCalled());
+    expect(createProjectGroup).toHaveBeenCalledWith('My plans');
   });
 
   it('ignores a late plan response after the parts change', async () => {
@@ -279,7 +339,7 @@ describe('CuttingOptimizer', () => {
     fireEvent.click(screen.getByRole('button', { name: /Plan the cuts/i }));
     await waitFor(() => expect(optimizeCutting).toHaveBeenCalled());
 
-    fireEvent.change(screen.getByDisplayValue('80'), { target: { value: '81' } });
+    fireEvent.change(screen.getByDisplayValue('600'), { target: { value: '601' } });
     resolvePlan({
       board_lengths_used: [2500],
       cut_list: [[2000]],

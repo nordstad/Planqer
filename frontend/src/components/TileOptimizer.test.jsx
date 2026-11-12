@@ -45,6 +45,21 @@ beforeEach(() => {
   optimizeTileLayout.mockResolvedValue({ candidates: [candidate], recommended_index: 0 });
 });
 
+it('uses compact controls for tile dimensions', async () => {
+  render(
+    <MemoryRouter>
+      <LanguageProvider>
+        <TileOptimizer />
+      </LanguageProvider>
+    </MemoryRouter>,
+  );
+
+  expect(await screen.findByLabelText(/Surface width/i)).toHaveClass('dimension-input');
+  expect(screen.getByLabelText(/Surface height/i)).toHaveClass('dimension-input');
+  expect(screen.getByLabelText(/Tile width/i)).toHaveClass('dimension-input');
+  expect(screen.getByLabelText(/Thickness \(mm\)/i)).toHaveClass('dimension-input');
+});
+
 it('renders translated labels on the tile layout save step', async () => {
   render(
     <MemoryRouter>
@@ -63,8 +78,10 @@ it('renders translated labels on the tile layout save step', async () => {
   expect(screen.getByText(/Give the plan a name/)).toBeInTheDocument();
   expect(screen.queryByLabelText('Save as')).not.toBeInTheDocument();
   expect(screen.getByLabelText('Plan name')).toBeInTheDocument();
-  expect(screen.getByLabelText('Project — optional')).toBeInTheDocument();
+  expect(screen.getByLabelText('Project')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: /More information.*Project/i }));
   expect(screen.getByText(/Combine board, sheet, and tile plans/)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: /More information.*Plan name/i }));
   expect(screen.getByText(/The name appears on the saved diagram/)).toBeInTheDocument();
 });
 
@@ -110,7 +127,7 @@ it('restores a saved tile plan addressed by the edit query', async () => {
   expect(screen.getByDisplayValue('1200')).toBeInTheDocument();
   expect(screen.getByDisplayValue('300')).toBeInTheDocument();
     expect(screen.getByDisplayValue('600')).toBeInTheDocument();
-    expect(await screen.findByLabelText('Price per tile · NOK')).toHaveValue(42);
+    expect(await screen.findByLabelText(/^Price per tile · NOK/)).toHaveValue(42);
 });
 
 it('shows the tile material cost using the configured VAT basis', async () => {
@@ -118,7 +135,7 @@ it('shows the tile material cost using the configured VAT basis', async () => {
   render(<MemoryRouter><LanguageProvider><TileOptimizer /></LanguageProvider></MemoryRouter>);
 
   fireEvent.change(await screen.findByLabelText('Thickness (mm)'), { target: { value: '10' } });
-  fireEvent.change(screen.getByLabelText('Price per tile · SEK'), { target: { value: '25' } });
+  fireEvent.change(screen.getByLabelText(/^Price per tile · SEK/), { target: { value: '25' } });
   fireEvent.click(screen.getByRole('button', { name: /Calculate layout/i }));
 
   expect(await screen.findByText('250.00 SEK · including VAT (25%)')).toBeInTheDocument();
@@ -155,3 +172,23 @@ describe('the demo warning for large diagonal layouts', () => {
     expect(screen.queryByText(/can take ten seconds or more/i)).not.toBeInTheDocument();
   });
 });
+
+it('names an empty tile thickness as missing instead of flagging it red', async () => {
+  render(
+    <MemoryRouter>
+      <LanguageProvider>
+        <TileOptimizer />
+      </LanguageProvider>
+    </MemoryRouter>,
+  );
+
+  const thickness = await screen.findByLabelText('Thickness (mm)');
+  expect(thickness).toHaveValue(null);
+  expect(thickness).not.toHaveClass('form-input-error');
+  expect(thickness).toHaveAttribute('aria-required', 'true');
+  expect(screen.getByText('1 required field empty: Thickness')).toBeInTheDocument();
+  expect(screen.getByText('Fill in Thickness to calculate the layout.')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Go to Tile' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /Calculate layout/i })).toBeDisabled();
+});
+

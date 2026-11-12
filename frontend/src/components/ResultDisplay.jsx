@@ -3,9 +3,9 @@
   thing the page exists to produce; the headline figures live above it on the
   plan step, so nothing here is stated twice.
 
-  The order list and the cut order both derive from board_lengths_used — the same
-  list the diagram draws from. Deriving them anywhere else is how the order list
-  once disagreed with the diagram about which board length was bought.
+   The order list derives from board_lengths_used — the same list the diagram
+   draws from. Deriving it anywhere else is how it once disagreed with the
+   diagram about which board length was bought.
 */
 
 import { useState } from 'react';
@@ -56,14 +56,13 @@ const ResultDisplay = ({ result, projectName, materialType, boardThickness, boar
           <span className="synthetic">
              {text('ui.diagramCaption', { count: result.cut_list.length })}
           </span>
-          <button type="button" className="btn" onClick={downloadDiagram}>
+          <button type="button" className="btn btn-primary" onClick={downloadDiagram}>
              <Download /> {text('workflow.downloadDiagram')}
           </button>
         </figcaption>
       </figure>
 
-      <div className="grid gap-x-8 gap-y-8 lg:grid-cols-[300px_minmax(0,1fr)]" style={{ marginTop: '34px' }}>
-        <section style={{ minWidth: 0 }}>
+      <section style={{ marginTop: '34px', maxWidth: '300px' }}>
           <div className="section-rule">
              <h2 className="section-title">{text('workflow.whatToBuy')}</h2>
           </div>
@@ -89,25 +88,7 @@ const ResultDisplay = ({ result, projectName, materialType, boardThickness, boar
               </tr>
             </tbody>
           </table>
-        </section>
-
-        <section style={{ minWidth: 0 }}>
-          <div className="section-rule">
-             <h2 className="section-title">{text('workflow.cutOrder')}</h2>
-             <span className="folio">{text('workflow.takeToSaw')}</span>
-          </div>
-          <ul className="cut-order" style={{ marginTop: '4px' }}>
-            {result.cut_list.map((cuts, i) => (
-              <li key={i}>
-                <span className="cut-order-id">B{i + 1}</span>
-                <span className="cut-order-cuts">
-                  {Array.isArray(cuts) ? cuts.join(' · ') : String(cuts)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      </div>
+      </section>
 
       {diagramOpen && (
          <div className="cat-overlay" role="dialog" aria-modal="true" aria-label={text('ui.cuttingPlanDiagram')} onClick={() => setDiagramOpen(false)}>

@@ -62,10 +62,9 @@ const SheetPartRow = ({ part, index, handlePartChange, removePart, error, canRem
         <input
            aria-label={`${t('workflow.name')}, ${t('workflow.item').toLowerCase()} ${index + 1}`}
           type="text"
-           placeholder={t('ui.optional')}
           value={part.name || ''}
           onChange={(e) => handlePartChange(index, 'name', e.target.value)}
-          className="cell-input"
+          className="cell-input is-optional"
           style={{ textAlign: 'left' }}
         />
       </td>
