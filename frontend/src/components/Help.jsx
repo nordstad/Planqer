@@ -11,7 +11,8 @@ const sections = [
   { id: 'choose-tool', title: 'help.sectionChooseTool', no: '02' },
   { id: 'tile-layout', title: 'help.sectionTileLayout', no: '03' },
   { id: 'results', title: 'help.sectionResults', no: '04' },
-  { id: 'troubleshooting', title: 'help.sectionTroubleshooting', no: '05' },
+  { id: 'plans-projects', title: 'help.sectionPlansProjects', no: '05' },
+  { id: 'troubleshooting', title: 'help.sectionTroubleshooting', no: '06' },
 ];
 
 const FullDocsLink = ({ t }) => (
@@ -175,6 +176,23 @@ const HelpPage = () => {
           <p>
             {t('help.saveIntro', accountContext)}
           </p>
+        </section>
+
+        <section id="plans-projects" className="help-section">
+          <div className="section-rule">
+            <h2 className="section-title">{t('help.plansProjectsTitle')}</h2>
+          </div>
+          <p>{t('help.plansDefinition')}</p>
+          <p>{t('ui.projectInfo')} {t('help.plansShopping')}</p>
+          <div className="help-callout">
+            <strong>{t('help.plansSteps')}</strong>
+            <ol>
+              <li>{t('help.plansStepOne')}</li>
+              <li>{t('help.plansStepTwo')}</li>
+              <li>{t('help.plansStepThree')}</li>
+              <li>{t('help.plansStepFour')}</li>
+            </ol>
+          </div>
         </section>
 
         <section id="troubleshooting" className="help-section">

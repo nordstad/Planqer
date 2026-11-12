@@ -1046,6 +1046,9 @@ const CuttingOptimizer = () => {
                     {savedGroupName ? t('ui.filedUnder', { group: savedGroupName }) : t('ui.unfiled')}
                 </p>
                 <MovePlanMenu groups={projectGroups} currentGroupId={saved.project_group_id} onMove={moveSavedPlan} />
+                <p className="synthetic">
+                  {t('ui.addMorePlans')} <Link to="/">{t('ui.startAnotherPlan')}</Link>
+                </p>
               </div>
             </div>
           ) : (
