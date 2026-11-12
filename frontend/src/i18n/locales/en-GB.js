@@ -627,6 +627,7 @@ Object.assign(locale, {
     chosen: "Chosen",
     use: "Use",
     backToMeasurements: "Back to measurements",
+    backToCutSheets: "Back to the cut sheets",
     correctRoomMeasurements: "Correct the room measurements to prepare cut sheets.",
     cutTitle: "Cut one wall at a time",
     cutLede: "Select a wall, cut its labelled pieces in roll order, then use the measurements below for each opening.",

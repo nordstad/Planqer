@@ -707,6 +707,7 @@ Object.assign(locale, {
     chosen: "Vald",
     use: "Använd",
     backToMeasurements: "Tillbaka till måtten",
+    backToCutSheets: "Tillbaka till skärbladen",
     correctRoomMeasurements: "Rätta rummets mått för att förbereda skärblad.",
     cutTitle: "Skär en vägg i taget",
     cutLede: "Välj en vägg, skär de märkta bitarna i ordning på rullen och använd sedan måtten nedan för varje öppning.",
