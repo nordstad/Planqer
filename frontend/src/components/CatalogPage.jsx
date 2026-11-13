@@ -57,7 +57,7 @@ const CatalogPage = ({ children }) => {
 
   return (
     <div className="cat-page">
-      <style>{`@media (max-width: 767px) { .app-nav-row, .app-nav-right { min-width: 0; max-width: 100%; flex-wrap: wrap; } .app-nav-right > * { min-width: 0; overflow-wrap: anywhere; } }`}</style>
+      <style>{`@media (max-width: 1023px) { .app-nav-row, .app-nav-right { min-width: 0; max-width: 100%; flex-wrap: wrap; } .app-nav-right > * { min-width: 0; overflow-wrap: anywhere; } }`}</style>
       <nav className="app-nav">
         <div className="app-nav-row">
           <Link to="/" className="app-wordmark">
@@ -83,7 +83,7 @@ const CatalogPage = ({ children }) => {
               </Link>
             ) : isAuthenticated ? (
               <>
-                <Link to="/dashboard" className={`app-nav-link ${isCurrent('/dashboard') ? 'is-current' : ''}`}>
+                <Link to="/dashboard" className={`app-nav-link app-nav-user ${isCurrent('/dashboard') ? 'is-current' : ''}`} title={user.email}>
                   {user.email}
                 </Link>
                 <button type="button" className="app-nav-link" style={NAV_BUTTON_RESET} onClick={logout}>{t('common.signOut')}</button>
@@ -99,7 +99,6 @@ const CatalogPage = ({ children }) => {
             <select
               id="language-select"
               className="form-select app-nav-language"
-              style={{ width: 'auto', minWidth: '120px', padding: '5px 28px 5px 9px' }}
               value={language}
               onChange={(event) => changeLanguage(event.target.value)}
               aria-label={t('common.language')}

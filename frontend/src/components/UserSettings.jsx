@@ -168,7 +168,7 @@ const UserSettings = () => {
           >
             <option value="en-GB">English</option>
             <option value="sv-SE">Svenska</option>
-            <option value="nb-NO">Norsk bokmål</option>
+            <option value="nb-NO">Norsk</option>
           </select>
         </div>
 

@@ -87,7 +87,7 @@ test.describe('Wallpaper planner guardrails', () => {
     await expect(page.getByTestId('closure-gap')).toHaveCount(1);
     await expect(page.getByText(/Buy \d+ rolls/)).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Prepare cut sheets →' })).toBeDisabled();
-    await expect(page.getByRole('button', { name: /Cut\s*Choose a plan/ })).toBeDisabled();
+    await expect(page.getByRole('button', { name: /Review\s*Choose a plan/ })).toBeDisabled();
   });
 
   test('walls that close are accepted as a closed room', async ({ page }) => {
@@ -138,7 +138,7 @@ test.describe('Wallpaper planner guardrails', () => {
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
     await page.getByRole('button', { name: 'Prepare cut sheets →' }).click();
-    await expect(page.getByRole('heading', { name: 'Cut one wall at a time' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Your cut plan' })).toBeVisible();
     expect(pageErrors).toEqual([]);
   });
 
