@@ -676,22 +676,6 @@ whole affordance, with `aria-label`/`title` covering the rest.
 
 Recorded so future work does not mistake these for system rules:
 
-- **`StepCutlistOptimizer.jsx` and `ThreeDCutlistOptimizer.jsx`** predate this
-  system and the one before it — they still use raw Tailwind utility classes
-  (`rounded-lg`, `bg-dark-700`, `border-primary-300`) rather than the semantic
-  CSS custom properties. They picked up this system's colors and real
-  border-radius automatically (the underlying Tailwind scales were updated),
-  but their layouts, card nesting, and stat-row patterns were not rebuilt to
-  this system's grammar. Treat any resemblance to `.card`/`.hp-card`
-  conventions in those two files as coincidental, not evidence of the pattern.
-  (`SheetOptimizer.jsx` and `SheetResultDisplay.jsx` were on this list and are
-  now off it: both were rebuilt onto the step flow and the plate grammar.)
-- **`Help.jsx`'s `HowToUseSection`, `CostAnalysisSection`,
-  `TroubleshootingSection`, `FAQSection`, and `LegalSection`** are still
-  built from an even older nested-notice-plate pattern (numbered circle
-  badges, `bg-[var(--ground-2)]` boxes inside boxes) predating the trade
-  catalog system this one replaced. Only `GettingStartedSection` and the
-  contents rail (`.help-entry`, `.help-prose`) were touched by this redesign.
 - **The flat type scale on `/cutting`** (an 8-step, 1.4:1 ratio topping out at
   15.5px) was the previous pass's disclosed defect. The step rebuild fixed it:
   each step now opens with a real `.step-h1` at 26px over a 14.5px lede, above
