@@ -16,7 +16,7 @@ vi.mock('./utils/api', async () => ({
 describe('App', () => {
   it('renders HomePage on the root route', async () => {
     renderAt('/');
-    expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent('Know what to buy');
+    expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent('Plan it. Buy it.');
   });
 
   it('asks a signed-out visitor to sign in on /cutting', async () => {

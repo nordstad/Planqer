@@ -1361,11 +1361,13 @@
 /* the top block reorders per breakpoint: desktop pairs text with the
    diagram and puts cards below; mobile puts cards right after the (short)
    text, deferring the fuller diagram so the launcher is never buried */
+/* the hero shares the card grid's two equal columns and 14px gutter, so the
+   visual's edges line up with the right-hand cards below it */
 .hp-top {
   display: grid;
-  grid-template-columns: 1.15fr 380px;
+  grid-template-columns: 1fr 1fr;
   grid-template-areas: "text visual" "rule rule" "cards cards";
-  gap: 28px 40px;
+  gap: 28px 14px;
   padding: 12px 0 8px;
 }
 @media (max-width: 900px) {
@@ -1377,7 +1379,7 @@
   }
 }
 .hp-hero-text { grid-area: text; align-self: center; }
-.hp-visual-area { grid-area: visual; }
+.hp-visual-area { grid-area: visual; align-self: center; }
 .hp-grid-area { grid-area: cards; }
 
 /* the divider is a drawing, not a line: a tape-measure edge in the
@@ -1401,65 +1403,13 @@
 .hp-lede { font-size: 15px; line-height: 1.55; color: var(--ink-2); margin: 0; max-width: 48ch; }
 @media (max-width: 900px) { .hp-lede { font-size: 14px; } }
 
-/* the hero earns an action: ink slab, amber on hover — the system's own
-   primary, sized up for the one place the whole page points at */
-.hp-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 18px; margin-top: 22px; }
-.hp-cta {
-  display: inline-flex; align-items: center; gap: 9px;
-  padding: 12px 24px; border-radius: 12px; font-size: 14.5px; font-weight: 700;
-}
-.hp-alt {
-  font-size: 13.5px; color: var(--ink-2); text-decoration: underline;
-  text-underline-offset: 3px; text-decoration-color: var(--ink-4);
-}
-.hp-alt:hover { color: var(--accent); text-decoration-color: var(--accent); }
-
-.hp-visual {
-  background: var(--card); border: 1px solid var(--rule-hair); border-radius: 16px;
-  padding: 18px 20px; box-shadow: 0 1px 2px rgba(22,21,15,.05);
-}
-.hp-visual-label { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 12px; }
-.hp-plate { display: flex; height: 30px; border-radius: 6px; overflow: hidden; border: 1.5px solid var(--rule-hair); margin-bottom: 8px; position: relative; }
-.hp-plate-mini { height: 16px; opacity: .65; }
-.hp-plate-cut { display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: var(--ink); background: var(--ground-2); border-right: 1.5px solid var(--rule-hair); }
-.hp-plate-cut:last-child { border-right: 0; }
-.hp-plate-kerf { width: 4px; background: var(--accent); flex: none; }
-.hp-plate-waste { background-image: repeating-linear-gradient(45deg, transparent 0 4px, var(--waste-dot) 4px 5px); }
-.hp-visual-more { font-size: 11px; color: var(--ink-3); margin: 6px 0 12px; }
-.hp-visual-caption { font-size: 12px; color: var(--ink-2); margin: 0; line-height: 1.5; }
-.hp-visual-caption b { color: var(--ink); font-weight: 700; }
-
-/* the one authored moment: the plan arrives the way a plan is executed —
-   each board revealed left to right behind a passing blade, top board
-   first, then the two beneath, then the verdict line. plays once. */
-@media (prefers-reduced-motion: no-preference) {
-  .hp-visual .hp-plate { animation: hp-cut .9s cubic-bezier(.6,.05,.3,1) both; }
-  .hp-visual .hp-plate::after {
-    content: ''; position: absolute; top: 0; bottom: 0; width: 3px;
-    background: var(--accent); transform: translateX(-100%);
-    animation: hp-blade .9s cubic-bezier(.6,.05,.3,1) both;
-  }
-  .hp-visual .hp-plate { animation-delay: .25s; }
-  .hp-visual .hp-plate::after { animation-delay: .25s; }
-  .hp-visual .hp-plate-mini { animation-delay: .95s; animation-duration: .6s; }
-  .hp-visual .hp-plate-mini::after { animation-delay: .95s; animation-duration: .6s; }
-  .hp-visual .hp-plate-mini + .hp-plate-mini { animation-delay: 1.4s; }
-  .hp-visual .hp-plate-mini + .hp-plate-mini::after { animation-delay: 1.4s; }
-  .hp-visual-more, .hp-visual-caption { animation: hp-settle .45s ease-out 1.95s both; }
-}
-@keyframes hp-cut {
-  from { clip-path: inset(0 100% 0 0); }
-  to { clip-path: inset(0 0 0 0); }
-}
-@keyframes hp-blade {
-  from { left: 0%; opacity: 1; }
-  88% { opacity: 1; }
-  to { left: 100%; opacity: 0; }
-}
-@keyframes hp-settle {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: none; }
-}
+/* the hero's visual: one animated illustration of the materials the tools
+   plan — sheet, boards, tiles, wallpaper — cut into their plans by a passing
+   amber blade. No card around it; the one place on the site that uses
+   material colours, so it never reads as another card. The SVG carries its
+   own one-time animation and honours prefers-reduced-motion itself. */
+.hp-visual { aspect-ratio: 895 / 490; }
+.hp-visual svg { display: block; width: 100%; height: 100%; }
 
 .hp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 @media (max-width: 640px) { .hp-grid { grid-template-columns: 1fr; } }

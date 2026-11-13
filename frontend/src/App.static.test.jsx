@@ -28,7 +28,7 @@ afterEach(() => vi.unstubAllEnvs());
 
 it('opens a tool from a hash address without asking anyone to sign in', async () => {
   await renderAtHash('#/cutting');
-  expect(await screen.findByRole('heading', { level: 1 })).not.toHaveTextContent('Know what to buy');
+  expect(await screen.findByRole('heading', { level: 1 })).not.toHaveTextContent('Plan it. Buy it.');
   expect(screen.queryByText(/Sign in required/i)).not.toBeInTheDocument();
 });
 
