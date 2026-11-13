@@ -16,7 +16,7 @@ export const summaryRows = (plan, wallpaper, t, savedAt, language) => {
     [t('wallpaperUi.summaryRoll'), `${mm(wallpaper.roll_width)} × ${mm(wallpaper.roll_length)}${Number(wallpaper.repeat) > 0 ? ` · ${t('wallpaperUi.repeatMm', { mm: wallpaper.repeat })}` : ''}`],
     [t('wallpaperUi.summaryRolls'), t('wallpaperUi.summaryRollsValue', { toBuy: rolls, needed: plan.rolls_needed, spare: rolls - plan.rolls_needed })],
   ];
-  if (Number.isFinite(Number(wallpaper.price_per_roll))) rows.push([t('wallpaperUi.summaryCost'), `${(rolls * wallpaper.price_per_roll).toLocaleString(language, { maximumFractionDigits: 0 })} ${wallpaper.currency || ''}`.trim()]);
+  if (Number(wallpaper.price_per_roll) > 0) rows.push([t('wallpaperUi.summaryCost'), `${(rolls * wallpaper.price_per_roll).toLocaleString(language, { maximumFractionDigits: 0 })} ${wallpaper.currency || ''}`.trim()]);
   rows.push([t('wallpaperUi.summaryStrips'), plan.strips?.length || 0], [t('wallpaperUi.summaryPieces'), plan.pieces?.length || 0]);
   if (savedAt) rows.push([t('wallpaperUi.summarySaved'), savedAt.slice(0, 10)]);
   return rows;

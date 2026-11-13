@@ -34,6 +34,13 @@ describe('WallpaperPlanDocument', () => {
     expect(screen.getAllByRole('button', { name: 'Show Wall B' })[0]).toHaveAttribute('aria-pressed', 'true');
   });
 
+  it('leaves out the cost row when the wallpaper has no price', () => {
+    render(<WallpaperPlanDocument plan={plan} walls={walls} corners={[]} closed={false} wallpaper={{ ...wallpaper, price_per_roll: null }} />);
+
+    expect(screen.queryByText('Estimated cost')).not.toBeInTheDocument();
+    expect(screen.queryByText('0 SEK')).not.toBeInTheDocument();
+  });
+
   it('opens drawings only for special pieces and renders the legend once', () => {
     render(<WallpaperPlanDocument plan={plan} walls={walls} corners={[]} closed={false} wallpaper={wallpaper} />);
 

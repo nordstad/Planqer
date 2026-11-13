@@ -491,7 +491,6 @@ const WallpaperOptimizer = () => {
     return clashes.length ? { ...base, errors: [...base.errors, ...clashes], hasErrors: true } : base;
   });
   const overlapMessage = overlapIssue(cornerOverlap, t);
-  const toggle = (kind, id) => setProgress((current) => ({ ...current, [kind]: current[kind].includes(id) ? current[kind].filter((item) => item !== id) : [...current[kind], id] }));
 
   // Step 01: required fields, in screen order, with the label used in the status.
   const unitless = (key) => splitUnit(t(key)).text;

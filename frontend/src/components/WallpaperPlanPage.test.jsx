@@ -24,6 +24,14 @@ describe('WallpaperPlanPage', () => {
     expect(screen.getByText('Summary')).toBeInTheDocument();
   });
 
+  it('offers only Modify when the plan has no result yet', async () => {
+    getWallpaperProject.mockResolvedValue({ ...project, plan_result: null });
+    renderPage();
+    expect(await screen.findByText('This plan has no calculated result yet.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Print' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Modify' })).toBeInTheDocument();
+  });
+
   it('shows not found when loading fails', async () => {
     getWallpaperProject.mockRejectedValue(new Error('missing'));
     renderPage();

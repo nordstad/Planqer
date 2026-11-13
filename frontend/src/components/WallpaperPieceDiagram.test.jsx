@@ -66,8 +66,11 @@ describe('WallpaperPieceDiagram', () => {
   it('removes the repeated legend and rotates short precut labels horizontally', () => {
     render(<WallpaperPieceDiagram piece={piece({ length: 320, y_end: 320 })} strip={strip} legend={false} />);
 
-    const precut = screen.getByText('precut 360 mm');
+    const precut = screen.getByTestId('precut-label');
+    expect(precut).toHaveTextContent('precut360 mm');
     expect(precut).not.toHaveAttribute('transform');
+    expect(precut).toHaveAttribute('text-anchor', 'end');
+    expect(Number(precut.getAttribute('y'))).toBeGreaterThan(62);
     expect(screen.queryByText('Solid outline: safe table cut. Dashed outline: mark and trim in place.')).not.toBeInTheDocument();
     expect(screen.getByRole('img')).toHaveAttribute('viewBox', '0 0 540 450');
   });
