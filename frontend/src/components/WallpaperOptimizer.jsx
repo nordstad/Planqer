@@ -10,25 +10,18 @@ import WallOutlineEditor from './WallOutlineEditor';
 import { ArrowLeft, Tick } from './icons';
 import FormField, { SectionCard, SectionStatus, splitUnit } from './FormField';
 import InfoTip from './InfoTip';
-import WallpaperPieceGallery from './WallpaperPieceGallery';
-import { KIND_KEYS, pieceFaces } from './WallpaperPieceDiagram';
+import WallpaperPlanDocument from './WallpaperPlanDocument';
+import { printWallpaperPlan } from '../utils/wallpaperPlanPrint';
+import { KIND_KEYS } from './WallpaperPieceDiagram';
 import { wallIssues, overlapIssue, wallCrossings } from '../utils/wallpaperValidation';
 import RoomOverview, { linkColour } from './RoomOverview';
 import { createWallpaperPlan, getProjectGroups, getUserSettings, getWallpaperProjects, saveWallpaper, saveWallpaperProject, updateWallpaperProject, movePlanToProject } from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useAccountContext } from '../contexts/useAccountContext';
 import { isStaticMode } from '../utils/mode';
+import { isOnWall, letterOf, pieceLabels, segmentsOf, stripLabel } from '../utils/wallpaperPlan';
 
 const numeric = (value) => Number(value) || 0;
-// Plans saved before connected strips have no segments; treat them as one face.
-const segmentsOf = (item) => (item.segments?.length ? item.segments : [item]);
-const isOnWall = (item, wallIndex) => segmentsOf(item).some((segment) => segment.wall_index === wallIndex);
-// Drawing-style letters: Wall A, B, … Z, AA. Walls are lettered clockwise from the first wall.
-const letterOf = (index) => {
-  let letters = '';
-  for (let n = index; n >= 0; n = Math.floor(n / 26) - 1) letters = String.fromCharCode(65 + (n % 26)) + letters;
-  return letters;
-};
 const wallLetter = (index, t) => t('wallpaperUi.wallName', { letter: letterOf(index) });
 const isBlank = (value) => value == null || String(value).trim() === '';
 const isDesktop = () => window.matchMedia?.('(min-width: 1024px)').matches ?? true;
@@ -45,8 +38,6 @@ const SHAPE_PATHS = {
 const ShapeIcon = ({ profile }) => <svg width="34" height="24" viewBox="0 0 28 22" aria-hidden="true"><polygon points={SHAPE_PATHS[profile]} fill="var(--ground-2)" stroke="var(--ink)" strokeWidth="1.5" strokeLinejoin="round" /></svg>;
 
 const wallShapes = [['rectangle', 'wallpaperUi.shapeRectangle'], ['sloped', 'wallpaperUi.shapeSloped']];
-
-const stripLabel = (t, number) => t('wallpaperUi.stripLabel', { number });
 
 // The middle height is not asked for on sloped walls; keep it consistent with the measured edges.
 const withDerivedMiddle = (wall) => {
@@ -119,8 +110,9 @@ const leftoverSentence = (material, t) => {
   return material.largest_leftover > 0 ? t('wallpaperUi.largestLeftover', { reuse, length: Math.round(material.largest_leftover) }) : reuse;
 };
 
-export const WallElevation = ({ wall, wallIndex, plan, wallNames }) => {
+export const WallElevation = ({ wall, wallIndex, plan, wallNames, labels = new Map() }) => {
   const { t } = useTranslation();
+  const displayLabels = labels.size ? labels : pieceLabels(plan, t);
   const widthTop = numeric(wall.width_top);
   const widthMiddle = numeric(wall.width_middle);
   const widthBottom = numeric(wall.width_bottom);
@@ -172,7 +164,7 @@ export const WallElevation = ({ wall, wallIndex, plan, wallNames }) => {
     {!useStripKey && (plan?.pieces || []).filter((piece) => isOnWall(piece, wallIndex)).map((piece) => {
       const segment = segments.find((item) => item.number === piece.strip_number);
       if (!segment) return null;
-      return <text key={`label-${piece.id}`} data-testid="piece-id" x={(scaleX(segment.x_start) + scaleX(segment.x_end)) / 2} y={scaleY(Math.min(piece.y_end, height)) - 5} textAnchor="middle" className="wallpaper-svg-small" style={{ fontWeight: 700 }}>{piece.id}</text>;
+      return <text key={`label-${piece.id}`} data-testid="piece-id" x={(scaleX(segment.x_start) + scaleX(segment.x_end)) / 2} y={scaleY(Math.min(piece.y_end, height)) - 5} textAnchor="middle" className="wallpaper-svg-small" style={{ fontWeight: 700 }}>{displayLabels.get(piece.id) || piece.id}</text>;
     })}
     {!isSloped && (plan?.pieces || []).filter((piece) => isOnWall(piece, wallIndex) && piece.y_end - piece.y_start < height - 1).map((piece) => {
       const segment = segments.find((item) => item.number === piece.strip_number);
@@ -206,33 +198,19 @@ export const WallElevation = ({ wall, wallIndex, plan, wallNames }) => {
     {segments.map((segment) => {
       const pieces = (plan?.pieces || []).filter((piece) => piece.strip_number === segment.number && isOnWall(piece, wallIndex));
       return <li key={`${segment.number}-${segment.x_start}`}>
-        <b>{stripLabel(t, segment.number)}</b> · {Math.round(segment.x_end - segment.x_start)} mm{pieces.length ? ` · ${pieces.map((piece) => `${piece.id} (${Math.round(piece.y_end - piece.y_start)} mm)`).join(', ')}` : ''}
+        <b>{stripLabel(t, segment.number)}</b> · {Math.round(segment.x_end - segment.x_start)} mm{pieces.length ? ` · ${pieces.map((piece) => `${displayLabels.get(piece.id) || piece.id} (${Math.round(piece.y_end - piece.y_start)} mm)`).join(', ')}` : ''}
       </li>;
     })}
   </ol>}</div>;
 };
 
-const RollDiagram = ({ roll, rollLength, pieces, wallIndex }) => {
+export const RollDiagram = ({ roll, rollLength, pieces, wallIndex, labels = new Map() }) => {
   const { t } = useTranslation();
   return <svg viewBox="0 0 720 130" className="wallpaper-roll-diagram" style={{ width: '100%', maxWidth: '720px', margin: '12px 0' }} role="img" aria-label={t('wallpaperUi.rollAria', { number: roll.number })}>
   <rect x="35" y="36" width="650" height="54" fill="var(--ground-2)" stroke="var(--ink)" />
-  {roll.cuts.filter((cut) => isOnWall(pieces.find((piece) => piece.id === cut.piece_id) || {}, wallIndex)).map((cut) => { const gapStart = 35 + ((cut.start - cut.alignment_gap) / rollLength) * 650; const x = 35 + (cut.start / rollLength) * 650; const width = ((cut.end - cut.start) / rollLength) * 650; return <g key={cut.piece_id}>{cut.alignment_gap > 0 && <rect x={gapStart} y="36" width={(cut.alignment_gap / rollLength) * 650} height="54" fill="var(--accent-bg)" stroke="var(--accent)" strokeDasharray="3 2" />}<rect x={x} y="36" width={width} height="54" fill="var(--card)" stroke="var(--ink)" /><text x={x + width / 2} y="68" textAnchor="middle" className="wallpaper-svg-small">{cut.piece_id}</text></g>; })}
+  {roll.cuts.filter((cut) => wallIndex == null || isOnWall(pieces.find((piece) => piece.id === cut.piece_id) || {}, wallIndex)).map((cut) => { const gapStart = 35 + ((cut.start - cut.alignment_gap) / rollLength) * 650; const x = 35 + (cut.start / rollLength) * 650; const width = ((cut.end - cut.start) / rollLength) * 650; return <g key={cut.piece_id}>{cut.alignment_gap > 0 && <rect x={gapStart} y="36" width={(cut.alignment_gap / rollLength) * 650} height="54" fill="var(--accent-bg)" stroke="var(--accent)" strokeDasharray="3 2" />}<rect x={x} y="36" width={width} height="54" fill="var(--card)" stroke="var(--ink)" /><text x={x + width / 2} y="68" textAnchor="middle" className="wallpaper-svg-small">{labels.get(cut.piece_id) || cut.piece_id}</text></g>; })}
   <text x="35" y="116" className="wallpaper-svg-small">{t('wallpaperUi.gapNote')}</text>
 </svg>;
-};
-
-const CutInstruction = ({ cut, piece, strip, wallIndex, wallNames, progress, toggle, selected, onSelect }) => {
-  const { t } = useTranslation();
-  const faces = pieceFaces(piece, strip).filter((face) => face.wall_index === wallIndex);
-  const notches = faces.flatMap((face) => face.notches.map((notch) => ({ ...notch, left: notch.x_start - face.x_start + face.offset })));
-  return <div className="flex items-start gap-3 border-b border-[var(--rule-hair)] py-4"><button type="button" className="flex min-w-0 flex-1 items-start gap-3 text-left" onClick={() => onSelect(piece.id)} aria-pressed={selected}>
-    <span>{selected ? '●' : '○'}</span><span>
-      <b>{t('wallpaperUi.cutHeading', { id: cut.piece_id, mm: Math.round(piece.cut_length ?? piece.length) })}</b>
-      <small className="block synthetic">{t('wallpaperUi.stripHang', { strip: piece.strip_number, from: Math.round(piece.y_start), to: Math.round(piece.y_end) })}</small>
-      <small className="block synthetic">{t('wallpaperUi.rollPosition', { start: Math.round(cut.start), end: Math.round(cut.end), phase: Math.round(cut.phase) })}{cut.alignment_gap > 0 ? ` · ${t('wallpaperUi.leaveGap', { mm: Math.round(cut.alignment_gap) })}` : ''}</small>
-      {strip.return_overlap > 0 && faces.some((face) => face.wall_index === strip.segments[strip.segments.length - 1].wall_index) && <small className="block synthetic"><b>{t('wallpaperUi.cornerOverlapLabel')}</b> {t('wallpaperUi.cornerOverlapNote', { mm: Math.round(strip.return_overlap), wall: wallNames[strip.return_wall_index] })}</small>}
-      {notches.map((notch, index) => <small className="block synthetic" key={index}><b>{notch.mode === 'mark' ? t('wallpaperUi.markOpeningLabel') : t('wallpaperUi.cutOpeningLabel')}</b> {t('wallpaperUi.openingOffsets', { x1: Math.round(notch.left), x2: Math.round(notch.left + notch.x_end - notch.x_start), y1: Math.round(notch.y_start - piece.y_start), y2: Math.round(notch.y_end - piece.y_start) })}</small>)}
-    </span></button><button type="button" className="btn btn-primary btn-sm" onClick={() => toggle('cut', cut.piece_id)}>{progress.includes(cut.piece_id) ? t('wallpaperUi.cutDone') : t('wallpaperUi.markCut')}</button></div>;
 };
 
 const sameWidth = (widths) => widths.every((width) => width === widths[0]);
@@ -317,9 +295,6 @@ const WallpaperOptimizer = () => {
     onCreated: (group) => setProjectGroups((current) => [group, ...current]),
     fallbackName: projectName,
   });
-  const [progress, setProgress] = useState({ cut: [], hung: [] });
-  const [cutWallIndex, setCutWallIndex] = useState(0);
-  const [selectedPieceId, setSelectedPieceId] = useState(null);
   const [cornerOverlap, setCornerOverlap] = useState('15');
   // One wall card is open at a time; the others show their summary.
   const [openWall, setOpenWall] = useState(0);
@@ -365,7 +340,6 @@ const WallpaperOptimizer = () => {
       setStartStyle(options.start_style || 'even');
       setPricing({ currency: currency || 'SEK', vatRate: vatRate ?? 25, pricesIncludeVat: includesVat ?? true });
       setPlan(project.plan_result);
-      setProgress(project.progress_data?.cut ? project.progress_data : { cut: [], hung: [] });
       setProjectName(project.name);
       setProjectGroupId(project.project_group_id ? String(project.project_group_id) : '');
       setEditingId(project.id);
@@ -478,7 +452,7 @@ const WallpaperOptimizer = () => {
     if (!projectName.trim()) { setError(t('auditUi.nameRequired')); return; }
     try {
       setError('');
-      const body = { name: projectName.trim(), project_group_id: await resolveProject(), wallpaper_data: { ...payload.wallpaper, currency: pricing.currency, vat_rate: pricing.vatRate, prices_include_vat: pricing.pricesIncludeVat }, room_data: payload.room, options_data: { corner_overlap: cornerOverlap, spare_margin: spareMargin, start: startChoice, start_style: startStyle }, plan_result: plan, ordered_rolls: plan.rolls_to_buy, progress_data: progress };
+       const body = { name: projectName.trim(), project_group_id: await resolveProject(), wallpaper_data: { ...payload.wallpaper, currency: pricing.currency, vat_rate: pricing.vatRate, prices_include_vat: pricing.pricesIncludeVat }, room_data: payload.room, options_data: { corner_overlap: cornerOverlap, spare_margin: spareMargin, start: startChoice, start_style: startStyle }, plan_result: plan, ordered_rolls: plan.rolls_to_buy };
       const existingId = saved?.id ?? editingId;
       const result = existingId ? await updateWallpaperProject(existingId, body) : await saveWallpaperProject(body);
       setSaved(result);
@@ -502,7 +476,7 @@ const WallpaperOptimizer = () => {
     { label: t('common.wallpaperPlanner'), summary: wallpaper.name || t('wallpaperUi.chooseWallpaper'), locked: t('wallpaperUi.chooseWallpaper'), reachable: true },
     { label: t('wallpaperUi.stepRoom'), summary: t('wallpaperUi.wallsMeasured', { count: walls.length }), locked: t('wallpaperUi.measureRoom'), reachable: step >= 1 },
     { label: t('wallpaperUi.stepPlan'), summary: plan ? t(walls.some((wall) => wall.profile === 'sloped') ? 'wallpaperUi.rollsDraft' : 'wallpaperUi.rollsToBuy', { rolls: plan.rolls_to_buy }) : t('wallpaperUi.calcMaterial'), locked: t('wallpaperUi.createPlanLocked'), reachable: !!plan },
-    { label: t('wallpaperUi.stepCut'), summary: plan ? t('wallpaperUi.piecesSummary', { pieces: plan.pieces.length }) : t('wallpaperUi.prepareCutSheets'), locked: t('wallpaperUi.choosePlanLocked'), reachable: !!plan && !planInvalid },
+    { label: t('wallpaperUi.stepReview'), summary: plan ? t('wallpaperUi.piecesSummary', { pieces: plan.pieces.length }) : t('wallpaperUi.prepareCutSheets'), locked: t('wallpaperUi.choosePlanLocked'), reachable: !!plan && !planInvalid },
     { label: t('workflow.save'), summary: saved ? t('wallpaperUi.savedLocally') : t('wallpaperUi.keepProject'), locked: t('wallpaperUi.prepareCutSheets'), reachable: !!plan && !planInvalid },
   ];
   const hasSlopedWall = walls.some((wall) => wall.profile === 'sloped');
@@ -517,7 +491,6 @@ const WallpaperOptimizer = () => {
     return clashes.length ? { ...base, errors: [...base.errors, ...clashes], hasErrors: true } : base;
   });
   const overlapMessage = overlapIssue(cornerOverlap, t);
-  const toggle = (kind, id) => setProgress((current) => ({ ...current, [kind]: current[kind].includes(id) ? current[kind].filter((item) => item !== id) : [...current[kind], id] }));
 
   // Step 01: required fields, in screen order, with the label used in the status.
   const unitless = (key) => splitUnit(t(key)).text;
@@ -766,27 +739,10 @@ const WallpaperOptimizer = () => {
         </div>
       </div>
     </section>}
-    {step === 2 && plan && <section className="step-view"><div className="step-head"><div><h1 className="step-h1">{t('wallpaperUi.planTitle')}</h1><p className="step-lede">{plan.closure && !plan.closure.valid ? t('wallpaperUi.ledeInvalid') : hasSlopedWall ? t('wallpaperUi.ledeSloped') : t('wallpaperUi.ledeBuy', { rolls: plan.rolls_to_buy })}</p></div><button className="btn btn-primary" onClick={() => setStep(1)}>{t('wallpaperUi.editMeasurements')}</button></div><div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_250px]"><div>{plan.closure && !plan.closure.valid && <p role="alert" style={{ padding: '12px 16px', border: '1px solid #c0392b', color: '#c0392b', marginBottom: '20px' }}>{plan.closure.message}</p>}{plan.corner_quality?.smallest != null && <section aria-label={t('wallpaperUi.cornerPiecesAria')} data-testid="corner-quality" style={{ marginBottom: '20px' }}><p className="synthetic">{t('wallpaperUi.smallestCorner')} <b>{Math.round(plan.corner_quality.smallest)} mm</b> {t('wallpaperUi.smallestCornerMin', { min: plan.corner_quality.minimum })}{plan.corner_quality.short_corners.length === 0 ? ` ${t('wallpaperUi.allCornersAbove')}` : ''}</p>{plan.corner_quality.short_corners.length > 0 && <ul role="alert" style={{ color: '#c0392b', paddingLeft: '20px' }}>{plan.corner_quality.short_corners.map((corner) => <li key={`${corner.strip}-${corner.from_wall}-${corner.to_wall}`}>{t('wallpaperUi.shortCorner', { strip: corner.strip, mm: Math.round(corner.width), from: corner.from_wall, to: corner.to_wall, action: corner.action })}</li>)}</ul>}</section>}{walls.length > 1 && <RoomOverview walls={walls} corners={plan.corners || payload.room.corners} plan={plan} closed={!!plan.closure} />}<p className="synthetic" style={{ marginBottom: '20px' }}>{t('wallpaperUi.stripKey')}</p>{walls.map((wall, index) => { const wallStrips = plan.strips.filter((strip) => isOnWall(strip, index)); const wallPieces = plan.pieces.filter((piece) => isOnWall(piece, index)); return <Fragment key={index}><section style={{ marginBottom: '32px' }}><div className="section-rule"><h2 className="section-title">{wall.name}</h2><span className="synthetic">{wall.skip ? t('wallpaperUi.noWallpaper') : t('wallpaperUi.stripsPieces', { strips: wallStrips.length, pieces: wallPieces.length })}</span></div>{wall.skip ? <p className="synthetic" data-testid="no-wallpaper-wall" style={{ padding: '14px 16px', border: '1px dashed var(--ink-3)', background: 'var(--ground-2)' }}>{t('wallpaperUi.noWallpaperWall', { width: wall.width_top })}</p> : <><WallElevation wall={wall} wallIndex={index} plan={plan} wallNames={walls.map((item) => item.name)} /><dl className="grid gap-3 md:grid-cols-3"><div><dt className="form-label">{wall.detailedMeasurements ? t('wallpaperUi.widthsDetailed') : t('wallpaperUi.measuredWidth')}</dt><dd>{wall.detailedMeasurements ? `${wall.width_top} / ${wall.width_middle} / ${wall.width_bottom} mm` : `${wall.width_top} mm`}</dd></div><div><dt className="form-label">{wall.detailedMeasurements ? t('wallpaperUi.heightsDetailed') : t('wallpaperUi.heights')}</dt><dd>{wall.detailedMeasurements ? `${wall.height_left} / ${wall.height_middle} / ${wall.height_right} mm` : `${wall.height_left} / ${wall.height_right} mm`}</dd></div><div><dt className="form-label">{t('workflow.openings')}</dt><dd>{(wall.cutouts || []).length || t('wallpaperUi.none')}</dd></div></dl></>}</section>{index < walls.length - 1 && <CornerConnection from={wall.name} to={walls[index + 1].name} corner={plan.corners?.[index] || payload.room.corners[index]} link={plan.strips.find((strip) => { const all = segmentsOf(strip); return all.some((segment, position) => segment.wall_index === index && all[position + 1]?.wall_index === index + 1); })?.number} overlap={plan.strips.find((strip) => strip.return_wall_index === index + 1 && strip.segments?.[strip.segments.length - 1]?.wall_index === index)?.return_overlap} />}</Fragment>; })}{[...new Set(plan.warnings)].map((warning) => <p className="synthetic" key={warning}>{warning}</p>)}</div><section aria-label={t('wallpaperUi.materialSummary')}><div className="section-rule"><h2 className="section-title">{t('wallpaperUi.materialSummary')}</h2></div><p><b>{t(hasSlopedWall ? 'wallpaperUi.rollsDraft' : 'wallpaperUi.rollsToBuy', { rolls: plan.rolls_to_buy })}</b></p><p className="synthetic" data-testid="spare-rolls">{t('wallpaperUi.rollsNeeded', { rolls: plan.rolls_needed })} {plan.rolls_to_buy > plan.rolls_needed ? t('wallpaperUi.rollsSpare', { spare: plan.rolls_to_buy - plan.rolls_needed, margin: text(spareMargin) }) : t('wallpaperUi.noSpareMargin')}</p>{rollPrice != null && <p data-testid="estimated-cost">{t('wallpaperUi.estimatedCost')} <b>{formatMoney(plan.rolls_to_buy * rollPrice)}</b><span className="synthetic" style={{ display: 'block' }}>{t('wallpaperUi.costBreakdown', { rolls: plan.rolls_to_buy, price: formatMoney(rollPrice), vat: pricing.pricesIncludeVat ? t('ui.includingVat') : t('ui.excludingVat'), rate: pricing.vatRate })}</span></p>}{plan.material && <><p className="synthetic">{t('wallpaperUi.wasteSummary', { percent: Math.round(((plan.waste.pattern + plan.waste.offcut) / plan.material.bought_length) * 100) })}</p><dl className="cat-table">{[[t('wallpaperUi.wastePattern'), plan.waste.pattern, t('wallpaperUi.wastePatternHelp')], [t('wallpaperUi.wasteEnds'), plan.waste.offcut, t('wallpaperUi.wasteEndsHelp')], [t('wallpaperUi.wasteAllowance'), plan.waste.allowance, t('wallpaperUi.wasteAllowanceHelp')]].map(([name, value, help]) => <div className="flex justify-between border-b border-[var(--rule-hair)] py-2" key={name} title={help}><dt>{name}</dt><dd>{Math.round(value)} mm · {Math.round((value / plan.material.bought_length) * 100)}%</dd></div>)}</dl><p className="synthetic" data-testid="offcut-reuse" style={{ marginTop: '12px' }}>{leftoverSentence(plan.material, t)}</p>{rollFitHint(plan.material.fit, numeric(wallpaper.roll_length), patterned ? numeric(wallpaper.repeat) : 0, t) && <p className="synthetic" data-testid="roll-fit-hint">{rollFitHint(plan.material.fit, numeric(wallpaper.roll_length), patterned ? numeric(wallpaper.repeat) : 0, t)}</p>}{plan.waste.trim > 0 && <p className="synthetic" data-testid="opening-trim">{t('wallpaperUi.openingTrim', { mm: Math.round(plan.waste.trim) })}</p>}</>}<StartOptions plan={plan} onChoose={chooseStart} t={t} /></section></div><div className="step-foot"><button className="btn-text" onClick={() => setStep(1)}><ArrowLeft /> {t('wallpaperUi.backToMeasurements')}</button><button className="btn-order step-foot-act" onClick={() => setStep(3)} disabled={planInvalid}>{`${t('wallpaperUi.prepareCutSheets')} →`}</button></div>{planInvalid && <p className="synthetic" style={{ marginTop: '12px', textAlign: 'right' }}>{t('wallpaperUi.correctRoomMeasurements')}</p>}</section>}
-    {step === 3 && plan && <section className="step-view is-form">
-      <div className="step-head">
-        <div><h1 className="step-h1">{t('wallpaperUi.cutTitle')}</h1><p className="step-lede">{t('wallpaperUi.cutLede')}</p></div>
-        <button className="btn btn-primary" onClick={() => window.print()}>{t('projectUi.printOne')}</button>
-      </div>
-      {walls.length > 1 && <div className="project-view-nav" style={{ marginTop: 0, flexWrap: 'wrap' }}>{walls.map((wall, index) => <button className={`project-view-tab ${cutWallIndex === index ? 'is-active' : ''}`} aria-pressed={cutWallIndex === index} key={wall.name} onClick={() => setCutWallIndex(index)}>{wall.name}</button>)}</div>}
-      <section style={{ marginBottom: '24px' }}>
-        <div className="section-rule"><h2 className="section-title">{walls[cutWallIndex].name}</h2><span className="synthetic">{t('wallpaperUi.originBottomLeftLabel')}</span></div>
-        <div className="wallpaper-measured-sheet"><WallElevation wall={walls[cutWallIndex]} wallIndex={cutWallIndex} plan={plan} wallNames={walls.map((item) => item.name)} /></div>
-      </section>
-      <WallpaperPieceGallery pieces={plan.pieces.filter((piece) => isOnWall(piece, cutWallIndex))} strips={plan.strips} repeat={numeric(wallpaper.repeat)} wallNames={walls.map((item) => item.name)} openId={selectedPieceId} onOpen={setSelectedPieceId} />
-      {plan.rolls.filter((roll) => roll.cuts.some((cut) => isOnWall(plan.pieces.find((piece) => piece.id === cut.piece_id) || {}, cutWallIndex))).map((roll) => <section key={roll.number} style={{ marginTop: '24px' }}>
-        <div className="section-rule"><h2 className="section-title">{t('wallpaperUi.rollTitle', { number: roll.number })}</h2></div>
-        <RollDiagram roll={roll} rollLength={numeric(wallpaper.roll_length)} pieces={plan.pieces} wallIndex={cutWallIndex} />
-        <div className="cat-table">{roll.cuts.filter((cut) => isOnWall(plan.pieces.find((piece) => piece.id === cut.piece_id) || {}, cutWallIndex)).map((cut) => {
-          const piece = plan.pieces.find((current) => current.id === cut.piece_id);
-          const strip = plan.strips.find((current) => current.number === piece.strip_number);
-          return <CutInstruction key={cut.piece_id} cut={cut} piece={piece} strip={strip} wallIndex={cutWallIndex} wallNames={walls.map((item) => item.name)} progress={progress.cut} toggle={toggle} selected={selectedPieceId === piece.id} onSelect={setSelectedPieceId} />;
-        })}</div>
-      </section>)}
+    {step === 2 && plan && <section className="step-view"><div className="step-head"><div><h1 className="step-h1">{t('wallpaperUi.planTitle')}</h1><p className="step-lede">{plan.closure && !plan.closure.valid ? t('wallpaperUi.ledeInvalid') : hasSlopedWall ? t('wallpaperUi.ledeSloped') : t('wallpaperUi.ledeBuy', { rolls: plan.rolls_to_buy })}</p></div><button className="btn btn-primary" onClick={() => setStep(1)}>{t('wallpaperUi.editMeasurements')}</button></div><div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_250px]"><div>{plan.closure && !plan.closure.valid && <p role="alert" style={{ padding: '12px 16px', border: '1px solid #c0392b', color: '#c0392b', marginBottom: '20px' }}>{plan.closure.message}</p>}{plan.corner_quality?.smallest != null && <section aria-label={t('wallpaperUi.cornerPiecesAria')} data-testid="corner-quality" style={{ marginBottom: '20px' }}><p className="synthetic">{t('wallpaperUi.smallestCorner')} <b>{Math.round(plan.corner_quality.smallest)} mm</b> {t('wallpaperUi.smallestCornerMin', { min: plan.corner_quality.minimum })}{plan.corner_quality.short_corners.length === 0 ? ` ${t('wallpaperUi.allCornersAbove')}` : ''}</p>{plan.corner_quality.short_corners.length > 0 && <ul role="alert" style={{ color: '#c0392b', paddingLeft: '20px' }}>{plan.corner_quality.short_corners.map((corner) => <li key={`${corner.strip}-${corner.from_wall}-${corner.to_wall}`}>{t('wallpaperUi.shortCorner', { strip: corner.strip, mm: Math.round(corner.width), from: corner.from_wall, to: corner.to_wall, action: corner.action })}</li>)}</ul>}</section>}{walls.length > 1 && <RoomOverview walls={walls} corners={plan.corners || payload.room.corners} plan={plan} closed={!!plan.closure} />}<p className="synthetic" style={{ marginBottom: '20px' }}>{t('wallpaperUi.stripKey')}</p>{walls.map((wall, index) => { const wallStrips = plan.strips.filter((strip) => isOnWall(strip, index)); const wallPieces = plan.pieces.filter((piece) => isOnWall(piece, index)); return <Fragment key={index}><section style={{ marginBottom: '32px' }}><div className="section-rule"><h2 className="section-title">{wall.name}</h2><span className="synthetic">{wall.skip ? t('wallpaperUi.noWallpaper') : t('wallpaperUi.stripsPieces', { strips: wallStrips.length, pieces: wallPieces.length })}</span></div>{wall.skip ? <p className="synthetic" data-testid="no-wallpaper-wall" style={{ padding: '14px 16px', border: '1px dashed var(--ink-3)', background: 'var(--ground-2)' }}>{t('wallpaperUi.noWallpaperWall', { width: wall.width_top })}</p> : <><WallElevation wall={wall} wallIndex={index} plan={plan} wallNames={walls.map((item) => item.name)} labels={pieceLabels(plan, t)} /><dl className="grid gap-3 md:grid-cols-3"><div><dt className="form-label">{wall.detailedMeasurements ? t('wallpaperUi.widthsDetailed') : t('wallpaperUi.measuredWidth')}</dt><dd>{wall.detailedMeasurements ? `${wall.width_top} / ${wall.width_middle} / ${wall.width_bottom} mm` : `${wall.width_top} mm`}</dd></div><div><dt className="form-label">{wall.detailedMeasurements ? t('wallpaperUi.heightsDetailed') : t('wallpaperUi.heights')}</dt><dd>{wall.detailedMeasurements ? `${wall.height_left} / ${wall.height_middle} / ${wall.height_right} mm` : `${wall.height_left} / ${wall.height_right} mm`}</dd></div><div><dt className="form-label">{t('workflow.openings')}</dt><dd>{(wall.cutouts || []).length || t('wallpaperUi.none')}</dd></div></dl></>}</section>{index < walls.length - 1 && <CornerConnection from={wall.name} to={walls[index + 1].name} corner={plan.corners?.[index] || payload.room.corners[index]} link={plan.strips.find((strip) => { const all = segmentsOf(strip); return all.some((segment, position) => segment.wall_index === index && all[position + 1]?.wall_index === index + 1); })?.number} overlap={plan.strips.find((strip) => strip.return_wall_index === index + 1 && strip.segments?.[strip.segments.length - 1]?.wall_index === index)?.return_overlap} />}</Fragment>; })}{[...new Set(plan.warnings)].map((warning) => <p className="synthetic" key={warning}>{warning}</p>)}</div><section aria-label={t('wallpaperUi.materialSummary')}><div className="section-rule"><h2 className="section-title">{t('wallpaperUi.materialSummary')}</h2></div><p><b>{t(hasSlopedWall ? 'wallpaperUi.rollsDraft' : 'wallpaperUi.rollsToBuy', { rolls: plan.rolls_to_buy })}</b></p><p className="synthetic" data-testid="spare-rolls">{t('wallpaperUi.rollsNeeded', { rolls: plan.rolls_needed })} {plan.rolls_to_buy > plan.rolls_needed ? t('wallpaperUi.rollsSpare', { spare: plan.rolls_to_buy - plan.rolls_needed, margin: text(spareMargin) }) : t('wallpaperUi.noSpareMargin')}</p>{rollPrice != null && <p data-testid="estimated-cost">{t('wallpaperUi.estimatedCost')} <b>{formatMoney(plan.rolls_to_buy * rollPrice)}</b><span className="synthetic" style={{ display: 'block' }}>{t('wallpaperUi.costBreakdown', { rolls: plan.rolls_to_buy, price: formatMoney(rollPrice), vat: pricing.pricesIncludeVat ? t('ui.includingVat') : t('ui.excludingVat'), rate: pricing.vatRate })}</span></p>}{plan.material && <><p className="synthetic">{t('wallpaperUi.wasteSummary', { percent: Math.round(((plan.waste.pattern + plan.waste.offcut) / plan.material.bought_length) * 100) })}</p><dl className="cat-table">{[[t('wallpaperUi.wastePattern'), plan.waste.pattern, t('wallpaperUi.wastePatternHelp')], [t('wallpaperUi.wasteEnds'), plan.waste.offcut, t('wallpaperUi.wasteEndsHelp')], [t('wallpaperUi.wasteAllowance'), plan.waste.allowance, t('wallpaperUi.wasteAllowanceHelp')]].map(([name, value, help]) => <div className="flex justify-between border-b border-[var(--rule-hair)] py-2" key={name} title={help}><dt>{name}</dt><dd>{Math.round(value)} mm · {Math.round((value / plan.material.bought_length) * 100)}%</dd></div>)}</dl><p className="synthetic" data-testid="offcut-reuse" style={{ marginTop: '12px' }}>{leftoverSentence(plan.material, t)}</p>{rollFitHint(plan.material.fit, numeric(wallpaper.roll_length), patterned ? numeric(wallpaper.repeat) : 0, t) && <p className="synthetic" data-testid="roll-fit-hint">{rollFitHint(plan.material.fit, numeric(wallpaper.roll_length), patterned ? numeric(wallpaper.repeat) : 0, t)}</p>}{plan.waste.trim > 0 && <p className="synthetic" data-testid="opening-trim">{t('wallpaperUi.openingTrim', { mm: Math.round(plan.waste.trim) })}</p>}</>}<StartOptions plan={plan} onChoose={chooseStart} t={t} /></section></div><div className="step-foot"><button className="btn-text" onClick={() => setStep(1)}><ArrowLeft /> {t('wallpaperUi.backToMeasurements')}</button><button className="btn-order step-foot-act" onClick={() => setStep(3)} disabled={planInvalid}>{`${t('wallpaperUi.prepareCutSheets')} →`}</button></div>{planInvalid && <p className="synthetic" style={{ marginTop: '12px', textAlign: 'right' }}>{t('wallpaperUi.correctRoomMeasurements')}</p>}</section>}
+    {step === 3 && plan && <section className="step-view">
+      <div className="step-head"><div><h1 className="step-h1">{t('wallpaperUi.reviewTitle')}</h1><p className="step-lede">{t('wallpaperUi.reviewLede')}</p></div><button className="btn btn-primary" onClick={() => printWallpaperPlan({ name: projectName || wallpaper.name, plan, walls, corners, closed, wallpaper: payload.wallpaper }, t)}>{t('projectUi.printOne')}</button></div>
+      <WallpaperPlanDocument plan={plan} walls={walls} corners={corners} closed={closed} wallpaper={payload.wallpaper} savedAt={null} />
       <div className="step-foot"><button className="btn-text" onClick={() => setStep(2)}><ArrowLeft /> {t('workflow.backToPlan')}</button><button className="btn-order step-foot-act" onClick={() => setStep(4)}>{`${t('workflow.savePlan')} →`}</button></div>
     </section>}
     {step === 4 && plan && (saved ? <section className="step-view"><div className="step-head"><div><h1 className="step-h1">{t('workflow.planSaved')}</h1><p className="step-lede">{t('wallpaperUi.savedLede')}</p></div></div><div className="saved-mark"><Tick size={16} /><div><b>{t('workflow.savedAs', { name: projectName })}</b><p>{projectGroupId ? t('wallpaperUi.filedUnder', { name: projectGroups.find((group) => String(group.id) === String(projectGroupId))?.name || t('wallpaperUi.selectedProject') }) : `${t('ui.notInProject')}.`}</p><MovePlanMenu groups={projectGroups} currentGroupId={saved.project_group_id} onMove={moveSavedPlan} /><p className="synthetic">{t('ui.addMorePlans')} <Link to="/">{t('ui.startAnotherPlan')}</Link></p></div></div><div className="step-foot"><button className="btn-text" onClick={() => setStep(3)}><ArrowLeft /> {t('wallpaperUi.backToCutSheets')}</button><button className="btn-order step-foot-act" onClick={() => navigate('/dashboard')}>{t('wallpaperUi.openDashboard')}</button></div></section> : <section className="step-view is-form"><div className="step-head"><div><h1 className="step-h1">{t('workflow.saveThisPlan')}</h1><p className="step-lede">{t('wallpaperUi.saveLede')}</p>{rollPrice != null && <p className="synthetic" data-testid="save-estimated-cost">{t('wallpaperUi.saveEstimatedCost', { cost: formatMoney(plan.rolls_to_buy * rollPrice), rolls: plan.rolls_to_buy, price: formatMoney(rollPrice) })}</p>}</div></div><SectionCard id="wallpaper-save" title={t('workflow.planDetails')} status={<SectionStatus missing={projectName.trim() ? [] : [t('workflow.planName')]} />}><div style={{ marginBottom: '20px' }}><FormField label={t('workflow.planName')} required><input id="wallpaper-plan-name" className="form-input" value={projectName} onChange={(event) => setProjectName(event.target.value)} /></FormField></div><ProjectPicker groups={projectGroups} value={projectGroupId} onChange={setProjectGroupId} newName={newProjectName} onNewNameChange={setNewProjectName} onSubmit={save} /></SectionCard><div className="step-foot"><button className="btn-text" onClick={() => setStep(3)}><ArrowLeft /> {t('wallpaperUi.backToCutSheets')}</button><button className="btn-order step-foot-act" onClick={save}>{t('workflow.savePlan')}</button></div></section>)}

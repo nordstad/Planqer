@@ -499,12 +499,35 @@ get their own card after the list. On wide screens a `.room-nav` panel beside
 the cards lists every card's status and jumps to it; on a phone it is not
 shown, because the closed cards are already the overview.
 
+### The Plan Document
+
+`WallpaperPlanDocument` is a read-only plan in five parts: summary, room
+overview, wall selector, wall details, and extras such as special-piece drawings
+and roll layout. The review step and saved-plan page render the same document;
+print follows that same order. Editing remains an explicit route back to the
+planner, never an inline alteration of a saved result.
+
+### Wall Picker
+
+`WallPicker` is a segmented radio group for the walls in a wallpaper plan. Its
+selected tab has an amber fill and a letter badge, and it stays synchronized
+with the selected amber wall in `RoomOverview`; either control may change the
+selection. It is not a substitute for view tabs: project views remain
+`.project-view-tab` controls.
+
+### Plan Cards
+
+A plan card has one primary action, **Open plan**, then **Print**. Modify,
+download, move, and delete actions live under `⋯` so the card stays scannable.
+Multi-select controls appear only when a project contains more than one plan.
+
 ### The Step Rail
 
-`.plan-steps` — the wayfinding inside an optimizer page. Three segments at
-their natural width (never a third of the page each), each a sequential index
-(`01`, `02`, `03`), a plain label, and a one-line summary of what that step
-settled (`30 parts · 18 700 mm · 3 mm kerf`, `4 boards · 722 mm offcut`,
+`.plan-steps` — the wayfinding inside an optimizer page. One segment per step
+(three to five) at its natural width (never an equal fraction of the page), each
+a sequential index (`01`, `02`, `03`), a plain label, and a one-line summary
+of what that step settled (`30 parts · 18 700 mm · 3 mm kerf`,
+`4 boards · 722 mm offcut`,
 `Saved as Chair rails`). It deliberately borrows `.app-nav`'s grammar — the
 current segment gets the same 2px amber underline — so it reads as position in
 a sequence, not as a second navigation surface. A finished step is a live

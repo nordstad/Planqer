@@ -38,6 +38,8 @@ test("a wallpaper plan is solved in the browser, saved, and can be modified from
   await page.getByLabel("Manufacturer").fill("Example");
   await page.getByRole("button", { name: "Measure the room →" }).click();
   await page.getByLabel("Wall width (mm)").fill("3000");
+  await page.getByRole("button", { name: "Add wall" }).click();
+  await page.getByLabel("Wall width (mm)").last().fill("2000");
   await page.getByRole("button", { name: /Create plan/ }).click();
 
   // The first solve downloads and starts the runtime.
@@ -57,9 +59,16 @@ test("a wallpaper plan is solved in the browser, saved, and can be modified from
   const savedPlan = page.locator(".plan-item").filter({ hasText: "Demo wallpaper" });
   await expect(savedPlan).toBeVisible();
 
-  await page.reload();
-  await expect(page.locator(".plan-item").filter({ hasText: "Demo wallpaper" })).toBeVisible();
-  await page.locator(".plan-item").filter({ hasText: "Demo wallpaper" }).getByRole("button", { name: "Modify" }).click();
+  await savedPlan.locator(".plan-item-acts .btn-primary").click();
+  await expect(page).toHaveURL(/#\/wallpaper\/plan\//);
+  await expect(page.getByRole("radiogroup", { name: "Choose a wall" })).toBeVisible();
+  await page.getByRole("radio", { name: "Wall B" }).click();
+  await expect(page.getByRole("heading", { name: "Wall B", exact: true })).toBeVisible();
+
+  await page.goBack();
+  await expect(savedPlan).toBeVisible();
+  await savedPlan.getByRole("button", { name: "More actions" }).click();
+  await savedPlan.getByRole("menuitem", { name: "Modify", exact: true }).click();
   await expect(page).toHaveURL(/#\/wallpaper$/);
   await expect(page.getByRole("heading", { name: "Your wallpaper plan" })).toBeVisible();
 
@@ -97,7 +106,8 @@ test("a plan is solved in the browser, saved, and still there after a reload", a
   await page.getByRole("link", { name: /My plans/ }).click();
   await expect(page.getByText("Demo smoke plan")).toBeVisible();
   const savedPlan = page.locator(".plan-item").filter({ hasText: "Demo smoke plan" });
-  await savedPlan.getByRole("button", { name: "Modify" }).click();
+  await savedPlan.getByRole("button", { name: "More actions" }).click();
+  await savedPlan.getByRole("menuitem", { name: "Modify", exact: true }).click();
   await expect(page.getByLabel("Name, item 1")).toHaveValue("Front rail");
 
   expect(seen.outside, "nothing may be loaded from another origin").toEqual([]);
@@ -181,6 +191,7 @@ test("Browse files and Import backup open the file picker", async ({ page }) => 
 
 test("a visitor with no country picks one, then browses to a product size, and the numbers fill in", async ({ page }) => {
   await page.goto(`${APP}#/cutting`);
+  await page.getByLabel("Catalogue").selectOption("generic");
 
   const prompt = page.getByTestId("generic-catalogue-prompt");
   await expect(prompt).toContainText(/no country is selected/i);

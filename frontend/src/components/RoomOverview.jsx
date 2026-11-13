@@ -8,7 +8,7 @@ export const linkColour = (stripNumber) => LINK_COLOURS[stripNumber % LINK_COLOU
 const VIEW = { width: 720, height: 340, pad: 56 };
 const LEGEND_THRESHOLD = 6;
 
-const RoomOverview = ({ walls, corners = [], plan, closed = false, activeWallIndex = null, showStart = false, clashingWalls = [] }) => {
+const RoomOverview = ({ walls, corners = [], plan, closed = false, activeWallIndex = null, showStart = false, clashingWalls = [], onSelectWall }) => {
   const { t } = useTranslation();
   const placed = layOutWalls(walls, corners);
   const closure = plan?.closure;
@@ -41,6 +41,14 @@ const RoomOverview = ({ walls, corners = [], plan, closed = false, activeWallInd
         const sideways = item.inward[0];
         const [lx, ly] = at(item, item.length / 2, sideways ? 14 : 22);
         const anchor = sideways > 0 ? 'start' : sideways < 0 ? 'end' : 'middle';
+        const selectWall = () => onSelectWall(index);
+        const selectWallOnKeyDown = (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            selectWall();
+          }
+        };
+        const selectable = onSelectWall && !walls[index].skip;
         return <g key={index}>
           {walls[index].skip
             ? <line data-testid="open-wall" x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--ink-3)" strokeWidth="2" strokeDasharray="8 6" />
@@ -56,10 +64,11 @@ const RoomOverview = ({ walls, corners = [], plan, closed = false, activeWallInd
               {segment.x_end < item.length - 1e-6 && <line x1={tx1} y1={ty1} x2={tx2} y2={ty2} stroke={colour || 'var(--accent)'} strokeWidth="1.5" />}
             </g>;
           })}
+          {selectable && <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="transparent" strokeWidth="20" style={{ cursor: 'pointer' }} role="button" tabIndex={0} aria-label={t('wallpaperUi.selectWall', { name: walls[index].name })} aria-pressed={index === activeWallIndex} onClick={selectWall} onKeyDown={selectWallOnKeyDown} />}
           {useLegend
             ? <g><circle cx={lx} cy={ly} r="8" fill="var(--paper, #fff)" stroke="var(--ink)" /><text x={lx} y={ly} textAnchor="middle" dominantBaseline="central" className="wallpaper-svg-small" style={{ fontWeight: 700 }}>{index + 1}</text></g>
             : <g style={walls[index].skip ? { opacity: 0.6 } : undefined}>
-              <text x={lx} y={ly} textAnchor={anchor} dominantBaseline="middle" className="wallpaper-svg-small" style={{ fontWeight: 700 }}>{walls[index].name}</text>
+              <text x={lx} y={ly} textAnchor={anchor} dominantBaseline="middle" className="wallpaper-svg-small" style={selectable ? { fontWeight: 700, cursor: 'pointer' } : { fontWeight: 700 }} {...(selectable ? { role: 'button', tabIndex: 0, 'aria-label': t('wallpaperUi.selectWall', { name: walls[index].name }), 'aria-pressed': index === activeWallIndex, onClick: selectWall, onKeyDown: selectWallOnKeyDown } : {})}>{walls[index].name}</text>
               <text x={lx} y={ly + 13} textAnchor={anchor} dominantBaseline="middle" className="wallpaper-svg-small" data-testid="wall-length">{Math.round(item.length)} mm{walls[index].skip ? ` · ${t('wallpaperUi.noWallpaperShort')}` : ''}</text>
             </g>}
           {showStart && index === 0 && (() => {

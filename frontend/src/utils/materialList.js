@@ -115,9 +115,30 @@ const tileRows = (project) => {
   })];
 };
 
+const wallpaperRows = (project) => {
+  const quantity = project.plan_result?.rolls_to_buy;
+  const wallpaper = project.wallpaper_data;
+  if (!Number.isFinite(quantity) || !wallpaper) return [];
+  return [withMergeData({
+    plan: project.name,
+    material: wallpaper.name || 'wallpaper',
+    size: `${mm(wallpaper.roll_width)} × ${mm(wallpaper.roll_length)} mm`,
+    quantity,
+    ...(Number(wallpaper.price_per_roll) > 0 && wallpaper.currency
+      ? { pricePerUnit: Number(wallpaper.price_per_roll), currency: wallpaper.currency, pricesIncludeVat: wallpaper.prices_include_vat ?? true, vatRate: wallpaper.vat_rate ?? 25 }
+      : {}),
+  }, {
+    product: { material: wallpaper.name || 'wallpaper', manufacturer: wallpaper.manufacturer || '' },
+    kind: 'wallpaper',
+    dimensions: [wallpaper.roll_width, wallpaper.roll_length],
+    stock: null,
+  })];
+};
+
 export const buildMaterialRows = (projects) => projects.flatMap((project) => {
   if (project.projectType === 'sheet') return sheetRows(project);
   if (project.projectType === 'tile') return tileRows(project);
+  if (project.projectType === 'wallpaper') return wallpaperRows(project);
   return boardRows(project);
 });
 
@@ -169,7 +190,7 @@ export const applySpareMargin = (rows, marginPercent = 10) => {
   const margin = Number(marginPercent);
   return rows.map((row) => {
     const neededQuantity = Number(row.quantity) || 0;
-    const spare = row._mergeData?.kind === 'tile'
+    const spare = ['tile', 'wallpaper'].includes(row._mergeData?.kind)
       ? 0
       : margin > 0 ? Math.max(1, Math.ceil(neededQuantity * margin / 100)) : 0;
     const purchaseRow = withMergeData({ ...row, neededQuantity, quantityToBuy: neededQuantity + spare }, row._mergeData);

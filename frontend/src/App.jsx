@@ -12,6 +12,7 @@ const CuttingOptimizer = lazy(() => import('./components/CuttingOptimizer'));
 const SheetOptimizer = lazy(() => import('./components/SheetOptimizer'));
 const TileOptimizer = lazy(() => import('./components/TileOptimizer'));
 const WallpaperOptimizer = lazy(() => import('./components/WallpaperOptimizer'));
+const WallpaperPlanPage = lazy(() => import('./components/WallpaperPlanPage'));
 const ModelCutlistOptimizer = lazy(() => import('./components/ModelCutlistOptimizer'));
 const HelpPage = lazy(() => import('./components/Help'));
 const UserDashboard = lazy(() => import('./components/UserDashboard'));
@@ -39,6 +40,7 @@ const App = () => {
             <Route path="/sheet-cutting" element={<ProtectedRoute fallbackMessage="access.sheet"><SheetOptimizer /></ProtectedRoute>} />
             <Route path="/tile-layout" element={<ProtectedRoute fallbackMessage="access.tile"><TileOptimizer /></ProtectedRoute>} />
             <Route path="/wallpaper" element={<ProtectedRoute fallbackMessage="access.default"><WallpaperOptimizer /></ProtectedRoute>} />
+            <Route path="/wallpaper/plan/:planId" element={<ProtectedRoute fallbackMessage="access.default"><WallpaperPlanPage /></ProtectedRoute>} />
             <Route path="/model-cutlist" element={<ProtectedRoute fallbackMessage="access.model"><ModelCutlistOptimizer /></ProtectedRoute>} />
             <Route path="/3d-cutlist" element={<Navigate to="/model-cutlist" replace />} />
             <Route path="/step-cutlist" element={<Navigate to="/model-cutlist" replace />} />

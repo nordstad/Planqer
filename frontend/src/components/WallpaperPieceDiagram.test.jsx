@@ -13,8 +13,9 @@ const piece = (overrides = {}) => ({
 
 describe('WallpaperPieceDiagram', () => {
   it('draws the opening, its name, margin, trim and orientation', () => {
-    const { container } = render(<WallpaperPieceDiagram piece={piece()} strip={strip} repeat={0} />);
+    const { container } = render(<WallpaperPieceDiagram piece={piece()} strip={strip} repeat={0} label="S1" />);
 
+    expect(screen.getByText('S1')).toBeInTheDocument();
     expect(screen.getByText('Kitchen')).toBeInTheDocument();
     expect(screen.getByText('200 × 900 mm')).toBeInTheDocument();
     expect(screen.getByText('TOP (ceiling)')).toBeInTheDocument();
@@ -60,6 +61,18 @@ describe('WallpaperPieceDiagram', () => {
     expect(screen.getByText('260 × 960 mm')).toBeInTheDocument();
     expect(screen.queryByTestId('piece-opening')).toBeNull();
     expect(screen.queryByTestId('trim-top')).toBeNull();
+  });
+
+  it('removes the repeated legend and rotates short precut labels horizontally', () => {
+    render(<WallpaperPieceDiagram piece={piece({ length: 320, y_end: 320 })} strip={strip} legend={false} />);
+
+    const precut = screen.getByTestId('precut-label');
+    expect(precut).toHaveTextContent('precut360 mm');
+    expect(precut).not.toHaveAttribute('transform');
+    expect(precut).toHaveAttribute('text-anchor', 'end');
+    expect(Number(precut.getAttribute('y'))).toBeGreaterThan(62);
+    expect(screen.queryByText('Solid outline: safe table cut. Dashed outline: mark and trim in place.')).not.toBeInTheDocument();
+    expect(screen.getByRole('img')).toHaveAttribute('viewBox', '0 0 540 450');
   });
 });
 

@@ -31,7 +31,7 @@ import { buildMaterialListHtml, buildMaterialCsv, isPlanPriced } from '../utils/
 import { materialLabel, cleanMaterial } from '../utils/materialLabel';
 import { restoreBoardParts } from '../utils/boardParts';
 import { buildCutListHtml } from '../utils/tileCutList';
-import { buildWallpaperCutSheetsHtml } from '../utils/wallpaperCutSheets';
+import { buildWallpaperPlanHtml } from '../utils/wallpaperPlanPrint';
 import { useAuth } from '../contexts/AuthContext';
 import { useAccountContext } from '../contexts/useAccountContext';
 import Loader from './Loader';
@@ -40,6 +40,7 @@ import ConfirmDialog from './ConfirmDialog';
 import TileCutListTable from './TileCutListTable';
 import ProjectShoppingList from './ProjectShoppingList';
 import MovePlanMenu from './MovePlanMenu';
+import PlanMoreMenu from './PlanMoreMenu';
 import { ArrowLeft, ArrowRight, Pencil } from './icons';
 
 // The plans nobody filed. A route segment, not a group id.
@@ -60,6 +61,7 @@ const formatDate = (dateString) => {
 };
 
 const plural = (n, singular, pluralWord = `${singular}s`) => `${n} ${n === 1 ? singular : pluralWord}`;
+const hasPrintableDocument = (project) => Boolean(project.has_svg_image || project.cutlist_image || (project.projectType === 'wallpaper' && project.plan_result));
 
 // The three saved project shapes don't share a "parts" concept — a tile
 // layout has no parts list, just a chosen candidate — so this returns the
@@ -86,10 +88,13 @@ const planFacts = (project, t) => {
     };
   }
   if (project.projectType === 'wallpaper') {
+    const rolls = project.plan_result?.rolls_to_buy;
+    const price = Number(project.wallpaper_data?.price_per_roll);
+    const currency = project.wallpaper_data?.currency;
     return {
       type: t('common.wallpaperPlanner'),
-      count: `${project.plan_result?.rolls_to_buy ?? '—'} rolls to buy${project.wallpaper_data?.price_per_roll != null && project.plan_result?.rolls_to_buy != null ? ` · est. ${(project.plan_result.rolls_to_buy * project.wallpaper_data.price_per_roll).toLocaleString(undefined, { maximumFractionDigits: 2 })} ${project.wallpaper_data.currency || ''}`.trimEnd() : ''}`,
-      stock: project.wallpaper_data?.name || 'Wallpaper',
+      count: Number.isFinite(rolls) ? `${t('wallpaperUi.rollsToBuy', { rolls })}${Number.isFinite(price) && price > 0 && currency ? ` · ${t('projectUi.estimatedCost', { cost: (rolls * price).toLocaleString(undefined, { maximumFractionDigits: 2 }), currency })}` : ''}` : '—',
+      stock: project.wallpaper_data?.name || t('common.wallpaperPlanner'),
     };
   }
   const parts = restoreBoardParts(project.parts_data);
@@ -119,16 +124,16 @@ const triggerDownload = (blob, filename) => {
 
 const dataUrlToBlob = async (dataUrl) => (await fetch(dataUrl)).blob();
 
-// Tile plans carry no product, so only pricing says anything about their detail.
+// Tile and wallpaper plans carry no product, so only pricing says anything about their detail.
 const planStatus = (project, t) => {
   const priced = isPlanPriced(project);
   const specified = Boolean(project.product && !project.product.suggested);
-  const isTile = project.projectType === 'tile';
+  const noProduct = ['tile', 'wallpaper'].includes(project.projectType);
   const badges = [
-    !isTile && (specified ? ['specified', 'projectUi.badgeSpecified'] : ['quick', 'projectUi.badgeQuick']),
+    !noProduct && (specified ? ['specified', 'projectUi.badgeSpecified'] : ['quick', 'projectUi.badgeQuick']),
     priced && ['priced', 'projectUi.badgePriced'],
   ].filter(Boolean).map(([key, label]) => ({ key, label: t(label) }));
-  return { badges, missing: !priced || (!isTile && !specified) };
+  return { badges, missing: !priced || (!noProduct && !specified) };
 };
 
 const UserProjectsContent = ({ onPreview, groupId }) => {
@@ -235,7 +240,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
       setBusyId(project.id);
       const svg = await downloadProjectImage(project.id, project.projectType);
       const blob = format === 'png' ? await svgBlobToPngBlob(svg) : svg;
-      const kind = project.projectType === 'sheet' ? t('common.sheetCutting') : project.projectType === 'tile' ? t('common.tileLayout') : t('common.boardCutting');
+      const kind = project.projectType === 'sheet' ? t('common.sheetCutting') : project.projectType === 'tile' ? t('common.tileLayout') : project.projectType === 'wallpaper' ? t('common.wallpaperPlanner') : t('common.boardCutting');
       triggerDownload(blob, `${project.name} - ${kind}.${format}`);
     } catch (err) {
       setError(err.message.includes('404')
@@ -250,7 +255,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
   // dialog — which is also where "save as PDF" lives. See printProject.js
   // for how each diagram picks the page orientation that renders it largest.
   const handlePrint = async (plans, title, mode = 'diagrams', shoppingPlans = plans) => {
-    const printable = plans.filter((p) => p.has_svg_image || p.cutlist_image);
+    const printable = plans.filter(hasPrintableDocument);
     if (mode === 'shopping' ? shoppingPlans.length === 0 : printable.length === 0) return;
 
     try {
@@ -269,15 +274,24 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
             svgBlob: await dataUrlToBlob(visualization),
           })));
         }
+        if (p.projectType === 'wallpaper') {
+          return {
+            name: p.name,
+            facts,
+            bodyHtml: buildWallpaperPlanHtml({
+              plan: p.plan_result,
+              walls: p.room_data?.walls || [],
+              corners: p.room_data?.corners || [],
+              closed: p.room_data?.closed || false,
+              wallpaper: p.wallpaper_data,
+            }, t),
+          };
+        }
         return {
           name: p.name,
           facts,
           svgBlob: await downloadProjectImage(p.id, p.projectType),
-          extraHtml: p.projectType === 'tile'
-            ? buildCutListHtml(p.layout_result, t)
-            : p.projectType === 'wallpaper'
-              ? buildWallpaperCutSheetsHtml(p.plan_result, p.room_data?.walls, p.wallpaper_data?.repeat, t)
-              : undefined,
+          extraHtml: p.projectType === 'tile' ? buildCutListHtml(p.layout_result, t) : undefined,
         };
       }))).flat();
       await printProjectPlans({
@@ -309,7 +323,7 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
   };
 
   const togglePlanSelection = (project) => {
-    if (!(project.has_svg_image || project.cutlist_image)) return;
+    if (!hasPrintableDocument(project)) return;
     setSelectedPlanIds((prev) => {
       const next = new Set(prev);
       if (next.has(project.id)) next.delete(project.id);
@@ -485,18 +499,23 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
 
   /* ── one saved plan: its own diagram, its facts, its two exports ─────── */
 
-  const renderPlan = (project) => {
+  const renderPlan = (project, _index, collection) => {
     const hasDiagram = Boolean(project.has_svg_image || project.cutlist_image);
+    const printableDocument = hasPrintableDocument(project);
     const facts = planFacts(project, t);
     const status = planStatus(project, t);
     const printTitle = groupId === LOOSE
       ? t('projectUi.notInAnyProject')
       : groups.find((g) => g.id === groupId)?.name || project.name;
+    const openPlan = () => project.projectType === 'wallpaper'
+      ? navigate(`/wallpaper/plan/${encodeURIComponent(project.id)}`)
+      : handlePreview(project);
+    const hasMultiplePlans = collection.length > 1;
 
     return (
       <div key={project.id}>
         <article className="plan-item" draggable onDragStart={(event) => startDrag(event, project)} onDragEnd={() => setDraggedPlan(null)}>
-          <label style={{ display: 'flex', alignItems: 'center', padding: '0 4px 0 8px' }}>
+          {hasMultiplePlans && <label style={{ display: 'flex', alignItems: 'center', padding: '0 4px 0 8px' }}>
             <input
               type="checkbox"
               checked={selectedPlanIds.has(project.id)}
@@ -505,14 +524,14 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
               aria-label={t('projectUi.selectPlan', { name: project.name })}
               title={hasDiagram ? undefined : t('projectUi.noPlanDiagram')}
             />
-          </label>
+          </label>}
           <button
             type="button"
             className="plan-item-thumb"
-            onClick={() => handlePreview(project)}
-            disabled={!hasDiagram}
-            title={hasDiagram ? t('projectUi.openDiagram') : t('projectUi.noPlanDiagram')}
-            aria-label={t('projectUi.openDiagramFor', { name: project.name })}
+            onClick={openPlan}
+            disabled={!printableDocument}
+            title={printableDocument ? t('projectUi.openDiagram') : t('projectUi.noPlanDiagram')}
+            aria-label={t('projectUi.openPlan', { name: project.name })}
           >
             <PlanThumb project={project} />
           </button>
@@ -550,40 +569,19 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
 
           <div className="plan-item-acts">
             <button
-              className="btn btn-sm"
-              onClick={() => handleModify(project)}
+              className="btn btn-primary btn-sm"
+              onClick={openPlan}
             >
-              {t('projectUi.modify')}
+              {t('projectUi.openPlan')}
             </button>
             <button
               className="btn btn-sm"
               onClick={() => handlePrint([project], printTitle)}
-              disabled={printing || !hasDiagram}
+              disabled={printing || !printableDocument}
             >
               {t('projectUi.printOne')}
             </button>
-            <button
-              className="btn btn-sm"
-              onClick={() => handleDownload(project, 'svg')}
-              disabled={busyId === project.id || !hasDiagram}
-            >
-              SVG
-            </button>
-            <button
-              className="btn btn-sm"
-              onClick={() => handleDownload(project, 'png')}
-              disabled={busyId === project.id || !hasDiagram}
-            >
-              PNG
-            </button>
-            <MovePlanMenu groups={groups} currentGroupId={project.project_group_id} onMove={(group) => movePlan(project, group)} busy={busyId === project.id} />
-            <button
-              className="btn btn-sm btn-outline-danger"
-              onClick={() => handleDelete(project)}
-              disabled={busyId === project.id}
-            >
-              {t('ui.delete')}
-            </button>
+            <PlanMoreMenu><button role="menuitem" className="btn-text" onClick={() => handleModify(project)}>{t('projectUi.modify')}</button><button role="menuitem" className="btn-text" onClick={() => handleDownload(project, 'svg')} disabled={busyId === project.id || !hasDiagram}>{t('projectUi.downloadSvg')}</button><button role="menuitem" className="btn-text" onClick={() => handleDownload(project, 'png')} disabled={busyId === project.id || !hasDiagram}>{t('projectUi.downloadPng')}</button><MovePlanMenu groups={groups} currentGroupId={project.project_group_id} onMove={(group) => movePlan(project, group)} busy={busyId === project.id} /><button role="menuitem" className="btn-text is-quiet" onClick={() => handleDelete(project)} disabled={busyId === project.id}>{t('ui.delete')}</button></PlanMoreMenu>
           </div>
         </article>
         {projectView === 'diagrams' && project.projectType === 'tile' && project.layout_result && (
@@ -626,9 +624,9 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
 
     const plans = plansIn(groupId);
     const title = group ? group.name : t('projectUi.notInAnyProject');
-    const printablePlans = plans.filter((p) => p.has_svg_image || p.cutlist_image);
+    const printablePlans = plans.filter(hasPrintableDocument);
     const printableCount = printablePlans.length;
-    const selectedPlans = printablePlans.filter((p) => selectedPlanIds.has(p.id));
+    const selectedPlans = plans.length === 1 ? printablePlans : printablePlans.filter((p) => selectedPlanIds.has(p.id));
 
     return (
       <>
@@ -694,13 +692,13 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
                     <option value="a4">A4</option>
                     <option value="letter">Letter</option>
                   </select>
-                  <button
+                  {plans.length > 1 && <button
                     className="btn"
                     onClick={() => handlePrint(selectedPlans, title, 'diagrams')}
                     disabled={printing || selectedPlans.length === 0}
                   >
                     {t('projectUi.printDiagrams', { count: selectedPlans.length })}
-                  </button>
+                  </button>}
                   <button
                     className="btn"
                     onClick={() => handlePrint(selectedPlans, title, 'shopping', plans)}
@@ -722,20 +720,20 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
                   >
                     {t('projectUi.printProject')}
                   </button>
-                  <button
+                  {plans.length > 1 && <button
                     className="btn"
                     onClick={() => setSelectedPlanIds(new Set(printablePlans.map((p) => p.id)))}
                     disabled={printing || selectedPlans.length === printableCount}
                   >
                     {t('projectUi.selectAllPlans')}
-                  </button>
-                  <button
+                  </button>}
+                  {plans.length > 1 && <button
                     className="btn"
                     onClick={() => setSelectedPlanIds(new Set())}
                     disabled={printing || selectedPlans.length === 0}
                   >
                     {t('projectUi.clearSelection')}
-                  </button>
+                  </button>}
                 </span>
               )}
               {group && (

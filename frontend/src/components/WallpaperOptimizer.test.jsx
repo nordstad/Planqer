@@ -314,7 +314,7 @@ describe('WallpaperOptimizer plan step', () => {
 
     expect(screen.getByTestId('roll-fit-hint')).toHaveTextContent('Only 3 full-height pieces fit on a 10050 mm roll');
     expect(screen.getByTestId('partial-piece')).toHaveTextContent('300 mm piece');
-    expect(screen.getByTestId('piece-id')).toHaveTextContent('piece-1');
+    expect(screen.getByTestId('piece-id')).toHaveTextContent('S1');
   });
 
   it('draws every piece of the wall on the Cut step', async () => {
@@ -326,7 +326,7 @@ describe('WallpaperOptimizer plan step', () => {
     fireEvent.click(screen.getByRole('button', { name: /Prepare cut sheets/ }));
 
     expect(await screen.findAllByTestId('piece-drawing')).toHaveLength(2);
-    fireEvent.click(screen.getByRole('button', { name: 'Open drawing of piece-2' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Open drawing of S1b' }));
     expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 
@@ -407,9 +407,9 @@ describe('WallpaperOptimizer plan step', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Prepare cut sheets/ }));
     fireEvent.click(screen.getByRole('button', { name: /^Save plan/ }));
-    fireEvent.click(await screen.findByRole('button', { name: 'Back to the cut sheets' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Back to the review' }));
 
-    expect(await screen.findByRole('heading', { name: 'Cut one wall at a time' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Your cut plan' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Back to the plan' }));
     expect(await screen.findByRole('heading', { name: 'Your wallpaper plan' })).toBeInTheDocument();
   });

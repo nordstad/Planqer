@@ -43,7 +43,7 @@ const openingsOf = (piece, strip) => pieceFaces(piece, strip).flatMap((face) => 
   return { ...base, core: { left: face.offset + coreStart - face.x_start, bottom: coreBottom - piece.y_start, width: coreEnd - coreStart, height: coreTop - coreBottom } };
 }));
 
-export const WallpaperPieceDiagram = ({ piece, strip, repeat, wallNames = [] }) => {
+export const WallpaperPieceDiagram = ({ piece, strip, repeat, wallNames = [], label = piece.id, legend = true }) => {
   const { t } = useTranslation();
   const faces = pieceFaces(piece, strip);
   const openings = openingsOf(piece, strip);
@@ -63,10 +63,14 @@ export const WallpaperPieceDiagram = ({ piece, strip, repeat, wallNames = [] }) 
   const bottom = top + paperHeight;
   const hatchId = `hatch-${piece.id}`;
   const openingName = (opening) => opening.label || (KIND_KEYS[opening.kind] ? t(KIND_KEYS[opening.kind]) : '');
-  return <svg viewBox="0 0 540 482" className="wallpaper-wall-drawing" role="img" aria-label={t('wallpaperUi.pieceAria', { id: piece.id })} fontFamily="Helvetica Neue, Arial, sans-serif">
+  const precutLabel = t('wallpaperUi.precut', { mm: Math.round(piece.length + trimTop + trimBottom) });
+  const precutFitsVertically = precutLabel.length * 6.5 + 60 <= paperHeight;
+  // Too short to rotate: two lines left of the dimension line, clear of the TOP label.
+  const [precutWord, precutValue] = [precutLabel.slice(0, precutLabel.indexOf(' ')), precutLabel.slice(precutLabel.indexOf(' ') + 1)];
+  return <svg viewBox={`0 0 540 ${legend ? 482 : 450}`} className="wallpaper-wall-drawing" role="img" aria-label={t('wallpaperUi.pieceAria', { id: label })} fontFamily="Helvetica Neue, Arial, sans-serif">
     <defs><pattern id={hatchId} width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill={CARD} /><line x1="0" y1="0" x2="0" y2="6" stroke={ACCENT} strokeWidth="1.5" opacity="0.55" /></pattern></defs>
     <rect x="0" y="0" width="540" height="482" fill={CARD} />
-    <text x="28" y="30" {...LABEL}>{t('wallpaperUi.pieceStrip', { id: piece.id, number: piece.strip_number })}</text>
+    <text x="28" y="30" {...LABEL}>{label}</text>
     <line x1="508" y1="92" x2="508" y2="36" stroke={ACCENT} strokeWidth="2" /><polygon points="508,28 502,40 514,40" fill={ACCENT} /><text x="508" y="112" textAnchor="middle" {...LABEL} fill={ACCENT}>{t('wallpaperUi.up')}</text>
     <text x="270" y="52" textAnchor="middle" {...SMALL} fontWeight="700">{atCeiling ? t('wallpaperUi.edgeTopCeiling') : t('wallpaperUi.edgeTop')}</text>
     {trimTop > 0 && <g data-testid="trim-top"><rect x={left} y={62} width={paperWidth} height={trimTop * scale} fill={GROUND} stroke={INK_3} strokeDasharray="3 3" /><text x={left + paperWidth + 8} y={62 + trimTop * scale / 2 + 4} {...SMALL}>{t('wallpaperUi.trimBand', { mm: Math.round(trimTop) })}</text></g>}
@@ -105,11 +109,11 @@ export const WallpaperPieceDiagram = ({ piece, strip, repeat, wallNames = [] }) 
         {opening.width - opening.core.width > 0 && <title>{t('wallpaperUi.marginLabel', { mm: Math.round((opening.width - opening.core.width) / 2) })}</title>}
       </g>;
     })}
-    <line x1={left - 24} y1={62} x2={left - 24} y2={bottom + trimBottom * scale} stroke={INK_3} /><text x={left - 32} y={(62 + bottom + trimBottom * scale) / 2} textAnchor="middle" transform={`rotate(-90 ${left - 32} ${(62 + bottom + trimBottom * scale) / 2})`} {...SMALL}>{t('wallpaperUi.precut', { mm: Math.round(piece.length + trimTop + trimBottom) })}</text>
+    <line x1={left - 24} y1={62} x2={left - 24} y2={bottom + trimBottom * scale} stroke={INK_3} />{precutFitsVertically ? <text x={left - 32} y={(62 + bottom + trimBottom * scale) / 2} textAnchor="middle" transform={`rotate(-90 ${left - 32} ${(62 + bottom + trimBottom * scale) / 2})`} {...SMALL}>{precutLabel}</text> : <text data-testid="precut-label" x={left - 32} y={(62 + bottom + trimBottom * scale) / 2 - 3} textAnchor="end" {...SMALL}><tspan>{precutWord}</tspan><tspan x={left - 32} dy="14">{precutValue}</tspan></text>}
     <text x="270" y={bottom + trimBottom * scale + 16} textAnchor="middle" {...SMALL} fontWeight="700">{atFloor ? t('wallpaperUi.edgeBottomFloor') : t('wallpaperUi.edgeBottom')}</text>
     <line x1={left} y1="392" x2={left + paperWidth} y2="392" stroke={INK_3} /><line x1={left} y1="387" x2={left} y2="397" stroke={INK_3} /><line x1={left + paperWidth} y1="387" x2={left + paperWidth} y2="397" stroke={INK_3} /><text x={left + paperWidth / 2} y="408" textAnchor="middle" {...SMALL}>{overlap > 0 ? t('wallpaperUi.finishedWidthWrap', { width: Math.round(faceWidth), wrap: Math.round(overlap) }) : t('wallpaperUi.finishedWidth', { mm: Math.round(width) })}</text>
     <text x="28" y="428" {...SMALL} fontWeight="700">{faces.map((face) => `${wallNames[face.wall_index] ? `${wallNames[face.wall_index]} · ` : ''}${t('wallpaperUi.pieceLocation', { x1: Math.round(face.x_start), x2: Math.round(face.x_end), y1: Math.round(piece.y_start), y2: Math.round(piece.y_end) })}`).join(' + ')}</text>
-    <text x="28" y="444" {...SMALL}>{repeat ? t('wallpaperUi.phaseRepeat', { phase: Math.round(piece.cut_phase ?? piece.phase), repeat: Math.round(repeat) }) : t('wallpaperUi.phaseOnly', { phase: Math.round(piece.cut_phase ?? piece.phase) })}</text><text x="28" y="460" {...SMALL} fill={INK_3}>{t('wallpaperUi.diagramLegend')}</text><text x="28" y="476" {...SMALL} fill={INK_3}>{t('wallpaperUi.hatchLegend')}</text>
+    <text x="28" y="444" {...SMALL}>{repeat ? t('wallpaperUi.phaseRepeat', { phase: Math.round(piece.cut_phase ?? piece.phase), repeat: Math.round(repeat) }) : t('wallpaperUi.phaseOnly', { phase: Math.round(piece.cut_phase ?? piece.phase) })}</text>{legend && <><text x="28" y="460" {...SMALL} fill={INK_3}>{t('wallpaperUi.diagramLegend')}</text><text x="28" y="476" {...SMALL} fill={INK_3}>{t('wallpaperUi.hatchLegend')}</text></>}
   </svg>;
 };
 

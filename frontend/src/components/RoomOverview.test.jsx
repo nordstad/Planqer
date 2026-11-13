@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 import '../i18n';
 import RoomOverview from './RoomOverview';
 import { WallElevation } from './WallpaperOptimizer';
@@ -60,6 +60,18 @@ describe('RoomOverview', () => {
     expect(screen.getByLabelText('Wall numbers')).toHaveTextContent('Wall 1 · 2000 mm');
   });
 
+  it('selects a wall by click and keyboard', () => {
+    const onSelectWall = vi.fn();
+    render(<RoomOverview walls={[wall('North', 2400), wall('East', 1000)]} corners={corners(1)} plan={{ strips: [] }} activeWallIndex={0} onSelectWall={onSelectWall} />);
+
+    const eastControls = screen.getAllByRole('button', { name: 'Show East' });
+    fireEvent.click(eastControls[0]);
+    fireEvent.keyDown(eastControls[1], { key: 'Enter' });
+
+    expect(onSelectWall).toHaveBeenNthCalledWith(1, 1);
+    expect(onSelectWall).toHaveBeenNthCalledWith(2, 1);
+  });
+
   it('moves labels into a key on a 12 m wall with narrow strips', () => {
     const longWall = { ...wall('Wall A', 12000), height_left: 2400, height_middle: 2400, height_right: 2400 };
     const strips = Array.from({ length: 23 }, (_, index) => ({
@@ -72,7 +84,8 @@ describe('RoomOverview', () => {
 
     render(<WallElevation wall={longWall} wallIndex={0} plan={{ strips, pieces }} wallNames={['Wall A']} />);
 
-    expect(screen.getByTestId('wallpaper-strip-key')).toHaveTextContent('S1 · 522 mm · piece-1 (1200 mm)');
+    expect(screen.getByTestId('wallpaper-strip-key')).toHaveTextContent('S1 · 522 mm · S1 (1200 mm)');
+    expect(screen.getByTestId('wallpaper-strip-key')).not.toHaveTextContent('piece-1');
     expect(screen.queryByTestId('piece-id')).not.toBeInTheDocument();
     expect(screen.getByTestId('partial-piece')).not.toHaveTextContent('1200 mm piece');
   });

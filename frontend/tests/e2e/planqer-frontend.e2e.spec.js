@@ -122,17 +122,17 @@ test.describe('Planqer Frontend E2E Tests', () => {
     await page.goto(`/dashboard/project/${groupId}`);
     await expect(page.getByText('E2E modify plan')).toBeVisible();
     await expect(page.locator('.plan-item-material')).toContainText('Oak · 45×45mm');
-    const planCheckbox = page.getByRole('checkbox', { name: 'Select plan "E2E modify plan"' });
-    await planCheckbox.check();
+    await expect(page.getByRole('checkbox', { name: 'Select plan "E2E modify plan"' })).not.toBeAttached();
     await expect(page.getByRole('button', { name: 'What to buy', exact: true })).toBeEnabled();
     await expect(page.getByRole('button', { name: 'Print project', exact: true })).toBeEnabled();
     await page.getByRole('button', { name: 'What to buy', exact: true }).click();
     await expect(page.locator('iframe[aria-hidden="true"]')).toHaveCount(1);
 
-    await page.getByRole('button', { name: 'Modify', exact: true }).click();
+    await page.getByRole('button', { name: 'More actions' }).click();
+    await page.getByRole('menuitem', { name: 'Modify', exact: true }).click();
     await expect(page).toHaveURL(/\/cutting\?edit=[^/]+/);
     await expect(page.locator('#plan-name')).not.toBeVisible();
-    await expect(page.locator('input').filter({ hasValue: '80' })).toBeVisible();
+    await expect(page.locator('input').filter({ hasValue: '80' }).first()).toBeVisible();
 
     await page.getByRole('button', { name: /plan the cuts/i }).click();
     await expect(page.getByRole('heading', { name: /your cutting plan/i })).toBeVisible();
@@ -190,7 +190,7 @@ test.describe('Planqer Frontend E2E Tests', () => {
     await page.goto('/dashboard/project/none');
     const planName = page.getByText('E2E printable sheets');
     await expect(planName).toBeVisible();
-    await page.getByRole('checkbox', { name: 'Select plan "E2E printable sheets"' }).check();
+    await expect(page.getByRole('checkbox', { name: 'Select plan "E2E printable sheets"' })).not.toBeAttached();
     await page.getByRole('button', { name: 'Print', exact: true }).click();
 
     const printDocument = page.locator('iframe[aria-hidden="true"]');
@@ -256,11 +256,11 @@ test.describe('Planqer Frontend E2E Tests', () => {
 
     await page.getByRole('button', { name: 'Shopping list' }).click();
     await expect(page.getByTestId('project-shopping-list')).toBeVisible();
-    await expect(page.getByRole('checkbox', { name: 'Select plan "E2E workspace plan"' })).not.toBeVisible();
+    await expect(page.getByRole('checkbox', { name: 'Select plan "E2E workspace plan"' })).not.toBeAttached();
 
     await page.getByRole('button', { name: 'Cut diagrams' }).click();
     await expect(page.getByRole('button', { name: 'Cut diagrams' })).toHaveAttribute('aria-current', 'page');
-    await expect(page.getByRole('checkbox', { name: 'Select plan "E2E workspace plan"' })).toBeVisible();
+    await expect(page.getByRole('checkbox', { name: 'Select plan "E2E workspace plan"' })).not.toBeAttached();
 
     await page.setViewportSize({ width: 390, height: 844 });
     const tabs = page.locator('.project-view-tab');

@@ -14,6 +14,7 @@ const MATERIAL_KEYS = {
 export const materialLabel = (material, t) => {
   if (material === 'board') return t('ui.board');
   if (material === 'tile') return t('workflow.tile');
+  if (material === 'wallpaper') return t('common.wallpaperPlanner');
   return MATERIAL_KEYS[material] ? t(MATERIAL_KEYS[material]) : material;
 };
 

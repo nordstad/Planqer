@@ -184,10 +184,12 @@ having no wallpaper is shown as such and uses no material. Use Modify on a saved
 wallpaper plan to reopen it with its start setting, start choice, margin and
 prices.
 
-The Cut step shows a drawing of every piece on the selected wall. Each piece is
-named on the wall drawing (piece-1, piece-2…) and its drawing says where on the
-wall it is hung, so the two are easy to match. Select a drawing to see it full
-size.
+The **Review** step gives you the finished cut plan before you save it. Its
+summary, room overview and wall picker lead into one wall at a time: the wall
+elevation, strip table, special-piece drawings and roll layout. Choose a wall
+from the picker or directly in the room overview. Each piece is named on the
+wall drawing and says where it hangs, so the table and drawing are easy to
+match.
 
 ![A piece drawing with a window, a heat pump, trim, the up direction and measurements](../assets/screenshots/wallpaper-piece-drawing.png)
 
@@ -207,9 +209,13 @@ Modify, and Print adds them, several to a page and grouped by wall, after the
 overview. Plans saved before this feature show openings as plain rectangles
 until you plan them again.
 
-The Cut step also lists
-pieces in chronological roll order. Mark a piece cut only after table cutting;
-then mark it hung once it is on the wall.
+### Open a saved plan
+
+From a project's dashboard page, select **Open plan** on a wallpaper plan to
+read the same document later on any screen. Use **Print** for a paper copy, or
+open the **More actions** menu to modify the saved inputs. The plan remains
+read-only until you choose Modify; saving the changed inputs replaces its
+result.
 
 For paste, trimming technique, electrical safety and product-specific handling,
 follow the manufacturer guide saved with the wallpaper. Do not rely on Planqer
