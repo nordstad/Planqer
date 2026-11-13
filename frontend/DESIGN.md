@@ -430,6 +430,10 @@ radius, 42px square).
 - **Dropdown (`.form-select`):** The same field with a divided chevron block on
   the right, so it reads as "choose" rather than "type". Things you fill in
   (text and dropdowns) share one family; things you press are buttons.
+  Compact dropdowns (the header language, the print paper size) shrink the
+  chevron block with them, and their right padding always clears it. Never
+  override `.form-select` padding inline: the value then runs under the
+  chevron in longer languages.
 - **Focus:** Border turns amber with a 3px `--accent-bg` ring; the fill stays.
 - **Error:** Border and fill shift to revision red / `--revision-bg`. Red means
   wrong or "you pressed Continue too early", never "not filled in yet": an
@@ -578,8 +582,12 @@ guidance stay inline.
   matching homepage card names ("STL model," "STEP / CAD" as two separate
   links) rather than a combined label that hides that there are two
   different upload targets.
-- **Mobile:** Links wrap to their own row under the wordmark row rather than
-  collapsing into a drawer — there is no hamburger in this system.
+- **Narrow screens:** Under 1024px, links wrap to their own row under the
+  wordmark row rather than collapsing into a drawer — there is no hamburger in
+  this system. Signed in, the links and account controls do not fit on one
+  row below that width in any language.
+- **Account:** The signed-in email is cut with an ellipsis (full address in its
+  title), so a long address never pushes into the links.
 - **Modal header (`.masthead`):** A quieter, separate pattern reused only
   for the Load sheet — plate-paper background, plain title,
   an underlined text "Close" instead of a colored chip.

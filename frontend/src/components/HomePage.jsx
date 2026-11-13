@@ -5,7 +5,6 @@ import CatalogPage from './CatalogPage';
 import { BoardIcon, SheetIcon, CubeIcon, TileIcon, WallpaperIcon, ArrowRight } from './icons';
 import { getHealth, getLatestRelease } from '../utils/api';
 import { isStaticMode } from '../utils/mode';
-import { useAccountContext } from '../contexts/useAccountContext';
 import { version as appVersion } from '../../package.json';
 
 // Compares two dotted version strings, e.g. isNewer('0.2.0', '0.1.0') -> true
@@ -98,7 +97,6 @@ const CutPlanPreview = ({ t }) => (
 );
 
 const HomePage = () => {
-  const accountContext = useAccountContext();
   const { t } = useTranslation();
   const [version, setVersion] = useState(appVersion);
   const [latestVersion, setLatestVersion] = useState(null);
@@ -153,10 +151,6 @@ const HomePage = () => {
             </Link>
           ))}
         </div>
-        <p className="hp-note">
-           {t('home.noteBefore')} <b>{t('home.noteDiagram')}</b> — {t('home.noteRunsOn')} <b>{t('home.noteComputer')}</b>.
-           {t('home.noteAccount', accountContext)}
-        </p>
       </div>
     </div>
 

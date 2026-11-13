@@ -1,7 +1,7 @@
 export const LANGUAGES = [
   { code: 'en-GB', label: 'English' },
   { code: 'sv-SE', label: 'Svenska' },
-  { code: 'nb-NO', label: 'Norsk bokmål' },
+  { code: 'nb-NO', label: 'Norsk' },
 ];
 
 export const LANGUAGE_CODES = LANGUAGES.map(({ code }) => code);

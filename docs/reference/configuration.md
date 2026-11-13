@@ -82,7 +82,7 @@ accounts and saved projects.
   catalogue (product types and details, no sized entries). It is only a
   default: every user picks their own catalogue in the product picker or under
   **Defaults → Product catalogue**, and *Automatic* follows their language
-  (Svenska: Sweden, Norsk bokmål: Norway) or an `en-SE`-style browser locale.
+  (Svenska: Sweden, Norsk: Norway) or an `en-SE`-style browser locale.
   New accounts also start with this country's currency and VAT (SEK or NOK,
   25 %); existing accounts keep their own. See
   [Product catalogue](#product-catalogue).
