@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import Disclosure from './Disclosure';
 import RoomOverview from './RoomOverview';
 import WallPicker from './WallPicker';
 import WallpaperPieceGallery from './WallpaperPieceGallery';
-import { RollDiagram, WallElevation } from './WallpaperOptimizer';
+import { WallElevation } from './WallpaperOptimizer';
 import { coveredStrips, needsDrawing, pieceFlags, pieceLabels, stripOf, stripLabel, toRanges, wallPieces } from '../utils/wallpaperPlan';
 
 const mm = (value) => `${Math.round(value)} mm`;
@@ -26,7 +25,6 @@ const WallpaperPlanDocument = ({ plan, walls, corners, closed, wallpaper, savedA
   const { t, i18n } = useTranslation();
   const [wallIndex, setWallIndex] = useState(() => walls.findIndex((wall) => !wall.skip));
   const [openPieceId, setOpenPieceId] = useState(null);
-  const [rollLayoutOpen, setRollLayoutOpen] = useState(false);
   const labels = pieceLabels(plan, t);
   const wall = walls[wallIndex];
   const pieces = wallPieces(plan, wallIndex);
@@ -40,10 +38,7 @@ const WallpaperPlanDocument = ({ plan, walls, corners, closed, wallpaper, savedA
     <section><div className="section-rule"><h2 className="section-title">{wall.name}</h2><span className="synthetic">{t('wallpaperUi.originLabel', { origin })}</span></div><div className="wallpaper-measured-sheet"><WallElevation wall={wall} wallIndex={wallIndex} plan={plan} wallNames={wallNames} labels={labels} /></div></section>
     <section><div className="section-rule"><h2 className="section-title">{t('wallpaperUi.stripTableTitle')}</h2></div><table className="strip-table"><thead><tr><th>{t('wallpaperUi.colStrip')}</th><th>{t('wallpaperUi.colWidth')}</th><th>{t('wallpaperUi.colCut')}</th><th>{t('wallpaperUi.colHang')}</th><th>{t('wallpaperUi.colNote')}</th><th aria-label={t('wallpaperUi.showDrawing')} /></tr></thead><tbody>{pieces.map((piece) => { const strip = stripOf(plan, piece); const flags = pieceFlags(piece, strip); const narrow = (strip.width || strip.x_end - strip.x_start) < wallpaper.roll_width - 0.5; const note = flags.length ? flags.map((flag) => t(`wallpaperUi.note${flag[0].toUpperCase()}${flag.slice(1)}`)).concat(narrow ? t('wallpaperUi.noteNarrow') : []).join(' · ') : narrow ? t('wallpaperUi.noteNarrow') : t('wallpaperUi.notePlain'); return <tr key={piece.id}><th>{labels.get(piece.id)}</th><td>{mm(strip.width || strip.x_end - strip.x_start)}{strip.return_overlap ? ` + ${mm(strip.return_overlap)}` : ''}</td><td>{mm(piece.cut_length ?? piece.length)}</td><td>{Math.round(piece.y_start)}–{Math.round(piece.y_end)}</td><td>{note}</td><td>{needsDrawing(piece, strip) && <button type="button" className="btn-text" onClick={() => setOpenPieceId(piece.id)}>{t('wallpaperUi.showDrawing')}</button>}</td></tr>; })}</tbody></table>{toRanges(coveredStrips(plan, wallIndex)).map(([from, to]) => <p className="synthetic" key={from}>{t('wallpaperUi.stripsCovered', { range: from === to ? stripLabel(t, from) : `${stripLabel(t, from)}–${stripLabel(t, to)}` })}</p>)}</section>
     <section><div className="section-rule"><h2 className="section-title">{t('wallpaperUi.specialDrawings')}</h2></div>{specialPieces.length ? <WallpaperPieceGallery pieces={specialPieces} strips={plan.strips} repeat={Number(wallpaper.repeat) || 0} wallNames={wallNames} labels={labels} legend={false} openId={openPieceId} onOpen={setOpenPieceId} /> : <p className="synthetic">{t('wallpaperUi.noSpecialPieces')}</p>}<p className="synthetic">{t('wallpaperUi.diagramLegend')}</p><p className="synthetic">{t('wallpaperUi.hatchLegend')}</p></section>
-    <Disclosure title={t('wallpaperUi.rollLayoutTitle')} hint={t('wallpaperUi.rollLayoutHint')} open={rollLayoutOpen} onToggle={() => setRollLayoutOpen(!rollLayoutOpen)}>{(plan.rolls || []).filter((roll) => roll.cuts.some((cut) => isOnWall(plan, cut.piece_id, wallIndex))).map((roll) => <div key={roll.number}><h3>{t('wallpaperUi.rollTitle', { number: roll.number })}</h3><RollDiagram roll={roll} rollLength={Number(wallpaper.roll_length)} pieces={plan.pieces} wallIndex={wallIndex} labels={labels} /></div>)}</Disclosure>
   </div>;
 };
-
-const isOnWall = (plan, pieceId, wallIndex) => wallPieces(plan, wallIndex).some((piece) => piece.id === pieceId);
 
 export default WallpaperPlanDocument;

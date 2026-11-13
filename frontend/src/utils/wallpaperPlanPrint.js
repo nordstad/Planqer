@@ -2,7 +2,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import RoomOverview from '../components/RoomOverview';
 import WallpaperPieceDiagram from '../components/WallpaperPieceDiagram';
-import { RollDiagram, WallElevation } from '../components/WallpaperOptimizer';
+import { WallElevation } from '../components/WallpaperOptimizer';
 import { summaryRows } from '../components/WallpaperPlanDocument';
 import { coveredStrips, needsDrawing, pieceFlags, pieceLabels, stripOf, stripLabel, toRanges, wallPieces } from './wallpaperPlan';
 import { printProjectPlans } from './printProject';
@@ -85,10 +85,6 @@ const WallpaperPlanPrint = ({ plan, walls, corners, closed, wallpaper, t }) => {
     ]),
     printableWalls.length > 1 && h('section', { key: 'overview' }, [h('h2', { key: 'title' }, t('wallpaperUi.roomOverviewAria')), h(RoomOverview, { key: 'room', walls, corners, plan, closed })]),
     ...printableWalls.map((wall) => h(WallPrintSection, { key: wall.name, plan, walls, wallpaper, wall, wallIndex: walls.indexOf(wall), labels, t })),
-    h('section', { className: 'wp-print-wall', key: 'rolls' }, [
-      h('h2', { key: 'title' }, t('wallpaperUi.rollLayoutTitle')),
-      ...(plan.rolls || []).map((roll) => h('div', { key: roll.number }, [h('h3', { key: 'heading' }, t('wallpaperUi.rollTitle', { number: roll.number })), h(RollDiagram, { key: 'diagram', roll, rollLength: Number(wallpaper.roll_length), pieces: plan.pieces, wallIndex: null, labels })])),
-    ]),
   ]);
 };
 

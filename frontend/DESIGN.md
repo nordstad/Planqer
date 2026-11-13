@@ -502,10 +502,10 @@ shown, because the closed cards are already the overview.
 ### The Plan Document
 
 `WallpaperPlanDocument` is a read-only plan in five parts: summary, room
-overview, wall selector, wall details, and extras such as special-piece drawings
-and roll layout. The review step and saved-plan page render the same document;
-print follows that same order. Editing remains an explicit route back to the
-planner, never an inline alteration of a saved result.
+overview, wall selector, wall details, and module-specific extras such as
+special-piece drawings. The review step and saved-plan page render the same
+document; print follows that same order. Editing remains an explicit route back
+to the planner, never an inline alteration of a saved result.
 
 ### Wall Picker
 

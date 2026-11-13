@@ -484,6 +484,7 @@ Object.assign(locale, {
     saveLocal: "Lagre i lokal katalog",
     saveLocalHint: "Behold «{{text}}» som et produkt alle på denne instansen kan søke etter.", saveLocalHint_demo: "Behold «{{text}}» som et produkt du kan søke etter i denne nettleseren.",
   },
+  sheetPlan: { material: 'Materiale', thickness: 'Tykkelse', size: 'Platestørrelse', sheets: 'Plater å kjøpe', parts: 'Deler' },
   wallpaperUi: {
     wallName: "Vegg {{letter}}",
     shapeRectangle: "Rektangel",
@@ -743,7 +744,7 @@ Object.assign(locale, {
     selectWall: "Vis {{name}}",
     overviewHint: "Velg en vegg her eller i tegningen.",
     summaryTitle: "Sammendrag", summaryWallpaper: "Tapet", summaryRoll: "Rull", summaryRolls: "Ruller å kjøpe", summaryRollsValue: "{{toBuy}} ({{needed}} trengs + {{spare}} ekstra)", summaryCost: "Anslått kostnad", summaryStrips: "Baner", summaryPieces: "Biter", summarySaved: "Lagret",
-    originLabel: "Origo: {{origin}}", stripTableTitle: "Baner på denne veggen", colStrip: "Bane", colWidth: "Ferdig bredde", colCut: "Kuttelengde", colHang: "Henges (mm over gulvet)", colNote: "Merknad", notePlain: "Hel bane", noteOpening: "Skjær rundt åpning", noteCorner: "Føres rundt hjørnet", notePartial: "Del av høyden", noteNarrow: "Kuttes på langs", showDrawing: "Vis tegning", stripsCovered: "{{range}}: ingen tapet (åpning)", specialDrawings: "Biter som krever ekstra kutting", noSpecialPieces: "Alle banene på denne veggen er hele. Ingen tegninger trengs.", rollLayoutTitle: "Rulleoppsett", rollLayoutHint: "Hvilken rull hver bit kuttes fra.",
+    originLabel: "Origo: {{origin}}", stripTableTitle: "Baner på denne veggen", colStrip: "Bane", colWidth: "Ferdig bredde", colCut: "Kuttelengde", colHang: "Henges (mm over gulvet)", colNote: "Merknad", notePlain: "Hel bane", noteOpening: "Skjær rundt åpning", noteCorner: "Føres rundt hjørnet", notePartial: "Del av høyden", noteNarrow: "Kuttes på langs", showDrawing: "Vis tegning", stripsCovered: "{{range}}: ingen tapet (åpning)", specialDrawings: "Biter som krever ekstra kutting", noSpecialPieces: "Alle banene på denne veggen er hele. Ingen tegninger trengs.",
     noWallpaperShort: "ingen tapet",
     startLabel: "Start",
     wallNumbersAria: "Veggnumre",

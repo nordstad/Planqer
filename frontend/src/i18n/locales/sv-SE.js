@@ -486,6 +486,7 @@ Object.assign(locale, {
     saveLocal: "Spara i lokala katalogen",
     saveLocalHint: "Behåll ”{{text}}” som en produkt alla på den här instansen kan söka efter.", saveLocalHint_demo: "Behåll ”{{text}}” som en produkt du kan söka efter i den här webbläsaren.",
   },
+  sheetPlan: { material: 'Material', thickness: 'Tjocklek', size: 'Skivstorlek', sheets: 'Skivor att köpa', parts: 'Delar' },
   wallpaperUi: {
     wallName: "Vägg {{letter}}",
     shapeRectangle: "Rektangel",
@@ -745,7 +746,7 @@ Object.assign(locale, {
     selectWall: "Visa {{name}}",
     overviewHint: "Välj en vägg här eller i ritningen.",
     summaryTitle: "Sammanfattning", summaryWallpaper: "Tapet", summaryRoll: "Rulle", summaryRolls: "Rullar att köpa", summaryRollsValue: "{{toBuy}} ({{needed}} behövs + {{spare}} extra)", summaryCost: "Uppskattad kostnad", summaryStrips: "Våder", summaryPieces: "Bitar", summarySaved: "Sparad",
-    originLabel: "Origo: {{origin}}", stripTableTitle: "Våder på den här väggen", colStrip: "Våd", colWidth: "Färdig bredd", colCut: "Skärlängd", colHang: "Hängs (mm över golvet)", colNote: "Notering", notePlain: "Hel våd", noteOpening: "Skär runt öppning", noteCorner: "Förs runt hörnet", notePartial: "Del av höjden", noteNarrow: "Skärs på längden", showDrawing: "Visa ritning", stripsCovered: "{{range}}: ingen tapet (öppning)", specialDrawings: "Bitar som kräver extra skärning", noSpecialPieces: "Alla våder på den här väggen är hela. Inga ritningar behövs.", rollLayoutTitle: "Rullschema", rollLayoutHint: "Vilken rulle varje bit skärs ur.",
+    originLabel: "Origo: {{origin}}", stripTableTitle: "Våder på den här väggen", colStrip: "Våd", colWidth: "Färdig bredd", colCut: "Skärlängd", colHang: "Hängs (mm över golvet)", colNote: "Notering", notePlain: "Hel våd", noteOpening: "Skär runt öppning", noteCorner: "Förs runt hörnet", notePartial: "Del av höjden", noteNarrow: "Skärs på längden", showDrawing: "Visa ritning", stripsCovered: "{{range}}: ingen tapet (öppning)", specialDrawings: "Bitar som kräver extra skärning", noSpecialPieces: "Alla våder på den här väggen är hela. Inga ritningar behövs.",
     noWallpaperShort: "ingen tapet",
     startLabel: "Start",
     wallNumbersAria: "Väggnummer",

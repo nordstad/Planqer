@@ -507,8 +507,8 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
     const printTitle = groupId === LOOSE
       ? t('projectUi.notInAnyProject')
       : groups.find((g) => g.id === groupId)?.name || project.name;
-    const openPlan = () => project.projectType === 'wallpaper'
-      ? navigate(`/wallpaper/plan/${encodeURIComponent(project.id)}`)
+    const openPlan = () => project.projectType === 'wallpaper' || project.projectType === 'sheet'
+      ? navigate(`/${project.projectType === 'wallpaper' ? 'wallpaper' : 'sheet-cutting'}/plan/${encodeURIComponent(project.id)}`)
       : handlePreview(project);
     const hasMultiplePlans = collection.length > 1;
 
