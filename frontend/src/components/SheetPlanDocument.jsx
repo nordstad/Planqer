@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Disclosure from './Disclosure';
+import PlanSummary from './plan/PlanSummary';
 
 const mm = (value) => `${Math.round(value)} mm`;
 
@@ -32,7 +33,7 @@ const SheetPlanDocument = ({ project }) => {
   const diagram = result.sheet_visualizations?.[activeIndex] || result.visualization;
 
   return <div className="sheet-plan-document">
-    <section><div className="section-rule"><h2 className="section-title">{t('wallpaperUi.summaryTitle')}</h2></div><dl className="plan-summary">{sheetSummaryRows(project, t, i18n.language).map(([term, value]) => <div key={term}><dt>{term}</dt><dd>{value}</dd></div>)}</dl></section>
+    <PlanSummary title={t('wallpaperUi.summaryTitle')} rows={sheetSummaryRows(project, t, i18n.language)} />
     {sheets.length > 1 && <section><div className="section-rule"><h2 className="section-title">{t('workflow.sheetBySheet')}</h2></div><div className="sheet-plan-overview">{sheets.map((item, index) => <button type="button" key={index} className={`sheet-plan-thumbnail${index === activeIndex ? ' is-active' : ''}`} onClick={() => setSheetIndex(index)} aria-pressed={index === activeIndex}><img src={result.sheet_visualizations?.[index]} alt={t('workflow.sheetNumber', { number: index + 1 })} /><span>{t('workflow.sheetNumber', { number: index + 1 })} · {t('workflow.percentUsed', { percent: item.efficiency.toFixed(1) })}</span></button>)}</div></section>}
     {sheet && <section><div className="section-rule"><h2 className="section-title">{t('workflow.sheetNumber', { number: activeIndex + 1 })}</h2></div>{diagram && <img className="sheet-diagram-image sheet-plan-diagram" src={diagram} alt={t('ui.sheetDiagramAria', { number: activeIndex + 1, width: Math.round(sheet.sheet_width), height: Math.round(sheet.sheet_height), parts: sheet.parts_count, percent: sheet.efficiency.toFixed(1) })} />}<Disclosure title={t('workflow.exactPlacements')} hint={t('workflow.placementsHint')} open={placementsOpen} onToggle={() => setPlacementsOpen((open) => !open)}><table className="cat-table"><thead><tr><th>{t('ui.part')}</th><th>{t('workflow.sizeMm')}</th><th>{t('ui.atXY')}</th><th>{t('ui.turned')}</th></tr></thead><tbody>{sheet.parts.map((part, index) => <tr key={`${part.part_id}-${index}`}><th>{part.part_id}</th><td>{mm(part.width)} × {mm(part.height)}</td><td>{Math.round(part.x)}, {Math.round(part.y)}</td><td>{part.rotated ? '90°' : '—'}</td></tr>)}</tbody></table></Disclosure></section>}
   </div>;

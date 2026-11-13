@@ -501,11 +501,16 @@ shown, because the closed cards are already the overview.
 
 ### The Plan Document
 
-`WallpaperPlanDocument` is a read-only plan in five parts: summary, room
-overview, wall selector, wall details, and module-specific extras such as
-special-piece drawings. The review step and saved-plan page render the same
-document; print follows that same order. Editing remains an explicit route back
-to the planner, never an inline alteration of a saved result.
+Every plan document is read-only: a summary, an overview and selector when the
+module has multiple physical items, its details, and module-specific extras.
+The review step and saved-plan page render the same document; print follows
+that same order. Editing remains an explicit route back to the planner, never
+an inline alteration of a saved result.
+
+`components/plan/PlanPageShell` owns the saved-plan loading states, back link,
+title, and Print / Modify actions. `PlanSummary` renders the common labelled
+summary list. Do not force a common selector: the wallpaper wall picker is
+synchronised to the room drawing while the sheet selector is an image overview.
 
 ### Wall Picker
 
