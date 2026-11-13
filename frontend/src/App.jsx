@@ -9,9 +9,11 @@ import { isStaticMode } from './utils/mode';
 const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
 const AdminRoute = lazy(() => import('./components/AdminRoute'));
 const CuttingOptimizer = lazy(() => import('./components/CuttingOptimizer'));
+const BoardPlanPage = lazy(() => import('./components/BoardPlanPage'));
 const SheetOptimizer = lazy(() => import('./components/SheetOptimizer'));
 const SheetPlanPage = lazy(() => import('./components/SheetPlanPage'));
 const TileOptimizer = lazy(() => import('./components/TileOptimizer'));
+const TilePlanPage = lazy(() => import('./components/TilePlanPage'));
 const WallpaperOptimizer = lazy(() => import('./components/WallpaperOptimizer'));
 const WallpaperPlanPage = lazy(() => import('./components/WallpaperPlanPage'));
 const ModelCutlistOptimizer = lazy(() => import('./components/ModelCutlistOptimizer'));
@@ -38,9 +40,11 @@ const App = () => {
             <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/cutting" element={<ProtectedRoute fallbackMessage="access.board"><CuttingOptimizer /></ProtectedRoute>} />
+            <Route path="/cutting/plan/:planId" element={<ProtectedRoute fallbackMessage="access.board"><BoardPlanPage /></ProtectedRoute>} />
             <Route path="/sheet-cutting" element={<ProtectedRoute fallbackMessage="access.sheet"><SheetOptimizer /></ProtectedRoute>} />
             <Route path="/sheet-cutting/plan/:planId" element={<ProtectedRoute fallbackMessage="access.sheet"><SheetPlanPage /></ProtectedRoute>} />
             <Route path="/tile-layout" element={<ProtectedRoute fallbackMessage="access.tile"><TileOptimizer /></ProtectedRoute>} />
+            <Route path="/tile-layout/plan/:planId" element={<ProtectedRoute fallbackMessage="access.tile"><TilePlanPage /></ProtectedRoute>} />
             <Route path="/wallpaper" element={<ProtectedRoute fallbackMessage="access.default"><WallpaperOptimizer /></ProtectedRoute>} />
             <Route path="/wallpaper/plan/:planId" element={<ProtectedRoute fallbackMessage="access.default"><WallpaperPlanPage /></ProtectedRoute>} />
             <Route path="/model-cutlist" element={<ProtectedRoute fallbackMessage="access.model"><ModelCutlistOptimizer /></ProtectedRoute>} />
