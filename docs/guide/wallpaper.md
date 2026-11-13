@@ -186,10 +186,9 @@ prices.
 
 The **Review** step gives you the finished cut plan before you save it. Its
 summary, room overview and wall picker lead into one wall at a time: the wall
-elevation, strip table, special-piece drawings and roll layout. Choose a wall
-from the picker or directly in the room overview. Each piece is named on the
-wall drawing and says where it hangs, so the table and drawing are easy to
-match.
+elevation, strip table and special-piece drawings. Choose a wall from the
+picker or directly in the room overview. Each piece is named on the wall
+drawing and says where it hangs, so the table and drawing are easy to match.
 
 ![A piece drawing with a window, a heat pump, trim, the up direction and measurements](../assets/screenshots/wallpaper-piece-drawing.png)
 

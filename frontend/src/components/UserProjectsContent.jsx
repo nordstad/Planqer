@@ -33,6 +33,8 @@ import { restoreBoardParts } from '../utils/boardParts';
 import { buildCutListHtml } from '../utils/tileCutList';
 import { buildWallpaperPlanHtml } from '../utils/wallpaperPlanPrint';
 import { buildSheetPlanHtml } from '../utils/sheetPlanPrint';
+import { buildBoardPlanHtml } from '../utils/boardPlanPrint';
+import { buildTilePlanHtml } from '../utils/tilePlanPrint';
 import { useAuth } from '../contexts/AuthContext';
 import { useAccountContext } from '../contexts/useAccountContext';
 import Loader from './Loader';
@@ -135,7 +137,7 @@ const planStatus = (project, t) => {
   return { badges, missing: !priced || (!noProduct && !specified) };
 };
 
-const UserProjectsContent = ({ onPreview, groupId }) => {
+const UserProjectsContent = ({ groupId }) => {
   const { t, i18n } = useTranslation();
   const { user, logout } = useAuth();
   const accountContext = useAccountContext();
@@ -273,6 +275,8 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
             bodyHtml: buildSheetPlanHtml(p, t, i18n.language),
           };
         }
+        if (p.projectType === 'board' && p.optimization_result) return { name: p.name, facts, bodyHtml: buildBoardPlanHtml(p, t, i18n.language) };
+        if (p.projectType === 'tile' && p.layout_result) return { name: p.name, facts, bodyHtml: buildTilePlanHtml(p, t, i18n.language) };
         if (p.projectType === 'wallpaper') {
           return {
             name: p.name,
@@ -329,20 +333,6 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
       else next.add(project.id);
       return next;
     });
-  };
-
-  const handlePreview = async (project) => {
-    try {
-      if (project.projectType === 'sheet' && project.optimization_result?.sheet_visualizations?.length) {
-        onPreview({ ...project, imageUrl: null });
-        return;
-      }
-      onPreview({ ...project, imageUrl: null });
-      const blob = await downloadProjectImage(project.id, project.projectType);
-      onPreview({ ...project, imageUrl: window.URL.createObjectURL(blob) });
-    } catch (err) {
-      setError(t('projectUi.previewFailed', { message: err.message }));
-    }
   };
 
   const handleModify = (project) => {
@@ -506,9 +496,8 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
     const printTitle = groupId === LOOSE
       ? t('projectUi.notInAnyProject')
       : groups.find((g) => g.id === groupId)?.name || project.name;
-    const openPlan = () => project.projectType === 'wallpaper' || project.projectType === 'sheet'
-      ? navigate(`/${project.projectType === 'wallpaper' ? 'wallpaper' : 'sheet-cutting'}/plan/${encodeURIComponent(project.id)}`)
-      : handlePreview(project);
+    const planRoutes = { board: 'cutting', sheet: 'sheet-cutting', tile: 'tile-layout', wallpaper: 'wallpaper' };
+    const openPlan = () => navigate(`/${planRoutes[project.projectType]}/plan/${encodeURIComponent(project.id)}`);
     const hasMultiplePlans = collection.length > 1;
 
     return (

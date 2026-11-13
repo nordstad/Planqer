@@ -76,7 +76,7 @@ const renderDetail = () => render(
   <MemoryRouter>
     <LanguageProvider>
       <LocationProbe />
-      <UserProjectsContent onPreview={vi.fn()} groupId={group.id} />
+      <UserProjectsContent groupId={group.id} />
     </LanguageProvider>
   </MemoryRouter>,
 );
@@ -402,7 +402,7 @@ it.each([
   render(
     <MemoryRouter>
       <LanguageProvider>
-        <UserProjectsContent onPreview={vi.fn()} />
+        <UserProjectsContent />
       </LanguageProvider>
     </MemoryRouter>,
   );

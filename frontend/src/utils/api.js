@@ -203,6 +203,15 @@ export const getUserProjects = async () => {
   }
 };
 
+export const getProject = async (id) => {
+  try {
+    const response = await http.get(`${API_URL}/api/projects/${encodeURIComponent(id)}`);
+    return response.data;
+  } catch (error) {
+    throw new Error(extractErrorMessage(error));
+  }
+};
+
 export const serializeBoardParts = (parts) => {
   const payload = {};
   normalizeBoardParts(parts).forEach(({ length, quantity }) => {
@@ -394,6 +403,15 @@ export const deleteSheetProject = async (projectId) => {
 export const getUserTileProjects = async () => {
   try {
     const response = await http.get(`${API_URL}/api/tile-projects/`);
+    return response.data;
+  } catch (error) {
+    throw new Error(extractErrorMessage(error));
+  }
+};
+
+export const getTileProject = async (id) => {
+  try {
+    const response = await http.get(`${API_URL}/api/tile-projects/${encodeURIComponent(id)}`);
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
