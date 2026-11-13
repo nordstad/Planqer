@@ -144,7 +144,7 @@ test.describe('Planqer Frontend E2E Tests', () => {
     await expect(page.getByRole('heading', { name: /plan saved/i })).toBeVisible();
   });
 
-  test('prints each saved sheet on its own non-splitting page', async ({ page }) => {
+  test('prints a saved sheet plan as one document with non-splitting sheets', async ({ page }) => {
     const email = `sheet-print-${Date.now()}@example.com`;
     const password = ['Planqer', Date.now(), 'sheet'].join('-') + '!1';
     await page.request.post(`${API}/api/auth/register`, {
@@ -191,16 +191,26 @@ test.describe('Planqer Frontend E2E Tests', () => {
     const planName = page.getByText('E2E printable sheets');
     await expect(planName).toBeVisible();
     await expect(page.getByRole('checkbox', { name: 'Select plan "E2E printable sheets"' })).not.toBeAttached();
+    await page.getByRole('button', { name: 'Open plan', exact: true }).last().click();
+    await expect(page).toHaveURL(/\/sheet-cutting\/plan\//);
+    await expect(page.getByRole('heading', { name: 'Summary' })).toBeVisible();
+    await page.getByRole('button', { name: /Sheet 2/i }).click();
+    await expect(page.getByRole('button', { name: /Sheet 2/i })).toHaveAttribute('aria-pressed', 'true');
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(page.getByRole('heading', { name: 'Sheet 2' })).toBeVisible();
+    await page.goto('/dashboard/project/none');
     await page.getByRole('button', { name: 'Print', exact: true }).click();
 
     const printDocument = page.locator('iframe[aria-hidden="true"]');
     await expect(printDocument).toHaveCount(1);
-    await expect.poll(() => printDocument.evaluate((iframe) => iframe.contentDocument?.querySelectorAll('.plan').length || 0)).toBe(2);
+    await expect.poll(() => printDocument.evaluate((iframe) => iframe.contentDocument?.querySelectorAll('.plan').length || 0)).toBe(1);
     const printLayout = await printDocument.evaluate((iframe) => ({
       images: iframe.contentDocument?.querySelectorAll('.plan img').length,
+      sheets: iframe.contentDocument?.querySelectorAll('.sheet-plan-sheet').length,
       styles: iframe.contentDocument?.querySelector('style')?.textContent,
     }));
     expect(printLayout.images).toBe(2);
+    expect(printLayout.sheets).toBe(2);
     expect(printLayout.styles).toContain('page-break-inside: avoid');
 
     const printHtml = await printDocument.evaluate(async (iframe) => {

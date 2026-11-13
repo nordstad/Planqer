@@ -15,7 +15,7 @@ const printCss = `
   .sheet-plan-print .plan-summary div, .sheet-plan-print .sheet-plan-sheet { break-inside: avoid; page-break-inside: avoid; }
   .sheet-plan-print dt { color: #6b6a60; font-size: 8pt; }
   .sheet-plan-print dd { margin: 1mm 0 0; font-size: 10pt; font-weight: 700; }
-  .sheet-plan-print .sheet-plan-sheet { break-before: page; page-break-before: always; }
+  .sheet-plan-print .sheet-plan-sheet + .sheet-plan-sheet { break-before: page; page-break-before: always; }
   .sheet-plan-print .sheet-plan-diagram { display: block; width: 100%; max-height: 180mm; object-fit: contain; }
   .sheet-plan-print table { width: 100%; margin-top: 4mm; border-collapse: collapse; font-size: 9pt; }
   .sheet-plan-print th, .sheet-plan-print td { padding: 2mm 2.5mm 2mm 0; border-bottom: .2mm solid #e3e1d6; text-align: left; }
