@@ -16,7 +16,7 @@ const BoardPlanPrint = ({ project, t, language }) => {
       h('h2', { key: 'title' }, t('workflow.boardNumber', { number: index + 1 })),
       h('table', { key: 'table' }, [
         h('thead', { key: 'head' }, h('tr', null, [
-          h('th', { key: 'order' }, t('ui.cutOrder')),
+          h('th', { key: 'order' }, t('workflow.cutOrder')),
           h('th', { key: 'length' }, t('ui.lengthMm')),
         ])),
         h('tbody', { key: 'body' }, board.map((length, cutIndex) => h('tr', { key: cutIndex }, [
