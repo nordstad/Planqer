@@ -29,6 +29,6 @@ describe('buildWallpaperPlanHtml', () => {
     expect(html).not.toContain('>one<');
     expect(html).not.toContain('>two<');
     expect(html.match(/class="wp-print-piece"/g)).toHaveLength(1);
-    expect(html).toContain('Roll 1');
+    expect(html).not.toContain('Roll 1');
   });
 });

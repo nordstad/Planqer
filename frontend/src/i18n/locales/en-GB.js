@@ -406,6 +406,7 @@ Object.assign(locale, {
     saveLocal: "Save to local catalogue",
     saveLocalHint: "Keep “{{text}}” as a product everyone on this instance can search for.", saveLocalHint_demo: "Keep “{{text}}” as a product you can search for in this browser.",
   },
+  sheetPlan: { material: 'Material', thickness: 'Thickness', size: 'Sheet size', sheets: 'Sheets to buy', parts: 'Parts' },
   wallpaperUi: {
     wallName: "Wall {{letter}}",
     shapeRectangle: "Rectangle",
@@ -665,7 +666,7 @@ Object.assign(locale, {
     selectWall: "Show {{name}}",
     overviewHint: "Choose a wall here or in the drawing.",
     summaryTitle: "Summary", summaryWallpaper: "Wallpaper", summaryRoll: "Roll", summaryRolls: "Rolls to buy", summaryRollsValue: "{{toBuy}} ({{needed}} needed + {{spare}} spare)", summaryCost: "Estimated cost", summaryStrips: "Strips", summaryPieces: "Pieces", summarySaved: "Saved",
-    originLabel: "Origin: {{origin}}", stripTableTitle: "Strips on this wall", colStrip: "Strip", colWidth: "Finished width", colCut: "Cut length", colHang: "Hangs (mm above floor)", colNote: "Note", notePlain: "Full strip", noteOpening: "Cut around opening", noteCorner: "Wraps the corner", notePartial: "Part of the height", noteNarrow: "Cut lengthwise", showDrawing: "Show drawing", stripsCovered: "{{range}}: no wallpaper (opening)", specialDrawings: "Pieces that need extra cutting", noSpecialPieces: "Every strip on this wall is a full strip. No drawings needed.", rollLayoutTitle: "Roll layout", rollLayoutHint: "Which roll each piece is cut from.",
+    originLabel: "Origin: {{origin}}", stripTableTitle: "Strips on this wall", colStrip: "Strip", colWidth: "Finished width", colCut: "Cut length", colHang: "Hangs (mm above floor)", colNote: "Note", notePlain: "Full strip", noteOpening: "Cut around opening", noteCorner: "Wraps the corner", notePartial: "Part of the height", noteNarrow: "Cut lengthwise", showDrawing: "Show drawing", stripsCovered: "{{range}}: no wallpaper (opening)", specialDrawings: "Pieces that need extra cutting", noSpecialPieces: "Every strip on this wall is a full strip. No drawings needed.",
     noWallpaperShort: "no wallpaper",
     startLabel: "Start",
     wallNumbersAria: "Wall numbers",

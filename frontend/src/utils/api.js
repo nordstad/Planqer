@@ -334,6 +334,15 @@ export const getUserSheetProjects = async () => {
   }
 };
 
+export const getSheetProject = async (id) => {
+  try {
+    const response = await http.get(`${API_URL}/api/sheet-projects/${encodeURIComponent(id)}`);
+    return response.data;
+  } catch (error) {
+    throw new Error(extractErrorMessage(error));
+  }
+};
+
 export const saveSheetProject = async ({
   id, name, projectGroupId, parts, sheetWidth, sheetHeight, sheetThickness = 0, kerfWidth, materialType, product = null, algorithm, allowRotation, result, pricing,
 }) => {

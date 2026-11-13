@@ -231,6 +231,15 @@ it('opens a saved wallpaper plan on its read-only page', async () => {
   expect(screen.getByTestId('location')).toHaveTextContent('/wallpaper/plan/plan-1');
 });
 
+it('opens a saved sheet plan on its read-only page', async () => {
+  getUserProjects.mockResolvedValue([]);
+  getUserSheetProjects.mockResolvedValue([sheetPlan]);
+  renderDetail();
+
+  fireEvent.click(await screen.findByText('Open plan', { selector: 'button' }));
+  expect(screen.getByTestId('location')).toHaveTextContent('/sheet-cutting/plan/sheet-plan-1');
+});
+
 it('prints only the selected plans', async () => {
   getUserProjects.mockResolvedValue([plan, secondPlan]);
   renderDetail();
