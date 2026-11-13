@@ -32,6 +32,7 @@ import { materialLabel, cleanMaterial } from '../utils/materialLabel';
 import { restoreBoardParts } from '../utils/boardParts';
 import { buildCutListHtml } from '../utils/tileCutList';
 import { buildWallpaperPlanHtml } from '../utils/wallpaperPlanPrint';
+import { buildSheetPlanHtml } from '../utils/sheetPlanPrint';
 import { useAuth } from '../contexts/AuthContext';
 import { useAccountContext } from '../contexts/useAccountContext';
 import Loader from './Loader';
@@ -122,8 +123,6 @@ const triggerDownload = (blob, filename) => {
   window.URL.revokeObjectURL(url);
 };
 
-const dataUrlToBlob = async (dataUrl) => (await fetch(dataUrl)).blob();
-
 // Tile and wallpaper plans carry no product, so only pricing says anything about their detail.
 const planStatus = (project, t) => {
   const priced = isPlanPriced(project);
@@ -137,7 +136,7 @@ const planStatus = (project, t) => {
 };
 
 const UserProjectsContent = ({ onPreview, groupId }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user, logout } = useAuth();
   const accountContext = useAccountContext();
   const navigate = useNavigate();
@@ -268,11 +267,11 @@ const UserProjectsContent = ({ onPreview, groupId }) => {
           ? p.optimization_result?.sheet_visualizations
           : null;
         if (sheetVisualizations?.length) {
-          return Promise.all(sheetVisualizations.map(async (visualization, sheetIndex) => ({
-            name: `${p.name} — ${t('workflow.sheetNumber', { number: sheetIndex + 1 })}`,
+          return {
+            name: p.name,
             facts,
-            svgBlob: await dataUrlToBlob(visualization),
-          })));
+            bodyHtml: buildSheetPlanHtml(p, t, i18n.language),
+          };
         }
         if (p.projectType === 'wallpaper') {
           return {
