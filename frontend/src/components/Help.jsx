@@ -110,7 +110,7 @@ const HelpPage = () => {
                 <td>{t('help.tileInput')}</td>
               </tr>
               <tr>
-                <td style={{ textAlign: 'left' }}><Link to="/model-cutlist">{t('common.modelCutlist')} cutlist</Link></td>
+                <td style={{ textAlign: 'left' }}><Link to="/model-cutlist">{t('common.modelCutlist')}</Link></td>
                 <td style={{ textAlign: 'left' }}>{t('help.modelUse')}</td>
                 <td>{t('help.modelInput')}</td>
               </tr>

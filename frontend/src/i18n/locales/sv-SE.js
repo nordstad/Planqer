@@ -307,7 +307,7 @@ Object.assign(locale.ui, {
   turned90: 'vriden 90°', hatchingWaste: 'Skraffering visar spill. En streckad kontur markerar en del som roterats 90° för att få plats.', part: 'Del', sheet: 'Skiva', atXY: 'Vid x, y', turned: 'Roterad', area: 'Area', sheetLayoutDiagram: 'Skivlayoutdiagram', sheetLayout: 'SKIVLAYOUT', sheetDiagramAlt: 'Skivlayoutdiagram: alla skivor med delarna placerade',
    pricePerMetre: 'Pris per meter · {{currency}}', stockPrice: 'Pris / m', pricingOptions: 'Prisalternativ', stockPricingOptional: 'Priser är valfria. Lägg till ett för varje lagerlängd för att jämföra kostnader eller optimera för lägsta kostnad.', pricesProgress: '{{priced}} av {{total}} lagerpriser tillagda', uniformPrice: 'Samma pris för allt råmaterial ({{currency}} / m)', onePriceAll: 'Samma pris för alla längder', allStock: 'Allt råmaterial', appliesTo: 'Gäller', uniform: 'Enhetligt', priceAria: 'Enhetligt pris per meter i {{currency}}', priceLengthAria: 'Pris per meter i {{currency}} för längden {{length}} mm', addStockToPrice: 'Lägg till lagerlängder på delsteget för att prissätta dem', addStockPrices: 'Lägg till råmaterialpriser', pricesAndCost: 'Priser och kostnadsoptimering', lowestCostNeedsPrices: 'Lägg till ett pris för varje lagerlängd för att optimera för lägsta kostnad.', perBoard: 'Per bräda',
   whatChase: 'Vad ska planen optimera?', leastWaste: 'Minst spill', leastWasteHint: 'Minst antal millimeter som slängs', leastMoney: 'Lägsta kostnad', leastMoneyHint: 'Billigare råmaterial även om mer restbit blir kvar', pricing: 'Prissätter planen', changedPrices: 'Priserna har ändrats sedan den senaste beräkningen. Beloppen nedan bygger fortfarande på de gamla priserna. Tillämpa ändringarna för att räkna om.', whatCosts: 'Vad planen kostar', allFigures: 'Alla belopp i {{currency}}', ownPrices: 'Kostnaderna bygger på dina priser och det råmaterial planen kräver. Planqer hämtar inga leverantörspriser.', inOffcut: 'I restbiten', perMetreParts: 'Per meter delar', chasing: 'Optimerar för', changedSince: 'Vad som ändrades sedan förra körningen', figure: 'Värde', diagramRedrawn: 'En ändring av brädor eller restbit gjorde att kapdiagrammet ovan ritades om.', buy: 'Det du köper', noPrices: 'Planen på skärmen har inga priser ännu. Prissätt den så visas kostnaden här.', unchanged: 'oförändrat',
-  fullTile: 'Hel platta', noCutNeeded: 'Ingen kapning behövs', sliver: 'smal bit', sliverCount: '{{count}} smala bitar', diagonalOpening: 'Diagonal, kapad runt en öppning', diagonal: 'Diagonal', viewCut: 'Visa kapning {{label}}', openingDiagram: 'Kapa runt en öppning – se diagrammet', straightCut: 'Rak kapning', cutTemplate: 'KAPMALL {{label}}', cutTemplateAria: 'Kapmall {{label}}', howToCut: 'Så här kapar du:', cutInstructions: 'Behåll det ljusa området. Det skrafferade grå området är spill. Den orange linjen visar var du ska kapa.', kind: 'Typ', fromOffcut: 'Från restbit', pieceMeta: 'Del {{label}} – {{width}}×{{height}} mm platta', finalSize: 'Slutlig storlek: {{width}}×{{height}} mm', edges: 'Kanter',
+  fullTile: 'Hel platta', noCutNeeded: 'Ingen kapning behövs', sliver: 'smal bit', sliverCount: '{{count}} smala bitar', diagonalOpening: 'Diagonal, kapad runt en öppning', diagonal: 'Diagonal', viewCut: 'Visa kapning {{label}}', openingDiagram: 'Kapa runt en öppning – se diagrammet', straightCut: 'Rak kapning', cutTemplate: 'KAPMALL {{label}}', cutTemplateAria: 'Kapmall för del {{label}}', howToCut: 'Så här kapar du:', cutInstructions: 'Behåll det ljusa området. Det skrafferade grå området är spill. Den orange linjen visar var du ska kapa.', kind: 'Typ', fromOffcut: 'Från restbit', pieceMeta: 'Del {{label}} – {{width}}×{{height}} mm platta', finalSize: 'Slutlig storlek: {{width}}×{{height}} mm', edges: 'Kanter',
    tilesToBuy: 'plattor att köpa', tightestCut: 'Smalaste kapade bit', noneCut: 'Inga kapade bitar', distinctCutSizes: 'Olika kapmått', pricesComplete: 'Alla {{total}} lagerpriser tillagda',
   changeSurface: 'Ändra ytan', saveLayout: 'Spara layout', saveLayoutButton: 'Spara layout', updateLayout: 'Uppdatera layout',
   tilesAroundOpening: 'Plattor kapade runt en öppning', offcutsReused: 'Återanvända restbitar', sliversBelow: 'Bitar under minimibredden', materialUsed: 'Använt material', offcutExplanation: 'I restbiten visar kostnaden för materialet som blir kvar efter kapningen. Per meter delar är den totala materialkostnaden delad med de färdiga delarnas sammanlagda längd.',
@@ -318,7 +318,7 @@ Object.assign(locale.workflow, {
 });
 
 Object.assign(locale.auditUi, { sheetThicknessRequired: 'Ange skivans tjocklek innan du planerar' });
-Object.assign(locale.ui, { waste: 'Spill', strategy: 'Strategi' });
+Object.assign(locale.ui, { waste: 'Spill', strategy: 'Strategi', reusedCount: '{{reused}} av {{count}}' });
 
 Object.assign(locale.ui, {
   updatePlanTitle: 'Uppdatera sparad plan',
@@ -368,7 +368,7 @@ Object.assign(locale.modelUi, {
   sheetPricingNone: "Inget pris angivet. Skivorna planeras utan kostnad. Pris är valfritt.",
   applyAllBoards: "Använd för alla brädgrupper",
   applyAllSheets: "Använd för alla skivgrupper",
-  appliedBoards: "Lager, sågspår och priser har kopierats till alla brädgrupper.",
+  appliedBoards: "Materiallängder, sågspår och priser har kopierats till alla brädgrupper.",
   appliedSheets: "Skivmått, sågspår och pris har kopierats till alla skivgrupper.",
   openProject: "Öppna projektet",
 });
@@ -378,7 +378,7 @@ Object.assign(locale, {
     product: "Produkt",
     searchPlaceholder: "Sök på namn eller mått, t.ex. ”regel 45x95”", sheetSearchPlaceholder: "Sök på namn eller tjocklek, t.ex. ”plywood 15”", searchPlaceholderOwn: "Skriv din produkt, t.ex. ”Furu 45x95”", sheetSearchPlaceholderOwn: "Skriv ditt skivmaterial, t.ex. ”Björkplywood”",
     results: "Matchande produkter",
-    noResults: "Ingen matchande produkt. Du kan ändå skriva egna ord.",
+    noResults: "Inga produkter matchar sökningen. Du kan fortfarande använda egna ord.",
     useAsOwn: "Använd ”{{text}}” som egen produkt",
     anySize: "valfritt mått",
     size: "Storlek",
@@ -432,7 +432,7 @@ Object.assign(locale, {
     empty: "Inga produkter matchar.",
     narrow: "Visar de första 200 träffarna. Förfina sökningen för att se fler.",
     deleteConfirm: "Ta bort {{name}} från den här instansens katalog? Sparade planer behåller sin egen kopia.", deleteConfirm_demo: "Ta bort {{name}} från din katalog? Sparade planer behåller sin egen kopia.",
-    revertConfirm: "Återgå till inbyggd data för {{name}} och visa den igen?",
+    revertConfirm: "Återställ {{name}} till inbyggda data och visa den igen?",
     addTitle: "Lägg till produkt",
     editTitle: "Redigera produkt",
     kind: "Typ av material",
@@ -704,7 +704,7 @@ Object.assign(locale, {
     startPartly: "{{full}} av {{runs}} väggsträckor börjar med en hel våd.",
     startNone: "Ingen väggsträcka börjar med en hel våd.",
     startFallbackNarrow: "{{wall}}: en hel våd först skulle lämna en bit under {{min}} mm, så första och sista vågen görs lika breda i stället.",
-    startFallbackSaves: "{{wall}}: en annan start går åt mindre tapet.",
+    startFallbackSaves: "{{wall}}: en annan start kräver mindre tapet.",
     startExtraRolls_one: "Om varje väggsträcka börjar med en hel våd går det åt {{count}} rulle till.",
     startExtraRolls_other: "Om varje väggsträcka börjar med en hel våd går det åt {{count}} rullar till.",
     startSavesRolls_one: "En annan start går åt {{count}} rulle mindre.",
@@ -775,8 +775,8 @@ Object.assign(locale, {
     change: "Ändra",
     done: "Klar",
     goTo: "Gå till {{name}}",
-    toFill_one: "{{count}} kvar att fylla i",
-    toFill_other: "{{count}} kvar att fylla i",
+    toFill_one: "{{count}} fält återstår att fylla i",
+    toFill_other: "{{count}} fält återstår att fylla i",
     fillRequired: "Fyll i {{fields}} för att fortsätta.",
   },
   boardUi: {
@@ -874,5 +874,29 @@ Object.assign(locale, {
     },
   },
 });
+
+Object.assign(locale.wallpaperUi, {
+  backendRollTooShort: "Rullen är kortare än den högsta biten på {{wall}}.",
+  backendRepeatTooLong: "Tapetens rapport kan inte vara längre än rullen.",
+  backendCutoutOutside: "En öppning ligger utanför {{wall}}.",
+  backendCutoutNearEdge: "En öppning på {{wall}} ligger mindre än 10 mm från väggkanten.",
+  backendCutoutsOverlap: "Ogrupperade öppningar överlappar på {{wall}}.",
+  backendOppositeWalls: "Motstående väggar skiljer sig med mer än 20 mm.",
+  backendInvalidRollLength: "Rulllängden måste vara större än 0.",
+  backendPieceCannotFit: "Biten {{piece}} får inte plats på en rulle.",
+  backendInvalidRollWidth: "Rullbredden måste vara större än 0.",
+  backendInvalidFirstStripWidth: "Bredden på den första våden måste vara större än 0 och inte bredare än rullen.",
+  backendSeamOutsideBefore: "En skarv hamnar på det utvändiga hörnet före {{wall}}.",
+  backendSeamOutsideAfter: "En skarv hamnar på det utvändiga hörnet efter {{wall}}.",
+  backendInsufficientCornerWrap: "Våd {{strip}} har inte tillräckligt med material för att föras {{mm}} mm runt hörnet efter {{wall}}.",
+  backendStripBelowMinimum: "Våd {{strip}} är {{mm}} mm bred på {{wall}}, under minimibredden {{min}} mm.",
+  backendCornerStripBelowMinimum: "Våd {{strip}} lämnar bara {{mm}} mm på {{wall}} vid ett hörn, under minimibredden {{min}} mm. Ingen bredd på den första våden undviker detta; överväg att börja en ny våd vid hörnet.",
+  backendStartNewStrip: "Börja en ny våd vid hörnet mellan {{from}} och {{to}}.",
+  backendPositionOutside: "Positionen måste vara inom väggens kontur.",
+  backendStripOutside: "Våden måste vara inom väggens kontur.",
+  backendClosureTurns: "Hörnen bildar inte en hel cirkel, så väggarna kan inte bilda ett slutet rum. Kontrollera de invändiga och utvändiga hörnen.",
+  backendClosureGap: "Väggarna lämnar en öppning på {{gap}} mm där den sista väggen ska möta den första. Kontrollera väggmåtten innan du beställer.",
+});
+
 
 export default locale;

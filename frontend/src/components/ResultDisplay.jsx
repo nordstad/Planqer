@@ -71,7 +71,7 @@ const ResultDisplay = ({ result, projectName, materialType, boardThickness, boar
             <tbody>
               {Object.entries(byType).map(([len, qty]) => (
                 <tr key={len}>
-                   <td>{materialType || 'board'}</td>
+                   <td>{materialType || text('ui.board')}</td>
                    <td>{boardThickness && boardWidth
                      ? `${mm(boardThickness)} × ${mm(boardWidth)} × ${mm(parseFloat(len))}`
                      : mm(parseFloat(len))}</td>

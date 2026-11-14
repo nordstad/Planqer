@@ -106,7 +106,7 @@ const locale = {
     turnedParts: 'Et stiplet omriss markerer en del som er rotert 90° for å få plass. Slå av rotasjon hvis fiberretningen eller mønsteret må følge en bestemt retning.',
     sheetWaste: 'Skraveringen markerer materialet som ikke brukes til delene.',
 
-    sectionGettingStarted: 'Kom i gang', sectionChooseTool: 'Velg et verktøy', sectionTileLayout: 'Flislegging', sectionResults: 'Les resultatet', sectionTroubleshooting: 'Feilsøking', sectionPlansProjects: "Slik fungerer planer og prosjekter", plansProjectsTitle: "Slik fungerer planer og prosjekter", plansDefinition: "En plan er ett lagret resultat: kuttingen for ett sett med planker, én platelayout, én fliselayout eller én tapetplan. Et prosjekt er jobben planene hører til, for eksempel en stol eller en kunde.", plansShopping: "Et prosjekt gir deg én handleliste og én utskriftsvennlig jobbpakke for alle planene sine.", plansSteps: "Lagre en plan", plansStepOne: "Planlegg noe, og trykk deretter på Gi navn og lagre.", plansStepTwo: "Gi planen et navn og velg et prosjekt. Første gang finnes det ingen prosjekter å velge mellom, så Nytt prosjekt… er forhåndsvalgt med navnet Mine planer. Endre navnet hvis du vil.", plansStepThree: "Neste gang er prosjektet du brukte sist forhåndsvalgt. Velg Nytt prosjekt… for å starte en ny jobb.", plansStepFour: "Ombestemt deg? Med Flytt til… på en plan, eller ved å dra den til et prosjekt på dashbordet, legger du den et annet sted.", contents: 'Innhold', quickReference: 'Hurtigreferanse for de fire verktøyene', fullDocumentation: 'Les hele dokumentasjonen', eyebrow: 'Planqer / Hurtigreferanse', startTitle: 'Begynn med materialet du har',
+    sectionGettingStarted: 'Kom i gang', sectionChooseTool: 'Velg et verktøy', sectionTileLayout: 'Flislegging', sectionResults: 'Les resultatet', sectionTroubleshooting: 'Feilsøking', sectionPlansProjects: "Slik fungerer planer og prosjekter", plansProjectsTitle: "Slik fungerer planer og prosjekter", plansDefinition: "En plan er ett lagret resultat: kuttingen for ett sett med materiallengder, én platelayout, én fliselayout eller én tapetplan. Et prosjekt er jobben planene hører til, for eksempel en stol eller en kunde.", plansShopping: "Et prosjekt gir deg én handleliste og én utskriftsvennlig jobbpakke for alle planene sine.", plansSteps: "Lagre en plan", plansStepOne: "Planlegg noe, og trykk deretter på Gi navn og lagre.", plansStepTwo: "Gi planen et navn og velg et prosjekt. Første gang finnes det ingen prosjekter å velge mellom, så Nytt prosjekt… er forhåndsvalgt med navnet Mine planer. Endre navnet hvis du vil.", plansStepThree: "Neste gang er prosjektet du brukte sist forhåndsvalgt. Velg Nytt prosjekt… for å starte en ny jobb.", plansStepFour: "Ombestemt deg? Med Flytt til… på en plan, eller ved å dra den til et prosjekt på dashbordet, legger du den et annet sted.", contents: 'Innhold', quickReference: 'Hurtigreferanse for de fire verktøyene', fullDocumentation: 'Les hele dokumentasjonen', eyebrow: 'Planqer / Hurtigreferanse', startTitle: 'Begynn med materialet du har',
     startIntro: 'Planqer regner ut hvor mange bord, plater eller fliser du skal kjøpe og hvor de skal kappes. Skriv inn mål i millimeter, kontroller resultatet og ta diagrammet med til sagen.', threeSteps: 'Tre trinn', startStepOne: 'Velg verktøyet som passer til materialet ditt.', startStepTwo: 'Skriv inn delene du trenger og råmaterialet du kan kjøpe.', startStepThree: 'Kjør planen og kontroller diagrammet og målene før du kapper.', fullDocsIntro: 'Lenken til hele dokumentasjonen inneholder veiledninger for installasjon, konfigurasjon, API, MCP, sikkerhetskopiering og detaljert feilsøking.',
     chooseTitle: 'Velg et verktøy', tableTool: 'Verktøy', tableUse: 'Bruk det til', tableInput: 'Inndata', boardUse: 'Bord, trelast, lister, rør og annet materiale i lengder', boardInput: 'Lengder og antall', sheetUse: 'Kryssfiner-, MDF-, metall-, glass- og akrylplater', sheetInput: 'Rektangler og antall', tileUse: 'Et gjentatt flisrutenett på en overflate med kanter eller åpninger', tileInput: 'Overflate, flis og åpninger', modelUse: 'Deler hentet fra en STL-, STEP- eller STP-modell', modelInput: '3D-modellfil', chooseIntro: 'Alle optimerere tar hensyn til sagsporet der det er relevant. Bruk bord- eller plateoptimereren når du kjenner målene på delene; bruk modellverktøyet når CAD-filen er fasiten.',
     tileTitle: 'Grunnleggende flislegging', tileIntro: 'Flisverktøyet sammenligner rutenettets plassering for det valgte mønsteret på en rektangulær overflate. Det prioriterer brukbare kantbiter og varsler når bitene er smalere enn den angitte minstebredden.', surfaceTitle: 'Overflate og flis', surfaceText: 'Skriv inn overflatens bredde og høyde, og deretter flisens bredde og høyde. Målene er i millimeter.', jointTitle: 'Fuge og kantavstand', jointText: 'Fugen er avstanden mellom flisene. Kantavstanden er klaringen mellom flisfeltet og overflatekanten.', bondTitle: 'Forband', bondText: 'Rett og forskjøvet forband bruker rektangulære fliser. Diagonale og fiskebeinsmønstre roterer flisene og kan lage polygonale kappmaler.', openingsTitle: 'Åpninger', openingsText: 'Legg til vinduer, dører, stikkontakter eller andre rektangulære områder som skal være uten flis.', candidatesTitle: 'Alternative layouter', candidatesText: 'Sammenlign de foreslåtte alternativene. En litt mindre effektiv plan kan ha tryggere kantkutt eller færre ulike størrelser.', templatesTitle: 'Kappmaler', templatesText: 'For alle kappede deler åpner du kappmalen fra kapplisten. Mål og instruksjoner er tekst rundt diagrammet og kan markeres.',
@@ -305,7 +305,7 @@ Object.assign(locale.ui, {
   turned90: 'rotert 90°', hatchingWaste: 'Skravering viser svinn. Et stiplet omriss markerer en del som er rotert 90° for å få plass.', part: 'Del', sheet: 'Plate', atXY: 'Ved x, y', turned: 'Rotert', area: 'Areal', sheetLayoutDiagram: 'Platelayoutdiagram', sheetLayout: 'PLATELAYOUT', sheetDiagramAlt: 'Platelayoutdiagram: alle plater med delene plassert',
    pricePerMetre: 'Pris per meter · {{currency}}', stockPrice: 'Pris / m', pricingOptions: 'Prisalternativer', stockPricingOptional: 'Priser er valgfrie. Legg til én for hver lagerlengde for å sammenligne kostnader eller optimalisere for lavest kostnad.', pricesProgress: '{{priced}} av {{total}} lagerpriser lagt til', uniformPrice: 'Samme pris for alt råmateriale ({{currency}} / m)', onePriceAll: 'Samme pris for alle lengder', allStock: 'Alt råmateriale', appliesTo: 'Gjelder', uniform: 'Lik', priceAria: 'Lik pris per meter i {{currency}}', priceLengthAria: 'Pris per meter i {{currency}} for lengden {{length}} mm', addStockToPrice: 'Legg til lagerlengder på delsteget for å prise dem', addStockPrices: 'Legg til råmaterialpriser', pricesAndCost: 'Priser og kostnadsoptimalisering', lowestCostNeedsPrices: 'Legg til en pris for hver lagerlengde for å optimalisere for lavest kostnad.', perBoard: 'Per bord',
   whatChase: 'Hva skal planen optimalisere?', leastWaste: 'Minst svinn', leastWasteHint: 'Færrest millimeter som kastes', leastMoney: 'Lavest kostnad', leastMoneyHint: 'Billigere råmateriale selv om mer restbit blir igjen', pricing: 'Prissetter planen', changedPrices: 'Prisene er endret siden forrige beregning. Beløpene nedenfor bruker fortsatt de gamle prisene. Bruk endringene for å beregne på nytt.', whatCosts: 'Hva planen koster', allFigures: 'Alle beløp i {{currency}}', ownPrices: 'Kostnadene bygger på dine priser og råmaterialet planen krever. Planqer henter ingen leverandørpriser.', inOffcut: 'I restbiten', perMetreParts: 'Per meter deler', chasing: 'Optimaliserer for', changedSince: 'Hva som endret seg siden forrige kjøring', figure: 'Verdi', diagramRedrawn: 'En endring i bord eller restbit gjorde at kapplanens diagram ovenfor ble tegnet på nytt.', buy: 'Dette kjøper du', noPrices: 'Planen på skjermen har ingen priser ennå. Prislegg den så vises kostnaden her.', unchanged: 'uendret',
-  fullTile: 'Hel flis', noCutNeeded: 'Ingen kapping nødvendig', sliver: 'smal bit', sliverCount: '{{count}} smale biter', diagonalOpening: 'Diagonal, kappet rundt en åpning', diagonal: 'Diagonal', viewCut: 'Vis kutt {{label}}', openingDiagram: 'Kapp rundt en åpning – se diagrammet', straightCut: 'Rett kutt', cutTemplate: 'KAPPMAL {{label}}', cutTemplateAria: 'Kappmal {{label}}', howToCut: 'Slik kapper du:', cutInstructions: 'Behold det lyse området. Det skraverte grå området er svinn. Den oransje linjen viser hvor du skal kappe.', kind: 'Type', fromOffcut: 'Fra restbit', pieceMeta: 'Del {{label}} – {{width}}×{{height}} mm flis', finalSize: 'Ferdig størrelse: {{width}}×{{height}} mm', edges: 'Kanter',
+  fullTile: 'Hel flis', noCutNeeded: 'Ingen kapping nødvendig', sliver: 'smal bit', sliverCount: '{{count}} smale biter', diagonalOpening: 'Diagonal, kappet rundt en åpning', diagonal: 'Diagonal', viewCut: 'Vis kutt {{label}}', openingDiagram: 'Kapp rundt en åpning – se diagrammet', straightCut: 'Rett kutt', cutTemplate: 'KAPPMAL {{label}}', cutTemplateAria: 'Kappmal for del {{label}}', howToCut: 'Slik kapper du:', cutInstructions: 'Behold det lyse området. Det skraverte grå området er svinn. Den oransje linjen viser hvor du skal kappe.', kind: 'Type', fromOffcut: 'Fra restbit', pieceMeta: 'Del {{label}} – {{width}}×{{height}} mm flis', finalSize: 'Ferdig størrelse: {{width}}×{{height}} mm', edges: 'Kanter',
    tilesToBuy: 'fliser å kjøpe', tightestCut: 'Smaleste kappede bit', noneCut: 'Ingen kappede biter', distinctCutSizes: 'Ulike kappmål', pricesComplete: 'Alle {{total}} lagerpriser lagt til',
   changeSurface: 'Endre overflaten', saveLayout: 'Lagre layout', saveLayoutButton: 'Lagre layout', updateLayout: 'Oppdater layout',
   tilesAroundOpening: 'Fliser kappet rundt en åpning', offcutsReused: 'Gjenbrukte restbiter', sliversBelow: 'Biter under minstebredden', materialUsed: 'Brukt materiale', offcutExplanation: 'I restbiten viser kostnaden for materialet som blir igjen etter kappingen. Per meter deler er den totale materialkostnaden delt på den samlede lengden av de ferdige delene.',
@@ -316,7 +316,7 @@ Object.assign(locale.workflow, {
 });
 
 Object.assign(locale.auditUi, { sheetThicknessRequired: 'Skriv inn platetykkelsen før du planlegger' });
-Object.assign(locale.ui, { waste: 'Svinn', strategy: 'Strategi' });
+Object.assign(locale.ui, { waste: 'Svinn', strategy: 'Strategi', reusedCount: '{{reused}} av {{count}}' });
 Object.assign(locale.ui, {
   updatePlanTitle: 'Oppdater lagret plan',
   updatePlanConfirm: 'Dette erstatter det lagrede resultatet for "{{name}}". Vil du fortsette?',
@@ -366,7 +366,7 @@ Object.assign(locale.modelUi, {
   sheetPricingNone: "Ingen pris oppgitt. Platene planlegges uten kostnad. Pris er valgfritt.",
   applyAllBoards: "Bruk på alle bordgrupper",
   applyAllSheets: "Bruk på alle plategrupper",
-  appliedBoards: "Lager, sagspor og priser er kopiert til alle bordgrupper.",
+  appliedBoards: "Materiallengder, sagspor og priser er kopiert til alle bordgrupper.",
   appliedSheets: "Platemål, sagspor og pris er kopiert til alle plategrupper.",
   openProject: "Åpne prosjektet",
 });
@@ -376,7 +376,7 @@ Object.assign(locale, {
     product: "Produkt",
     searchPlaceholder: "Søk på navn eller mål, f.eks. «reisverk 45x45»", sheetSearchPlaceholder: "Søk på navn eller tykkelse, f.eks. «plywood 15»", searchPlaceholderOwn: "Skriv produktet ditt, f.eks. «Furu 45x95»", sheetSearchPlaceholderOwn: "Skriv platematerialet ditt, f.eks. «Bjørkekryssfiner»",
     results: "Matchende produkter",
-    noResults: "Ingen matchende produkt. Du kan likevel bruke egne ord.",
+    noResults: "Ingen produkter samsvarer med søket. Du kan likevel bruke egne ord.",
     useAsOwn: "Bruk «{{text}}» som eget produkt",
     anySize: "valgfritt mål",
     size: "Størrelse",
@@ -400,7 +400,7 @@ Object.assign(locale, {
     standardLengths: "Standardlengder: {{lengths}} mm.",
     useLengths: "Bruk disse lengdene",
     stockedUpTo: "Lagerføres normalt opp til {{max}} mm.",
-    standardSheets: "Standardformat:",
+    standardSheets: "Standardformater:",
     dimensionsRequired: "Oppgi tykkelse og bredde på bordet før du planlegger",
     chooseProductFor: "Produkt for {{name}}",
   },
@@ -429,8 +429,8 @@ Object.assign(locale, {
     suggest: "Foreslå til Planqer",
     empty: "Ingen produkter samsvarer.",
     narrow: "Viser de første 200 treffene. Snevre inn søket for å se flere.",
-    deleteConfirm: "Slette {{name}} fra denne instansens katalog? Lagrede planer beholder sin egen kopi.", deleteConfirm_demo: "Slette {{name}} fra katalogen din? Lagrede planer beholder sin egen kopi.",
-    revertConfirm: "Tilbakestille {{name}} til innebygde data og vise den igjen?",
+    deleteConfirm: "Slett {{name}} fra denne instansens katalog? Lagrede planer beholder sin egen kopi.", deleteConfirm_demo: "Slett {{name}} fra katalogen din? Lagrede planer beholder sin egen kopi.",
+    revertConfirm: "Tilbakestill {{name}} til innebygde data og vise den igjen?",
     addTitle: "Legg til produkt",
     editTitle: "Rediger produkt",
     kind: "Materialtype",
@@ -485,7 +485,7 @@ Object.assign(locale, {
     kindCustom: "Egendefinert",
     separateRunsAria: "{{from}} og {{to}}: separate veggrekker",
     noCornerBetween: "Ikke noe hjørne mellom {{from}} og {{to}}: separate veggrekker.",
-    cornerOutside: "Yttehjørne",
+    cornerOutside: "Ytterhjørne",
     cornerInside: "Innerhjørne",
     actionWraps: "Siste bane går videre på {{to}}",
     actionOverlap: "Siste bane går {{mm}} mm rundt hjørnet · ny bane på {{to}} overlapper den",
@@ -607,11 +607,11 @@ Object.assign(locale, {
     spareMarginHelp: "Ekstra ruller som legges til det du kjøper, rundet opp. Standardverdien din settes under fanen Standardverdier.",
     hasRepeat: "Denne tapeten har et repeterende mønster",
     repeatMm: "Rapport (mønsterhøyde, mm)",
-    match: "Matching",
+    match: "Mønstertilpasning",
     matchStraight: "Rett rapport",
     matchHalfDrop: "Forskjøvet rapport",
     roomLede: "Still deg i døråpningen og se inn i rommet. Begynn med veggen til venstre for deg, og gå deretter med klokken. Mål åpningene på hver vegg fra nederste venstre hjørne når du står vendt mot den.",
-    roomNote: "Veggene får bokstaver med klokken (Vegg A, B, C …) som på en tegning. Gi dem gjerne navn etter hva som er på dem, for eksempel «Vindusvegg». Tapetsere begynner vanligvis på den mest synlige veggen og avslutter i det minst synlige hjørnet. En vegg uten tapet, for eksempel en åpen passasje, trenger fortsatt bredden sin slik at rommet lukkes.",
+    roomNote: "Veggene får bokstaver med klokken (Vegg A, B, C …) som på en tegning. Gi dem gjerne navn etter hva som er på dem, for eksempel «Vindusvegg». Tapetsering begynner vanligvis på den mest synlige veggen og avslutter i det minst synlige hjørnet. En vegg uten tapet, for eksempel en åpen passasje, trenger fortsatt bredden sin slik at rommet lukkes.",
     wallNameLabel: "Veggnavn",
     removeWall: "Fjern vegg",
     removeWallAria: "Fjern {{name}}",
@@ -639,7 +639,7 @@ Object.assign(locale, {
     hangingDecision: "Valg for oppheng",
     confirmDecision: "Bekreft et valg",
     optOverlap: "Overlapp {{mm}} mm i hjørnet (anbefalt)",
-    optStartNewInside: "Start en ny bane etter dette hjørnet (kantskjøt, ingen overlapp)",
+    optStartNewInside: "Start en ny bane etter dette hjørnet (støtskjøt, ingen overlapp)",
     optStartNewOutside: "Start en ny bane etter dette hjørnet",
     optContinueInside: "Før siste bane videre rundt hjørnet",
     optWrapOutside: "Før siste bane rundt hjørnet",
@@ -702,7 +702,7 @@ Object.assign(locale, {
     startPartly: "{{full}} av {{runs}} veggstrekninger begynner med en hel bane.",
     startNone: "Ingen veggstrekning begynner med en hel bane.",
     startFallbackNarrow: "{{wall}}: en hel bane først ville gitt en bit under {{min}} mm, så første og siste bane gjøres like brede i stedet.",
-    startFallbackSaves: "{{wall}}: en annen start går med mindre tapet.",
+    startFallbackSaves: "{{wall}}: en annen start bruker mindre tapet.",
     startExtraRolls_one: "Hvis hver veggstrekning begynner med en hel bane, trengs {{count}} rull til.",
     startExtraRolls_other: "Hvis hver veggstrekning begynner med en hel bane, trengs {{count}} ruller til.",
     startSavesRolls_one: "En annen start går med {{count}} rull mindre.",
@@ -773,8 +773,8 @@ Object.assign(locale, {
     change: "Endre",
     done: "Ferdig",
     goTo: "Gå til {{name}}",
-    toFill_one: "{{count}} igjen å fylle ut",
-    toFill_other: "{{count}} igjen å fylle ut",
+    toFill_one: "{{count}} felt gjenstår",
+    toFill_other: "{{count}} felt gjenstår",
     fillRequired: "Fyll ut {{fields}} for å fortsette.",
   },
   boardUi: {
@@ -872,5 +872,29 @@ Object.assign(locale, {
     },
   },
 });
+
+Object.assign(locale.wallpaperUi, {
+  backendRollTooShort: "Rullen er kortere enn det høyeste stykket på {{wall}}.",
+  backendRepeatTooLong: "Tapetets rapport kan ikke være lengre enn rullen.",
+  backendCutoutOutside: "En åpning ligger utenfor {{wall}}.",
+  backendCutoutNearEdge: "En åpning på {{wall}} ligger mindre enn 10 mm fra veggkanten.",
+  backendCutoutsOverlap: "Åpninger uten gruppering overlapper på {{wall}}.",
+  backendOppositeWalls: "Motstående vegger avviker med mer enn 20 mm.",
+  backendInvalidRollLength: "Rullelengden må være større enn 0.",
+  backendPieceCannotFit: "Stykke {{piece}} får ikke plass på en rull.",
+  backendInvalidRollWidth: "Rullbredden må være større enn 0.",
+  backendInvalidFirstStripWidth: "Bredden på den første banen må være større enn 0 og ikke bredere enn rullen.",
+  backendSeamOutsideBefore: "En skjøt faller på ytterhjørnet før {{wall}}.",
+  backendSeamOutsideAfter: "En skjøt faller på ytterhjørnet etter {{wall}}.",
+  backendInsufficientCornerWrap: "Bane {{strip}} har ikke nok materiale til å føres {{mm}} mm rundt hjørnet etter {{wall}}.",
+  backendStripBelowMinimum: "Bane {{strip}} er {{mm}} mm bred på {{wall}}, under minstebredden på {{min}} mm.",
+  backendCornerStripBelowMinimum: "Bane {{strip}} etterlater bare {{mm}} mm på {{wall}} ved et hjørne, under minstebredden på {{min}} mm. Ingen bredde på første bane unngår dette; vurder å starte en ny bane i hjørnet.",
+  backendStartNewStrip: "Start en ny bane i hjørnet mellom {{from}} og {{to}}.",
+  backendPositionOutside: "Posisjonen må være innenfor veggens omriss.",
+  backendStripOutside: "Banen må være innenfor veggens omriss.",
+  backendClosureTurns: "Hjørnene danner ikke en full sirkel, så veggene kan ikke danne et lukket rom. Kontroller inner- og ytterhjørnene.",
+  backendClosureGap: "Veggene etterlater en åpning på {{gap}} mm der siste vegg skal møte den første. Kontroller veggmålene før du bestiller.",
+});
+
 
 export default locale;
