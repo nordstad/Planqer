@@ -527,7 +527,12 @@ class StepModel:
                 # Four points is the fewest that can bound a volume; fewer means
                 # construction geometry, not a part.
                 if len(cloud) < 4:
-                    warnings.append({"name": self._product_name.get(product, f"Part {index}"), "reason": "too_few_points"})
+                    warnings.append(
+                        {
+                            "name": self._product_name.get(product, f"Part {index}"),
+                            "reason": "too_few_points",
+                        }
+                    )
                     continue
                 extents = sorted(
                     (max(p[axis] for p in cloud) - min(p[axis] for p in cloud)) * scale
@@ -535,7 +540,12 @@ class StepModel:
                 )
                 thickness, width, length = extents
                 if thickness <= 0:
-                    warnings.append({"name": self._product_name.get(product, f"Part {index}"), "reason": "zero_thickness"})
+                    warnings.append(
+                        {
+                            "name": self._product_name.get(product, f"Part {index}"),
+                            "reason": "zero_thickness",
+                        }
+                    )
                     continue
                 found.append(
                     StepBody(
@@ -577,10 +587,16 @@ def read_step_file(path: str, fallback_scale: float = 1.0) -> list[StepBody]:
     return bodies
 
 
-def read_step_file_with_warnings(path: str, fallback_scale: float = 1.0) -> tuple[list[StepBody], list[dict[str, str]]]:
+def read_step_file_with_warnings(
+    path: str, fallback_scale: float = 1.0
+) -> tuple[list[StepBody], list[dict[str, str]]]:
     with open(path, encoding="utf-8", errors="replace") as handle:
         text = handle.read()
-    bodies, warnings = StepModel(text, fallback_scale=fallback_scale).bodies_with_warnings()
+    bodies, warnings = StepModel(
+        text, fallback_scale=fallback_scale
+    ).bodies_with_warnings()
     if not bodies:
-        raise StepParseError("No solid bodies found in this STEP file. Planqer measures solids; a file holding only surfaces, sketches or wireframe has nothing to cut.")
+        raise StepParseError(
+            "No solid bodies found in this STEP file. Planqer measures solids; a file holding only surfaces, sketches or wireframe has nothing to cut."
+        )
     return bodies, warnings

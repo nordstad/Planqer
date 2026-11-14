@@ -42,7 +42,7 @@ accounts and saved projects.
 
 - `PLANQER_VERSION`: defaults to `latest` in
   `docker-compose.release.yml`. Selects the release image tag to pull from
-  GitHub Container Registry. Pin it (e.g. `0.12.0`) for reproducible installs.
+  GitHub Container Registry. Pin it (e.g. `0.13.0`) for reproducible installs.
 - `SECRET_KEY`: optional explicit signing key for login sessions. When omitted,
   Planqer generates a cryptographically random key and persists it at
   `data/.secret_key` inside the persistent backend data volume. The generated
@@ -87,9 +87,9 @@ accounts and saved projects.
   25 %); existing accounts keep their own. See
   [Product catalogue](#product-catalogue).
 
-Other backend limits (rate limits, token expiry) live in `backend/config.yaml`,
-not environment variables. Board and part lengths are limited to 15 000 mm and
-sheet sides to 10 000 mm in code.
+Other backend settings such as token expiry live in `backend/config.yaml`, not
+environment variables. Rate limits are set in code. Board and part lengths are
+limited to 15 000 mm and sheet sides to 10 000 mm in code.
 
 ## Product catalogue
 
@@ -166,7 +166,7 @@ docker compose --profile mcp up -d
 
 ```bash
 # Backend
-PLANQER_VERSION=0.12.0
+PLANQER_VERSION=0.13.0
 # Optional when using a single backend with the persistent data volume.
 SECRET_KEY=<random-32-byte-hex>
 PLANQER_SETUP_SECRET=<random-32-byte-hex>

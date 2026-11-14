@@ -212,9 +212,9 @@ until you plan them again.
 
 From a project's dashboard page, select **Open plan** on a wallpaper plan to
 read the same document later on any screen. Use **Print** for a paper copy, or
-open the **More actions** menu to modify the saved inputs. The plan remains
-read-only until you choose Modify; saving the changed inputs replaces its
-result.
+**Modify** (also in the **More actions** menu) to change the saved inputs.
+The plan remains read-only until you choose Modify; saving the changed inputs
+replaces its result.
 
 For paste, trimming technique, electrical safety and product-specific handling,
 follow the manufacturer guide saved with the wallpaper. Do not rely on Planqer

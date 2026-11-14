@@ -28,6 +28,8 @@ storage.
 - **Norway & Sweden**: The built-in product catalogue covers Norway and
   Sweden, and the interface is available in English, Norwegian and Swedish.
   Need another country or language? [Open an issue](https://github.com/nordstad/Planqer/issues/new/choose).
+- **Metric units only**: All measurements are in millimetres. There is no
+  imperial (inch/foot) support and no plans to add it at this time.
 - **Self-Hosted & Private**: Local accounts and data stay entirely on your
   server. Self-hosted Planqer contains no analytics. Only the public demo and
   docs site use anonymous, cookie-free usage counting; see the
@@ -44,7 +46,7 @@ storage.
 <tr>
 <td width="16%"><a href="docs/assets/screenshots/board-cutting-result.png"><img src="docs/assets/screenshots/board-cutting-result.png" alt="Board cutting result"></a><br><sub>Board cutting</sub></td>
 <td width="16%"><a href="docs/assets/screenshots/sheet-cutting-result.png"><img src="docs/assets/screenshots/sheet-cutting-result.png" alt="Sheet cutting result"></a><br><sub>Sheet cutting</sub></td>
-<td width="16%"><a href="docs/assets/screenshots/tile-layout.png"><img src="docs/assets/screenshots/tile-layout.png" alt="Tile layout surface setup"></a><br><sub>Tile layout</sub></td>
+<td width="16%"><a href="docs/assets/screenshots/tile-layout.png"><img src="docs/assets/screenshots/tile-layout.png" alt="Tile layout candidates"></a><br><sub>Tile layout</sub></td>
 <td width="16%"><a href="docs/assets/screenshots/wallpaper-plan.png"><img src="docs/assets/screenshots/wallpaper-plan.png" alt="Wallpaper plan"></a><br><sub>Wallpaper</sub></td>
 <td width="16%"><a href="docs/assets/screenshots/model-cutlist.png"><img src="docs/assets/screenshots/model-cutlist.png" alt="3D model upload"></a><br><sub>3D model → cutlist</sub></td>
 <td width="16%"><a href="docs/assets/screenshots/dashboard.png"><img src="docs/assets/screenshots/dashboard.png" alt="Project dashboard"></a><br><sub>Saved projects</sub></td>
@@ -204,7 +206,7 @@ template with every option is [`.env.example`](.env.example); see
 #### Upgrading
 
 Back up first, then pull and recreate in the same folder. To pin a version, set
-`PLANQER_VERSION` in `.env` (for example `PLANQER_VERSION=0.12.0`):
+`PLANQER_VERSION` in `.env` (for example `PLANQER_VERSION=0.13.0`):
 
 ```bash
 docker compose -f docker-compose.release.yml exec backend planqer backup

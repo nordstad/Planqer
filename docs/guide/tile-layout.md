@@ -40,15 +40,15 @@ not use it.
 
 ### Sliver guard and breakage
 
-- **Sliver threshold** flags cut pieces narrower than the supplied width. Leave
-  it empty to disable the guard.
+- **Minimum edge piece width** flags cut pieces narrower than the supplied
+  width. Leave it empty to disable the guard.
 - **Breakage allowance** adds a percentage to the number of tiles to purchase.
 - **Candidates to show** controls how many ranked layout options are returned.
 - **Reuse offcuts** allows suitable leftover pieces to fill later cut positions.
 
 ## Running the plan
 
-Click **Find the layout** to generate candidates. Each result includes tile
+Click **Calculate layout** to generate candidates. Each result includes tile
 purchase counts, full/cut/notched/reused-offcut/sliver counts, edge-cut sizes,
 symmetry, distinct cut sizes, coverage, waste, efficiency, and a scaled layout
 diagram.
@@ -81,8 +81,9 @@ and all lengths are whole millimetres that add up to the tile's size.
 ## Saving a plan
 
 Name and save a selected layout to keep its inputs, chosen candidate, and
-diagram on your instance. Saving requires a signed-in local account. Running
-the optimizer itself does not require an account.
+diagram on your instance. The tile layout page requires a signed-in local account
+(the simple install has no sign-in); the `POST /api/tile-layout` endpoint can
+be called without one.
 
 ## API
 

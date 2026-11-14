@@ -57,7 +57,9 @@ def build_3d_cutlist_response(items, parts, warnings, *, project_name, units, st
     )
 
 
-def build_step_cutlist_response(items, parts, warnings, *, project_name, units, started):
+def build_step_cutlist_response(
+    items, parts, warnings, *, project_name, units, started
+):
     def make(i):
         return StepCutListItemResponse(
             type=i.type.value,

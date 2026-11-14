@@ -20,8 +20,7 @@ A country's catalogue is data you can help build, see
 - Signed-in users also store the choice in `user_settings.preferred_language`.
 - The navigation selector changes language immediately.
 - The Defaults selector applies its staged choice when settings are saved.
-- Language names are shown in their native form: English, Svenska, Norsk
-  bokmal.
+- Language names are shown in their native form: English, Svenska, Norsk.
 - Number and date formatting follows the selected locale. Measurements remain
   in millimetres.
 - Existing saved SVG diagrams keep the language used when they were generated.

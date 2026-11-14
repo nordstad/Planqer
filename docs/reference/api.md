@@ -12,9 +12,9 @@ deployed.
 | Health check | <http://localhost:8002/health> | Lightweight service readiness check. |
 
 When requests go through the frontend or the bundled reverse proxy, application
-API calls use the `/api` prefix. Direct backend-only endpoints such as
-`/health`, `/metrics`, `/docs`, `/redoc`, and `/openapi.json` are served from
-the backend root.
+API calls use the `/api` prefix. The backend serves the whole API both under
+`/api` and at its root, so direct URLs such as `/health` and `/api/health`, or
+`/docs` and `/api/docs`, both work.
 
 For the recommended release install, start the stack with:
 
@@ -174,5 +174,6 @@ not needed for normal self-hosted use.
 ## Limits
 
 - Part/board length: up to 15 000 mm. Sheet width and height: up to 10 000 mm.
-- Up to 1000 parts per request, 1000 quantity per part.
+- Board cutting: up to 1000 different part lengths, 10 000 of each, and 5000
+  parts in total. Sheet cutting: up to 1000 parts in total, 1000 of each.
 - Rate limits are per-endpoint (noted above) and apply per client IP.

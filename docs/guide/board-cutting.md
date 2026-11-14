@@ -10,7 +10,7 @@ dimension. Route: `/cutting`.
 | Field | What it means |
 | --- | --- |
 | **Required parts** | Every length you need, and how many of each, in millimetres. |
-| **Saw blade (kerf)** | The material each cut turns into dust. Every result subtracts it. |
+| **Cut width (kerf)** | The material each cut turns into dust. Every result subtracts it. |
 | **Stock available** | The lengths your supplier actually sells — not what you need. |
 | **Product** | Optional. What you are buying: search the catalogue by name or size (`regel 45x95`), or type your own words. See [Choosing a product](#choosing-a-product). |
 
@@ -59,13 +59,13 @@ again later from any browser signed into the same instance.
 
 ## Cost analysis
 
-Expand **Cost analysis** on the result page to price your stock (per length
-or per metre) and see the total cost of the plan, including bulk pricing
-where it applies.
+Open **Prices & cost optimisation** on the parts step, or again on the result
+page, to price your stock (per length or per metre) and see the total cost of
+the plan, including bulk pricing where it applies.
 
 ## Limits
 
 - Part and board length: up to 15 000 mm.
-- Up to 1000 parts per request, 1000 quantity per part.
+- Up to 1000 different part lengths, 10 000 of each, and 5000 parts in total.
 - Optimization is heuristic, not proven-optimal — a good plan, not a
   guaranteed minimum.

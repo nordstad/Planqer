@@ -161,10 +161,33 @@ latest release tag.
 ## GitHub Release
 
 The tag and the GitHub Release are separate objects. Create the GitHub Release
-after pushing the tag so it appears in the repository's Releases list:
+after pushing the tag so it appears in the repository's Releases list.
+
+Release notes start with a hand-written `## Highlights` summary, followed by the
+generated `## What's Changed` list. Write the highlights for users, not
+maintainers:
+
+- Read the merged pull requests since the previous tag
+  (`gh pr list --state merged --search "merged:>=<previous release date>"`) and
+  group what users will notice under `###` headings named for the benefit, such
+  as "Saved plans open as a page".
+- Under each heading, use short bullets that say what changed and what a user
+  needs to do, if anything. Call out behaviour changes and anything that affects
+  saved data or self-hosted setups.
+- Add a `### Fixes` section for user-visible bug fixes.
+- Finish with one line such as "Dependency updates are included for the backend,
+  frontend and MCP server." Leave routine dependency bumps and internal
+  refactors out of the sections above; they stay in the generated list.
+
+See [v0.12.0](https://github.com/nordstad/Planqer/releases/tag/v0.12.0) for the
+expected shape. Write the highlights to a file and append the generated notes
+below them:
 
 ```bash
-gh release create vX.Y.Z --title "vX.Y.Z" --generate-notes
+gh api repos/nordstad/Planqer/releases/generate-notes \
+  -f tag_name=vX.Y.Z -f previous_tag_name=vP.Q.R --jq .body > generated.md
+cat highlights.md generated.md > notes.md
+gh release create vX.Y.Z --title "vX.Y.Z" --notes-file notes.md
 ```
 
 Verify the release and published image workflow before announcing the release:
