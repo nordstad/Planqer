@@ -63,7 +63,6 @@ const formatDate = (dateString) => {
   return `${yy}-${mm}-${dd}`;
 };
 
-const plural = (n, singular, pluralWord = `${singular}s`) => `${n} ${n === 1 ? singular : pluralWord}`;
 const hasPrintableDocument = (project) => Boolean(project.has_svg_image || project.cutlist_image || (project.projectType === 'wallpaper' && project.plan_result));
 
 // The three saved project shapes don't share a "parts" concept — a tile
@@ -862,7 +861,7 @@ const UserProjectsContent = ({ groupId }) => {
         <section className="unfiled">
           <div className="section-rule" style={{ marginBottom: '10px' }}>
             <h3 className="section-title">{t('projectUi.looseTitle')}</h3>
-            <span className="folio">{plural(loose.length, 'plan')}</span>
+            <span className="folio">{t('projectUi.planCount', { count: loose.length })}</span>
           </div>
           <p className="synthetic" style={{ marginBottom: '16px', maxWidth: 'none' }}>
             {t('projectUi.savedWithoutPicking')}

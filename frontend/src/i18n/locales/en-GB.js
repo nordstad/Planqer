@@ -267,7 +267,7 @@ Object.assign(locale.workflow, {
 });
 
 Object.assign(locale.auditUi, { sheetThicknessRequired: 'Enter the sheet thickness before planning' });
-Object.assign(locale.ui, { tileSummary: '{{count}} tiles to buy · narrowest cut {{cut}} · offcuts reused: {{offcuts}}', waste: 'Waste', strategy: 'Strategy' });
+Object.assign(locale.ui, { tileSummary: '{{count}} tiles to buy · narrowest cut {{cut}} · offcuts reused: {{offcuts}}', waste: 'Waste', strategy: 'Strategy', reusedCount: '{{reused}} of {{count}}' });
 Object.assign(locale.projectUi, {
   projectViews: 'Project views', overview: 'Overview', shoppingList: 'Shopping list', cutDiagrams: 'Cut diagrams',
   shoppingListIntro: 'Everything to buy for this project', shoppingListEmpty: 'There is nothing to buy for this project yet.', diagramViewIntro: 'Open a diagram to inspect it full size. Cut lists appear below tile plans.',
@@ -794,5 +794,29 @@ Object.assign(locale, {
     },
   },
 });
+
+Object.assign(locale.wallpaperUi, {
+  backendRollTooShort: "The roll is shorter than the tallest piece on {{wall}}.",
+  backendRepeatTooLong: "The wallpaper repeat cannot be longer than the roll.",
+  backendCutoutOutside: "An opening is outside {{wall}}.",
+  backendCutoutNearEdge: "An opening on {{wall}} is within 10 mm of a wall edge.",
+  backendCutoutsOverlap: "Ungrouped openings overlap on {{wall}}.",
+  backendOppositeWalls: "Opposite walls differ by more than 20 mm.",
+  backendInvalidRollLength: "Roll length must be greater than 0.",
+  backendPieceCannotFit: "Piece {{piece}} cannot fit on a roll.",
+  backendInvalidRollWidth: "Roll width must be greater than 0.",
+  backendInvalidFirstStripWidth: "The first strip width must be greater than 0 and no wider than the roll.",
+  backendSeamOutsideBefore: "A seam falls on the outside corner before {{wall}}.",
+  backendSeamOutsideAfter: "A seam falls on the outside corner after {{wall}}.",
+  backendInsufficientCornerWrap: "Strip {{strip}} has no room to wrap {{mm}} mm past the corner after {{wall}}.",
+  backendStripBelowMinimum: "Strip {{strip}} is {{mm}} mm wide on {{wall}}, below the {{min}} mm minimum.",
+  backendCornerStripBelowMinimum: "Strip {{strip}} leaves only {{mm}} mm on {{wall}} at a corner, below the {{min}} mm minimum. No first-strip width avoids this; consider starting a new strip at the corner.",
+  backendStartNewStrip: "Start a new strip at the corner between {{from}} and {{to}}.",
+  backendPositionOutside: "The position must be within the wall outline.",
+  backendStripOutside: "The strip must be within the wall outline.",
+  backendClosureTurns: "The corners do not turn through a full circle, so these walls cannot form a closed room. Check the inside and outside corners.",
+  backendClosureGap: "The walls leave a {{gap}} mm gap where the last wall should meet the first. Check the wall measurements before ordering.",
+});
+
 
 export default locale;

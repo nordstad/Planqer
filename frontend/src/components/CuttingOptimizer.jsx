@@ -141,7 +141,7 @@ const CuttingOptimizer = () => {
     setInputErrors({
       boards: validateBoards(debouncedBoards, t),
       sawKerf: !debouncedSawKerf || kerfValue < SAW_KERF_MIN
-        ? "A kerf of zero would plan cuts that lose no material"
+        ? t('modelUi.kerfZero')
         : kerfValue > SAW_KERF_MAX
           ? t('auditUi.kerfWide')
           : "",

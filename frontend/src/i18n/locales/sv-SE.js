@@ -318,7 +318,7 @@ Object.assign(locale.workflow, {
 });
 
 Object.assign(locale.auditUi, { sheetThicknessRequired: 'Ange skivans tjocklek innan du planerar' });
-Object.assign(locale.ui, { waste: 'Spill', strategy: 'Strategi' });
+Object.assign(locale.ui, { waste: 'Spill', strategy: 'Strategi', reusedCount: '{{reused}} av {{count}}' });
 
 Object.assign(locale.ui, {
   updatePlanTitle: 'Uppdatera sparad plan',
@@ -368,7 +368,7 @@ Object.assign(locale.modelUi, {
   sheetPricingNone: "Inget pris angivet. Skivorna planeras utan kostnad. Pris är valfritt.",
   applyAllBoards: "Använd för alla brädgrupper",
   applyAllSheets: "Använd för alla skivgrupper",
-  appliedBoards: "Lager, sågspår och priser har kopierats till alla brädgrupper.",
+  appliedBoards: "Materiallängder, sågspår och priser har kopierats till alla brädgrupper.",
   appliedSheets: "Skivmått, sågspår och pris har kopierats till alla skivgrupper.",
   openProject: "Öppna projektet",
 });
@@ -378,7 +378,7 @@ Object.assign(locale, {
     product: "Produkt",
     searchPlaceholder: "Sök på namn eller mått, t.ex. ”regel 45x95”", sheetSearchPlaceholder: "Sök på namn eller tjocklek, t.ex. ”plywood 15”", searchPlaceholderOwn: "Skriv din produkt, t.ex. ”Furu 45x95”", sheetSearchPlaceholderOwn: "Skriv ditt skivmaterial, t.ex. ”Björkplywood”",
     results: "Matchande produkter",
-    noResults: "Ingen matchande produkt. Du kan ändå skriva egna ord.",
+    noResults: "Inga produkter matchar sökningen. Du kan fortfarande använda egna ord.",
     useAsOwn: "Använd ”{{text}}” som egen produkt",
     anySize: "valfritt mått",
     size: "Storlek",
@@ -432,7 +432,7 @@ Object.assign(locale, {
     empty: "Inga produkter matchar.",
     narrow: "Visar de första 200 träffarna. Förfina sökningen för att se fler.",
     deleteConfirm: "Ta bort {{name}} från den här instansens katalog? Sparade planer behåller sin egen kopia.", deleteConfirm_demo: "Ta bort {{name}} från din katalog? Sparade planer behåller sin egen kopia.",
-    revertConfirm: "Återgå till inbyggd data för {{name}} och visa den igen?",
+    revertConfirm: "Återställ {{name}} till inbyggda data och visa den igen?",
     addTitle: "Lägg till produkt",
     editTitle: "Redigera produkt",
     kind: "Typ av material",
@@ -704,7 +704,7 @@ Object.assign(locale, {
     startPartly: "{{full}} av {{runs}} väggsträckor börjar med en hel våd.",
     startNone: "Ingen väggsträcka börjar med en hel våd.",
     startFallbackNarrow: "{{wall}}: en hel våd först skulle lämna en bit under {{min}} mm, så första och sista vågen görs lika breda i stället.",
-    startFallbackSaves: "{{wall}}: en annan start går åt mindre tapet.",
+    startFallbackSaves: "{{wall}}: en annan start kräver mindre tapet.",
     startExtraRolls_one: "Om varje väggsträcka börjar med en hel våd går det åt {{count}} rulle till.",
     startExtraRolls_other: "Om varje väggsträcka börjar med en hel våd går det åt {{count}} rullar till.",
     startSavesRolls_one: "En annan start går åt {{count}} rulle mindre.",
@@ -775,8 +775,8 @@ Object.assign(locale, {
     change: "Ändra",
     done: "Klar",
     goTo: "Gå till {{name}}",
-    toFill_one: "{{count}} kvar att fylla i",
-    toFill_other: "{{count}} kvar att fylla i",
+    toFill_one: "{{count}} fält återstår att fylla i",
+    toFill_other: "{{count}} fält återstår att fylla i",
     fillRequired: "Fyll i {{fields}} för att fortsätta.",
   },
   boardUi: {
@@ -874,5 +874,29 @@ Object.assign(locale, {
     },
   },
 });
+
+Object.assign(locale.wallpaperUi, {
+  backendRollTooShort: "Rullen är kortare än den högsta biten på {{wall}}.",
+  backendRepeatTooLong: "Tapetens rapport kan inte vara längre än rullen.",
+  backendCutoutOutside: "En öppning ligger utanför {{wall}}.",
+  backendCutoutNearEdge: "En öppning på {{wall}} ligger mindre än 10 mm från väggkanten.",
+  backendCutoutsOverlap: "Ogrupperade öppningar överlappar på {{wall}}.",
+  backendOppositeWalls: "Motstående väggar skiljer sig med mer än 20 mm.",
+  backendInvalidRollLength: "Rulllängden måste vara större än 0.",
+  backendPieceCannotFit: "Biten {{piece}} får inte plats på en rulle.",
+  backendInvalidRollWidth: "Rullbredden måste vara större än 0.",
+  backendInvalidFirstStripWidth: "Bredden på den första våden måste vara större än 0 och inte bredare än rullen.",
+  backendSeamOutsideBefore: "En skarv hamnar på det utvändiga hörnet före {{wall}}.",
+  backendSeamOutsideAfter: "En skarv hamnar på det utvändiga hörnet efter {{wall}}.",
+  backendInsufficientCornerWrap: "Våd {{strip}} har inte tillräckligt med material för att föras {{mm}} mm runt hörnet efter {{wall}}.",
+  backendStripBelowMinimum: "Våd {{strip}} är {{mm}} mm bred på {{wall}}, under minimibredden {{min}} mm.",
+  backendCornerStripBelowMinimum: "Våd {{strip}} lämnar bara {{mm}} mm på {{wall}} vid ett hörn, under minimibredden {{min}} mm. Ingen bredd på den första våden undviker detta; överväg att börja en ny våd vid hörnet.",
+  backendStartNewStrip: "Börja en ny våd vid hörnet mellan {{from}} och {{to}}.",
+  backendPositionOutside: "Positionen måste vara inom väggens kontur.",
+  backendStripOutside: "Våden måste vara inom väggens kontur.",
+  backendClosureTurns: "Hörnen bildar inte en hel cirkel, så väggarna kan inte bilda ett slutet rum. Kontrollera de invändiga och utvändiga hörnen.",
+  backendClosureGap: "Väggarna lämnar en öppning på {{gap}} mm där den sista väggen ska möta den första. Kontrollera väggmåtten innan du beställer.",
+});
+
 
 export default locale;
