@@ -86,13 +86,26 @@ def test_plan_svg_has_no_language_specific_labels():
                 "width_top": 2400,
                 "height_left": 2400,
                 "height_right": 2400,
-                "cutouts": [{"kind": "heat_pump", "x": 100, "y": 100, "width": 500, "height": 300}],
+                "cutouts": [
+                    {
+                        "kind": "heat_pump",
+                        "x": 100,
+                        "y": 100,
+                        "width": 500,
+                        "height": 300,
+                    }
+                ],
             }
         ]
     }
 
-    svg = _decoded(render_plan_svg(room, {"rolls_to_buy": 2, "strips": []}, project_name="Hall"))
+    svg = _decoded(
+        render_plan_svg(room, {"rolls_to_buy": 2, "strips": []}, project_name="Hall")
+    )
 
     assert "2400 × 2400 mm" in svg
     assert ">A<" in svg
-    assert all(text not in svg for text in ("rolls to buy", "width ", "height ", "Origin", "heat pump"))
+    assert all(
+        text not in svg
+        for text in ("rolls to buy", "width ", "height ", "Origin", "heat pump")
+    )

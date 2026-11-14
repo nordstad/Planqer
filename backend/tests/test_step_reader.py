@@ -303,7 +303,9 @@ def test_step_file_reports_a_skipped_degenerate_body():
     products = "\n".join(
         [
             _product(0, "Rail", [_box_corners(1800.0, 95.0, 45.0)]),
-            _product(1, "Broken part", [[(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)]]),
+            _product(
+                1, "Broken part", [[(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)]]
+            ),
         ]
     )
 

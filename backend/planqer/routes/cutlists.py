@@ -42,7 +42,12 @@ async def create_3d_cutlist(
         )
         items, parts, *warnings = result
         return build_3d_cutlist_response(
-            items, parts, warnings[0] if warnings else [], project_name=project_name, units=units, started=started
+            items,
+            parts,
+            warnings[0] if warnings else [],
+            project_name=project_name,
+            units=units,
+            started=started,
         )
     except (HTTPException, PlanqerError):
         raise
@@ -75,7 +80,12 @@ async def create_step_cutlist(
         )
         items, parts, *warnings = result
         return build_step_cutlist_response(
-            items, parts, warnings[0] if warnings else [], project_name=project_name, units=units, started=started
+            items,
+            parts,
+            warnings[0] if warnings else [],
+            project_name=project_name,
+            units=units,
+            started=started,
         )
     except (HTTPException, PlanqerError):
         raise
