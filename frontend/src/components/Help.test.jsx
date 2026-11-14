@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AuthProvider } from '../contexts/AuthContext';
 import HelpPage from './Help';
@@ -20,6 +20,8 @@ describe('HelpPage', () => {
 
     expect(await screen.findByRole('heading', { name: 'Start with the material you have' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Tile layout essentials' })).toBeInTheDocument();
+    expect(screen.getByText('Quick reference for the tools')).toBeInTheDocument();
+    expect(within(screen.getAllByRole('table')[0]).getByRole('link', { name: 'Wallpaper' })).toHaveAttribute('href', '/wallpaper');
     expect(screen.getAllByRole('link', { name: 'Read the full documentation' })).toHaveLength(2);
     expect(screen.getAllByRole('link', { name: 'Read the full documentation' })[0]).toHaveAttribute(
       'href',
