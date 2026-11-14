@@ -154,10 +154,10 @@ grey-cream paper with ink type, rounded cards, and exactly one signal color —
 a warm amber-orange — reserved for the call to action, the one figure that
 matters, and the active state. Where the previous system ("The Trade Catalog")
 proved itself through print density — ruled tables, folio numbers, a die-cut
-tab rail — this system proves itself through a real result: the homepage's
-hero shows one actual solver run (32 parts, 3mm kerf, 10 boards, 458mm waste),
-drawn as literal cut segments, labeled explicitly as a fixed example rather
-than a live call.
+tab rail — this system proves itself through what the tools produce: the
+homepage's hero is one illustration of the materials the tools plan — a
+sheet, boards, tiles, and wallpaper laid out with their cuts — rather than
+marketing copy.
 
 This system was built by replacing the trade-catalog world outright, then
 tuned twice more from direct user feedback: first to strip a "self-hosted
@@ -197,8 +197,9 @@ one red for correction.
 
 - **Signal Amber** (`{colors.accent}` `#a34f18`, night `#e0813a`): The one
   color that means "this is the action or the figure that matters." Fills
-  primary and order buttons, the "cut" emphasis in the homepage headline, the
-  kerf mark in the hero's cut-plan diagram, icon chips on the homepage cards,
+  primary and order buttons, the "Build" emphasis in the homepage headline,
+  the blade that reveals the hero illustration, icon chips on the homepage
+  cards,
   focus rings, `::selection`, and the current nav link's underline. Darkened
   from an earlier, brighter `#c1631f` after a contrast audit found white
   button text failed WCAG AA (4.1:1) against it; `#a34f18` clears 4.5:1+ with
@@ -295,7 +296,7 @@ catalog-plus-trim-edge frame entirely. Content padding is 24px at desk width,
 
 The homepage's lead spread (`.hp-top`) is a named CSS Grid whose areas
 **reorder by breakpoint**, not just reflow: desktop pairs the hero text with
-the cut-plan diagram side by side and puts the four tool cards below both;
+the hero illustration side by side and puts the tool cards below both;
 under 900px the areas become `text` → `cards` → `visual`, so the launcher
 lands right after a short headline instead of being pushed off-screen by the
 diagram. This reorder was added specifically because the first version buried
@@ -369,7 +370,7 @@ glass, glow, or a gradient wash.
 Rounded is the real form language now: `4px` (checkboxes) → `6px` (plate
 bars, `.cell-in-plan`) → `8–10px` (buttons, inputs) → `12px` (`.job-block`,
 `.btn-order`, cut-diagram frame) → `16px` (cards, `.answer-field`, the
-inserted sheet, the homepage's diagram card) → `9999px` (the day/night
+inserted sheet) → `9999px` (the day/night
 switch, radio dots). This is a full reversal of the previous system's
 zero-radius rule; Tailwind's `borderRadius` scale now resolves to real
 values rather than clamping every step to 0.
@@ -616,14 +617,33 @@ When a diagram already labels the cut sequence, do not repeat it in a separate
 text cut-order panel. Keep complementary information, such as the stock to buy,
 but make the diagram the single source for the sequence.
 
-### The Homepage Cut-Plan Diagram
+### The Homepage Illustration
 
-`.hp-visual` / `.hp-plate*` — the homepage's own board-plate rendering,
-distinct from `.plate-*` (used inside the optimizer pages) but drawn from
-the same grammar: rounded plates, amber kerf marks, a 45° hatch for offcut.
-It renders one fixed, real solver output (32 parts → 10 boards, 458mm
-waste, 66mm kerf), labeled "One real plan," never a live call and never
-inflated into round numbers.
+`.hp-visual` — one animated isometric illustration
+(`src/assets/planqer-hero-animated.svg`, transparent, cropped to the
+drawing at 895×490) of the
+materials the tools plan: a plywood sheet, oak boards with a hatched
+offcut, a tile grid with its amber start tile, wallpaper strips off a roll,
+and the cutting plan between them. No card, border, or caption; it fills the
+right-hand column so the drawing's edges line up with the tool card below
+it. It is
+decorative (`aria-hidden`); the headline and tool cards carry the meaning.
+
+**Intentional exception:** this illustration is the only place on the site
+that uses material colours (oak, birch, tile cream, sage) and its own drawn
+amber marks. They belong to the picture, not to the interface, so they do
+not count against the One Accent Rule or the colour palette. Keep any
+replacement illustration honest about what the tools do: organic materials
+are fine, but cuts are straight and parts rectangular.
+
+The SVG carries its own one-time animation: an amber blade sweeps left to
+right, hiding the uncut stock and leaving each material cut into its plan
+(about 2.5s). It is inlined, not loaded as an `<img>`, because an SVG image
+does not see the page's `prefers-reduced-motion`; inlined, its own rule shows
+the finished plans at once. The page only mounts it when it first scrolls
+into view, so the sweep is seen on a phone too, where the illustration sits
+below the cards; the box keeps its aspect ratio until then, so nothing
+shifts.
 
 ### Notices
 

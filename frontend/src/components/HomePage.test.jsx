@@ -19,7 +19,7 @@ describe('HomePage', () => {
         </AuthProvider>
       </MemoryRouter>
     );
-    expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent('Know what to buy');
+    expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent('Plan it. Buy it.');
     expect(screen.getByRole('heading', { name: 'Board cutting' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Sheet cutting' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '3D model' })).toBeInTheDocument();

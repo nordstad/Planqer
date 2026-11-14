@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import CatalogPage from './CatalogPage';
-import { BoardIcon, SheetIcon, CubeIcon, TileIcon, WallpaperIcon, ArrowRight } from './icons';
+import { BoardIcon, SheetIcon, CubeIcon, TileIcon, WallpaperIcon } from './icons';
 import { getHealth, getLatestRelease } from '../utils/api';
 import { isStaticMode } from '../utils/mode';
 import { version as appVersion } from '../../package.json';
+import heroIllustration from '../assets/planqer-hero-animated.svg?raw';
 
 // Compares two dotted version strings, e.g. isNewer('0.2.0', '0.1.0') -> true
 const isNewer = (latest, current) => {
@@ -51,50 +52,39 @@ const TOOLS = [
   },
 ];
 
-/* One real solver run — parts {270:4, 179:8, 90:16, 81:4} on 300/360/500mm
-   stock at 3mm kerf — used verbatim as the hero's proof. Not a live call:
-   an honest, fixed example, not a fabricated metric. */
-const SAMPLE = {
-  boards: 10,
-  parts: 32,
-  waste: 458,
-  kerf: 66,
-};
+/* The materials each tool plans, cut into their plans by a passing blade.
+   The SVG animates itself once when it is added, so it is only mounted when
+   it first scrolls into view; on a phone it sits below the cards. It is
+   inlined rather than an <img> so its prefers-reduced-motion rule applies. */
+const CutPlanPreview = () => {
+  const ref = useRef(null);
+  const [inView, setInView] = useState(false);
 
-const CutPlanPreview = ({ t }) => (
-  <div className="hp-visual">
-    <div className="hp-visual-label">{t('home.samplePlan', { count: SAMPLE.parts })}</div>
-    <div className="hp-plate">
-      <div className="hp-plate-cut" style={{ flex: 270 }}>270</div>
-      <div className="hp-plate-kerf" />
-      <div className="hp-plate-cut" style={{ flex: 179 }}>179</div>
-      <div className="hp-plate-kerf" />
-      <div className="hp-plate-cut hp-plate-waste" style={{ flex: 48 }} />
-    </div>
-    <div className="hp-plate hp-plate-mini">
-      <div className="hp-plate-cut" style={{ flex: 179 }} />
-      <div className="hp-plate-kerf" />
-      <div className="hp-plate-cut" style={{ flex: 179 }} />
-      <div className="hp-plate-kerf" />
-      <div className="hp-plate-cut" style={{ flex: 90 }} />
-      <div className="hp-plate-cut hp-plate-waste" style={{ flex: 48 }} />
-    </div>
-    <div className="hp-plate hp-plate-mini">
-      <div className="hp-plate-cut" style={{ flex: 90 }} />
-      <div className="hp-plate-kerf" />
-      <div className="hp-plate-cut" style={{ flex: 90 }} />
-      <div className="hp-plate-kerf" />
-      <div className="hp-plate-cut" style={{ flex: 90 }} />
-      <div className="hp-plate-kerf" />
-      <div className="hp-plate-cut" style={{ flex: 90 }} />
-      <div className="hp-plate-cut hp-plate-waste" style={{ flex: 14 }} />
-    </div>
-    <div className="hp-visual-more">{t('home.moreBoards', { count: SAMPLE.boards - 3 })}</div>
-    <p className="hp-visual-caption">
-      <b>{t('home.sampleCaptionBoards', { count: SAMPLE.boards })}</b> · {t('home.sampleCaption', { waste: SAMPLE.waste, kerf: SAMPLE.kerf })}
-    </p>
-  </div>
-);
+  useEffect(() => {
+    const node = ref.current;
+    if (typeof IntersectionObserver === 'undefined') {
+      setInView(true);
+      return undefined;
+    }
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setInView(true);
+        observer.disconnect();
+      }
+    }, { threshold: 0.4 });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      className="hp-visual"
+      aria-hidden="true"
+      dangerouslySetInnerHTML={inView ? { __html: heroIllustration } : undefined}
+    />
+  );
+};
 
 const HomePage = () => {
   const { t } = useTranslation();
@@ -117,21 +107,15 @@ const HomePage = () => {
     <div className="hp-top">
       <div className="hp-hero-text">
         <h1 className="hp-h1">
-          {t('home.titleLineOne')}<br />{t('home.titleLineTwo')} <em>{t('home.cut')}</em>.
+          {t('home.titleLineOne')}<br /><em>{t('home.build')}</em> {t('home.titleLineTwo')}
         </h1>
         <p className="hp-lede">
           {t('home.lede')}
         </p>
-        <div className="hp-actions">
-          <Link to="/cutting" className="btn-primary hp-cta">
-            {t('home.planCut')} <ArrowRight size={15} />
-          </Link>
-          <Link to="/model-cutlist" className="hp-alt">{t('home.startFromModel')}</Link>
-        </div>
       </div>
 
       <div className="hp-visual-area">
-         <CutPlanPreview t={t} />
+         <CutPlanPreview />
       </div>
 
       {/* a tape-measure rule dividing the pitch from the launcher — the
