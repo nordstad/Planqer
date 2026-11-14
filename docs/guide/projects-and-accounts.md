@@ -31,7 +31,8 @@ step:
    change the name if you like. The project is made when you press **Save**.
 3. Next time the project you used last is preselected. Choose **New project…**
    to start another job.
-4. Changed your mind? **Move to…** on a plan, or dragging it onto a project on the
+4. Changed your mind? **Move to…** in a plan's **More actions** menu, or
+   dragging it onto a project on the
    dashboard, files it somewhere else.
 
 ## Dashboard
@@ -39,15 +40,20 @@ step:
 Your dashboard (`/dashboard`) lists everything you've saved, optionally
 grouped into projects — so a chair's rails and its seat can live together.
 
-![Dashboard](../assets/screenshots/dashboard.png)
+![Dashboard with one card per project](../assets/screenshots/dashboard.png)
 
 - **Projects** group the plans for one job. Every plan is in one; plans saved before projects were required may still be listed as unfiled.
-- Each saved plan shows its type (board/sheet), part count, the stock/kerf it
+- Each saved plan shows its type (board, sheet, tile or wallpaper), part
+  count, the stock/kerf it
   used, and when it was saved.
-- Download the diagram again as SVG or PNG, or delete the plan.
+- **Open plan** shows a saved plan as a read-only page that you can print.
+  The **More actions** menu on each plan has **Modify**, **Download SVG**,
+  **Download PNG**, **Move to…** and **Delete**.
 - Each plan shows a **Quick**, **Specified** and/or **Priced** badge. They are
   derived from what you saved and never block anything; the link beside them
   opens the plan so you can add a product or prices.
+
+![A project with its what-to-buy table and plans, each with Open plan, Print and a More actions menu](../assets/screenshots/dashboard-project.png)
 
 ## Shopping list
 
@@ -62,7 +68,7 @@ product, details, dimensions and stock size) across all its plans.
 - Prices come from the plans themselves. Totals show currency and VAT basis.
   If two plans price the same item differently, the row is flagged and left out
   of the total.
-- **Print shopping list**, **Print project** and **CSV** use the same list as
+- **What to buy**, **Print project** and **CSV** use the same list as
   the screen.
 
 ## Admin panel

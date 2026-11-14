@@ -94,7 +94,8 @@ mkdocs serve
 - Write backend tests as Pytest functions, not classes.
 - Don't import `Dict`, `List`, `Tuple` from `typing` — use the built-in
   `dict`, `list`, `tuple` generics instead.
-- Millimetres only; no imperial units.
+- Millimetres only; no imperial units. There are no plans to add imperial
+  support at this time.
 
 ## Workflow
 

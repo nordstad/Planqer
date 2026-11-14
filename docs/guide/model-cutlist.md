@@ -33,7 +33,8 @@ is used if it has one.
 
 1. Drop or browse to your file and click **Read the model**.
 2. Planqer measures every solid, classifies each as a board-shaped or
-   sheet-shaped part, and groups them into cutlists by size.
+   sheet-shaped part, and groups them into cutlists by size. Any solid it
+   cannot measure is left out, and a warning lists those parts by name.
 3. Review the cutlists. For each one you can rename it, choose a product
    (or leave it empty), and expand the list of lengths or sizes it contains.
    Untick any you don't want. Planqer matches each measured cross-section to the
@@ -74,9 +75,9 @@ is used if it has one.
    each cutlist replaces; untick *Replace the matching plans* to add new
    plans instead.
 
-!!! note "Uploading doesn't need an account"
-    Reading and extracting a model works without signing in. Planning and
-    saving the resulting cutlist does.
+!!! note "Uploading needs an account"
+    Reading a model, like planning and saving the resulting cutlist, requires a
+    local account. The simple install has no sign-in.
 
 ## Previewing the model
 
@@ -105,7 +106,7 @@ row. Within a cutlist, every distinct length gets its own shade of that colour,
 longest darkest, so identical parts match and different lengths are easy to
 tell apart.
 
-![Parts lineup with one length highlighted](../assets/screenshots/model-parts-lineup.png)
+![Parts lineup of the measured parts, with the cutlists found and the parts that could not be measured](../assets/screenshots/model-parts-lineup.png)
 
 - Point at, or tab to, a cutlist row to highlight its parts. The others fade.
 - Open **Show lengths** on a cutlist to see a swatch beside each length. Point

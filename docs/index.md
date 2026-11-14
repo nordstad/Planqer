@@ -99,7 +99,7 @@ nothing to install. It is the light version; see
 | **Offcut / waste** | What's left after parts and blade width. |
 | **Cost** | Optional: price per stock length, totalled for the plan. |
 | **Projects** | Saved on your own instance, under your own account. |
-| **Units** | Millimetres throughout. No imperial support. |
+| **Units** | Metric only (millimetres). No imperial; none planned. |
 
 ## Project links
 
