@@ -26,7 +26,7 @@ def validate_cutlist_options(units, precision):
         )
 
 
-def build_3d_cutlist_response(items, parts, *, project_name, units, started):
+def build_3d_cutlist_response(items, parts, warnings, *, project_name, units, started):
     def make(item):
         return CutListItemResponse(
             type=item.type.value,
@@ -53,10 +53,11 @@ def build_3d_cutlist_response(items, parts, *, project_name, units, started):
         planqer_parts=parts or None,
         board_count=len(boards),
         sheet_count=len(sheets),
+        warnings=warnings,
     )
 
 
-def build_step_cutlist_response(items, parts, *, project_name, units, started):
+def build_step_cutlist_response(items, parts, warnings, *, project_name, units, started):
     def make(i):
         return StepCutListItemResponse(
             type=i.type.value,
@@ -96,6 +97,7 @@ def build_step_cutlist_response(items, parts, *, project_name, units, started):
             {i.material for i in items if i.material and i.material != "Unknown"}
         ),
         assembly_structure=structure,
+        warnings=warnings,
     )
 
 
@@ -114,11 +116,11 @@ def run_cutlist_3d(
     validate_cutlist_options(units, round_precision)
     project_name = sanitize_project_name(project_name) if project_name else None
     started = time.time()
-    items, parts = process_stl_bytes(
-        data, filename, units, round_precision, project_name
+    items, parts, warnings = process_stl_bytes(
+        data, filename, units, round_precision, project_name, include_warnings=True
     )
     return build_3d_cutlist_response(
-        items, parts, project_name=project_name, units=units, started=started
+        items, parts, warnings, project_name=project_name, units=units, started=started
     )
 
 
@@ -133,9 +135,9 @@ def run_cutlist_step(
     validate_cutlist_options(units, round_precision)
     project_name = sanitize_project_name(project_name) if project_name else None
     started = time.time()
-    items, parts = process_step_bytes(
-        data, filename, units, round_precision, project_name
+    items, parts, warnings = process_step_bytes(
+        data, filename, units, round_precision, project_name, include_warnings=True
     )
     return build_step_cutlist_response(
-        items, parts, project_name=project_name, units=units, started=started
+        items, parts, warnings, project_name=project_name, units=units, started=started
     )

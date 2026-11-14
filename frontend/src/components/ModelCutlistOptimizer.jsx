@@ -93,6 +93,7 @@ const ModelCutlistOptimizer = () => {
   const [dragActive, setDragActive] = useState(false);
   const [reading, setReading] = useState(false);
   const [error, setError] = useState(null);
+  const [warnings, setWarnings] = useState([]);
 
   /* ── 02 · the cutlists found in it ─────────────────────────────────── */
   const [groups, setGroups] = useState([]);
@@ -253,7 +254,8 @@ const ModelCutlistOptimizer = () => {
     setError(null);
     try {
       const isStep = ['.step', '.stp'].includes(extensionOf(file.name));
-      const data = isStep ? await processStepCutlist(file) : await process3DCutlist(file);
+       const data = isStep ? await processStepCutlist(file) : await process3DCutlist(file);
+       setWarnings(data.warnings || []);
       // A catalogue that can't be loaded only costs the suggestions: every
       // cutlist still starts unspecified and can be planned without a product.
       const catalogue = await loadCatalogue().catch(() => null);
@@ -578,7 +580,8 @@ const ModelCutlistOptimizer = () => {
                  {t('ui.cutlistsIntro', { model: modelName })}
               </p>
             </div>
-          </div>
+            </div>
+            {warnings.length > 0 && <p role="alert" className="synthetic">{t('modelUi.skippedParts', { count: warnings.length, names: warnings.map((warning) => warning.name).join(', ') })}</p>}
 
           <Suspense fallback={<p className="synthetic" role="status">{t('modelUi.partsPreviewLoading')}</p>}>
             <ModelPartsPreview

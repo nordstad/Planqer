@@ -1,6 +1,11 @@
 from pydantic import BaseModel
 
 
+class CutlistWarning(BaseModel):
+    name: str
+    reason: str
+
+
 class CutListItemResponse(BaseModel):
     type: str
     length: float
@@ -23,6 +28,7 @@ class ThreeDCutlistResponse(BaseModel):
     planqer_parts: dict[str, int] | None = None
     board_count: int = 0
     sheet_count: int = 0
+    warnings: list[CutlistWarning] = []
 
 
 class StepCutListItemResponse(BaseModel):
@@ -52,3 +58,4 @@ class StepCutlistResponse(BaseModel):
     sheet_count: int = 0
     materials_used: list[str] = []
     assembly_structure: dict = {}
+    warnings: list[CutlistWarning] = []

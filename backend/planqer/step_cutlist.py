@@ -23,7 +23,7 @@ from planqer.step_policy import (
     StepCutListItem,
     measured_bodies_to_cutlist,
 )
-from planqer.step_reader import StepParseError, read_step_file
+from planqer.step_reader import StepParseError, read_step_file, read_step_file_with_warnings
 from planqer.uploads import UploadedFile
 
 logger = logging.getLogger("planqer.step_cutlist")
@@ -76,6 +76,13 @@ class StepProcessor:
         logger.info(f"STEP processing completed: {len(items)} distinct components")
         return items
 
+    def process_step_file_with_warnings(self, file_path: str, project_name: str | None = None):
+        try:
+            bodies, warnings = read_step_file_with_warnings(file_path, fallback_scale=self.unit_scale)
+        except StepParseError as e:
+            raise PlanqerError(status_code=400, detail=str(e)) from e
+        return measured_bodies_to_cutlist(bodies, self.round_precision), warnings
+
     def convert_to_planqer_parts(
         self, cutlist_items: list[StepCutListItem]
     ) -> dict[str, int]:
@@ -107,7 +114,7 @@ def process_step_bytes(
     filename: str | None,
     units: str = "mm",
     round_precision: int = 1,
-    project_name: str | None = None,
+    project_name: str | None = None, include_warnings: bool = False,
 ) -> tuple[list[StepCutListItem], dict[str, int]]:
     """Read the contents of a STEP file into cutlist items and the 1D parts payload.
 
@@ -124,8 +131,9 @@ def process_step_bytes(
             temp_file.flush()
 
         processor = StepProcessor(units=units, round_precision=round_precision)
-        cutlist_items = processor.process_step_file(temp_path, project_name)
-        return cutlist_items, processor.convert_to_planqer_parts(cutlist_items)
+        cutlist_items, warnings = processor.process_step_file_with_warnings(temp_path, project_name)
+        parts = processor.convert_to_planqer_parts(cutlist_items)
+        return (cutlist_items, parts, warnings) if include_warnings else (cutlist_items, parts)
     finally:
         try:
             os.unlink(temp_path)
@@ -137,11 +145,11 @@ async def process_uploaded_step(
     file: UploadedFile,
     units: str = "mm",
     round_precision: int = 1,
-    project_name: str | None = None,
+    project_name: str | None = None, include_warnings: bool = False,
 ) -> tuple[list[StepCutListItem], dict[str, int]]:
     """Read an uploaded STEP file; see `process_step_bytes`."""
     # Reject before reading the body, as the endpoint always has.
     _check_step_upload(file.filename, file.size)
     return process_step_bytes(
-        await file.read(), file.filename, units, round_precision, project_name
+        await file.read(), file.filename, units, round_precision, project_name, include_warnings
     )

@@ -382,6 +382,20 @@ def test_process_stl_bytes_reads_a_board_from_file_contents():
     assert parts == {"1000": 1}
 
 
+def test_process_stl_bytes_reports_skipped_components():
+    import trimesh
+
+    board = trimesh.creation.box(extents=[1000, 95, 45])
+    speck = trimesh.creation.box(extents=[0.2, 0.2, 0.2])
+    data = trimesh.util.concatenate([board, speck]).export(file_type="stl")
+
+    items, parts, warnings = process_stl_bytes(data, "shelf.stl", include_warnings=True)
+
+    assert len(items) == 1
+    assert parts == {"1000": 1}
+    assert warnings == [{"name": "Component 2", "reason": "too_small"}]
+
+
 def test_process_stl_bytes_rejects_a_file_that_is_not_stl():
     with pytest.raises(PlanqerError) as exc_info:
         process_stl_bytes(_box_stl(1000, 95, 45), "shelf.obj")

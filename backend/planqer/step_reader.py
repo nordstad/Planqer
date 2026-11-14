@@ -499,13 +499,14 @@ class StepModel:
                     stack.append(linked)
         return points, solids
 
-    def bodies(self) -> list[StepBody]:
+    def bodies_with_warnings(self) -> tuple[list[StepBody], list[dict[str, str]]]:
         """Every solid body in the file, measured in millimetres."""
         owners = self._shape_representations()
         links = self._representation_links()
         owned = set(owners)
 
         found: list[StepBody] = []
+        warnings: list[dict[str, str]] = []
         for representation, product in owners.items():
             scale = self._scale_for_representation(representation)
             points, solids = self._walk(
@@ -522,16 +523,20 @@ class StepModel:
             cad_id = _unquote(product_params[1]) if len(product_params) > 1 else None
             quantity = self._instance_count(product)
 
-            for cloud in clouds:
+            for index, cloud in enumerate(clouds, start=1):
                 # Four points is the fewest that can bound a volume; fewer means
                 # construction geometry, not a part.
                 if len(cloud) < 4:
+                    warnings.append({"name": self._product_name.get(product, f"Part {index}"), "reason": "too_few_points"})
                     continue
                 extents = sorted(
                     (max(p[axis] for p in cloud) - min(p[axis] for p in cloud)) * scale
                     for axis in (0, 1, 2)
                 )
                 thickness, width, length = extents
+                if thickness <= 0:
+                    warnings.append({"name": self._product_name.get(product, f"Part {index}"), "reason": "zero_thickness"})
+                    continue
                 found.append(
                     StepBody(
                         name=self._product_name.get(product, "Part"),
@@ -545,7 +550,10 @@ class StepModel:
                         cad_id=cad_id,
                     )
                 )
-        return found
+        return found, warnings
+
+    def bodies(self) -> list[StepBody]:
+        return self.bodies_with_warnings()[0]
 
 
 def read_step_file(path: str, fallback_scale: float = 1.0) -> list[StepBody]:
@@ -567,3 +575,12 @@ def read_step_file(path: str, fallback_scale: float = 1.0) -> list[StepBody]:
         )
     logger.info(f"STEP: read {len(bodies)} solid bodies")
     return bodies
+
+
+def read_step_file_with_warnings(path: str, fallback_scale: float = 1.0) -> tuple[list[StepBody], list[dict[str, str]]]:
+    with open(path, encoding="utf-8", errors="replace") as handle:
+        text = handle.read()
+    bodies, warnings = StepModel(text, fallback_scale=fallback_scale).bodies_with_warnings()
+    if not bodies:
+        raise StepParseError("No solid bodies found in this STEP file. Planqer measures solids; a file holding only surfaces, sketches or wireframe has nothing to cut.")
+    return bodies, warnings

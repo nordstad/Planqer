@@ -173,6 +173,9 @@ class STLProcessor:
         self, file_path: str, project_name: str | None = None
     ) -> list[CutListItem]:
         """Process STL file and generate cut list."""
+        return self.process_stl_file_with_warnings(file_path, project_name)[0]
+
+    def process_stl_file_with_warnings(self, file_path: str, project_name: str | None = None):
         try:
             # Load STL file
             mesh = self._load_stl(file_path)
@@ -182,6 +185,7 @@ class STLProcessor:
 
             cutlist_items = []
             component_counts = {}  # Track similar components for quantity counting
+            warnings = []
 
             for i, component in enumerate(components):
                 # Get dimensions
@@ -192,6 +196,7 @@ class STLProcessor:
 
                 # Skip very small components or components with invalid dimensions
                 if max(length, width, thickness) < 1.0:
+                    warnings.append({"name": f"Component {i + 1}", "reason": "too_small"})
                     logger.info(
                         f"Skipping component {i}: too small (max dimension {max(length, width, thickness)})"
                     )
@@ -199,6 +204,7 @@ class STLProcessor:
 
                 # Skip components with zero or near-zero thickness (invalid geometry)
                 if thickness <= 0.5:  # Less than 0.5mm is likely invalid
+                    warnings.append({"name": f"Component {i + 1}", "reason": "zero_thickness"})
                     logger.warning(
                         f"Skipping component {i} with invalid thickness: {thickness}mm"
                     )
@@ -234,7 +240,7 @@ class STLProcessor:
             # Sort by type and size
             cutlist_items.sort(key=lambda x: (x.type.value, -x.length, -x.width))
 
-            return cutlist_items
+            return cutlist_items, warnings
 
         except PlanqerError:
             raise
@@ -275,7 +281,7 @@ def process_stl_bytes(
     filename: str | None,
     units: str = "mm",
     round_precision: int = 1,
-    project_name: str | None = None,
+    project_name: str | None = None, include_warnings: bool = False,
 ) -> tuple[list[CutListItem], dict[str, int]]:
     """
     Process the contents of an STL file and return cutlist items and Planqer
@@ -301,9 +307,13 @@ def process_stl_bytes(
             temp_file.flush()
 
         processor = STLProcessor(units=units, round_precision=round_precision)
-        cutlist_items = processor.process_stl_file(temp_path, project_name)
+        if include_warnings:
+            cutlist_items, warnings = processor.process_stl_file_with_warnings(temp_path, project_name)
+        else:
+            cutlist_items = processor.process_stl_file(temp_path, project_name)
+            warnings = []
         planqer_parts = processor.convert_to_planqer_parts(cutlist_items)
-        return cutlist_items, planqer_parts
+        return (cutlist_items, planqer_parts, warnings) if include_warnings else (cutlist_items, planqer_parts)
     finally:
         try:
             os.unlink(temp_path)
@@ -315,11 +325,11 @@ async def process_uploaded_stl(
     file: UploadedFile,
     units: str = "mm",
     round_precision: int = 1,
-    project_name: str | None = None,
+    project_name: str | None = None, include_warnings: bool = False,
 ) -> tuple[list[CutListItem], dict[str, int]]:
     """Process an uploaded STL file; see `process_stl_bytes`."""
     # Reject before reading the body, as the endpoint always has.
     _check_stl_upload(file.filename, file.size)
     return process_stl_bytes(
-        await file.read(), file.filename, units, round_precision, project_name
+        await file.read(), file.filename, units, round_precision, project_name, include_warnings
     )
