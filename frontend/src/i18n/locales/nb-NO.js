@@ -896,5 +896,6 @@ Object.assign(locale.wallpaperUi, {
   backendClosureGap: "Veggene etterlater en åpning på {{gap}} mm der siste vegg skal møte den første. Kontroller veggmålene før du bestiller.",
 });
 
+Object.assign(locale.modelUi, { skippedParts: 'Disse delene kunne ikke måles og er ikke med i denne listen: {{names}}.' });
 
 export default locale;

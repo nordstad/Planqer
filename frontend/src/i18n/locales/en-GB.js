@@ -818,5 +818,6 @@ Object.assign(locale.wallpaperUi, {
   backendClosureGap: "The walls leave a {{gap}} mm gap where the last wall should meet the first. Check the wall measurements before ordering.",
 });
 
+Object.assign(locale.modelUi, { skippedParts: 'These parts could not be measured and are not in this list: {{names}}.' });
 
 export default locale;

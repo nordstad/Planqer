@@ -156,6 +156,14 @@ beforeEach(() => {
 });
 
 describe('cutlists step', () => {
+  it('identifies parts omitted because they could not be measured', async () => {
+    process3DCutlist.mockResolvedValue({ ...benchModel, warnings: [{ name: 'Component 2', reason: 'too_small' }] });
+
+    await readBench();
+
+    expect(screen.getByRole('alert')).toHaveTextContent('These parts could not be measured and are not in this list: Component 2.');
+  });
+
   it('shows neutral labels and never the word unknown', async () => {
     await readBench();
     // The automatic name is a real, editable value, not a placeholder that looks like one.

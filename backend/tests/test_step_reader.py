@@ -299,6 +299,23 @@ def test_step_file_contents_become_a_cutlist_and_optimizer_payload():
     assert parts == {"1800": 1}
 
 
+def test_step_file_reports_a_skipped_degenerate_body():
+    products = "\n".join(
+        [
+            _product(0, "Rail", [_box_corners(1800.0, 95.0, 45.0)]),
+            _product(1, "Broken part", [[(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)]]),
+        ]
+    )
+
+    items, parts, warnings = process_step_bytes(
+        _step_file(products).encode(), "shelf.step", include_warnings=True
+    )
+
+    assert len(items) == 1
+    assert parts == {"1800": 1}
+    assert warnings == [{"name": "Broken part", "reason": "too_few_points"}]
+
+
 def test_step_contents_with_the_wrong_extension_are_refused():
     products = _product(0, "Long", [_box_corners(1800.0, 95.0, 45.0)])
 

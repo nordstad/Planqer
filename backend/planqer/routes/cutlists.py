@@ -33,14 +33,16 @@ async def create_3d_cutlist(
     project_name = sanitize_project_name(project_name) if project_name else None
     started = time.time()
     try:
-        items, parts = await process_uploaded_stl(
+        result = await process_uploaded_stl(
             file=file,
             units=units,
             round_precision=round_precision,
             project_name=project_name,
+            include_warnings=True,
         )
+        items, parts, *warnings = result
         return build_3d_cutlist_response(
-            items, parts, project_name=project_name, units=units, started=started
+            items, parts, warnings[0] if warnings else [], project_name=project_name, units=units, started=started
         )
     except (HTTPException, PlanqerError):
         raise
@@ -64,14 +66,16 @@ async def create_step_cutlist(
     project_name = sanitize_project_name(project_name) if project_name else None
     started = time.time()
     try:
-        items, parts = await process_uploaded_step(
+        result = await process_uploaded_step(
             file=file,
             units=units,
             round_precision=round_precision,
             project_name=project_name,
+            include_warnings=True,
         )
+        items, parts, *warnings = result
         return build_step_cutlist_response(
-            items, parts, project_name=project_name, units=units, started=started
+            items, parts, warnings[0] if warnings else [], project_name=project_name, units=units, started=started
         )
     except (HTTPException, PlanqerError):
         raise
