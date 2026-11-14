@@ -9,7 +9,9 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
+from starlette.applications import Starlette
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.routing import Mount
 
 from alembic import command as alembic_command
 from planqer import __version__
@@ -98,30 +100,28 @@ def _run_migrations():
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_: Starlette):
     check_single_user_bind()
     await asyncio.to_thread(_run_migrations)
     start_periodic_cleanup()
     yield
 
 
-app = FastAPI(
+api_app = FastAPI(
     title="planqer API",
     description="Optimize board cutting to minimize waste.",
     version=__version__,
-    root_path="/api",
-    lifespan=lifespan,
 )
 
 
-@app.get("/metrics")
+@api_app.get("/metrics")
 async def get_metrics():
     from planqer.metrics import metrics_endpoint
 
     return metrics_endpoint()
 
 
-@app.exception_handler(RateLimitExceeded)
+@api_app.exception_handler(RateLimitExceeded)
 async def custom_rate_limit_exceeded_handler(
     _: Request, exc: RateLimitExceeded
 ) -> JSONResponse:
@@ -137,7 +137,7 @@ async def custom_rate_limit_exceeded_handler(
     )
 
 
-@app.exception_handler(PlanqerError)
+@api_app.exception_handler(PlanqerError)
 async def planqer_error_handler(_: Request, exc: PlanqerError) -> JSONResponse:
     return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
@@ -155,8 +155,8 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         return response
 
 
-app.state.limiter = limiter
-app.add_middleware(SecurityHeadersMiddleware)
+api_app.state.limiter = limiter
+api_app.add_middleware(SecurityHeadersMiddleware)
 default_origins = [
     "http://localhost:3001",
     "http://127.0.0.1:3001",
@@ -168,7 +168,7 @@ allowed_origins = default_origins + [
     for o in os.environ.get("PLANQER_CORS_ORIGINS", "").split(",")
     if o.strip()
 ]
-app.add_middleware(
+api_app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
     # Vite may move to the next available port when the default is occupied.
@@ -201,4 +201,12 @@ for route in (
     system_router,
     task_router,
 ):
-    app.include_router(route)
+    api_app.include_router(route)
+
+# Served under /api (public URLs, scope["root_path"] == "/api") and at the root,
+# so direct backend URLs such as /health and /docs keep working too.
+app = Starlette(
+    routes=[Mount("/api", app=api_app), Mount("/", app=api_app)],
+    lifespan=lifespan,
+)
+app.state.limiter = limiter
