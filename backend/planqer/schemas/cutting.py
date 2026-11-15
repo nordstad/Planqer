@@ -47,6 +47,7 @@ class CostAnalysis(BaseModel):
 
 class PlanqerRequest(BaseModel):
     parts: dict[float, int]
+    part_labels: dict[float, str] = Field(default_factory=dict)
     available_board_lengths: list[float]
     saw_blade_width: float = 3.0
     project_name: str | None = None

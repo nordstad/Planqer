@@ -87,9 +87,10 @@ const PROJECT_KINDS = {
       kind: "board",
       name: record.name,
       saw_blade_width: record.saw_blade_width,
-      optimization_result: given(v, "optimization_result")
-        ? v.optimization_result
-        : record.optimization_result ?? {},
+        optimization_result: given(v, "optimization_result")
+          ? v.optimization_result
+          : record.optimization_result ?? {},
+        parts_data: record.parts_data,
     }),
   },
   sheet: {

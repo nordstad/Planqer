@@ -63,10 +63,10 @@ const STEP_SAVE = 2;
 const DEFAULT_CURRENCY = 'SEK';
 
 const EXAMPLE_PARTS = [
-  { length: "600", quantity: "4", name: "" },
-  { length: "800", quantity: "2", name: "" },
-  { length: "1200", quantity: "4", name: "" },
-  { length: "1800", quantity: "4", name: "" },
+  { length: "600", quantity: "4", name: "Short rails" },
+  { length: "800", quantity: "2", name: "Shelf sides" },
+  { length: "1200", quantity: "4", name: "Long rails" },
+  { length: "1800", quantity: "4", name: "Uprights" },
 ];
 
 const CuttingOptimizer = () => {

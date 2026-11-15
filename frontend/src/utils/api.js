@@ -220,6 +220,12 @@ export const serializeBoardParts = (parts) => {
   return payload;
 };
 
+export const serializeBoardPartLabels = (parts) => normalizeBoardParts(parts).reduce((labels, { length, name }) => {
+  if (!name) return labels;
+  labels[length] = labels[length] ? `${labels[length]} · ${name}` : name;
+  return labels;
+}, {});
+
 export const serializeBoardLengths = (boards) => [
   ...new Set(
     boards
@@ -704,6 +710,7 @@ export const optimizeCutting = async (parts, boards, sawKerf, costData = null) =
 
   const payload = {
     parts: partsPayload,
+    part_labels: serializeBoardPartLabels(parts),
     available_board_lengths: boardLengths,
     saw_blade_width: kerfValue,
   };

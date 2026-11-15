@@ -27,11 +27,13 @@ const BoardPlanDocument = ({ project }) => {
   const { t, i18n } = useTranslation();
   const result = project.optimization_result;
   const boards = result.cut_list || [];
+  const parts = restoreBoardParts(project.parts_data);
   const [boardIndex, setBoardIndex] = useState(0);
   const activeIndex = Math.min(boardIndex, Math.max(boards.length - 1, 0));
 
   return <div className="board-plan-document">
     <PlanSummary title={t('wallpaperUi.summaryTitle')} rows={boardSummaryRows(project, t, i18n.language)} />
+    {parts.length > 0 && <section><div className="section-rule"><h2 className="section-title">{t('workflow.partsToCut')}</h2></div><table className="cat-table board-plan-parts"><thead><tr><th>{t('workflow.name')}</th><th>{t('workflow.lengthMm')}</th><th>{t('workflow.qty')}</th></tr></thead><tbody>{parts.map((part, index) => <tr key={`${part.name}-${part.length}-${index}`}><td>{part.name || '—'}</td><td>{mm(Number(part.length))}</td><td>{part.quantity}</td></tr>)}</tbody></table></section>}
     {result.visualization && <section><div className="section-rule"><h2 className="section-title">{t('ui.cuttingPlan')}</h2></div><img className="board-plan-diagram" src={result.visualization} alt={t('ui.boardDiagramAlt')} /></section>}
     {boards.length > 0 && <section><div className="section-rule"><h2 className="section-title">{t('workflow.boardByBoard')}</h2></div><div className="board-plan-picker" role="tablist">{boards.map((board, index) => <button key={index} type="button" role="tab" aria-selected={index === activeIndex} className={`sheet-plan-thumbnail${index === activeIndex ? ' is-active' : ''}`} onClick={() => setBoardIndex(index)}>{t('workflow.boardNumber', { number: index + 1 })} · {mm(result.board_lengths_used?.[index] || 0)}</button>)}</div><table className="cat-table board-plan-cuts"><thead><tr><th>{t('workflow.cutOrder')}</th><th>{t('ui.lengthMm')}</th></tr></thead><tbody>{(boards[activeIndex] || []).map((length, index) => <tr key={index}><th>{index + 1}</th><td>{mm(Number(length))}</td></tr>)}</tbody></table></section>}
   </div>;

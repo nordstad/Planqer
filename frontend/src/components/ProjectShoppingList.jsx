@@ -16,31 +16,31 @@ const ProjectShoppingList = ({ projects, spareMargin = 10 }) => {
       </div>
        {values.length > 0 ? (
         <>
-          <table className="cat-table project-shopping-table">
-          <thead>
-            <tr>
-              <th>{t('ui.stock')}</th>
-              <th>{t('workflow.sizeMm')}</th>
-               <th>{t('ui.needed')}</th>
-               <th>{t('ui.toBuy')}</th>
-              {pricing.hasPrices && <><th>{t('ui.priceEach')}</th><th>{t('ui.cost')}</th></>}
-            </tr>
-          </thead>
-          <tbody>
-            {values.map((row, index) => (
-              <tr key={`${row.material}-${row.size}-${row.pricePerUnit ?? ''}-${row.currency ?? ''}-${index}`}>
-                <td>{materialLabel(row.material, t)}</td>
-                <td>{row.size.replace(' mm', '')}</td>
-                <td>{row.neededQuantity}</td>
-                <td>{row.quantityToBuy}</td>
-                {pricing.hasPrices && <>
-                  <td>{row.pricePerUnit ? `${row.pricePerUnit.toFixed(2)} ${row.currency} · ${row.pricesIncludeVat ? t('ui.includingVat') : t('ui.excludingVat')} (${row.vatRate}%)` : row._priceConflict ? t('ui.conflictingPrices') : t('ui.notPriced')}</td>
-                  <td>{row.pricePerUnit ? `${(row.pricePerUnit * row.quantityToBuy).toFixed(2)} ${row.currency}` : '—'}</td>
-                </>}
+          <div className="project-shopping-sheet">
+            <table className="cat-table project-shopping-table">
+            <thead>
+              <tr>
+                <th>{t('ui.stock')}</th>
+                <th>{t('workflow.sizeMm')}</th>
+                  <th className="shopping-buy-head">{t('legacy.quantity')}</th>
+                {pricing.hasPrices && <><th>{t('ui.priceEach')}</th><th>{t('ui.cost')}</th></>}
               </tr>
-            ))}
-          </tbody>
-          </table>
+            </thead>
+            <tbody>
+              {values.map((row, index) => (
+                <tr key={`${row.material}-${row.size}-${row.pricePerUnit ?? ''}-${row.currency ?? ''}-${index}`}>
+                  <td className="shopping-stock">{materialLabel(row.material, t)}</td>
+                  <td>{row.size.replace(' mm', '')}</td>
+                  <td className="shopping-buy"><strong>{row.quantityToBuy}</strong></td>
+                  {pricing.hasPrices && <>
+                    <td className={row.pricePerUnit ? 'shopping-price' : 'shopping-price is-unpriced'}>{row.pricePerUnit ? `${row.pricePerUnit.toFixed(2)} ${row.currency} · ${row.pricesIncludeVat ? t('ui.includingVat') : t('ui.excludingVat')} (${row.vatRate}%)` : row._priceConflict ? t('ui.conflictingPrices') : t('ui.notPriced')}</td>
+                    <td className="shopping-cost">{row.pricePerUnit ? `${(row.pricePerUnit * row.quantityToBuy).toFixed(2)} ${row.currency}` : '—'}</td>
+                  </>}
+                </tr>
+              ))}
+            </tbody>
+            </table>
+          </div>
           {pricing.total !== null && <p className="shopping-pricing-total">
             {pricing.complete
               ? t('ui.projectMaterialTotal', { total: pricing.total.toFixed(2), currency: pricing.currency, vat: basis })

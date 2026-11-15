@@ -133,7 +133,7 @@ const planStatus = (project, t) => {
     !noProduct && (specified ? ['specified', 'projectUi.badgeSpecified'] : ['quick', 'projectUi.badgeQuick']),
     priced && ['priced', 'projectUi.badgePriced'],
   ].filter(Boolean).map(([key, label]) => ({ key, label: t(label) }));
-  return { badges, missing: !priced || (!noProduct && !specified) };
+  return { badges, missing: !priced || (!noProduct && !specified), missingPrices: !priced };
 };
 
 const UserProjectsContent = ({ groupId }) => {
@@ -548,7 +548,10 @@ const UserProjectsContent = ({ groupId }) => {
             <p className="plan-item-status" aria-label={t('projectUi.planStatus')}>
               {status.badges.map((badge) => <span key={badge.key} className={`plan-badge plan-badge-${badge.key}`}>{badge.label}</span>)}
               {status.missing && (
-                <button type="button" className="plan-status-link" onClick={() => handleModify(project)}>{t('projectUi.whatMissing')}</button>
+                <>
+                  {status.missingPrices && <span className="plan-badge plan-badge-unpriced">{t('ui.notPriced')}</span>}
+                  <button type="button" className="plan-status-link" onClick={() => handleModify(project)}>{status.missingPrices ? t('projectUi.addOptionalPrices') : t('projectUi.addDetails')}</button>
+                </>
               )}
             </p>
             <p className="plan-item-date">{t('projectUi.saved', { date: formatDate(project.created_at) })}</p>

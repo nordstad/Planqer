@@ -30,7 +30,8 @@ it('combines matching stock across plans', () => {
 
   expect(screen.getByTestId('project-shopping-list')).toBeInTheDocument();
   expect(screen.getByText('Oak')).toBeInTheDocument();
-  expect(screen.getByText('3', { selector: 'td' })).toBeInTheDocument();
+  expect(screen.getByRole('columnheader', { name: 'Quantity' })).toBeInTheDocument();
+  expect(screen.getByText('4', { selector: '.shopping-buy strong' })).toBeInTheDocument();
   expect(screen.getAllByRole('row')).toHaveLength(2);
 });
 

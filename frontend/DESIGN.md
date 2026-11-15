@@ -183,6 +183,10 @@ from one stylesheet.
 - One accent color, amber-orange, spent only on the CTA, the one meaningful
   figure, focus/active states, and `::selection` — never decorative
 - Proof over claims: a real, fixed solver output stands in for marketing copy
+- Workshop first: measurements, units, material quantities, and their physical
+  consequences must be clear before decorative detail
+- Accessibility baseline: meet WCAG 2.2 AA for contrast, keyboard access,
+  focus visibility, and target sizing
 - One top nav on every page — no secondary index, no trim-edge tab rail
 - Catalog reference numbers (folio codes, section numbers) are gone; a
   numbered list is now just a plain index (`01`, `02`…), never a fake
@@ -512,6 +516,11 @@ The review step and saved-plan page render the same document; print follows
 that same order. Editing remains an explicit route back to the planner, never
 an inline alteration of a saved result.
 
+A board plan's document and printout include **Parts to cut** (name, length,
+and quantity) before the cutting diagram. This is distinct from the project
+shopping list: the former is the job's cut specification, while the latter
+aggregates raw stock to buy.
+
 `components/plan/PlanPageShell` owns the saved-plan loading states, back link,
 title, and Print / Modify actions. `PlanSummary` renders the common labelled
 summary list. Do not force a common selector: the wallpaper wall picker is
@@ -530,6 +539,18 @@ selection. It is not a substitute for view tabs: project views remain
 A plan card has one primary action, **Open plan**, then **Print**. Modify,
 download, move, and delete actions live under `⋯` so the card stays scannable.
 Multi-select controls appear only when a project contains more than one plan.
+
+### Project Shopping List
+
+The shopping list is a **workshop order sheet**, not a spreadsheet: one framed
+material sheet with a plate-paper heading band, strong stock names, and a
+quietly tinted **Quantity** column that makes the actionable purchase quantity
+the visual anchor. Its 12px, weight-800 column labels are intentionally more
+prominent than a standard table's micro-labels. It remains a semantic table so stock, size, quantity,
+optional unit price, and cost stay easy to scan and export. Quantity already
+includes the project's spare allowance; the internal required count is not
+shown. Unpriced rows are deliberately quiet; the subtotal and note explain
+when the visible cost is incomplete.
 
 ### The Step Rail
 

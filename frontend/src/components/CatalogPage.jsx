@@ -38,7 +38,7 @@ const DayNight = ({ isDark, setIsDark, t }) => (
   </button>
 );
 
-const CatalogPage = ({ children }) => {
+const CatalogPage = ({ children, bodyClassName = '' }) => {
   const { t } = useTranslation();
   const [isDark, setIsDark] = useDarkMode();
   const { changeLanguage, language } = useLanguage();
@@ -109,7 +109,7 @@ const CatalogPage = ({ children }) => {
           </div>
         </div>
       </nav>
-      <div className="cat-body">
+      <div className={`cat-body ${bodyClassName}`}>
         {children}
       </div>
       {!demo && !setupCheckError && (

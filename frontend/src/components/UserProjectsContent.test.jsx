@@ -279,7 +279,7 @@ it('shows a shopping list for saved board plans', async () => {
 
   expect(await screen.findByRole('heading', { name: 'What to buy', level: 2 })).toBeInTheDocument();
   expect(screen.getByText('300')).toBeInTheDocument();
-  expect(screen.getByText('1', { selector: 'td' })).toBeInTheDocument();
+  expect(screen.getByText('2', { selector: '.shopping-buy strong' })).toBeInTheDocument();
   expect(screen.queryByText('300 · 100')).not.toBeInTheDocument();
 });
 
@@ -300,7 +300,7 @@ it('shows a tile shopping list and keeps the tile cutlist', async () => {
 
   expect(await screen.findByRole('heading', { name: 'What to buy', level: 2 })).toBeInTheDocument();
   expect(screen.getByText(/300\s*×\s*600/, { selector: 'td' })).toBeInTheDocument();
-  expect(screen.getAllByText('10', { selector: 'td' })).toHaveLength(2);
+  expect(screen.getByText('10', { selector: '.shopping-buy strong' })).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Cut diagrams' }));
   expect(screen.getByRole('heading', { name: 'Cut list', level: 2 })).toBeInTheDocument();
 });
@@ -376,6 +376,16 @@ it('does not offer a quick/specified badge or a details prompt for priced tile p
   expect(screen.queryByText('Quick')).not.toBeInTheDocument();
   expect(screen.getByText('Priced')).toBeInTheDocument();
   expect(screen.queryByText('Add missing details or prices')).not.toBeInTheDocument();
+});
+
+it('labels unpriced plans as optional and takes the user to add prices', async () => {
+  renderDetail();
+
+  const action = await screen.findByRole('button', { name: 'Add optional prices' });
+  expect(screen.getByText('Not priced')).toBeInTheDocument();
+  fireEvent.click(action);
+
+  expect(screen.getByTestId('location')).toHaveTextContent('/cutting?edit=plan-1');
 });
 
 it('uses wallpaper rolls and pricing without a details prompt', async () => {
