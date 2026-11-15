@@ -156,7 +156,7 @@ test("a backup of what was saved can be downloaded", async ({ page }) => {
   await page.getByRole("button", { name: /^save plan$/i }).click();
   await expect(page.getByRole("heading", { name: /plan saved/i })).toBeVisible();
 
-  await page.getByRole("link", { name: "My projects" }).click();
+  await page.getByRole("link", { name: "My projects", exact: true }).click();
   await expect(page.getByRole("note").filter({ hasText: /no recent backup/i })).toBeVisible();
 
   const download = page.waitForEvent("download");
