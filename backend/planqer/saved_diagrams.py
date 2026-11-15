@@ -30,7 +30,9 @@ def board_part_labels(parts_data: list[dict] | dict | None) -> dict[float, str]:
         except (KeyError, TypeError, ValueError):
             continue
         if label := str(part.get("name") or "").strip():
-            labels[length] = f"{labels[length]} · {label}" if length in labels else label
+            labels[length] = (
+                f"{labels[length]} · {label}" if length in labels else label
+            )
     return labels
 
 

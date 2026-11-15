@@ -217,7 +217,9 @@ async def update_project(
             if update_data.saw_blade_width is not None
             else project.saw_blade_width,
             project.name,
-            update_data.parts_data if update_data.parts_data is not None else json.loads(project.parts_data),
+            update_data.parts_data
+            if update_data.parts_data is not None
+            else json.loads(project.parts_data),
         )
         project.cutlist_image = svg_data_url
         project.cutlist_image_svg = svg_data_url
