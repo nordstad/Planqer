@@ -32,10 +32,10 @@ import { useProjectChoice } from '../hooks/useProjectChoice';
 import Loader from './Loader';
 import InfoTip from './InfoTip';
 import PlanSteps from './PlanSteps';
-import CutoutRow from './CutoutRow';
 import BondPatternIcon from './BondPatternIcon';
 import TileLayoutCandidateCard from './TileLayoutCandidateCard';
 import TileResultDisplay from './TileResultDisplay';
+import OpeningEditor from './OpeningEditor';
 import { ArrowLeft, ArrowRight, Plus, Tick } from './icons';
 import { smallestCutMm } from '../utils/tileCutList';
 
@@ -515,31 +515,11 @@ const TileOptimizer = () => {
               : cutoutsEmpty ? <SectionStatus todo={t('tileForm.emptyOpening')} /> : null}
           >
             {cutouts.length > 0 && (
-              <div style={{ overflowX: 'auto' }}>
-              <table className="cat-table">
-                <thead>
-                  <tr>
-                    <th>{t('workflow.item')}</th>
-                    <th>{t('workflow.positionMm')}<span className="req-mark" aria-hidden="true" /></th>
-                    <th>{t('workflow.sizeMm')}<span className="req-mark" aria-hidden="true" /></th>
-                    <th>{t('workflow.label')}{' '}<span className="opt-mark">{t('formUi.optionalMark')}</span></th>
-                    <th aria-label={t('common.remove')} />
-                  </tr>
-                </thead>
-                <tbody>
-                  {cutouts.map((cutout, index) => (
-                    <CutoutRow
-                      key={index}
-                      cutout={cutout}
-                      index={index}
-                      handleCutoutChange={handleCutoutChange}
-                      removeCutout={removeCutout}
-                      error={inputErrors.cutouts[index]}
-                      attempted={surfaceAttempted}
-                    />
-                  ))}
-                </tbody>
-              </table>
+              <div>
+              <p className="synthetic" style={{ margin: '0 0 10px' }}>{t('tileUi.openingPositionHint')}</p>
+              {cutouts.map((cutout, index) => (
+                <OpeningEditor key={index} cutout={cutout} fromVertical="tileUi.openingFromTop" onChange={(field, value) => handleCutoutChange(index, field, value)} onRemove={() => removeCutout(index)} error={surfaceAttempted && Object.values(inputErrors.cutouts[index] || {})[0]} />
+              ))}
               </div>
             )}
             <button type="button" className="btn-primary" style={{ marginTop: cutouts.length ? '14px' : 0 }} onClick={addCutout}>

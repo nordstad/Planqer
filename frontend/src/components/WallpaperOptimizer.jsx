@@ -13,6 +13,7 @@ import InfoTip from './InfoTip';
 import WallpaperPlanDocument from './WallpaperPlanDocument';
 import { printWallpaperPlan } from '../utils/wallpaperPlanPrint';
 import { KIND_KEYS } from './WallpaperPieceDiagram';
+import OpeningEditor from './OpeningEditor';
 import { wallIssues, overlapIssue, wallCrossings } from '../utils/wallpaperValidation';
 import { translateWallpaperMessage } from '../utils/wallpaperMessages';
 import RoomOverview, { linkColour } from './RoomOverview';
@@ -677,20 +678,7 @@ const WallpaperOptimizer = () => {
                     {wall.profile === 'sloped' && <div style={{ marginTop: '16px' }}><p className="synthetic">{t('wallpaperUi.slopedHelp')}</p><WallOutlineEditor wall={wall} onChange={(update) => setWalls(walls.map((current, currentIndex) => currentIndex === index ? withDerivedMiddle({ ...current, ...update }) : current))} /></div>}
                     <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--rule-hair)' }}>
                       <div className="flex items-center"><h3 className="section-title" style={{ margin: 0 }}>{t('wallpaperUi.openingsTitle')}</h3>{' '}<span className="opt-mark">{t('formUi.optionalMark')}</span><InfoTip label={t('wallpaperUi.openingsTitle')}>{t('wallpaperUi.everyPosition', { origin })}</InfoTip></div>
-                      {(wall.cutouts || []).map((cutout, cutoutIndex) => <div key={cutoutIndex} style={{ padding: '12px 0', borderBottom: '1px solid var(--rule-hair)' }}>
-                        <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
-                          <FormField label={t('wallpaperUi.type')} className="w-[220px] max-w-full"><select className="form-select" value={cutout.kind} onChange={(event) => updateCutout(index, cutoutIndex, 'kind', event.target.value)}>{Object.entries(KIND_KEYS).map(([kind, kindKey]) => <option key={kind} value={kind}>{t(kindKey)}</option>)}</select></FormField>
-                          {cutout.kind === 'custom' && <FormField label={t('wallpaperUi.customName')} className="min-w-[160px] flex-1"><input className="form-input" value={cutout.label || ''} onChange={(event) => updateCutout(index, cutoutIndex, 'label', event.target.value)} /></FormField>}
-                          <button type="button" className="btn-text is-quiet ml-auto" onClick={() => removeCutout(index, cutoutIndex)}>{t('common.remove')}</button>
-                        </div>
-                        <div className="mt-3 grid grid-cols-2 items-end gap-x-3 gap-y-3 md:grid-cols-4">
-                          <FormField label={t('wallpaperUi.fromLeftEdge')} fill required><input className="form-input" inputMode="numeric" value={cutout.x} onChange={(event) => updateCutout(index, cutoutIndex, 'x', event.target.value)} /></FormField>
-                          <FormField label={wall.profile === 'sloped' ? t('wallpaperUi.fromLowerEdge') : t('wallpaperUi.fromFloor')} fill required><input className="form-input" inputMode="numeric" value={cutout.y} onChange={(event) => updateCutout(index, cutoutIndex, 'y', event.target.value)} /></FormField>
-                          <FormField label={t('wallpaperUi.widthMm')} fill required><input className="form-input" inputMode="numeric" value={cutout.width} onChange={(event) => updateCutout(index, cutoutIndex, 'width', event.target.value)} /></FormField>
-                          <FormField label={t('wallpaperUi.heightMm')} fill required><input className="form-input" inputMode="numeric" value={cutout.height} onChange={(event) => updateCutout(index, cutoutIndex, 'height', event.target.value)} /></FormField>
-                        </div>
-                        {issues[index].cutouts[cutoutIndex] && <p role="alert" className="synthetic" style={{ color: 'var(--revision)', marginTop: '8px' }}>{issues[index].cutouts[cutoutIndex]}</p>}
-                      </div>)}
+                      {(wall.cutouts || []).map((cutout, cutoutIndex) => <OpeningEditor key={cutoutIndex} cutout={cutout} fromVertical={wall.profile === 'sloped' ? 'wallpaperUi.fromLowerEdge' : 'wallpaperUi.fromFloor'} onChange={(field, value) => updateCutout(index, cutoutIndex, field, value)} onRemove={() => removeCutout(index, cutoutIndex)} error={issues[index].cutouts[cutoutIndex]} />)}
                       <button type="button" className="btn-text" style={{ marginTop: '10px' }} onClick={() => updateWall(index, 'cutouts', [...(wall.cutouts || []), defaultCutout('window')])}><span aria-hidden="true">+</span>{t('wallpaperUi.addOpening')}</button>
                     </div>
                     {issues[index].errors.map((message) => <p key={message} role="alert" className="synthetic" style={{ color: 'var(--revision)', marginTop: '12px' }}>{message}</p>)}

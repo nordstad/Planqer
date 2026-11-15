@@ -19,8 +19,23 @@ from planqer.wallpaper.visualization import render_plan_svg
 logger = logging.getLogger("planqer.saved_diagrams")
 
 
+def board_part_labels(parts_data: list[dict] | dict | None) -> dict[float, str]:
+    """Group the optional, user-entered names by cut length for the diagram."""
+    if not isinstance(parts_data, list):
+        return {}
+    labels = {}
+    for part in parts_data:
+        try:
+            length = float(part["length"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if label := str(part.get("name") or "").strip():
+            labels[length] = f"{labels[length]} · {label}" if length in labels else label
+    return labels
+
+
 def render_saved_board_diagram(
-    optimization_result: dict, saw_blade_width: float, name: str
+    optimization_result: dict, saw_blade_width: float, name: str, parts_data=None
 ) -> str | None:
     """Redraw the plan's diagram, now captioned with the name the user gave it.
 
@@ -45,6 +60,7 @@ def render_saved_board_diagram(
             board_lengths_used,
             saw_blade_width=saw_blade_width,
             project_name=name,
+            part_labels=board_part_labels(parts_data),
         )
     except Exception as e:
         # A missing diagram is worth far less than a lost plan — keep the save.

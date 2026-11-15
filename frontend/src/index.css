@@ -369,6 +369,7 @@
   /* ── page frame: no trim edge, the top nav is the only navigation ────── */
   .cat-page { min-height: 100vh; background: var(--ground); }
   .cat-body { max-width: 1080px; margin: 0 auto; padding: 28px 24px 56px; min-width: 0; }
+  .cat-body.dashboard-body { max-width: 1320px; }
   @media (max-width: 767px) {
     .cat-body { padding: 20px 16px 40px; }
   }
@@ -1194,15 +1195,32 @@
   .strip-table td:nth-child(2), .strip-table td:nth-child(3), .strip-table td:nth-child(4) { font-variant-numeric: tabular-nums; }
   @media (max-width: 899px) { .plan-overview { grid-template-columns: 1fr; } }
   .project-shopping { margin: 0 0 24px; }
-  .project-shopping-table { margin-top: 14px; max-width: 760px; }
+  .project-shopping-sheet {
+    margin-top: 14px; overflow: hidden; border: 1px solid var(--rule-hair);
+    border-radius: 12px; background: var(--card);
+  }
+  .project-shopping-table { margin: 0; }
+  .project-shopping-table th {
+    padding: 13px 14px; background: var(--ground-2); font-size: 12px;
+    font-weight: 800; letter-spacing: .08em;
+  }
+  .project-shopping-table td { padding: 11px 14px; }
+  .project-shopping-table td:first-child, .project-shopping-table th:first-child { padding-left: 18px; }
+  .project-shopping-table td:last-child, .project-shopping-table th:last-child { padding-right: 18px; }
+  .shopping-stock { color: var(--ink); font-size: 14px; font-weight: 700; }
+  .shopping-buy-head { color: var(--accent) !important; }
+  .shopping-buy { width: 90px; background: var(--accent-bg); color: var(--ink); }
+  .shopping-buy strong { display: block; font-size: 20px; font-weight: 800; line-height: 1; }
+  .shopping-price.is-unpriced { color: var(--ink-3); font-style: italic; }
+  .shopping-cost { font-weight: 700; }
   .project-shopping-table th:last-child, .project-shopping-table td:last-child { text-align: right; }
   .shopping-pricing-total {
-    margin: 16px 0 0; max-width: 760px; padding: 12px 14px;
+    margin: 16px 0 0; padding: 12px 14px;
     border-left: 3px solid var(--shop); background: var(--accent-bg);
     color: var(--ink); font-size: 15px; line-height: 1.45; font-weight: 700;
   }
   .shopping-pricing-note {
-    margin: 8px 0 0; max-width: 760px; color: var(--ink-2);
+    margin: 8px 0 0; color: var(--ink-2);
     font-size: 14px; line-height: 1.45;
   }
   .project-shopping-empty { margin: 14px 0 0; padding: 18px; max-width: 760px; border: 1px dashed var(--ink-4); border-radius: 10px; }
@@ -1249,6 +1267,21 @@
     margin: 4px 0 0; color: var(--ink); font-size: 15px; font-weight: 700;
     letter-spacing: .01em;
   }
+  .plan-item-status { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0 0; }
+  .plan-badge {
+    display: inline-flex; align-items: center; min-height: 22px; padding: 3px 7px;
+    border: 1px solid var(--rule-hair); border-radius: 9999px; background: var(--ground-2);
+    color: var(--ink-2); font-family: 'Archivo Narrow', sans-serif; font-size: 11px;
+    font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  }
+  .plan-badge-priced { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
+  .plan-badge-unpriced { border-style: dashed; background: var(--card); color: var(--ink-3); }
+  .plan-status-link {
+    padding: 2px 0; border: 0; background: transparent; color: var(--ink-2);
+    font: inherit; font-size: 12px; font-weight: 700; text-decoration: underline;
+    text-decoration-color: var(--ink-4); text-underline-offset: 3px; cursor: pointer;
+  }
+  .plan-status-link:hover, .plan-status-link:focus-visible { color: var(--accent); text-decoration-color: currentColor; }
   .plan-item-date {
     font-family: 'Archivo Narrow', sans-serif; font-size: 12px; color: var(--ink-3); margin: 5px 0 0;
   }

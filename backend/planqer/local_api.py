@@ -83,6 +83,7 @@ def _cutting_plan(payload: dict) -> dict:
             currency=currency,
             enable_cost_analysis=enabled,
             optimize_for=optimize_for,
+            part_labels=request.part_labels,
         )
     except PlanqerError:
         raise
@@ -223,6 +224,7 @@ class SavedBoardDiagram(BaseModel):
     name: str
     saw_blade_width: float
     optimization_result: dict
+    parts_data: list[dict] | dict | None = None
 
 
 class SavedSheetDiagram(BaseModel):
@@ -262,7 +264,7 @@ def _saved_diagram(payload: dict) -> dict:
     request = _saved_diagram_request.validate_python(payload)
     if isinstance(request, SavedBoardDiagram):
         image = render_saved_board_diagram(
-            request.optimization_result, request.saw_blade_width, request.name
+            request.optimization_result, request.saw_blade_width, request.name, request.parts_data
         )
     elif isinstance(request, SavedSheetDiagram):
         image = render_saved_sheet_layout(request.optimization_result, request.name)

@@ -26,7 +26,7 @@ const UserDashboard = () => {
   const inProject = Boolean(groupId);
 
   return (
-    <CatalogPage>
+    <CatalogPage bodyClassName="dashboard-body">
       {!inProject && (
         <>
           {isStaticMode() && (

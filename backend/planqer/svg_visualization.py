@@ -68,6 +68,7 @@ class SVGCuttingVisualizer:
         saw_blade_width: float,
         scale: float,
         board_index: int,
+        part_labels: dict[float, str],
     ) -> str:
         """Create SVG elements for a single board row showing the optimal cutting pattern."""
         svg_elements = []
@@ -92,7 +93,7 @@ class SVGCuttingVisualizer:
         for idx, part in enumerate(board):
             part_width = part * scale
             color = part_colors[round(part, 2)]
-            label = f"{part:.0f}"
+            label = part_labels.get(round(part, 2), f"{part:.0f}")
 
             # Part rectangle with proper scaling
             svg_elements.append(f'''
@@ -157,6 +158,7 @@ class SVGCuttingVisualizer:
         self,
         width: int,
         project_name: str | None = None,
+        part_labels: dict[float, str] | None = None,
         board_lengths=None,
         total_waste: float = 0,
         is_mixed: bool = False,
@@ -229,11 +231,13 @@ class SVGCuttingVisualizer:
         board_length,
         saw_blade_width: float = 3.0,
         project_name: str | None = None,
+        part_labels: dict[float, str] | None = None,
     ) -> str:
         """Generate complete SVG cutting diagram."""
         if not cut_list:
             return self._create_empty_svg()
 
+        part_labels = part_labels or {}
         # Handle both single board length and mixed board lengths
         if isinstance(board_length, (int, float)):
             # Single board length - all boards are the same length
@@ -304,6 +308,7 @@ class SVGCuttingVisualizer:
                     saw_blade_width,
                     scale,
                     idx,
+                    part_labels,
                 )
             )
             current_y += row_height
@@ -335,6 +340,7 @@ def generate_cut_list_image(
     output_file: str,
     saw_blade_width: float = 3.0,
     project_name: str | None = None,
+    part_labels: dict[float, str] | None = None,
 ) -> str:
     """
     Generate cutting diagram using modern SVG system.
@@ -344,7 +350,7 @@ def generate_cut_list_image(
 
     # Generate SVG content
     svg_content = visualizer.generate_svg_cut_list(
-        cut_list, board_length, saw_blade_width, project_name
+        cut_list, board_length, saw_blade_width, project_name, part_labels
     )
 
     # For API endpoints, return as an SVG data URL. Kept as SVG rather than
@@ -370,6 +376,7 @@ def generate_saved_diagram(
     board_length,
     saw_blade_width: float = 3.0,
     project_name: str | None = None,
+    part_labels: dict[float, str] | None = None,
 ) -> str:
     """
     Generate the SVG data URL stored with a saved project.
@@ -383,7 +390,7 @@ def generate_saved_diagram(
     """
     visualizer = SVGCuttingVisualizer()
     svg_content = visualizer.generate_svg_cut_list(
-        cut_list, board_length, saw_blade_width, project_name
+        cut_list, board_length, saw_blade_width, project_name, part_labels
     )
 
     svg_b64 = base64.b64encode(svg_content.encode("utf-8")).decode("utf-8")

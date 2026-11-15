@@ -267,6 +267,7 @@ def run_optimization(
     currency="SEK",
     enable_cost_analysis=False,
     optimize_for="waste",
+    part_labels=None,
 ):
     if not boards:
         logger.error("No board lengths provided in request.")
@@ -325,6 +326,7 @@ def run_optimization(
             "data:temp",  # Signal to return as data URL
             saw_blade_width=kerf,
             project_name=project_name,
+            part_labels=part_labels,
         )
     except Exception as e:
         logger.error(f"Failed to generate visualization: {e}")

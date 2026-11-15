@@ -6,6 +6,7 @@ from planqer.sheet_visualization import (
     generate_sheet_cutting_visualization,
     generate_single_sheet_visualization,
 )
+from planqer.saved_diagrams import render_saved_board_diagram
 from planqer.svg_visualization import generate_cut_list_image, generate_saved_diagram
 from planqer.tile_layout.geometry import Cutout, JointSpec, Surface, Tile
 from planqer.tile_layout.solver import solve_tile_layout
@@ -34,6 +35,16 @@ def test_board_live_and_saved_svgs_escape_project_names():
     for data_url in (live, saved):
         root = _parse(data_url)
         assert SPECIAL_TEXT in "".join(root.itertext())
+
+
+def test_saved_board_svg_uses_entered_part_names():
+    diagram = render_saved_board_diagram(
+        {"cut_list": [[100.0]], "board_lengths_used": [300.0]},
+        3.0,
+        "Shelf",
+        [{"length": 100, "quantity": 1, "name": "Front rail"}],
+    )
+    assert "Front rail" in _decode(diagram)
 
 
 def test_sheet_live_and_saved_svgs_escape_part_ids_and_project_names():

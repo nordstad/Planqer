@@ -64,6 +64,7 @@ async def create_cutting_plan(request: Request, planqer_request: PlanqerRequest)
                 currency=currency,
                 enable_cost_analysis=enabled,
                 optimize_for=optimize_for,
+                part_labels=planqer_request.part_labels,
             ),
             timeout=OPTIMIZATION_TIMEOUT_SECONDS,
         )
