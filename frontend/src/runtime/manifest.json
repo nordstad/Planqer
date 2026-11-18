@@ -102,10 +102,10 @@
       },
       {
         "name": "trimesh",
-        "version": "5.2.0",
-        "file": "trimesh-5.2.0-py3-none-any.whl",
-        "url": "https://files.pythonhosted.org/packages/51/14/78624d9c89bab76c2a2e1e839c7641fa686828c2c1c8fb64aedf3b371a5d/trimesh-5.2.0-py3-none-any.whl",
-        "sha256": "04db2c7ec62afdd7763fb04c82bb5f257ddd984993a19ee83697f475fc58fd29"
+        "version": "5.2.1",
+        "file": "trimesh-5.2.1-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/e6/97/a6efa2926335bab3f85cf990a5b5f48abd989719b4015df0e3209675adf7/trimesh-5.2.1-py3-none-any.whl",
+        "sha256": "ba4b5dbdf030bbffbb6337d9c67595435a8d1f224f23eb6500e9662f42a3c5df"
       }
     ]
   }
