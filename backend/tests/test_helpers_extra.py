@@ -2,7 +2,7 @@ from pathlib import Path
 
 import yaml
 
-from planqer.helpers import compute_metrics, load_config
+from partsible.helpers import compute_metrics, load_config
 
 
 def test_load_config(tmp_path):

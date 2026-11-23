@@ -21,7 +21,7 @@ let api;
 beforeEach(async () => {
   vi.clearAllMocks();
   entries.mockResolvedValue([]);
-  vi.stubEnv('VITE_PLANQER_MODE', 'static');
+  vi.stubEnv('VITE_PARTSIBLE_MODE', 'static');
   vi.resetModules();
   api = await import('./api');
 });
@@ -95,7 +95,7 @@ it('loads the catalogue from the browser and never reports it unchanged', async 
 it('says plainly when a server-only feature is asked for', async () => {
   handle.mockResolvedValue(null);
 
-  await expect(api.getAdminUsers()).rejects.toThrow(/not available in the demo/i);
+  await expect(api.getAdminUsers()).rejects.toThrow(/not available in Lite/i);
   expect(axios.get).not.toHaveBeenCalled();
 });
 

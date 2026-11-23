@@ -1,5 +1,5 @@
 /*
-  "Suggest to Planqer": builds a pre-filled GitHub issue for one product. The
+  "Suggest to Partsible": builds a pre-filled GitHub issue for one product. The
   admin reviews the snippet and chooses to open the issue; nothing is sent from
   here, and no catalogue data leaves the instance on its own.
 

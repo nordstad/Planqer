@@ -25,7 +25,7 @@ const mergeBy = (entries, keyOf, make) => {
   return [...merged.values()];
 };
 
-/* Every distinct size Planqer found becomes one cutlist, whatever format it
+/* Every distinct size Partsible found becomes one cutlist, whatever format it
    came from. Material joins the grouping key: two identical rectangles in
    different materials are two different purchases, not one. With a catalogue,
    names that mean the same ("C24", "c24", "Regel C24") are one material; the
@@ -256,7 +256,7 @@ export const standaloneHandoff = (group, config, planName, sheetWord = 'Sheet') 
   const productFields = config.product?.type ? { product: config.product } : {};
   if (group.kind === 'board') {
     return {
-      key: 'planqer-3d-import',
+      key: 'partsible-3d-import',
       path: '/cutting?import=3d',
       data: {
         parts: Object.fromEntries(group.lengths.map((l) => [l.length, l.qty])),
@@ -269,7 +269,7 @@ export const standaloneHandoff = (group, config, planName, sheetWord = 'Sheet') 
     };
   }
   return {
-    key: 'planqer-3d-sheet-import',
+    key: 'partsible-3d-sheet-import',
     path: '/sheet-cutting?import=3d',
     data: {
       parts: group.sizes.map((s, i) => ({

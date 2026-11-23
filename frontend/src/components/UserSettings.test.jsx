@@ -62,7 +62,7 @@ describe('UserSettings', () => {
     fireEvent.click(screen.getByRole('button', { name: /Save settings/i }));
 
     await waitFor(() => expect(updateUserSettings).toHaveBeenCalledWith(expect.objectContaining({ catalogue_country: 'NO' })));
-    expect(localStorage.getItem('planqer-catalogue-country-v1')).toBe('NO');
+    expect(localStorage.getItem('partsible-catalogue-country-v1')).toBe('NO');
   });
 
   it('allows typing a comma-separated board length', async () => {

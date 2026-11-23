@@ -36,7 +36,7 @@ function serve(prefix, directory) {
 }
 
 function bundleName(directory) {
-  const name = `planqer-${version}.zip`;
+  const name = `partsible-${version}.zip`;
   if (!existsSync(join(directory, name))) throw new Error(`Missing current Pyodide bundle: ${name}`);
   return name;
 }

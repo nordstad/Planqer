@@ -1,12 +1,14 @@
-site_name: Planqer
-site_description: Self-hosted cutting optimization for boards and sheet goods
-site_url: https://nordstad.github.io/Planqer/
-repo_url: https://github.com/nordstad/Planqer
-repo_name: nordstad/Planqer
+site_name: Partsible
+site_description: Plan the cuts and layouts for boards, sheets, tiles and wallpaper.
+site_url: https://docs.partsible.com/
+repo_url: https://github.com/nordstad/partsible
+repo_name: nordstad/partsible
 edit_uri: edit/main/docs/
 
 theme:
   name: material
+  logo: assets/brand/partsible-symbol-flat.svg
+  favicon: assets/brand/favicon.ico
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
@@ -40,10 +42,9 @@ theme:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/nordstad/Planqer
-
-extra_javascript:
-  - assets/umami.js
+      link: https://github.com/nordstad/partsible
+    - icon: simple/kofi
+      link: https://ko-fi.com/nordstad
 
 markdown_extensions:
   - admonition
@@ -66,7 +67,7 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Getting started: getting-started.md
-  - Demo or full version: demo-vs-full.md
+  - Lite or self-hosted: lite-vs-self-hosted.md
   - Guide:
       - Board cutting: guide/board-cutting.md
       - Sheet cutting: guide/sheet-cutting.md

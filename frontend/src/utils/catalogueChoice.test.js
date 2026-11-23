@@ -53,7 +53,7 @@ describe('the stored choice', () => {
   });
 
   it('ignores a stored value it does not know', () => {
-    localStorage.setItem('planqer-catalogue-country-v1', 'ZZ');
+    localStorage.setItem('partsible-catalogue-country-v1', 'ZZ');
     expect(getCatalogueChoice()).toBeNull();
   });
 });

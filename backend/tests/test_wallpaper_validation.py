@@ -1,6 +1,6 @@
 import pytest
 
-from planqer.schemas.wallpaper import (
+from partsible.schemas.wallpaper import (
     Corner,
     Cutout,
     Room,
@@ -8,7 +8,7 @@ from planqer.schemas.wallpaper import (
     WallpaperPlanRequest,
     WallpaperSpec,
 )
-from planqer.wallpaper.validation import validate_wallpaper_request
+from partsible.wallpaper.validation import validate_wallpaper_request
 
 
 def request(*, cutouts=None, roll_length=10050, repeat=0, match=None):

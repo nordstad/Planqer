@@ -7,9 +7,9 @@ from fastapi.testclient import TestClient
 from sqlalchemy import delete, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from planqer.auth.password_policy import validate_password
-from planqer.auth.security import get_password_hash, verify_password
-from planqer.database import (
+from partsible.auth.password_policy import validate_password
+from partsible.auth.security import get_password_hash, verify_password
+from partsible.database import (
     InstanceBootstrap,
     ProjectGroup,
     User,
@@ -26,7 +26,7 @@ pytestmark = pytest.mark.api
 @pytest.fixture
 def app():
     """Get the FastAPI app for testing"""
-    from planqer.api import app
+    from partsible.api import app
 
     return app
 
@@ -35,7 +35,7 @@ def app():
 def client(app):
     """Create a test client, entering the app's lifespan so migrations run"""
     with TestClient(app) as test_client:
-        test_client.headers["X-Planqer-Setup-Secret"] = "test-setup-secret"
+        test_client.headers["X-Partsible-Setup-Secret"] = "test-setup-secret"
         yield test_client
 
 
@@ -108,7 +108,7 @@ def test_fresh_registration_rejects_missing_setup_secret(client, monkeypatch):
             await session.commit()
 
     asyncio.run(reset_database())
-    monkeypatch.delenv("PLANQER_SETUP_SECRET")
+    monkeypatch.delenv("PARTSIBLE_SETUP_SECRET")
 
     response = client.post(
         "/api/auth/register",
@@ -116,7 +116,7 @@ def test_fresh_registration_rejects_missing_setup_secret(client, monkeypatch):
             "email": f"untrusted-{uuid.uuid4()}@example.com",
             "password": "Testpassword" + "123!",
         },
-        headers={"X-Planqer-Setup-Secret": "wrong"},
+        headers={"X-Partsible-Setup-Secret": "wrong"},
     )
 
     assert response.status_code == 403
@@ -134,8 +134,8 @@ def test_trusted_bootstrap_allows_first_registration_from_compose(client, monkey
             await session.commit()
 
     asyncio.run(reset_database())
-    monkeypatch.setenv("PLANQER_TRUSTED_BOOTSTRAP", "true")
-    monkeypatch.delenv("PLANQER_SETUP_SECRET")
+    monkeypatch.setenv("PARTSIBLE_TRUSTED_BOOTSTRAP", "true")
+    monkeypatch.delenv("PARTSIBLE_SETUP_SECRET")
 
     response = client.post(
         "/api/auth/register",

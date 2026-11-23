@@ -1,34 +1,39 @@
-# Planqer
+# Partsible
 
-Planqer is a self-hosted cutting optimization platform for woodworking and
-fabrication projects. Give it a part list — or a 3D model you already
+Plan the cuts and layouts for boards, sheets, tiles and wallpaper.
+
+Partsible is a self-hosted planning tool for woodworking and fabrication
+projects. Give it a part list — or a 3D model you already
 designed — and it works out the fewest boards or sheets to buy, and exactly
 where every cut goes.
 
-**[Try it in your browser](https://nordstad.github.io/Planqer/app/)** with
-nothing to install. It is the light version; see
-[Demo or full version](demo-vs-full.md).
+**[Try it in your browser](https://partsible.com/)** with
+nothing to install. This is Partsible Lite; see
+[Lite or self-hosted](lite-vs-self-hosted.md).
+
+Partsible is free and developed in my spare time. If it saves you a trip to the
+lumber yard, you can [buy me a coffee](https://ko-fi.com/nordstad).
 
 !!! warning "Early development"
-    Planqer is in beta. Features, APIs and behaviour may change between
+    Partsible is in beta. Features, APIs and behaviour may change between
     releases. Found a bug, have an improvement or want to share feedback? Use
-    the [issue tracker](https://github.com/nordstad/Planqer/issues/new/choose).
+    the [issue tracker](https://github.com/nordstad/partsible/issues/new/choose).
     Pull requests for code and documentation improvements are welcome.
 
-![Planqer homepage](assets/screenshots/homepage.png)
+![Partsible homepage](assets/screenshots/homepage.png)
 
-## Why Planqer
+## Why Partsible
 
 - **Self-hosted and private.** Runs on your own machine or homelab via Docker
   Compose. No cloud account, and the self-hosted app has no analytics or
   tracking (see [Privacy](privacy.md)).
 - **Made for Norway and Sweden.** The built-in product catalogue covers Norway
   and Sweden, and the interface is in English, Norwegian and Swedish. Need
-  another country or language? [Open an issue](https://github.com/nordstad/Planqer/issues/new/choose).
+  another country or language? [Open an issue](https://github.com/nordstad/partsible/issues/new/choose).
 - **Kerf-aware.** Every plan subtracts the material your saw blade actually
   removes, so the numbers hold up at the saw.
 - **Five ways in.** Plan board cuts, sheet layouts, tile layouts, or wallpaper
-  for a room, or upload an STL or STEP file and let Planqer measure the parts
+  for a room, or upload an STL or STEP file and let Partsible measure the parts
   for you.
 - **AI-ready.** A REST API and an MCP server let an AI assistant drive the
   optimizer in natural language.
@@ -42,7 +47,7 @@ nothing to install. It is the light version; see
 
     ---
 
-    Install Planqer with Docker Compose and plan your first cut.
+    Install Partsible with Docker Compose and plan your first cut.
 
     [:octicons-arrow-right-24: Getting started](getting-started.md)
 
@@ -103,8 +108,8 @@ nothing to install. It is the light version; see
 
 ## Project links
 
-- Source: [github.com/nordstad/Planqer](https://github.com/nordstad/Planqer)
+- Source: [github.com/nordstad/partsible](https://github.com/nordstad/partsible)
 - License: [MIT](https://opensource.org/licenses/MIT)
 - Bugs, improvements and feedback: use the
-  [issue tracker](https://github.com/nordstad/Planqer/issues/new/choose).
-- Code and documentation improvements: [open a pull request](https://github.com/nordstad/Planqer/pulls).
+  [issue tracker](https://github.com/nordstad/partsible/issues/new/choose).
+- Code and documentation improvements: [open a pull request](https://github.com/nordstad/partsible/pulls).

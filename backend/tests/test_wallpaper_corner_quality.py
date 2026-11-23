@@ -1,14 +1,14 @@
 import pytest
 
-from planqer.schemas.wallpaper import (
+from partsible.schemas.wallpaper import (
     Corner,
     Room,
     Wall,
     WallpaperPlanRequest,
     WallpaperSpec,
 )
-from planqer.wallpaper.plan import corner_quality, create_wallpaper_plan
-from planqer.wallpaper.strips import ConnectedStrip, StripSegment
+from partsible.wallpaper.plan import corner_quality, create_wallpaper_plan
+from partsible.wallpaper.strips import ConnectedStrip, StripSegment
 
 
 def wall(name: str, width: float = 3000) -> Wall:

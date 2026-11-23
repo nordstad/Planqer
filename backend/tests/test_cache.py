@@ -1,7 +1,7 @@
 import threading
 import time
 
-from planqer.cache import clear_cache, generate_request_hash, get_cached_optimization
+from partsible.cache import clear_cache, generate_request_hash, get_cached_optimization
 
 
 def test_concurrent_cache_misses_compute_once():

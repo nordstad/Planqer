@@ -1,21 +1,31 @@
-# Planqer
+<!-- markdownlint-disable MD033 MD041 -->
+<h1>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/brand/partsible-symbol-dark.svg">
+    <img alt="" src="docs/assets/brand/partsible-symbol-flat.svg" width="24" align="bottom">
+  </picture>
+  Partsible
+</h1>
+<!-- markdownlint-enable MD033 MD041 -->
 
-Planqer is a self-hosted cutting optimization platform for woodworking and
-fabrication projects. It turns part lists or CAD files (STL/STEP) into
+Plan the cuts and layouts for boards, sheets, tiles and wallpaper.
+
+Partsible is a self-hosted planning tool for woodworking and fabrication
+projects. It turns part lists or CAD files (STL/STEP) into
 practical, kerf-aware cutting plans with visual diagrams and local project
 storage.
 
-[![Try it in your browser](https://img.shields.io/badge/Try-in%20your%20browser-orange.svg)](https://nordstad.github.io/Planqer/app/)
+[![Try it in your browser](https://img.shields.io/badge/Try-in%20your%20browser-orange.svg)](https://partsible.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Latest release](https://img.shields.io/github/v/release/nordstad/Planqer)](https://github.com/nordstad/Planqer/releases)
-[![Self-hosted: Docker Compose](https://img.shields.io/badge/Self--hosted-Docker%20Compose-2496ED.svg)](https://nordstad.github.io/Planqer/getting-started/)
+[![Latest release](https://img.shields.io/github/v/release/nordstad/partsible)](https://github.com/nordstad/partsible/releases)
+[![Self-hosted: Docker Compose](https://img.shields.io/badge/Self--hosted-Docker%20Compose-2496ED.svg)](https://docs.partsible.com/getting-started/)
 
 ---
 
-> **Early development:** Planqer is still in beta and the product, APIs and
+> **Early development:** Partsible is still in beta and the product, APIs and
 > behaviour may change between releases. If you find a bug, have an improvement
 > or want to share feedback, please
-> [open an issue](https://github.com/nordstad/Planqer/issues/new/choose).
+> [open an issue](https://github.com/nordstad/partsible/issues/new/choose).
 > Pull requests for code and documentation improvements are welcome too.
 
 ## Features
@@ -27,19 +37,19 @@ storage.
   cutlists.
 - **Norway & Sweden**: The built-in product catalogue covers Norway and
   Sweden, and the interface is available in English, Norwegian and Swedish.
-  Need another country or language? [Open an issue](https://github.com/nordstad/Planqer/issues/new/choose).
+  Need another country or language? [Open an issue](https://github.com/nordstad/partsible/issues/new/choose).
 - **Metric units only**: All measurements are in millimetres. There is no
   imperial (inch/foot) support and no plans to add it at this time.
 - **Self-Hosted & Private**: Local accounts and data stay entirely on your
-  server. Self-hosted Planqer contains no analytics. Only the public demo and
+  server. Self-hosted Partsible contains no analytics. Only the public demo and
   docs site use anonymous, cookie-free usage counting; see the
-  [privacy page](https://nordstad.github.io/Planqer/privacy/).
+  [privacy page](https://docs.partsible.com/privacy/).
 - **AI Assistant Integration**: Includes an MCP (Model Context Protocol) server
   for any MCP-compatible AI assistant or agent.
 
 ---
 
-![Planqer homepage](docs/assets/screenshots/homepage.png)
+![Partsible homepage](docs/assets/screenshots/homepage.png)
 
 <!-- markdownlint-disable MD013 MD033 -->
 <table>
@@ -65,18 +75,21 @@ pattern-matched cuts: [Wallpaper documentation](docs/guide/wallpaper.md).
 
 ## Try it in your browser
 
-**[Open the Planqer demo](https://nordstad.github.io/Planqer/app/)** to try it
-with nothing to install and no account. It is the light version: it runs
-entirely in your browser, saves projects only in that browser, and has no
-accounts, REST API or MCP server. See
-[demo or full version](https://nordstad.github.io/Planqer/demo-vs-full/).
-Running your own server (below) is the full version.
+**[Open Partsible Lite](https://partsible.com/)** to try it
+with nothing to install and no account. It runs entirely in your browser,
+saves projects only in that browser, and has no accounts, REST API or MCP
+server. See
+[Lite or self-hosted](https://docs.partsible.com/lite-vs-self-hosted/).
+Running your own server (below) is the self-hosted version.
+
+Partsible is free and developed in my spare time. If it is useful to you, you
+can [buy me a coffee](https://ko-fi.com/nordstad).
 
 ## Quick Start
 
-Planqer runs with Docker Compose. The recommended route pulls the published
+Partsible runs with Docker Compose. The recommended route pulls the published
 release images, so there is nothing to build. Just want a look first? Use the
-[browser demo](https://nordstad.github.io/Planqer/app/) above, with nothing to
+[Partsible Lite](https://partsible.com/) above, with nothing to
 install.
 
 **Before you start:** install [Docker Desktop](https://docs.docker.com/get-docker/)
@@ -95,26 +108,26 @@ same data volume, so you can switch later.
 
 One person, one computer. No accounts or password, nothing to configure.
 
-1. Make a folder for Planqer and download the compose file into it. Use the same
+1. Make a folder for Partsible and download the compose file into it. Use the same
    folder every time: Docker names the data volume after it.
 
    macOS or Linux:
 
    ```bash
-   mkdir planqer && cd planqer
-   curl -O https://raw.githubusercontent.com/nordstad/Planqer/main/docker-compose.simple.yml
+   mkdir partsible && cd partsible
+   curl -O https://raw.githubusercontent.com/nordstad/partsible/main/docker-compose.simple.yml
    ```
 
    Windows PowerShell (use `curl.exe`; plain `curl` is a different command
    there):
 
    ```powershell
-   mkdir planqer; cd planqer
-   curl.exe -O https://raw.githubusercontent.com/nordstad/Planqer/main/docker-compose.simple.yml
+   mkdir partsible; cd partsible
+   curl.exe -O https://raw.githubusercontent.com/nordstad/partsible/main/docker-compose.simple.yml
    ```
 
    No terminal download? Open [`docker-compose.simple.yml`](docker-compose.simple.yml)
-   on GitHub, use **Download raw file**, and save it in a new `planqer` folder.
+   on GitHub, use **Download raw file**, and save it in a new `partsible` folder.
 
 2. Start it from that folder. The first start downloads the images and can take
    a minute or two:
@@ -130,7 +143,7 @@ One person, one computer. No accounts or password, nothing to configure.
    docker compose -f docker-compose.simple.yml ps
    ```
 
-To stop Planqer, or to upgrade, run these in the same folder. Your projects stay
+To stop Partsible, or to upgrade, run these in the same folder. Your projects stay
 in the data volume:
 
 ```bash
@@ -147,21 +160,21 @@ docker compose -f docker-compose.simple.yml up -d
 Several people or devices, with local accounts, an admin page, the REST API and
 an optional MCP server.
 
-1. Download the release compose file into a `planqer` folder, as above, but use
+1. Download the release compose file into a `partsible` folder, as above, but use
    `docker-compose.release.yml`.
 
    macOS or Linux:
 
    ```bash
-   mkdir planqer && cd planqer
-   curl -O https://raw.githubusercontent.com/nordstad/Planqer/main/docker-compose.release.yml
+   mkdir partsible && cd partsible
+   curl -O https://raw.githubusercontent.com/nordstad/partsible/main/docker-compose.release.yml
    ```
 
    Windows PowerShell:
 
    ```powershell
-   mkdir planqer; cd planqer
-   curl.exe -O https://raw.githubusercontent.com/nordstad/Planqer/main/docker-compose.release.yml
+   mkdir partsible; cd partsible
+   curl.exe -O https://raw.githubusercontent.com/nordstad/partsible/main/docker-compose.release.yml
    ```
 
 2. Start it and check it:
@@ -180,42 +193,42 @@ an optional MCP server.
 
 #### Using other devices or a hostname
 
-By default Planqer answers only on the computer it runs on. To reach it from
+By default Partsible answers only on the computer it runs on. To reach it from
 other devices (for example `http://192.168.1.50:3001`) create a file named
 `.env` in the same folder, with these lines changed to your address:
 
 ```dotenv
-PLANQER_BIND_ADDRESS=0.0.0.0
-PLANQER_TRUSTED_BOOTSTRAP=false
-PLANQER_SETUP_SECRET=<a random secret, e.g. from: openssl rand -hex 32>
-PLANQER_CORS_ORIGINS=http://192.168.1.50:3001
+PARTSIBLE_BIND_ADDRESS=0.0.0.0
+PARTSIBLE_TRUSTED_BOOTSTRAP=false
+PARTSIBLE_SETUP_SECRET=<a random secret, e.g. from: openssl rand -hex 32>
+PARTSIBLE_CORS_ORIGINS=http://192.168.1.50:3001
 ```
 
 Then recreate the containers. Creating the first account now asks for the setup
 code; enter the secret from `.env`, and remove it afterwards. Without
-`PLANQER_CORS_ORIGINS`, sign-in fails silently as a blocked request.
+`PARTSIBLE_CORS_ORIGINS`, sign-in fails silently as a blocked request.
 
 ```bash
 docker compose -f docker-compose.release.yml up -d
 ```
 
-Behind a reverse proxy or a real hostname, also set `PLANQER_HOST`. A ready-made
+Behind a reverse proxy or a real hostname, also set `PARTSIBLE_HOST`. A ready-made
 template with every option is [`.env.example`](.env.example); see
 [Configuration](docs/reference/configuration.md) for what each variable does.
 
 #### Upgrading
 
 Back up first, then pull and recreate in the same folder. To pin a version, set
-`PLANQER_VERSION` in `.env` (for example `PLANQER_VERSION=0.14.0`):
+`PARTSIBLE_VERSION` in `.env` (for example `PARTSIBLE_VERSION=0.15.0`):
 
 ```bash
-docker compose -f docker-compose.release.yml exec backend planqer backup
+docker compose -f docker-compose.release.yml exec backend partsible backup
 docker compose -f docker-compose.release.yml pull
 docker compose -f docker-compose.release.yml up -d
 ```
 
 The compose volume keeps local accounts and saved projects across upgrades.
-Stop Planqer with `docker compose -f docker-compose.release.yml down`; add `-v`
+Stop Partsible with `docker compose -f docker-compose.release.yml down`; add `-v`
 only if you want to delete the data too.
 
 ### Build from source
@@ -223,8 +236,8 @@ only if you want to delete the data too.
 Use `docker-compose.yml` to build the images yourself:
 
 ```bash
-git clone https://github.com/nordstad/Planqer.git
-cd Planqer
+git clone https://github.com/nordstad/partsible.git
+cd Partsible
 docker compose up -d --build
 ```
 
@@ -232,7 +245,7 @@ docker compose up -d --build
 
 ## Secret Scanning
 
-Planqer uses [Betterleaks](https://github.com/betterleaks/betterleaks) to check
+Partsible uses [Betterleaks](https://github.com/betterleaks/betterleaks) to check
 staged changes for accidentally committed secrets.
 
 Install the pre-commit tool and enable the repository hook:
@@ -259,7 +272,7 @@ Do not use `git commit --no-verify`, which bypasses the check.
 Detailed guides, configuration options, API references, and MCP server setup
 instructions are available in the documentation site.
 
-📖 **[Read the Documentation](https://nordstad.github.io/Planqer/)**
+📖 **[Read the Documentation](https://docs.partsible.com/)**
 
 > To preview the docs locally:
 >

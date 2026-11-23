@@ -3,15 +3,15 @@
 ## "Blocked request. This host is not allowed"
 
 The frontend dev server (Vite) rejects requests whose `Host` header it
-doesn't recognize. This shows up when Planqer is served behind a reverse
+doesn't recognize. This shows up when Partsible is served behind a reverse
 proxy or a hostname other than `localhost`/`127.0.0.1`.
 
-**Fix:** set `PLANQER_HOST` to the hostname you're serving on, then restart
+**Fix:** set `PARTSIBLE_HOST` to the hostname you're serving on, then restart
 the frontend container. See [Configuration](reference/configuration.md).
 
 ## Signed out after every restart
 
-`SECRET_KEY` signs login sessions. If it isn't set, Planqer generates and
+`SECRET_KEY` signs login sessions. If it isn't set, Partsible generates and
 persists one at `data/.secret_key` in the backend data volume. Sessions are
 invalidated if that volume is replaced, the key file is deleted/unreadable, or
 the backend cannot write the key during first startup.
@@ -22,7 +22,7 @@ shared fixed value in `.env` and keep it stable.
 
 ## I forgot my password
 
-There is no self-service "forgot password" — Planqer doesn't send email. See
+There is no self-service "forgot password" — Partsible doesn't send email. See
 [Projects & accounts](guide/projects-and-accounts.md#there-is-no-self-service-forgot-password)
 for the two supported recovery paths (another admin resets it, or
 `create_admin.py set-password` from the host).
@@ -36,7 +36,7 @@ or split the part into two shorter ones with a joint.
 ## CORS errors calling the API from another origin
 
 By default the API only allows the origins it ships with. Add yours via
-`PLANQER_CORS_ORIGINS` (comma-separated) — see
+`PARTSIBLE_CORS_ORIGINS` (comma-separated) — see
 [Configuration](reference/configuration.md).
 
 ## `429 Too Many Requests`
@@ -58,7 +58,7 @@ board/sheet optimization, lower for file uploads — see
 Check the backend logs and confirm `/health` responds directly:
 
 ```bash
-docker exec planqer-web-backend curl -sf http://localhost:8002/health
+docker exec partsible-web-backend curl -sf http://localhost:8002/health
 ```
 
 If that succeeds but Docker still reports the container unhealthy, check
@@ -67,7 +67,7 @@ failing check output.
 
 ## Port already in use
 
-Planqer expects `3001` (frontend) and `8002` (backend) free by default. If
+Partsible expects `3001` (frontend) and `8002` (backend) free by default. If
 another service is already using port 3001, you can override the published host port using environment variables (or a `.env` file) without editing code:
 
 ```bash

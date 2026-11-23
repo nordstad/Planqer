@@ -20,9 +20,9 @@ from step_fixtures import (
     _step_file,
 )
 
-from planqer.errors import PlanqerError
-from planqer.step_cutlist import StepComponentType, StepProcessor, process_step_bytes
-from planqer.step_reader import StepModel, StepParseError, read_step_file
+from partsible.errors import PartsibleError
+from partsible.step_cutlist import StepComponentType, StepProcessor, process_step_bytes
+from partsible.step_reader import StepModel, StepParseError, read_step_file
 
 
 def _bodies(text: str):
@@ -213,12 +213,12 @@ def test_a_thin_wide_panel_classifies_as_sheet_and_a_stick_as_board():
             ]
         )
     )
-    with open("/tmp/planqer-test-mixed.step", "w") as handle:
+    with open("/tmp/partsible-test-mixed.step", "w") as handle:
         handle.write(text)
 
     items = {
         i.name: i.type
-        for i in StepProcessor().process_step_file("/tmp/planqer-test-mixed.step")
+        for i in StepProcessor().process_step_file("/tmp/partsible-test-mixed.step")
     }
 
     assert items["Top Ply"] == StepComponentType.SHEET
@@ -232,10 +232,10 @@ def test_identical_parts_group_into_one_line_with_a_summed_quantity():
             _product(1, "Right Stretcher", [_box_corners(520.0, 95.0, 45.0)]),
         ]
     )
-    with open("/tmp/planqer-test-pair.step", "w") as handle:
+    with open("/tmp/partsible-test-pair.step", "w") as handle:
         handle.write(_step_file(products))
 
-    items = StepProcessor().process_step_file("/tmp/planqer-test-pair.step")
+    items = StepProcessor().process_step_file("/tmp/partsible-test-pair.step")
 
     assert len(items) == 1
     assert items[0].quantity == 2
@@ -250,12 +250,12 @@ def test_board_lengths_become_the_optimizer_payload():
             _product(2, "Ply", [_box_corners(1800.0, 800.0, 15.0)]),
         ]
     )
-    with open("/tmp/planqer-test-parts.step", "w") as handle:
+    with open("/tmp/partsible-test-parts.step", "w") as handle:
         handle.write(_step_file(products))
 
     processor = StepProcessor()
-    parts = processor.convert_to_planqer_parts(
-        processor.process_step_file("/tmp/planqer-test-parts.step")
+    parts = processor.convert_to_partsible_parts(
+        processor.process_step_file("/tmp/partsible-test-parts.step")
     )
 
     # The sheet is not a length to cut on a 1D saw, so it stays out.
@@ -269,11 +269,11 @@ def test_a_file_that_is_not_step_is_refused():
 
 def test_a_step_file_with_no_solids_is_refused():
     """A surfaces-only or wireframe export has nothing to cut, and says so."""
-    with open("/tmp/planqer-test-empty.step", "w") as handle:
+    with open("/tmp/partsible-test-empty.step", "w") as handle:
         handle.write(_step_file(""))
 
     with pytest.raises(StepParseError, match="No solid bodies"):
-        read_step_file("/tmp/planqer-test-empty.step")
+        read_step_file("/tmp/partsible-test-empty.step")
 
 
 def test_strings_holding_a_semicolon_do_not_end_the_record():
@@ -321,7 +321,7 @@ def test_step_file_reports_a_skipped_degenerate_body():
 def test_step_contents_with_the_wrong_extension_are_refused():
     products = _product(0, "Long", [_box_corners(1800.0, 95.0, 45.0)])
 
-    with pytest.raises(PlanqerError) as exc_info:
+    with pytest.raises(PartsibleError) as exc_info:
         process_step_bytes(_step_file(products).encode(), "shelf.stl")
 
     assert exc_info.value.status_code == 400
@@ -329,7 +329,7 @@ def test_step_contents_with_the_wrong_extension_are_refused():
 
 
 def test_step_contents_that_are_not_step_are_refused_with_the_readers_message():
-    with pytest.raises(PlanqerError) as exc_info:
+    with pytest.raises(PartsibleError) as exc_info:
         process_step_bytes(b"this is not a step file", "broken.step")
 
     assert exc_info.value.status_code == 400

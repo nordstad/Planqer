@@ -13,7 +13,7 @@ import CatalogueSuggest from './CatalogueSuggest';
 import Loader from './Loader';
 import CatalogueCountrySelect from './CatalogueCountrySelect';
 import { useCatalogueChoice } from '../hooks/useCatalogueChoice';
-import { demoContext } from '../utils/mode';
+import { liteContext } from '../utils/mode';
 import {
   createCatalogueEntry, getAdminCatalogue, hideCatalogueEntry, resetCatalogueEntry,
   restoreCatalogueEntry, updateCatalogueEntry,
@@ -107,7 +107,7 @@ const AdminCatalogue = () => {
         />
       </div>
       <p className="synthetic" style={{ whiteSpace: 'normal', marginBottom: '12px' }}>
-        {t('catalogueAdmin.intro', { country: countryName, ...demoContext() })}
+        {t('catalogueAdmin.intro', { country: countryName, ...liteContext() })}
       </p>
 
       <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'end' }}>
@@ -227,7 +227,7 @@ const AdminCatalogue = () => {
       <ConfirmDialog
         open={!!pendingReset}
         title={pendingReset?.origin === 'local' ? t('ui.delete') : t('catalogueAdmin.revert')}
-        message={pendingReset && t(pendingReset.origin === 'local' ? 'catalogueAdmin.deleteConfirm' : 'catalogueAdmin.revertConfirm', { name: itemName(pendingReset, catalogue, i18n.language), ...demoContext() })}
+        message={pendingReset && t(pendingReset.origin === 'local' ? 'catalogueAdmin.deleteConfirm' : 'catalogueAdmin.revertConfirm', { name: itemName(pendingReset, catalogue, i18n.language), ...liteContext() })}
         confirmLabel={pendingReset?.origin === 'local' ? t('ui.delete') : t('catalogueAdmin.revert')}
         onConfirm={() => { const { product } = pendingReset; setPendingReset(null); run(() => resetCatalogueEntry(product.id)); }}
         onCancel={() => setPendingReset(null)}

@@ -6,7 +6,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
-const python = process.env.PLANQER_PYTHON ?? join(root, "backend/.venv/bin/python");
+const python = process.env.PARTSIBLE_PYTHON ?? join(root, "backend/.venv/bin/python");
 
 export default function globalSetup() {
   for (const script of ["fetch-pyodide-runtime.py", "build-pyodide-bundle.py"]) {

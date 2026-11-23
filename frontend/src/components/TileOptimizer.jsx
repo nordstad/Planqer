@@ -426,7 +426,7 @@ const TileOptimizer = () => {
     try {
       const moved = await movePlanToProject({ ...saved, projectType: 'tile' }, group.id);
       setSaved(moved);
-      localStorage.setItem('planqer.lastProjectGroup', group.id);
+      localStorage.setItem('partsible.lastProjectGroup', group.id);
       return true;
     } catch (error) {
       setApiError(t('projectUi.moveFailed', { message: error.message }));
@@ -620,7 +620,7 @@ const TileOptimizer = () => {
             </div>
             {jointWrong && <p className="text-danger text-[12.5px] font-semibold" style={{ marginTop: '10px' }}>{inputErrors.jointWidth || inputErrors.perimeterGap}</p>}
             {isStaticMode() && isHeavyTileJob(bondPattern, surfaceWidth, surfaceHeight) && (
-              <p className="synthetic" role="note" style={{ marginTop: '6px', color: 'var(--accent)' }}>{t('demo.solver.heavyTile')}</p>
+              <p className="synthetic" role="note" style={{ marginTop: '6px', color: 'var(--accent)' }}>{t('lite.solver.heavyTile')}</p>
             )}
           </SectionCard>
 

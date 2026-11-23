@@ -78,7 +78,7 @@ describe("local transport: errors", () => {
     await expect(transport.post(`${API}/tile-layout`, {})).rejects.toBe(timeout);
   });
 
-  it("says plainly when a route is not part of the demo", async () => {
+  it("says plainly when a route is not part of Lite", async () => {
     const { call, transport } = setup();
 
     const error = await transport.get(`${API}/admin/users`).catch((e) => e);
@@ -209,13 +209,13 @@ describe("local transport: saved projects, groups and settings", () => {
     expect(handle).not.toHaveBeenCalled();
   });
 
-  it("still says a route is not part of the demo when the store does not know it", async () => {
+  it("still says a route is not part of Lite when the store does not know it", async () => {
     const { transport } = withStore(null);
 
     const error = await transport.get(`${API}/admin/users`).catch((e) => e);
 
     expect(error.response.status).toBe(404);
-    expect(error.response.data.detail).toMatch(/not available in the demo/i);
+    expect(error.response.data.detail).toMatch(/not available in Lite/i);
   });
 });
 

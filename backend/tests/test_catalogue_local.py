@@ -10,11 +10,11 @@ from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
-from planqer.catalogue import get_catalogue
-from planqer.catalogue.loader import check_group, load_details
-from planqer.catalogue.local import ProductDetails, build_product, build_suggestion
-from planqer.catalogue.schema import CountryFile, ProductGroup
-from planqer.database import CatalogueEntry, User, engine
+from partsible.catalogue import get_catalogue
+from partsible.catalogue.loader import check_group, load_details
+from partsible.catalogue.local import ProductDetails, build_product, build_suggestion
+from partsible.catalogue.schema import CountryFile, ProductGroup
+from partsible.database import CatalogueEntry, User, engine
 
 pytestmark = pytest.mark.api
 
@@ -23,11 +23,11 @@ BUILT_IN = "se:regel:45x95"
 
 @pytest.fixture
 def client(monkeypatch):
-    from planqer.api import app
+    from partsible.api import app
 
-    monkeypatch.setenv("PLANQER_CATALOGUE_COUNTRY", "SE")
+    monkeypatch.setenv("PARTSIBLE_CATALOGUE_COUNTRY", "SE")
     with TestClient(app) as test_client:
-        test_client.headers["X-Planqer-Setup-Secret"] = "test-setup-secret"
+        test_client.headers["X-Partsible-Setup-Secret"] = "test-setup-secret"
         yield test_client
 
 
@@ -344,7 +344,7 @@ def test_suggestion_is_a_prefilled_issue_with_a_valid_yaml_snippet(client, admin
     assert (url.scheme, url.netloc, url.path) == (
         "https",
         "github.com",
-        "/nordstad/Planqer/issues/new",
+        "/nordstad/partsible/issues/new",
     )
     query = parse_qs(url.query)
     assert query["template"] == ["catalogue-product.yml"]
@@ -400,7 +400,7 @@ def test_suggestion_needs_a_source_and_a_country(client, admin, monkeypatch):
 def test_suggestion_needs_a_country_when_the_instance_has_none(
     client, admin, monkeypatch
 ):
-    monkeypatch.delenv("PLANQER_CATALOGUE_COUNTRY")
+    monkeypatch.delenv("PARTSIBLE_CATALOGUE_COUNTRY")
     client.post("/api/admin/catalogue", json=NEW_BOARD, headers=admin)
     path = "local:regel:48x98"
     missing = _suggestion(client, admin, path)
@@ -424,7 +424,9 @@ def test_building_a_suggestion_sends_nothing(monkeypatch):
     monkeypatch.setattr(socket, "create_connection", refuse)
     product = build_product("regel", 48, 98, ProductDetails(), country="SE")
     suggestion = build_suggestion(product, source="https://a.se", country="se")
-    assert suggestion.url.startswith("https://github.com/nordstad/Planqer/issues/new?")
+    assert suggestion.url.startswith(
+        "https://github.com/nordstad/partsible/issues/new?"
+    )
 
 
 def test_bad_stored_data_is_ignored_not_fatal(client, admin):

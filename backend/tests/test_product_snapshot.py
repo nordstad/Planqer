@@ -8,10 +8,10 @@ pytestmark = pytest.mark.api
 
 @pytest.fixture
 def client():
-    from planqer.api import app
+    from partsible.api import app
 
     with TestClient(app) as test_client:
-        test_client.headers["X-Planqer-Setup-Secret"] = "test-setup-secret"
+        test_client.headers["X-Partsible-Setup-Secret"] = "test-setup-secret"
         yield test_client
 
 
@@ -119,11 +119,11 @@ def test_board_plan_keeps_its_product_snapshot(client):
 
 def test_snapshot_is_unaffected_by_later_catalogue_changes(client, monkeypatch):
     headers = _register_and_login(client)
-    monkeypatch.setenv("PLANQER_CATALOGUE_COUNTRY", "SE")
+    monkeypatch.setenv("PARTSIBLE_CATALOGUE_COUNTRY", "SE")
     payload = {**_save_payload(SOLVED_PLAN), "product": BOARD_PRODUCT}
     saved = client.post("/api/projects/", json=payload, headers=headers).json()
 
-    monkeypatch.delenv("PLANQER_CATALOGUE_COUNTRY")
+    monkeypatch.delenv("PARTSIBLE_CATALOGUE_COUNTRY")
     again = client.get(f"/api/projects/{saved['id']}", headers=headers).json()
 
     assert again["product"]["lengths"] == [2400, 2700, 3000]

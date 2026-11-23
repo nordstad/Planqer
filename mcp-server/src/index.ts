@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
 
 // API configuration - using localhost for local development, can be configured via env
-const API_BASE_URL = process.env.PLANQER_API_URL || 'http://localhost:8002/api';
+const API_BASE_URL = process.env.PARTSIBLE_API_URL || 'http://localhost:8002/api';
 
 const LOG_LEVELS = { DEBUG: 10, INFO: 20, WARN: 30, ERROR: 40 } as const;
 type LogLevel = keyof typeof LOG_LEVELS;
@@ -37,7 +37,7 @@ const MCP_API_MAX_RETRIES = Math.max(0, parseIntEnv('MCP_API_MAX_RETRIES', 2));
 const MCP_API_RETRY_BASE_DELAY_MS = Math.max(0, parseIntEnv('MCP_API_RETRY_BASE_DELAY_MS', 200));
 const MCP_API_RETRY_MAX_DELAY_MS = Math.max(MCP_API_RETRY_BASE_DELAY_MS, parseIntEnv('MCP_API_RETRY_MAX_DELAY_MS', 2000));
 const RETRYABLE_STATUS_CODES = new Set([408, 425, 429, 500, 502, 503, 504]);
-const MCP_SERVER_VERSION = '0.14.0';
+const MCP_SERVER_VERSION = '0.15.0';
 
 const shouldLog = (level: LogLevel): boolean => LOG_LEVELS[level] >= LOG_LEVELS[currentLevel];
 const REDACT_FIELDS = new Set(['parts', 'project_name', 'cut_list', 'visualization', 'content', 'structuredContent']);
@@ -103,9 +103,9 @@ const retryDelayMs = (attemptNumber: number): number => {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const TOOLS_CONTRACT_PATH = path.resolve(__dirname, '..', 'schemas', 'mcp-tools.json');
-const DEMO_PAYLOADS_PATH = path.resolve(__dirname, '..', 'schemas', 'demo-payloads.json');
+const SAMPLE_PAYLOADS_PATH = path.resolve(__dirname, '..', 'schemas', 'sample-payloads.json');
 
-type DemoPayload = {
+type SamplePayload = {
   parts: Record<string, number>;
   available_board_lengths: number[];
   saw_blade_width: number;
@@ -113,7 +113,7 @@ type DemoPayload = {
   product?: string;
 };
 
-type DemoPayloadMap = Record<string, DemoPayload>;
+type SamplePayloadMap = Record<string, SamplePayload>;
 
 const loadToolsContract = (): Tool[] => {
   const parsed = JSON.parse(readFileSync(TOOLS_CONTRACT_PATH, 'utf8'));
@@ -123,12 +123,12 @@ const loadToolsContract = (): Tool[] => {
   return parsed as Tool[];
 };
 
-const loadDemoPayloads = (): DemoPayloadMap => {
-  const parsed = JSON.parse(readFileSync(DEMO_PAYLOADS_PATH, 'utf8'));
+const loadSamplePayloads = (): SamplePayloadMap => {
+  const parsed = JSON.parse(readFileSync(SAMPLE_PAYLOADS_PATH, 'utf8'));
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    throw new Error('Demo payloads contract must be an object');
+    throw new Error('Sample payloads contract must be an object');
   }
-  return parsed as DemoPayloadMap;
+  return parsed as SamplePayloadMap;
 };
 
 // Validation schemas
@@ -213,17 +213,17 @@ const AsyncOptimizeCuttingInputSchema = OptimizeCuttingInputSchema.extend({
   use_async: z.boolean().optional(),
 });
 
-const DEMO_PAYLOADS: DemoPayloadMap = loadDemoPayloads();
+const SAMPLE_PAYLOADS: SamplePayloadMap = loadSamplePayloads();
 
 const TOOLS: Tool[] = loadToolsContract();
 
-class PlanqerServer {
+class PartsibleServer {
   private server: Server;
 
   constructor() {
     this.server = new Server(
       {
-        name: 'planqer-mcp-server',
+        name: 'partsible-mcp-server',
         version: MCP_SERVER_VERSION,
       },
       {
@@ -257,10 +257,10 @@ class PlanqerServer {
           return await this.handleOptimizeCutting(request.params.arguments || {}, requestId);
         case 'search_products':
           return await this.handleSearchProducts(request.params.arguments || {}, requestId);
-        case 'optimize_demo':
-          return await this.handleOptimizeDemo(request.params.arguments || {}, requestId);
-        case 'get_demo_payloads':
-          return this.handleGetDemoPayloads(request.params.arguments || {});
+        case 'optimize_sample':
+          return await this.handleOptimizeSample(request.params.arguments || {}, requestId);
+        case 'get_sample_payloads':
+          return this.handleGetSamplePayloads(request.params.arguments || {});
         case 'get_cutting_example':
           return this.handleGetExample();
         default:
@@ -496,7 +496,7 @@ class PlanqerServer {
             error.response.data?.detail || error.response.data?.message || error.response.statusText
           } (${retryableLabel})`;
         } else if (error.request) {
-          errorMessage = `❌ Network error: Could not reach the Planqer API at ${API_BASE_URL}. Please check if the service is running. (retryable)`;
+          errorMessage = `❌ Network error: Could not reach the Partsible API at ${API_BASE_URL}. Please check if the service is running. (retryable)`;
         } else {
           errorMessage = `❌ Request error: ${error.message}`;
         }
@@ -561,7 +561,7 @@ class PlanqerServer {
             error.response.data?.detail || error.response.statusText
           }`;
         } else if (error.request) {
-          errorMessage = `❌ Network error: Could not reach the Planqer API at ${API_BASE_URL}. Please check if the service is running.`;
+          errorMessage = `❌ Network error: Could not reach the Partsible API at ${API_BASE_URL}. Please check if the service is running.`;
         } else {
           errorMessage = `❌ Request error: ${error.message}`;
         }
@@ -574,49 +574,49 @@ class PlanqerServer {
     }
   }
 
-  private async handleOptimizeDemo(args: any, requestId?: string): Promise<CallToolResult> {
+  private async handleOptimizeSample(args: any, requestId?: string): Promise<CallToolResult> {
     const rid = requestId || makeRequestId();
     const example = args.example;
     const useAsync = args.use_async || false;
     
-    if (!example || !(example in DEMO_PAYLOADS)) {
+    if (!example || !(example in SAMPLE_PAYLOADS)) {
       return {
         content: [
           {
             type: 'text',
-            text: `❌ Invalid or missing example. Available options: ${Object.keys(DEMO_PAYLOADS).join(', ')}`,
+            text: `❌ Invalid or missing example. Available options: ${Object.keys(SAMPLE_PAYLOADS).join(', ')}`,
           },
         ],
         isError: true,
       };
     }
 
-    // Get the demo payload and add async flag if specified
-    const payload = { ...DEMO_PAYLOADS[example as keyof typeof DEMO_PAYLOADS] };
+    // Get the sample payload and add async flag if specified
+    const payload = { ...SAMPLE_PAYLOADS[example as keyof typeof SAMPLE_PAYLOADS] };
     if (useAsync) {
       (payload as any).use_async = true;
     }
 
-    log('DEBUG', 'demo_selected', { requestId: rid, example, async: Boolean(useAsync) });
+    log('DEBUG', 'sample_selected', { requestId: rid, example, async: Boolean(useAsync) });
 
     // Run the optimization
     const result = await this.handleOptimizeCutting(payload, rid);
 
-    // Prepend demo information
+    // Prepend sample information
     if (result.content && result.content[0] && 'text' in result.content[0]) {
-      const demoInfo = `🎯 **Optimizing with "${example.replace('_', ' ')}" demo payload:**\n\n`;
-      result.content[0].text = demoInfo + result.content[0].text;
+      const sampleInfo = `🎯 **Optimizing with "${example.replace('_', ' ')}" sample payload:**\n\n`;
+      result.content[0].text = sampleInfo + result.content[0].text;
     }
 
     return result;
   }
 
-  private handleGetDemoPayloads(args: any): CallToolResult {
+  private handleGetSamplePayloads(args: any): CallToolResult {
     const example = args.example || 'all';
 
     if (example === 'all') {
-      // Return all demo payloads
-      const formattedPayloads = Object.entries(DEMO_PAYLOADS).map(([name, payload]) => 
+      // Return all sample payloads
+      const formattedPayloads = Object.entries(SAMPLE_PAYLOADS).map(([name, payload]) => 
         `**${name.replace('_', ' ').charAt(0).toUpperCase() + name.replace('_', ' ').slice(1)}:**\n\`\`\`json\n${JSON.stringify(payload, null, 2)}\n\`\`\``
       );
 
@@ -624,25 +624,25 @@ class PlanqerServer {
         content: [
           {
             type: 'text',
-            text: `🎯 **Demo Payloads for Planqer API Testing**\n\n` +
-                 `Here are pre-configured demo payloads you can use to test the cutting optimization API:\n\n` +
+            text: `🎯 **Sample Payloads for Partsible API Testing**\n\n` +
+                 `Here are pre-configured sample payloads you can use to test the cutting optimization API:\n\n` +
                  `${formattedPayloads.join('\n\n')}\n\n` +
                  `**How to use:**\n` +
                  `1. Copy any of the JSON payloads above\n` +
                  `2. Use the \`optimize_cutting\` tool with the copied payload\n` +
-                 `3. Or call \`optimize_demo\` with a specific example name\n\n` +
-                 `**Available examples:** ${Object.keys(DEMO_PAYLOADS).join(', ')}`,
+                 `3. Or call \`optimize_sample\` with a specific example name\n\n` +
+                 `**Available examples:** ${Object.keys(SAMPLE_PAYLOADS).join(', ')}`,
           },
         ],
       };
-    } else if (example in DEMO_PAYLOADS) {
-      // Return specific demo payload
-      const payload = DEMO_PAYLOADS[example as keyof typeof DEMO_PAYLOADS];
+    } else if (example in SAMPLE_PAYLOADS) {
+      // Return specific sample payload
+      const payload = SAMPLE_PAYLOADS[example as keyof typeof SAMPLE_PAYLOADS];
       return {
         content: [
           {
             type: 'text',
-            text: `📋 **${example.replace('_', ' ').charAt(0).toUpperCase() + example.replace('_', ' ').slice(1)} Demo Payload:**\n\n` +
+            text: `📋 **${example.replace('_', ' ').charAt(0).toUpperCase() + example.replace('_', ' ').slice(1)} Sample Payload:**\n\n` +
                  `\`\`\`json\n${JSON.stringify(payload, null, 2)}\n\`\`\`\n\n` +
                  `**Ready to use with optimize_cutting tool!**\n\n` +
                  `This payload includes:\n` +
@@ -659,7 +659,7 @@ class PlanqerServer {
         content: [
           {
             type: 'text',
-            text: `❌ Unknown demo example: '${example}'. Available options: ${Object.keys(DEMO_PAYLOADS).join(', ')}, all`,
+            text: `❌ Unknown sample example: '${example}'. Available options: ${Object.keys(SAMPLE_PAYLOADS).join(', ')}, all`,
           },
         ],
         isError: true,
@@ -668,7 +668,7 @@ class PlanqerServer {
   }
 
   private handleGetExample(): CallToolResult {
-    const example = DEMO_PAYLOADS.kitchen_cabinets;
+    const example = SAMPLE_PAYLOADS.kitchen_cabinets;
 
     return {
       content: [
@@ -703,5 +703,5 @@ class PlanqerServer {
   }
 }
 
-const server = new PlanqerServer();
+const server = new PartsibleServer();
 server.run().catch((error) => log('ERROR', 'mcp_server_fatal', { error: String(error) }));

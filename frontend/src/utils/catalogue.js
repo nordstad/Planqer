@@ -26,8 +26,8 @@ export const DETAIL_FIELDS = ['species', 'treatment', 'grade', 'profile'];
 // A model's measured cross-section rarely equals the nominal product exactly.
 export const MATCH_TOLERANCE_MM = 1;
 
-const CACHE_KEY = 'planqer-catalogue-v1';
-const MEMORY_KEY = 'planqer-product-choice-v1';
+const CACHE_KEY = 'partsible-catalogue-v1';
+const MEMORY_KEY = 'partsible-product-choice-v1';
 const MEMORY_LIMIT = 60;
 
 export const localeOf = (language = 'en') => language.slice(0, 2).toLowerCase();

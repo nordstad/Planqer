@@ -70,12 +70,12 @@ test("a rejected request fails with the endpoint's own message", async ({ page }
   expect(message).toBe("No board is long enough for the largest part.");
 });
 
-test("a server-only feature says it is not available in the demo", async ({ page }) => {
+test("a server-only feature says it is not available in Lite", async ({ page }) => {
   const message = await page.evaluate(() =>
     window.api.getAdminUsers().then(() => null, (error) => error.message),
   );
 
-  expect(message).toMatch(/not available in the demo/i);
+  expect(message).toMatch(/not available in Lite/i);
 });
 
 test("saved projects, groups and settings live in the browser and survive a reload", async ({
@@ -153,7 +153,7 @@ test("the user's own catalogue entries are edited, kept and shown in the picker"
   const result = await page.evaluate(async () => {
     const { api } = window;
     // As if the user had chosen Sweden in the catalogue selector.
-    localStorage.setItem("planqer-catalogue-country-v1", "SE");
+    localStorage.setItem("partsible-catalogue-country-v1", "SE");
     const ids = (list) => list.data.products.map((product) => product.id);
     const entry = {
       type: "regel", thickness: 48, width: 98, lengths: [2400, 3000], grades: ["C24"],
@@ -193,7 +193,7 @@ test("the user's own catalogue entries are edited, kept and shown in the picker"
 
 test("the user's own catalogue entries survive a reload and are in the backup", async ({ page }) => {
   await page.evaluate(() => {
-    localStorage.setItem("planqer-catalogue-country-v1", "SE");
+    localStorage.setItem("partsible-catalogue-country-v1", "SE");
     return window.api.createCatalogueEntry({
       type: "regel", thickness: 48, width: 98, lengths: [2400], grades: ["C24"],
       species: ["spruce"], sources: ["https://www.traguiden.se/example"],

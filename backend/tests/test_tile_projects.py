@@ -11,7 +11,7 @@ pytestmark = pytest.mark.api
 
 @pytest.fixture
 def app():
-    from planqer.api import app
+    from partsible.api import app
 
     return app
 
@@ -20,7 +20,7 @@ def app():
 def client(app):
     """Create a test client, entering the app's lifespan so migrations run"""
     with TestClient(app) as test_client:
-        test_client.headers["X-Planqer-Setup-Secret"] = "test-setup-secret"
+        test_client.headers["X-Partsible-Setup-Secret"] = "test-setup-secret"
         yield test_client
 
 
@@ -53,10 +53,10 @@ TILE_PAYLOAD = {
 # *solving* (as opposed to saving) call it again.
 @pytest.fixture(scope="module")
 def solved_result():
-    from planqer.api import app
+    from partsible.api import app
 
     with TestClient(app) as one_off_client:
-        one_off_client.headers["X-Planqer-Setup-Secret"] = "test-setup-secret"
+        one_off_client.headers["X-Partsible-Setup-Secret"] = "test-setup-secret"
         response = one_off_client.post("/api/tile-layout", json=TILE_PAYLOAD)
         assert response.status_code == 200
         return response.json()

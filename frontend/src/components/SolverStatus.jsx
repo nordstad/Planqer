@@ -5,12 +5,12 @@ import { solverStatus } from '../runtime/solverStatus';
 import Loader from './Loader';
 
 const LOADING_STAGES = {
-  'loading-runtime': 'demo.solver.loadingEngine',
-  'loading-solvers': 'demo.solver.loadingEngine',
-  'loading-model-packages': 'demo.solver.loadingModels',
+  'loading-runtime': 'lite.solver.loadingEngine',
+  'loading-solvers': 'lite.solver.loadingEngine',
+  'loading-model-packages': 'lite.solver.loadingModels',
 };
 
-/* One bar for every tool: the demo's calculation runs in this browser, so the
+/* One bar for every tool: Lite's calculation runs in this browser, so the
    first call downloads the engine and a long one needs a way out. */
 const SolverStatus = () => {
   const { t } = useTranslation();
@@ -19,7 +19,7 @@ const SolverStatus = () => {
 
   const message = LOADING_STAGES[stage]
     ? t(LOADING_STAGES[stage])
-    : t('demo.solver.calculating', { seconds: Math.floor(elapsedMs / 1000) });
+    : t('lite.solver.calculating', { seconds: Math.floor(elapsedMs / 1000) });
 
   return (
     <div
@@ -33,7 +33,7 @@ const SolverStatus = () => {
     >
       <span aria-hidden="true"><Loader /></span>
       <span>{message}</span>
-      <button type="button" className="btn btn-sm" onClick={cancelSolver}>{t('demo.solver.cancel')}</button>
+      <button type="button" className="btn btn-sm" onClick={cancelSolver}>{t('lite.solver.cancel')}</button>
     </div>
   );
 };

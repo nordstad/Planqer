@@ -1,6 +1,6 @@
 import base64
 
-from planqer.wallpaper.visualization import (
+from partsible.wallpaper.visualization import (
     render_piece_svg,
     render_plan_svg,
     render_roll_svg,

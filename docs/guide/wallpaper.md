@@ -28,7 +28,7 @@ top view and no strips are planned for it.
 ## Pattern and allowances
 
 Plain wallpaper has a repeat of zero. For patterned wallpaper, enter the repeat
-printed on the roll and choose straight or half-drop matching. Planqer reports a
+printed on the roll and choose straight or half-drop matching. Partsible reports a
 phase for each cut, but always visually match the motif to the previous strip
 before cutting.
 
@@ -65,7 +65,7 @@ sliver that is hard to hang. Set it with **Start each wall with** in the
 
 ### Recommended
 
-This is the default. For every wall run Planqer tries the first-strip widths in
+This is the default. For every wall run Partsible tries the first-strip widths in
 5 mm steps and picks the layout that is best by these rules, in order:
 
 1. **Safe to hang.** No seam on an outside corner, no strip narrower than
@@ -88,7 +88,7 @@ one hung on the wall.
 | 5850 mm | 275 mm first and last strips | 2 | 3 |
 
 The 5850 mm wall cannot start with a full strip: eleven full strips leave
-only 20 mm, which is too narrow to hang. Planqer balances the first and last
+only 20 mm, which is too narrow to hang. Partsible balances the first and last
 strips instead, for that wall only. Every wall run is decided separately, so
 one awkward wall does not take the others away from a full-width start.
 
@@ -97,7 +97,7 @@ one awkward wall does not take the others away from a full-width start.
 This makes the pieces at the two ends of a wall run as even as possible. On a
 single wall the first and last strips are equally wide, so the layout is
 symmetrical. Choose it when you want that look. It is also how plans saved
-before this setting existed were laid out, so Planqer reopens them with this
+before this setting existed were laid out, so Partsible reopens them with this
 choice and their result does not change. To re-plan an old plan,
 change the setting to **Recommended** and press **Create plan**.
 
@@ -131,7 +131,7 @@ it walking clockwise, and describe each corner as you reach it:
   walls of a plain box are all inside corners.
 - **Outside corner**: the wall turns away from you, such as the end of a
   partition or a chimney breast. A strip always wraps an outside corner, and
-  Planqer never puts a seam on the edge itself.
+  Partsible never puts a seam on the edge itself.
 
 A free-standing partition is three walls: the face on one side, its short end
 and the face on the other side, joined by two outside corners. The end is a wall
@@ -150,7 +150,7 @@ in its own right, even if it is only 600 mm wide, and it can carry openings.
 Use **No corner: start a new wall run** where two papered areas do not touch,
 such as a separate alcove. No strip is carried across, and the top view draws
 the runs apart. Leave **Walls form a closed room** unticked unless the last wall
-really meets the first. When it is ticked Planqer checks that the walls close to
+really meets the first. When it is ticked Partsible checks that the walls close to
 within 10 mm, and warns by how much they do not.
 
 Check the top view before planning. It follows your entry order with square
@@ -217,5 +217,5 @@ The plan remains read-only until you choose Modify; saving the changed inputs
 replaces its result.
 
 For paste, trimming technique, electrical safety and product-specific handling,
-follow the manufacturer guide saved with the wallpaper. Do not rely on Planqer
+follow the manufacturer guide saved with the wallpaper. Do not rely on Partsible
 for those instructions.

@@ -215,10 +215,10 @@ describe('searching and picking', () => {
     await show(<Harness memoryKey="board:45x95" />);
     fireEvent.change(box(), { target: { value: 'regel 45x95' } });
     fireEvent.mouseDown(screen.getByRole('option', { name: /^Framing timber 45 × 95 mm/ }));
-    expect(JSON.parse(localStorage.getItem('planqer-product-choice-v1'))['board:45x95'].type).toBe('regel');
+    expect(JSON.parse(localStorage.getItem('partsible-product-choice-v1'))['board:45x95'].type).toBe('regel');
 
     fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
-    expect(localStorage.getItem('planqer-product-choice-v1')).toBe('{}');
+    expect(localStorage.getItem('partsible-product-choice-v1')).toBe('{}');
   });
 });
 
@@ -235,7 +235,7 @@ describe('suggestions', () => {
 
     expect(screen.getByTestId('product-summary')).not.toHaveTextContent('Suggested');
     expect(screen.queryByRole('button', { name: 'Looks right' })).not.toBeInTheDocument();
-    expect(JSON.parse(localStorage.getItem('planqer-product-choice-v1'))['board:45x95'].suggested).toBe(false);
+    expect(JSON.parse(localStorage.getItem('partsible-product-choice-v1'))['board:45x95'].suggested).toBe(false);
   });
 
   it('changing a suggested product replaces it', async () => {
@@ -463,7 +463,7 @@ describe('ProductPicker: choosing the catalogue country', () => {
   });
 
   it('asks for the country the user has chosen', async () => {
-    localStorage.setItem('planqer-catalogue-country-v1', 'NO');
+    localStorage.setItem('partsible-catalogue-country-v1', 'NO');
     await show(<Harness />);
     expect(getCatalogue).toHaveBeenCalledWith(undefined, 'NO');
     expect(screen.getByLabelText('Catalogue')).toHaveValue('NO');
@@ -480,7 +480,7 @@ describe('ProductPicker: choosing the catalogue country', () => {
     });
 
     expect(getCatalogue).toHaveBeenLastCalledWith(undefined, 'SE');
-    expect(localStorage.getItem('planqer-catalogue-country-v1')).toBe('SE');
+    expect(localStorage.getItem('partsible-catalogue-country-v1')).toBe('SE');
     expect(screen.queryByText(/No country is selected/)).not.toBeInTheDocument();
     expect(updateUserSettings).not.toHaveBeenCalled();
   });
@@ -497,7 +497,7 @@ describe('ProductPicker: choosing the catalogue country', () => {
     });
 
     expect(getCatalogue).toHaveBeenLastCalledWith(undefined, 'SE');
-    expect(localStorage.getItem('planqer-catalogue-country-v1')).toBe('SE');
+    expect(localStorage.getItem('partsible-catalogue-country-v1')).toBe('SE');
     expect(screen.queryByTestId('generic-catalogue-prompt')).not.toBeInTheDocument();
   });
 
@@ -505,7 +505,7 @@ describe('ProductPicker: choosing the catalogue country', () => {
     getCatalogue.mockResolvedValue({ data: generic, etag: '"g"' });
     await show(<Harness />);
     const link = within(screen.getByTestId('generic-catalogue-prompt')).getByRole('link', { name: 'Ask for it' });
-    expect(link).toHaveAttribute('href', 'https://github.com/nordstad/Planqer/issues/new/choose');
+    expect(link).toHaveAttribute('href', 'https://github.com/nordstad/partsible/issues/new/choose');
     expect(link).toHaveAttribute('target', '_blank');
   });
 
@@ -528,6 +528,6 @@ describe('ProductPicker: choosing the catalogue country', () => {
       fireEvent.change(screen.getByLabelText('Catalogue'), { target: { value: 'auto' } });
     });
     expect(updateUserSettings).toHaveBeenLastCalledWith({ catalogue_country: 'auto' });
-    expect(localStorage.getItem('planqer-catalogue-country-v1')).toBeNull();
+    expect(localStorage.getItem('partsible-catalogue-country-v1')).toBeNull();
   });
 });

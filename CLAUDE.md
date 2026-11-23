@@ -1,6 +1,6 @@
-# Planqer contributor guide
+# Partsible contributor guide
 
-Planqer is a self-hosted cutting-optimisation application for boards, sheets,
+Partsible is a self-hosted cutting-optimisation application for boards, sheets,
 tiles, wallpaper, and 3D-model cutlists. It has a FastAPI backend, React/Vite
 frontend, and MCP server.
 
@@ -13,7 +13,7 @@ Run commands from the relevant directory.
 ```bash
 uv sync
 pytest
-uvicorn planqer.api:app --reload --host 0.0.0.0 --port 8002
+uvicorn partsible.api:app --reload --host 0.0.0.0 --port 8002
 ```
 
 ### Frontend (`frontend/`)
@@ -31,8 +31,8 @@ npm run build
 ```bash
 uv sync
 npm run build
-uv run planqer-mcp-server
-npx @modelcontextprotocol/inspector uv run planqer-mcp-server
+uv run partsible-mcp-server
+npx @modelcontextprotocol/inspector uv run partsible-mcp-server
 ```
 
 ## Docker development
@@ -61,14 +61,14 @@ the user to hard-refresh (`⌘⇧R`). A Vite `Failed to resolve import` error fr
 
 ## Architecture at a glance
 
-- Backend logic: `backend/planqer/`; HTTP API: `backend/planqer/api.py`.
-- Cutting solver: `backend/planqer/cutting.py`; diagrams:
+- Backend logic: `backend/partsible/`; HTTP API: `backend/partsible/api.py`.
+- Cutting solver: `backend/partsible/cutting.py`; diagrams:
   `svg_visualization.py` and `sheet_visualization.py`.
 - Frontend routes and components: `frontend/src/`; API client:
   `frontend/src/utils/api.js`.
 - Frontend unit tests: `frontend/src/**/*.test.{js,jsx}`; E2E:
   `frontend/tests/e2e/`.
-- MCP tools connect to `PLANQER_API_URL`, defaulting to
+- MCP tools connect to `PARTSIBLE_API_URL`, defaulting to
   `http://localhost:8002/api`.
 
 ## Conventions

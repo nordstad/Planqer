@@ -5,12 +5,12 @@ API tests for POST /api/tile-layout.
 import pytest
 from fastapi.testclient import TestClient
 
-from planqer.api import app
+from partsible.api import app
 
 pytestmark = pytest.mark.api
 
 client = TestClient(app)
-client.headers["X-Planqer-Setup-Secret"] = "test-setup-secret"
+client.headers["X-Partsible-Setup-Secret"] = "test-setup-secret"
 
 
 BASE_PAYLOAD = {

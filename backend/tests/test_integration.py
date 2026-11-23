@@ -1,15 +1,15 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from planqer.api import app
+from partsible.api import app
 
 client = TestClient(app)
-client.headers["X-Planqer-Setup-Secret"] = "test-setup-secret"
+client.headers["X-Partsible-Setup-Secret"] = "test-setup-secret"
 
 pytestmark = pytest.mark.api
 
 
-def test_planqer_integration_multiple_boards():
+def test_partsible_integration_multiple_boards():
     # Test successful optimization with multiple boards
     payload = {
         "parts": {"100": 2, "80": 1, "50": 2},
@@ -29,7 +29,7 @@ def test_planqer_integration_multiple_boards():
     assert data["total_waste"] >= 0
 
 
-def test_planqer_integration_invalid_parts():
+def test_partsible_integration_invalid_parts():
     # Test that an invalid part length (too long) is rejected
     payload = {
         "parts": {"9999": 1},  # Exceeds max part length from config
@@ -40,7 +40,7 @@ def test_planqer_integration_invalid_parts():
     assert response.status_code == 422 or response.status_code == 400
 
 
-def test_planqer_integration_no_boards():
+def test_partsible_integration_no_boards():
     # Test that missing board lengths returns a validation error
     payload = {
         "parts": {"100": 1},
@@ -51,7 +51,7 @@ def test_planqer_integration_no_boards():
     assert response.status_code == 422  # Validation error is more appropriate than 400
 
 
-def test_planqer_integration_part_too_large_for_boards():
+def test_partsible_integration_part_too_large_for_boards():
     # Test that a part cannot fit on any available board (should return 400)
     payload = {
         "parts": {"300": 1},  # Part is longer than any board
@@ -62,7 +62,7 @@ def test_planqer_integration_part_too_large_for_boards():
     assert response.status_code == 400
 
 
-def test_planqer_integration_custom_saw_blade_width():
+def test_partsible_integration_custom_saw_blade_width():
     # Test that a valid request with a non-default saw blade width works
     payload = {
         "parts": {"100": 2, "50": 1},
@@ -77,7 +77,7 @@ def test_planqer_integration_custom_saw_blade_width():
     assert data["total_waste"] >= 0
 
 
-def test_planqer_integration_empty_parts():
+def test_partsible_integration_empty_parts():
     # Test that a request with empty parts returns an error
     payload = {
         "parts": {},
@@ -88,7 +88,7 @@ def test_planqer_integration_empty_parts():
     assert response.status_code == 400 or response.status_code == 422
 
 
-def test_planqer_integration_swedish_lumber_sizes():
+def test_partsible_integration_swedish_lumber_sizes():
     # Test with realistic Swedish lumber sizes (Byggmax standard sizes)
     payload = {
         "parts": {"1200": 4, "800": 8, "500": 16, "300": 4},

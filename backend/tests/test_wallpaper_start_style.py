@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from planqer.schemas.wallpaper import (
+from partsible.schemas.wallpaper import (
     Corner,
     Room,
     StartPosition,
@@ -9,7 +9,7 @@ from planqer.schemas.wallpaper import (
     WallpaperPlanRequest,
     WallpaperSpec,
 )
-from planqer.wallpaper.plan import create_wallpaper_plan
+from partsible.wallpaper.plan import create_wallpaper_plan
 
 ROLL_WIDTH = 530
 

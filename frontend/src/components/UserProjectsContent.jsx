@@ -348,7 +348,7 @@ const UserProjectsContent = ({ groupId }) => {
       setAllProjects((previous) => previous.map((item) => (item.id === project.id && item.projectType === project.projectType
         ? { ...item, ...moved, projectType: project.projectType }
         : item)));
-      localStorage.setItem('planqer.lastProjectGroup', group.id);
+      localStorage.setItem('partsible.lastProjectGroup', group.id);
       return true;
     } catch (err) {
       setError(t('projectUi.moveFailed', { message: err.message }));

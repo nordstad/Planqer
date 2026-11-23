@@ -1,18 +1,18 @@
 # Contributing
 
-Docker Compose is the only supported way to *run* Planqer, but contributing
+Docker Compose is the only supported way to *run* Partsible, but contributing
 means running the services from source.
 
-Planqer is in beta and still under active development. Features, APIs and
+Partsible is in beta and still under active development. Features, APIs and
 behaviour may change between releases.
 
 ## Bugs, improvements and feedback
 
-Please [open an issue](https://github.com/nordstad/Planqer/issues/new/choose)
+Please [open an issue](https://github.com/nordstad/partsible/issues/new/choose)
 for bugs, improvement ideas, questions or other feedback. Include reproduction
 steps and relevant environment details when reporting a bug. Code and
 documentation improvements are welcome as
-[pull requests](https://github.com/nordstad/Planqer/pulls).
+[pull requests](https://github.com/nordstad/partsible/pulls).
 
 ## Backend (Python/FastAPI)
 
@@ -20,7 +20,7 @@ documentation improvements are welcome as
 cd backend
 uv sync
 uv run pytest
-uv run uvicorn planqer.api:app --reload --host 0.0.0.0 --port 8002
+uv run uvicorn partsible.api:app --reload --host 0.0.0.0 --port 8002
 ```
 
 ## Frontend (React/Vite)
@@ -45,22 +45,22 @@ cd mcp-server
 uv sync
 npm install
 npm run build
-uv run planqer-mcp-server
+uv run partsible-mcp-server
 ```
 
 ## Contributing catalogue data
 
-The built-in product catalogue (`backend/planqer/catalogue/data/<country>.yaml`)
+The built-in product catalogue (`backend/partsible/catalogue/data/<country>.yaml`)
 is optimized for Norway and Sweden and grows through suggestions. Want another
 country? Say which one by opening
-[an issue](https://github.com/nordstad/Planqer/issues/new/choose).
+[an issue](https://github.com/nordstad/partsible/issues/new/choose).
 If your instance is missing a product:
 
 1. Add it for your own instance first: **Admin → Catalogue → Add product**.
-2. Choose **Suggest to Planqer** on that row. The button is on local additions
+2. Choose **Suggest to Partsible** on that row. The button is on local additions
    and on built-in entries you have changed; unchanged built-ins are already in
-   Planqer. Enter a source URL (an `https://` link) and check the two-letter
-   country code. As soon as there is a source, Planqer prepares a pre-filled
+   Partsible. Enter a source URL (an `https://` link) and check the two-letter
+   country code. As soon as there is a source, Partsible prepares a pre-filled
    issue from the *Catalogue product* template with the country, the product,
    the source and a YAML snippet.
 3. Review the snippet, then choose **Open on GitHub** and submit the issue
@@ -68,10 +68,10 @@ If your instance is missing a product:
    later release. Your local copy keeps working until then; once it is built in,
    the Catalogue tab marks the local copy so you can delete it.
 
-No catalogue data is sent to the Planqer project automatically; the issue only
+No catalogue data is sent to the Partsible project automatically; the issue only
 exists if you open and submit it. The snippet is one product group, in exactly
 the shape of the data files (`ProductGroup` in
-`backend/planqer/catalogue/schema.py`), so a maintainer can paste it into the
+`backend/partsible/catalogue/schema.py`), so a maintainer can paste it into the
 country file.
 
 Entries must cite a manufacturer, standards or industry source (for example

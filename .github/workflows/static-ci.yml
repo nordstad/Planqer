@@ -1,6 +1,6 @@
-name: Static demo CI
+name: Static Lite CI
 
-# Checks the browser demo, and that the self-hosted app stays free of it.
+# Checks Lite, and that the self-hosted app stays free of it.
 # New and not required to merge yet: see docs/releasing.md.
 
 permissions:
@@ -11,26 +11,24 @@ on:
     branches: [main]
     paths:
       - "frontend/**"
-      - "backend/planqer/**"
-      - "backend/tests/test_build_demo.py"
-      - "backend/tests/test_no_demo_code.py"
+      - "backend/partsible/**"
+      - "backend/tests/test_build_lite.py"
+      - "backend/tests/test_no_lite_code.py"
       - "scripts/**"
-      - "docs/assets/umami.js"
       - ".github/workflows/static-ci.yml"
   pull_request:
     paths:
       - "frontend/**"
-      - "backend/planqer/**"
-      - "backend/tests/test_build_demo.py"
-      - "backend/tests/test_no_demo_code.py"
+      - "backend/partsible/**"
+      - "backend/tests/test_build_lite.py"
+      - "backend/tests/test_no_lite_code.py"
       - "scripts/**"
-      - "docs/assets/umami.js"
       - ".github/workflows/static-ci.yml"
 
 jobs:
   self-hosted-is-clean:
-    # The image users run must contain none of the demo: no Pyodide runtime, no
-    # worker, no demo screens, nothing that loads analytics.
+    # The image users run must contain none of Lite: no Pyodide runtime, no
+    # worker, no Lite screens, nothing that loads analytics.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -46,16 +44,16 @@ jobs:
       - name: Build the self-hosted app
         working-directory: frontend
         env:
-          VITE_PLANQER_UMAMI_ID: "325f5fce-eb47-46fb-bad7-da1137224c33"
+          VITE_PARTSIBLE_UMAMI_ID: "325f5fce-eb47-46fb-bad7-da1137224c33"
         run: |
           npm ci
           npm run build
 
-      - name: Check it contains no demo code
-        run: python3 scripts/check-no-demo-code.py frontend/build
+      - name: Check it contains no Lite code
+        run: python3 scripts/check-no-lite-code.py frontend/build
 
-  demo:
-    # The demo as GitHub Pages serves it, in three browser engines.
+  lite:
+    # Lite as Cloudflare Pages serves it, in three browser engines.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -76,30 +74,30 @@ jobs:
         working-directory: frontend
         run: npm ci
 
-      - name: Build the demo and check its size
-        run: python3 scripts/build-demo.py --check-budget
+      - name: Build Lite and check its size
+        run: python3 scripts/build-lite.py --check-budget
 
       - name: Install browsers
         working-directory: frontend
         run: npx playwright install --with-deps chromium firefox webkit
 
-      - name: Run the demo in the browsers
+      - name: Run Lite in the browsers
         working-directory: frontend
-        run: npm run test:demo
+        run: npm run test:lite
 
       # Builds the app again with an Umami id and checks what it sends, with
       # the tracker stood in for. Chromium only: it is about our rules, not the
       # engine.
-      - name: Check what the demo sends to analytics
+      - name: Check what Lite sends to analytics
         working-directory: frontend
         run: npm run test:analytics
 
-      - name: Keep the built demo
+      - name: Keep the built Lite
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: demo
-          path: build/demo
+          name: lite
+          path: build/lite
           retention-days: 7
 
   runtime-parity:

@@ -235,7 +235,7 @@ describe('cutlists step', () => {
     expect(screen.getAllByTestId('product-summary').filter((n) => /Suggested/.test(n.textContent))).toHaveLength(2);
 
     await chooseOwnProduct('Product for Framing timber / studs 45 × 95 mm', 'Larch');
-    expect(JSON.parse(localStorage.getItem('planqer-product-choice-v1'))['board:45x95']).toMatchObject({ text: 'Larch', suggested: false });
+    expect(JSON.parse(localStorage.getItem('partsible-product-choice-v1'))['board:45x95']).toMatchObject({ text: 'Larch', suggested: false });
   });
 
   it('hands the chosen product to the board page on Plan alone', async () => {
@@ -244,7 +244,7 @@ describe('cutlists step', () => {
     getCatalogue.mockResolvedValue({ data: catalogue, etag: '"x"' });
     await readBench();
     fireEvent.click(screen.getAllByRole('button', { name: 'Plan alone' })[0]);
-    const handoff = JSON.parse(localStorage.getItem('planqer-3d-import'));
+    const handoff = JSON.parse(localStorage.getItem('partsible-3d-import'));
     expect(handoff).toMatchObject({
       boardThickness: 45, boardWidth: 95, projectName: 'bench · Framing timber / studs 45 × 95 mm',
       product: { type: 'regel', suggested: true, product: { id: 'se:regel:45x95' } },

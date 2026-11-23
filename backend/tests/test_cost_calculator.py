@@ -2,7 +2,7 @@
 Tests for cost calculation functionality.
 """
 
-from planqer.cost_calculator import (
+from partsible.cost_calculator import (
     apply_bulk_discount,
     calculate_boards_needed,
     calculate_cost_analysis,

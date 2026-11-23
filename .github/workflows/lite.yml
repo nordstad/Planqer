@@ -1,0 +1,117 @@
+name: Deploy Lite
+
+# Partsible Lite at partsible.com, on Cloudflare Pages. The docs are published
+# separately by docs.yml.
+#
+# Lite is built from a release tag, never from whatever is on main, so a
+# docs-only commit cannot publish unreleased app code.
+
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+    inputs:
+      app_ref:
+        description: >-
+          Tag, branch or commit to build Lite from. Leave empty for the latest
+          release tag. To roll back, give the previous tag. Only releases from
+          0.15.0 on can be built, because earlier ones used another base path.
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lite
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # Only to find the release: Lite itself is built from `src` below.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Choose the release to build Lite from
+        id: ref
+        env:
+          APP_REF: ${{ inputs.app_ref }}
+        run: |
+          set -euo pipefail
+          ref=""
+          if [ -n "$APP_REF" ]; then
+            ref="$APP_REF"
+          elif [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            ref="$GITHUB_REF_NAME"
+          else
+            ref="$(git describe --tags --abbrev=0 --match 'v*.*.*' 2>/dev/null || true)"
+          fi
+          if [ -z "$ref" ]; then
+            echo "::error::No release tag exists yet, so there is no Lite to build."
+            exit 1
+          fi
+          sha="$(git rev-parse --verify --quiet "${ref}^{commit}" \
+            || git rev-parse --verify --quiet "origin/${ref}^{commit}")" || {
+            echo "::error::'$ref' is not a tag, branch or commit"
+            exit 1
+          }
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ steps.ref.outputs.sha }}
+          path: src
+
+      - name: Check that the release can build Lite
+        env:
+          REF: ${{ steps.ref.outputs.ref }}
+        run: |
+          if [ ! -f src/scripts/build-lite.py ]; then
+            echo "::error::'$REF' has no scripts/build-lite.py, so it cannot be published at the root."
+            exit 1
+          fi
+          echo "Building Lite from $REF (${{ steps.ref.outputs.sha }})." | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Check a release tag matches every hard-coded version
+        if: github.ref_type == 'tag'
+        working-directory: src
+        run: python3 scripts/check-versions.py --tag "$GITHUB_REF_NAME"
+
+      # The same release always builds the same Lite, so a rerun reuses it
+      # instead of rebuilding. Bump the -vN suffix to force a rebuild, which is
+      # needed whenever a build-time setting such as the Umami id changes.
+      - name: Reuse Lite if this release was built before
+        id: cache
+        uses: actions/cache@v6
+        with:
+          path: lite-out
+          key: lite-${{ steps.ref.outputs.sha }}-v3
+
+      - uses: actions/setup-node@v7
+        if: steps.cache.outputs.cache-hit != 'true'
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: src/frontend/package-lock.json
+
+      # The Umami website id is public (it is in every page that loads the
+      # tracker). Only this published Lite gets it: CI builds and every Docker
+      # image have none, so they contain no analytics.
+      - name: Build Lite
+        if: steps.cache.outputs.cache-hit != 'true'
+        env:
+          VITE_PARTSIBLE_UMAMI_ID: "325f5fce-eb47-46fb-bad7-da1137224c33"
+        run: |
+          npm ci --prefix src/frontend
+          python3 src/scripts/build-lite.py --out "$GITHUB_WORKSPACE/lite-out" --check-budget
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy lite-out --project-name=partsible-lite --branch=main

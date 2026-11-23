@@ -7,14 +7,14 @@ import math
 
 import pytest
 
-from planqer.tile_layout.bonds import (
+from partsible.tile_layout.bonds import (
     DiagonalBond,
     DiagonalDoubleHerringboneBond,
     DiagonalHerringboneBond,
     DoubleHerringboneBond,
 )
-from planqer.tile_layout.geometry import Cutout, JointSpec, Surface, Tile
-from planqer.tile_layout.solver import build_bond, solve_tile_layout
+from partsible.tile_layout.geometry import Cutout, JointSpec, Surface, Tile
+from partsible.tile_layout.solver import build_bond, solve_tile_layout
 
 
 def test_build_bond_rejects_unknown_pattern():
@@ -121,7 +121,7 @@ def test_distinct_cut_sizes_is_a_real_pareto_axis_not_just_a_label():
     # on anything else must survive the Pareto front even if it loses on
     # tiles_count/symmetry/safety — proving dominance actually checks this
     # 4th axis rather than only using it to break label ties afterward.
-    from planqer.tile_layout.solver import _dominates
+    from partsible.tile_layout.solver import _dominates
 
     worse_on_everything_else = {
         "safety": 10.0,

@@ -2,10 +2,10 @@ import logging
 
 import pytest
 
-from planqer.algorithms import OptimizationAlgorithm
-from planqer.errors import PlanqerError
-from planqer.schemas import PlanqerResponse
-from planqer.services import (
+from partsible.algorithms import OptimizationAlgorithm
+from partsible.errors import PartsibleError
+from partsible.schemas import PartsibleResponse
+from partsible.services import (
     BoardPlan,
     _build_board_plans,
     _calculate_plan_cost,
@@ -67,7 +67,7 @@ def test_cost_mode_can_choose_longer_cheaper_stock():
 
 
 def test_cost_mode_rejects_eligible_stock_without_price():
-    with pytest.raises(PlanqerError, match="Every eligible board length"):
+    with pytest.raises(PartsibleError, match="Every eligible board length"):
         _compute_optimization(
             parts={100.0: 1},
             boards=[100.0, 200.0],
@@ -105,7 +105,7 @@ def test_run_optimization_preserves_public_response_fields():
         project_name="Test project",
         algorithm=OptimizationAlgorithm.FIRST_FIT_DECREASING,
         logger=logging.getLogger(__name__),
-        planqerResponse=PlanqerResponse,
+        partsibleResponse=PartsibleResponse,
     )
 
     assert set(result.model_dump()) == {
@@ -141,7 +141,7 @@ def test_run_optimization_assigns_the_smallest_suitable_stock_to_each_board():
         project_name="Test project",
         algorithm=OptimizationAlgorithm.FIRST_FIT_DECREASING,
         logger=logging.getLogger(__name__),
-        planqerResponse=PlanqerResponse,
+        partsibleResponse=PartsibleResponse,
     )
 
     assert result.cut_list == [[270.0, 179.0], [90.0, 81.0]]
@@ -159,7 +159,7 @@ def test_run_optimization_cost_uses_the_assigned_stock_plan():
         project_name="Test project",
         algorithm=OptimizationAlgorithm.FIRST_FIT_DECREASING,
         logger=logging.getLogger(__name__),
-        planqerResponse=PlanqerResponse,
+        partsibleResponse=PartsibleResponse,
         board_costs={
             300.0: {"price_per_board": 100.0},
             360.0: {"price_per_board": 150.0},

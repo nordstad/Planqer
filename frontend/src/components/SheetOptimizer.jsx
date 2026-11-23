@@ -174,7 +174,7 @@ const SheetOptimizer = () => {
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
     if (urlParams.get('import') !== '3d') return;
-    const importData = localStorage.getItem('planqer-3d-sheet-import');
+    const importData = localStorage.getItem('partsible-3d-sheet-import');
     if (!importData) return;
     try {
       const data = JSON.parse(importData);
@@ -189,7 +189,7 @@ const SheetOptimizer = () => {
         setProjectName(data.projectName || '');
         if (data.product?.type) setProductSel(data.product);
         if (data.sheetThickness != null) setSheetThickness(String(data.sheetThickness));
-        localStorage.removeItem('planqer-3d-sheet-import');
+        localStorage.removeItem('partsible-3d-sheet-import');
         navigate(location.pathname, { replace: true });
       }
     } catch (err) {
@@ -400,7 +400,7 @@ const SheetOptimizer = () => {
     try {
       const moved = await movePlanToProject({ ...saved, projectType: 'sheet' }, group.id);
       setSaved(moved);
-      localStorage.setItem('planqer.lastProjectGroup', group.id);
+      localStorage.setItem('partsible.lastProjectGroup', group.id);
       return true;
     } catch (error) {
       setApiError(t('projectUi.moveFailed', { message: error.message }));

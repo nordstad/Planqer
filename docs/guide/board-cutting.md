@@ -37,7 +37,7 @@ an old plan.
 
 ## Running the plan
 
-Click **Plan the cuts**. Planqer packs your parts onto the fewest boards it
+Click **Plan the cuts**. Partsible packs your parts onto the fewest boards it
 can from the stock lengths you gave it, and returns:
 
 - The number of boards required, and which stock length each one is.

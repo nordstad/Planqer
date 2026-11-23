@@ -3,8 +3,8 @@ import uuid
 import pytest
 from fastapi.testclient import TestClient
 
-from planqer.database import UserSettings
-from planqer.routes.settings import settings_to_response
+from partsible.database import UserSettings
+from partsible.routes.settings import settings_to_response
 
 pytestmark = pytest.mark.api
 
@@ -12,7 +12,7 @@ pytestmark = pytest.mark.api
 @pytest.fixture
 def app():
     """Get the FastAPI app for testing"""
-    from planqer.api import app
+    from partsible.api import app
 
     return app
 
@@ -21,7 +21,7 @@ def app():
 def client(app):
     """Create a test client, entering the app's lifespan so migrations run"""
     with TestClient(app) as test_client:
-        test_client.headers["X-Planqer-Setup-Secret"] = "test-setup-secret"
+        test_client.headers["X-Partsible-Setup-Secret"] = "test-setup-secret"
         yield test_client
 
 

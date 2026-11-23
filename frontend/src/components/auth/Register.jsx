@@ -50,7 +50,7 @@ const Register = ({ onClose, onSwitchToLogin, isFirstRun = false }) => {
       <div className="cat-sheet" onClick={(e) => e.stopPropagation()}>
         <div className="masthead" style={{ marginTop: 0 }}>
           <span className="masthead-brand" style={{ fontSize: '13px' }}>
-             {(isFirstRun ? t('auth.setupPlanqer') : t('auth.createAccount')).toUpperCase()}
+             {(isFirstRun ? t('auth.setupPartsible') : t('auth.createAccount')).toUpperCase()}
           </span>
           <span className="masthead-section" />
           {!isFirstRun && (

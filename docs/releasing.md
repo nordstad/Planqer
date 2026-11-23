@@ -1,20 +1,21 @@
 # Releasing
 
-Planqer releases are published by pushing a semantic-version tag in the form
+Partsible releases are published by pushing a semantic-version tag in the form
 `vX.Y.Z`. The `Publish images` GitHub Actions workflow builds and publishes the
-backend, frontend, and MCP server images to GHCR. The same tag also updates the
-GitHub Pages site: the docs, and the browser demo built from that tag (see
-[The Pages site](#the-pages-site)).
+backend, frontend, and MCP server images to GHCR. The same tag also updates
+Partsible Lite at `partsible.com`, built from that tag (see
+[The Cloudflare sites](#the-cloudflare-sites)). The docs at
+`docs.partsible.com` are published separately, when `docs/` changes on `main`.
 
 ## One release, two deployment paths
 
 A release tag starts two independent GitHub Actions workflows. One publishes
-versioned Docker images to GitHub Container Registry; the other builds the
-documentation and browser demo for GitHub Pages. Publishing images does not
+versioned Docker images to GitHub Container Registry; the other builds
+Partsible Lite and deploys it to Cloudflare Pages. Publishing images does not
 update a running server automatically, and a failure in one workflow does not
 replace the other deployment.
 
-![Release and deployment flow: one release tag publishes Docker images and the GitHub Pages documentation and browser demo through separate workflows.](assets/diagrams/multi-deploy.png)
+![Release and deployment flow: one release tag publishes Docker images and Partsible Lite through separate workflows.](assets/diagrams/multi-deploy.png)
 
 ## Pre-release checks
 
@@ -51,26 +52,26 @@ uv sync --frozen --group dev
 npm run test:all
 ```
 
-### Browser demo
+### Partsible Lite
 
 ```bash
-python3 scripts/build-demo.py --check-budget
+python3 scripts/build-lite.py --check-budget
 cd frontend
 npx playwright install chromium firefox webkit   # once
-npm run test:demo
+npm run test:lite
 npm run test:parity
 npm run test:runtime-browser
 npm run test:analytics
 ```
 
-The first command builds the demo as GitHub Pages serves it and fails if a
+The first command builds Lite as Cloudflare Pages serves it and fails if a
 runtime file is missing, the bundled Python is a different version from the
-app, or the demo has grown past its size budget. `test:demo` runs it in three
-browser engines. The `Static demo CI` workflow runs the same checks on every
+app, or Lite has grown past its size budget. `test:lite` runs it in three
+browser engines. The `Static Lite CI` workflow runs the same checks on every
 pull request that touches the app, the Python it runs, or the scripts.
 
 If the size budget fails because of a change you meant to make, raise the
-limit in `BUDGET_KB` in `scripts/build-demo.py` in the same pull request.
+limit in `BUDGET_KB` in `scripts/build-lite.py` in the same pull request.
 
 `test:analytics` builds the app with the Umami website id and checks, in
 Chromium with the tracker stood in for, that only allow-listed events are sent
@@ -84,7 +85,7 @@ Do not continue with the release if any check fails.
 
 Update the release version consistently in:
 
-- `backend/planqer/__init__.py`
+- `backend/partsible/__init__.py`
 - `backend/pyproject.toml`
 - `backend/uv.lock`
 - `frontend/package.json`
@@ -93,25 +94,25 @@ Update the release version consistently in:
 - `mcp-server/package-lock.json`
 - `mcp-server/pyproject.toml`
 - `mcp-server/src/index.ts`
-- `mcp-server/src/planqer_mcp_server/server.py`
+- `mcp-server/src/partsible_mcp_server/server.py`
 - `mcp-server/uv.lock`
 
-The demo shows the version from `frontend/package.json` in its footer, and the
-Python it runs is stamped with `backend/planqer/__init__.py`.
-`scripts/build-demo.py` fails if the two differ, so the demo cannot ship a
+Lite shows the version from `frontend/package.json` in its footer, and the
+Python it runs is stamped with `backend/partsible/__init__.py`.
+`scripts/build-lite.py` fails if the two differ, so Lite cannot ship a
 mismatched pair.
 
 The same version is also written in the documentation's examples, which users
 copy to pin a release. Update these too:
 
-- `docs/getting-started.md` (`PLANQER_VERSION` and the image tag)
+- `docs/getting-started.md` (`PARTSIBLE_VERSION` and the image tag)
 - `docs/reference/configuration.md` (the example `.env`)
 - `docs/guide/mcp-server.md` (the MCP runtimes' version)
-- `README.md` (`PLANQER_VERSION` in the upgrade instructions)
+- `README.md` (`PARTSIBLE_VERSION` in the upgrade instructions)
 - `.env.example` (the example version in the comment)
 
 Then check that nothing was missed. The script reads the version from
-`backend/planqer/__init__.py` and reports every place that disagrees, with its
+`backend/partsible/__init__.py` and reports every place that disagrees, with its
 line:
 
 ```bash
@@ -134,7 +135,7 @@ git push origin vX.Y.Z
 ```
 
 Pushing the tag triggers `.github/workflows/publish-images.yml` and
-`.github/workflows/pages.yml`.
+`.github/workflows/lite.yml`.
 
 ### If `main` is protected
 
@@ -147,16 +148,9 @@ git tag vX.Y.Z <sha-of-the-release-commit>
 git push origin vX.Y.Z
 ```
 
-The release commit changes `docs/`, so merging the pull request already deploys
-the site from the merge commit, with the demo of the previous release. Pages
-publishes one deployment per commit: a tag on that same merge commit reports
-success but leaves the previous demo live, even though the images are published.
-v0.12.0 hit this, and its footer kept saying v0.11.0. The release commit has not
-been deployed by any push to `main`, so tagging it avoids the clash.
-
-If you tagged the merge commit anyway, merge any change under `docs/` to `main`
-afterwards. That deploys again from a new commit, and the demo is taken from the
-latest release tag.
+Cloudflare Pages keeps one deployment per upload, so tagging the merge commit
+works as well. Tagging the release commit keeps the tag on the exact commit
+that was reviewed.
 
 ## GitHub Release
 
@@ -179,12 +173,12 @@ maintainers:
   frontend and MCP server." Leave routine dependency bumps and internal
   refactors out of the sections above; they stay in the generated list.
 
-See [v0.12.0](https://github.com/nordstad/Planqer/releases/tag/v0.12.0) for the
+See [v0.12.0](https://github.com/nordstad/partsible/releases/tag/v0.12.0) for the
 expected shape. Write the highlights to a file and append the generated notes
 below them:
 
 ```bash
-gh api repos/nordstad/Planqer/releases/generate-notes \
+gh api repos/nordstad/partsible/releases/generate-notes \
   -f tag_name=vX.Y.Z -f previous_tag_name=vP.Q.R --jq .body > generated.md
 cat highlights.md generated.md > notes.md
 gh release create vX.Y.Z --title "vX.Y.Z" --notes-file notes.md
@@ -197,86 +191,78 @@ gh release view vX.Y.Z
 gh run list --workflow=publish-images.yml --limit=1
 ```
 
-## The Pages site
+## The Cloudflare sites
 
-`https://nordstad.github.io/Planqer/` is one site with one publisher
-(`.github/workflows/pages.yml`):
+Two Cloudflare Pages projects (Direct Upload) serve Partsible, each deployed by
+its own workflow with `cloudflare/wrangler-action`. The workflows need the
+repository secrets `CLOUDFLARE_API_TOKEN` (a token limited to Cloudflare Pages:
+Edit) and `CLOUDFLARE_ACCOUNT_ID`.
 
-- the docs are at the root;
-- the browser demo is at `/app/`.
+<!-- markdownlint-disable MD013 -->
 
-Every deploy replaces the whole site, so both are always built and published
-together. The workflow has three jobs: `docs` (MkDocs, as before), `app` (the
-demo) and `deploy`.
+| Site | Project | Workflow |
+| ---- | ------- | -------- |
+| `https://partsible.com/` (Partsible Lite) | `partsible-lite` | `.github/workflows/lite.yml` |
+| `https://docs.partsible.com/` (the docs) | `partsible-docs` | `.github/workflows/docs.yml` |
 
-When it runs:
+<!-- markdownlint-enable MD013 -->
 
-- Push of a `vX.Y.Z` tag: docs and demo are rebuilt and published. This is the
-  update on release, with no extra step.
-- Merge to `main` touching `docs/**`, `mkdocs.yml` or the workflow: the docs are
-  rebuilt. The demo is reused from the latest release tag, so unreleased app
-  code is never published.
-- Manual run (`workflow_dispatch`): rebuilds both. Also the way to roll back.
+`www.partsible.com` redirects to `partsible.com`. The two sites are different
+origins, so browser storage is not shared between them.
+
+When they run:
+
+- Push of a `vX.Y.Z` tag: `lite.yml` builds Lite from that tag and deploys it.
+  This is the update on release, with no extra step.
+- Merge to `main` touching `docs/**`, `mkdocs.yml` or `docs.yml`: `docs.yml`
+  rebuilds and deploys the docs.
+- Manual run (`workflow_dispatch`): `lite.yml` rebuilds Lite, from the latest
+  release tag or from the `app_ref` you give. This is also how to roll back.
 - Pull request: nothing is deployed.
 
-If the demo build fails, the run fails and nothing is deployed, so the live
-site is never replaced by a half-built one. A release tag that predates the
-demo has no `scripts/build-demo.py`; the workflow then publishes the docs alone.
+If the Lite build fails, the run fails and nothing is deployed, so the live
+site is never replaced by a half-built one. A release that has no
+`scripts/build-lite.py` cannot be built, and the run says so.
 
-### Analytics on the demo
+### Analytics on Lite
 
-Only this workflow builds the demo with `VITE_PLANQER_UMAMI_ID` (the public
-Umami website id), so only the published demo counts visits. CI builds and the
-Docker images have no id and contain no analytics, which
-`scripts/check-no-demo-code.py` enforces. The demo is cached per commit, so
-when the id or another build-time setting changes, bump the `-vN` suffix of the
-cache key (`demo-<sha>-vN`) in `pages.yml`, or the old build is reused.
-
-### One-time setting: let tags deploy
-
-The `github-pages` environment normally only accepts deployments from `main`,
-and a deploy started by a `v*` tag is rejected ("Tag ... is not allowed to
-deploy to github-pages") even though the workflow is correct. Allow release
-tags once:
-
-1. In the repository, open Settings, Environments, `github-pages`.
-2. Under "Deployment branches and tags", keep the `main` rule and add a rule of
-   type Tag with the pattern `v*.*.*`.
-3. Check that Settings, Pages, Source is "GitHub Actions".
-
-This is a repository setting, so it cannot be changed in a pull request. Do it
-before the first release that includes the demo. A manual run from `main` works
-without it, which makes it the way to try the demo before a release.
+Only `lite.yml` builds Lite with `VITE_PARTSIBLE_UMAMI_ID` (the public Umami
+website id), so only the published Lite counts visits. CI builds and the Docker
+images have no id and contain no analytics, which
+`scripts/check-no-lite-code.py` enforces. The docs have no tracker. Lite is
+cached per commit, so when the id or another build-time setting changes, bump
+the `-vN` suffix of the cache key (`lite-<sha>-vN`) in `lite.yml`, or the old
+build is reused. The Umami site's domain must be `partsible.com`.
 
 ### Try it before a release
 
-Run the workflow by hand from `main` and build the demo from `main`:
+Run the workflow by hand from `main` and build Lite from `main`:
 
 ```bash
-gh workflow run pages.yml --ref main -f app_ref=main
+gh workflow run lite.yml --ref main -f app_ref=main
 gh run watch
 ```
 
-Then open `https://nordstad.github.io/Planqer/app/`. Run it again with no
-`app_ref` to go back to the latest release.
+Then open `https://partsible.com/`. Run it again with no `app_ref` to go back
+to the latest release.
 
 ### Roll back
 
-Run the workflow by hand and give the previous release tag. The docs are
-rebuilt from the branch you run it on; the demo from the tag:
+Run the workflow by hand and give the previous release tag (from v0.15.0 on):
 
 ```bash
-gh workflow run pages.yml --ref main -f app_ref=vX.Y.Z
+gh workflow run lite.yml --ref main -f app_ref=vX.Y.Z
 ```
 
 ### Check it after a release
 
 ```bash
-gh run list --workflow=pages.yml --limit=1
+gh run list --workflow=lite.yml --limit=1
 ```
 
-- The docs are at the root and the demo at `/app/`.
-- Open a deep link under `/app/`, such as `/app/#/tile-layout`, and reload it.
+- `https://partsible.com/` loads Lite, and `https://docs.partsible.com/` loads
+  the docs.
+- Open a deep link such as `https://partsible.com/#/tile-layout` and reload it.
 - The footer's version matches the tag. If it shows the previous version, see
   [If `main` is protected](#if-main-is-protected).
 - The footer shows "Analytics: on", and a visit shows up in Umami. With

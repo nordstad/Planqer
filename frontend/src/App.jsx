@@ -21,16 +21,16 @@ const HelpPage = lazy(() => import('./components/Help'));
 const UserDashboard = lazy(() => import('./components/UserDashboard'));
 // Compared inline, not through isStaticMode(): only a literal comparison lets
 // the bundler drop the runtime from a normal build.
-const DemoShell = import.meta.env.VITE_PLANQER_MODE === 'static' ? lazy(() => import('./components/demo/DemoShell')) : null;
-const DemoCatalogue = import.meta.env.VITE_PLANQER_MODE === 'static' ? lazy(() => import('./components/demo/DemoCatalogue')) : null;
-const SolverStatus = import.meta.env.VITE_PLANQER_MODE === 'static' ? lazy(() => import('./components/SolverStatus')) : null;
+const LiteShell = import.meta.env.VITE_PARTSIBLE_MODE === 'static' ? lazy(() => import('./components/lite/LiteShell')) : null;
+const LiteCatalogue = import.meta.env.VITE_PARTSIBLE_MODE === 'static' ? lazy(() => import('./components/lite/LiteCatalogue')) : null;
+const SolverStatus = import.meta.env.VITE_PARTSIBLE_MODE === 'static' ? lazy(() => import('./components/SolverStatus')) : null;
 
 const App = () => {
-  const demo = isStaticMode();
-  // GitHub Pages cannot rewrite a reloaded deep link to index.html, so the demo
-  // keeps its route after the # where the server never sees it.
-  const Router = demo ? HashRouter : BrowserRouter;
-  const Shell = demo ? DemoShell : Fragment;
+  const lite = isStaticMode();
+  // A plain static host does not rewrite a reloaded deep link to index.html, so
+  // Lite keeps its route after the # where the server never sees it.
+  const Router = lite ? HashRouter : BrowserRouter;
+  const Shell = lite ? LiteShell : Fragment;
   return (
     <LanguageProvider>
       <AuthProvider>
@@ -58,12 +58,12 @@ const App = () => {
             {/* A project is a place, so it gets an address: back, refresh and a
                 shared link all land where the user was. */}
             <Route path="/dashboard/project/:groupId" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
-            {DemoCatalogue && <Route path="/catalogue" element={<DemoCatalogue />} />}
-            {!demo && <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />}
+            {LiteCatalogue && <Route path="/catalogue" element={<LiteCatalogue />} />}
+            {!lite && <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />}
             </Routes>
             </Shell>
           </Suspense>
-          {demo && <Suspense fallback={null}><SolverStatus /></Suspense>}
+          {lite && <Suspense fallback={null}><SolverStatus /></Suspense>}
         </Router>
       </AuthProvider>
     </LanguageProvider>

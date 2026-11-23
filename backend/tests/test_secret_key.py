@@ -2,8 +2,8 @@ import os
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from planqer.auth import secret_key
-from planqer.auth.secret_key import resolve_secret_key
+from partsible.auth import secret_key
+from partsible.auth.secret_key import resolve_secret_key
 
 
 def test_environment_key_wins_without_creating_a_file(tmp_path: Path):

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { createProjectGroup } from '../utils/api';
 import { NEW_PROJECT } from '../components/ProjectPicker';
 
-const LAST_PROJECT_KEY = 'planqer.lastProjectGroup';
+const LAST_PROJECT_KEY = 'partsible.lastProjectGroup';
 
 const readLast = () => {
   try { return localStorage.getItem(LAST_PROJECT_KEY); } catch { return null; }

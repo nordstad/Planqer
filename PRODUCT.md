@@ -12,7 +12,7 @@ have a list of parts (often from a model they designed themselves), and they
 want to know how many boards or sheets to buy and where to cut them.
 
 **Secondary: small professional shops** — joinery, carpentry, fabrication —
-cutting to a client's order with real margins. Planqer serves them, but when a
+cutting to a client's order with real margins. Partsible serves them, but when a
 design decision splits the two, it favors the hobbyist: less shop-floor jargon,
 more guidance, no assumption that the user owns CAD or shop-management software.
 
@@ -22,7 +22,7 @@ density of numbers.
 
 ## Product Purpose
 
-Planqer turns a list of parts — or a 3D model — into a cutting plan that
+Partsible turns a list of parts — or a 3D model — into a cutting plan that
 minimizes wasted material, and shows where every cut goes. Success is a user who
 buys the right amount of material and makes the cuts without re-planning at the
 saw.
@@ -31,10 +31,10 @@ saw.
 
 Two claims a neighboring cutting optimizer could not truthfully copy:
 
-1. **Model → cutlist.** Upload an STL or a STEP file and Planqer extracts the
+1. **Model → cutlist.** Upload an STL or a STEP file and Partsible extracts the
    individual components with dimensions, and for STEP also real component
    names, materials, and assembly hierarchy. Competing optimizers start from a
-   list the user types in; Planqer starts from the thing the user designed.
+   list the user types in; Partsible starts from the thing the user designed.
 2. **Self-hosted and private.** The whole stack runs on the user's own machine
    or homelab via Docker Compose. Any account is a
    **local** account on that same instance — never a cloud account — and the
@@ -92,14 +92,14 @@ Constraints:
   installed on the host.
 - **Docker Compose is the only supported install.** Running the services
   directly from source is a contributor path, not a documented way to use
-  Planqer — it is the only way to keep one tested configuration that behaves
+  Partsible — it is the only way to keep one tested configuration that behaves
   the same on Linux, macOS and Windows. There is no Helm chart; the empty
   `helm-chart/` directory is local scaffolding and has never been in the repo.
 - No backend dependency requires a native system library. This is a standing
   constraint, not an accident: one that does (cairosvg did, and was removed)
   turns installing into a per-OS problem and makes contributors' machines
   diverge from the image.
-- Free, MIT-licensed, no cloud accounts. Self-hosted Planqer contains no
+- Free, MIT-licensed, no cloud accounts. Self-hosted Partsible contains no
   analytics and collects no data. The public demo and docs use anonymous,
   cookie-free usage counting with a one-click opt-out, described in the
   [privacy page](docs/privacy.md).
@@ -107,18 +107,18 @@ Constraints:
 
 ## Brand Commitments
 
-- **The product is named Planqer, everywhere — one name, no exceptions.** It
+- **The product is named Partsible, everywhere — one name, no exceptions.** It
   was renamed from an earlier working title, and for a while that title was
   allowed to survive "only in code": environment variables, package names,
   Prometheus metric names, the license, alert rule names. That concession was
   withdrawn before the repo went public, because two names for one product is
   something every contributor has to learn and nobody benefits from. Env vars
-  are `PLANQER_*`, metrics are `planqer_*`, the MCP package is
-  `planqer-mcp-server`. The old title is not to be reintroduced anywhere,
+  are `PARTSIBLE_*`, metrics are `partsible_*`, the MCP package is
+  `partsible-mcp-server`. The old title is not to be reintroduced anywhere,
   code included — and note that a global find-and-replace will happily rewrite
   a sentence like this one, so name it in a commit message, not in a file.
-- Existing assets: `frontend/public/planqer_icon*.png`,
-  `planqer-logo.png`, `planqer-logo-text.png`, `planqer-text-logo-cropped.png`.
+- Existing assets: `frontend/public/partsible_icon*.png`,
+  `partsible-logo.png`, `partsible-logo-text.png`, `partsible-text-logo-cropped.png`.
   The saw (🪚) is the established motif.
 - Sweden is **not** the audience. "Made for Swedish Lumber" in the footer and
   the Swedish pricing/market framing in the help pages reflect where the author
@@ -144,7 +144,7 @@ Absent — must not be fabricated:
   replacements.
 - No users, customers, testimonials, case studies, press, or download counts.
 - No pricing, plans, or commercial offering.
-- No photography of real projects made with Planqer.
+- No photography of real projects made with Partsible.
 
 ## Product Principles
 

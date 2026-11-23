@@ -10,8 +10,8 @@ the optimizer in natural language, instead of you filling in the form.
 | --- | --- |
 | `optimize_cutting` | Run a real optimization from parts and stock lengths you describe. |
 | `search_products` | Search the instance's product catalogue by name, grade or size, and get product ids with their standard stock lengths. |
-| `optimize_demo` | Run a pre-configured demo project, for a quick test. |
-| `get_demo_payloads` | List the available demo payloads. |
+| `optimize_sample` | Run a pre-configured demo project, for a quick test. |
+| `get_sample_payloads` | List the available demo payloads. |
 | `get_cutting_example` | Show the request format the API expects. |
 
 An assistant with this server connected can turn something like *"I need 4
@@ -47,20 +47,20 @@ key names depend on the client, so check its documentation:
 ```json
 {
   "mcpServers": {
-    "planqer-cutting-optimizer": {
+    "partsible-cutting-optimizer": {
       "command": "uv",
       "args": [
         "--directory",
-        "/path/to/planqer/mcp-server",
+        "/path/to/partsible/mcp-server",
         "run",
-        "planqer-mcp-server"
+        "partsible-mcp-server"
       ]
     }
   }
 }
 ```
 
-The server talks to the backend over `PLANQER_API_URL`, which defaults to
+The server talks to the backend over `PARTSIBLE_API_URL`, which defaults to
 `http://localhost:8002/api`. When run through Compose, the `mcp-server`
 service is wired to the `backend` container on the Compose network. It is
 optional and must be enabled with the `mcp` profile:
@@ -72,7 +72,7 @@ docker compose --profile mcp up -d
 See [Configuration](../reference/configuration.md) for the environment
 variables.
 
-The two MCP runtimes share the same tool schema and version (`0.14.0`). In
+The two MCP runtimes share the same tool schema and version (`0.15.0`). In
 stdio mode, stdout is reserved for MCP JSON-RPC messages and logs go to stderr.
 Transient synchronous API failures (`408`, `425`, `429`, `500`, `502`, `503`,
 `504`) use bounded exponential backoff; async job submissions are not retried
@@ -86,13 +86,13 @@ cd mcp-server
 uv sync
 npm install
 npm run build
-uv run planqer-mcp-server
+uv run partsible-mcp-server
 ```
 
 Debug it with the [MCP Inspector](https://github.com/modelcontextprotocol/inspector):
 
 ```bash
-npx @modelcontextprotocol/inspector uv run planqer-mcp-server
+npx @modelcontextprotocol/inspector uv run partsible-mcp-server
 ```
 
 See `mcp-server/README.md` and `mcp-server/AI_INTEGRATION_GUIDE.md` in the

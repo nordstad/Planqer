@@ -44,7 +44,7 @@ beforeEach(() => {
   api.getAdminCatalogue.mockImplementation(async () => listing());
   [api.createCatalogueEntry, api.updateCatalogueEntry, api.hideCatalogueEntry, api.restoreCatalogueEntry, api.resetCatalogueEntry]
     .forEach((fn) => fn.mockResolvedValue({}));
-  api.getCatalogueSuggestion.mockResolvedValue({ snippet: '', url: 'https://github.com/nordstad/Planqer/issues/new' });
+  api.getCatalogueSuggestion.mockResolvedValue({ snippet: '', url: 'https://github.com/nordstad/partsible/issues/new' });
 });
 
 const rowOf = (name) => screen.getByText(name).closest('tr');
@@ -77,14 +77,14 @@ describe('AdminCatalogue', () => {
     expect(label('Framing timber 50 × 150 mm', 'Local')).toHaveClass('status-badge-local');
   });
 
-  it('offers Suggest to Planqer only for local and modified products', async () => {
+  it('offers Suggest to Partsible only for local and modified products', async () => {
     api.getAdminCatalogue.mockResolvedValue([
       ...listing(),
       { product: product('se:regel:45x120', 'regel', 45, 120), origin: 'modified', hidden: false },
     ]);
     render(<AdminCatalogue />);
     await screen.findByText('Framing timber 45 × 95 mm');
-    const suggest = (name) => within(rowOf(name)).queryByRole('button', { name: 'Suggest to Planqer' });
+    const suggest = (name) => within(rowOf(name)).queryByRole('button', { name: 'Suggest to Partsible' });
     expect(suggest('Framing timber 45 × 95 mm')).not.toBeInTheDocument();
     expect(suggest('Framing timber 45 × 70 mm')).not.toBeInTheDocument();
     expect(suggest('Framing timber 48 × 98 mm')).toBeInTheDocument();
@@ -181,14 +181,14 @@ describe('AdminCatalogue', () => {
   it('opens the edit and suggest forms directly under the row they belong to', async () => {
     render(<AdminCatalogue />);
     await screen.findByText('Framing timber 45 × 95 mm');
-    fireEvent.click(within(rowOf('Framing timber 48 × 98 mm')).getByRole('button', { name: 'Suggest to Planqer' }));
-    const suggest = screen.getByRole('form', { name: 'Suggest to Planqer' });
+    fireEvent.click(within(rowOf('Framing timber 48 × 98 mm')).getByRole('button', { name: 'Suggest to Partsible' }));
+    const suggest = screen.getByRole('form', { name: 'Suggest to Partsible' });
     expect(rowOf('Framing timber 48 × 98 mm').nextElementSibling).toContainElement(suggest);
 
     fireEvent.click(within(rowOf('Framing timber 45 × 70 mm')).getByRole('button', { name: 'Edit' }));
     const edit = screen.getByRole('form', { name: 'Edit product' });
     expect(rowOf('Framing timber 45 × 70 mm').nextElementSibling).toContainElement(edit);
-    expect(screen.queryByRole('form', { name: 'Suggest to Planqer' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('form', { name: 'Suggest to Partsible' })).not.toBeInTheDocument();
   });
 
   it('pre-fills the source the built-in products of the same type cite', async () => {
@@ -199,8 +199,8 @@ describe('AdminCatalogue', () => {
     ]);
     render(<AdminCatalogue />);
     await screen.findByText('Framing timber 50 × 150 mm');
-    fireEvent.click(within(rowOf('Framing timber 50 × 150 mm')).getByRole('button', { name: 'Suggest to Planqer' }));
-    const form = screen.getByRole('form', { name: 'Suggest to Planqer' });
+    fireEvent.click(within(rowOf('Framing timber 50 × 150 mm')).getByRole('button', { name: 'Suggest to Partsible' }));
+    const form = screen.getByRole('form', { name: 'Suggest to Partsible' });
 
     expect(within(form).getByLabelText('Source URL')).toHaveValue('https://www.traguiden.se/');
     expect(within(form).getByText('Taken from the built-in Framing timber products.')).toBeInTheDocument();
@@ -216,8 +216,8 @@ describe('AdminCatalogue', () => {
     ]);
     render(<AdminCatalogue />);
     await screen.findByText('Framing timber 50 × 150 mm');
-    fireEvent.click(within(rowOf('Framing timber 50 × 150 mm')).getByRole('button', { name: 'Suggest to Planqer' }));
-    const form = screen.getByRole('form', { name: 'Suggest to Planqer' });
+    fireEvent.click(within(rowOf('Framing timber 50 × 150 mm')).getByRole('button', { name: 'Suggest to Partsible' }));
+    const form = screen.getByRole('form', { name: 'Suggest to Partsible' });
     const source = within(form).getByLabelText('Source URL');
     const country = within(form).getByLabelText('Country');
 
@@ -237,11 +237,11 @@ describe('AdminCatalogue', () => {
     api.getAdminCatalogue.mockResolvedValue([
       { product: product('local:regel:50x150', 'regel', 50, 150, { sources: [] }), origin: 'local', hidden: false },
     ]);
-    api.getCatalogueSuggestion.mockResolvedValue({ snippet: 'type: regel', url: 'https://github.com/nordstad/Planqer/issues/new?x' });
+    api.getCatalogueSuggestion.mockResolvedValue({ snippet: 'type: regel', url: 'https://github.com/nordstad/partsible/issues/new?x' });
     render(<AdminCatalogue />);
     await screen.findByText('Framing timber 50 × 150 mm');
-    fireEvent.click(within(rowOf('Framing timber 50 × 150 mm')).getByRole('button', { name: 'Suggest to Planqer' }));
-    const form = screen.getByRole('form', { name: 'Suggest to Planqer' });
+    fireEvent.click(within(rowOf('Framing timber 50 × 150 mm')).getByRole('button', { name: 'Suggest to Partsible' }));
+    const form = screen.getByRole('form', { name: 'Suggest to Partsible' });
     const source = within(form).getByLabelText('Source URL');
 
     expect(within(form).queryByRole('button', { name: 'Prepare issue' })).not.toBeInTheDocument();
@@ -260,19 +260,19 @@ describe('AdminCatalogue', () => {
 
   it('prepares a GitHub issue as soon as it opens, with one link and no popup', async () => {
     api.getCatalogueSuggestion.mockResolvedValue({
-      snippet: 'country: SE\nproducts:\n- type: regel\n', url: 'https://github.com/nordstad/Planqer/issues/new?template=x',
+      snippet: 'country: SE\nproducts:\n- type: regel\n', url: 'https://github.com/nordstad/partsible/issues/new?template=x',
     });
     const open = vi.spyOn(window, 'open');
     render(<AdminCatalogue />);
     await screen.findByText('Framing timber 45 × 95 mm');
-    fireEvent.click(within(rowOf('Framing timber 48 × 98 mm')).getByRole('button', { name: 'Suggest to Planqer' }));
-    const form = screen.getByRole('form', { name: 'Suggest to Planqer' });
+    fireEvent.click(within(rowOf('Framing timber 48 × 98 mm')).getByRole('button', { name: 'Suggest to Partsible' }));
+    const form = screen.getByRole('form', { name: 'Suggest to Partsible' });
     expect(within(form).getByLabelText('Source URL')).toHaveValue('https://www.traguiden.se/');
     expect(within(form).getByLabelText('Country')).toHaveValue('SE');
 
     const link = await within(form).findByRole('link', { name: 'Open on GitHub' });
     expect(api.getCatalogueSuggestion).toHaveBeenCalledWith('local:regel:48x98', { source: 'https://www.traguiden.se/', country: 'SE' });
-    expect(link).toHaveAttribute('href', expect.stringContaining('github.com/nordstad/Planqer/issues/new'));
+    expect(link).toHaveAttribute('href', expect.stringContaining('github.com/nordstad/partsible/issues/new'));
     expect(link).toHaveAttribute('target', '_blank');
     expect(within(form).getByTestId('suggestion-snippet')).toHaveTextContent('type: regel');
     expect(within(form).getAllByRole('button').map((b) => b.textContent)).toEqual(['Close']);
@@ -280,11 +280,11 @@ describe('AdminCatalogue', () => {
   });
 
   it('says what happens next once the issue is opened', async () => {
-    api.getCatalogueSuggestion.mockResolvedValue({ snippet: 'type: regel', url: 'https://github.com/nordstad/Planqer/issues/new?x' });
+    api.getCatalogueSuggestion.mockResolvedValue({ snippet: 'type: regel', url: 'https://github.com/nordstad/partsible/issues/new?x' });
     render(<AdminCatalogue />);
     await screen.findByText('Framing timber 45 × 95 mm');
-    fireEvent.click(within(rowOf('Framing timber 48 × 98 mm')).getByRole('button', { name: 'Suggest to Planqer' }));
-    const form = screen.getByRole('form', { name: 'Suggest to Planqer' });
+    fireEvent.click(within(rowOf('Framing timber 48 × 98 mm')).getByRole('button', { name: 'Suggest to Partsible' }));
+    const form = screen.getByRole('form', { name: 'Suggest to Partsible' });
     expect(within(form).queryByText(/reviewed/i)).not.toBeInTheDocument();
     const link = await within(form).findByRole('link', { name: 'Open on GitHub' });
     link.addEventListener('click', (event) => event.preventDefault());
@@ -297,7 +297,7 @@ describe('AdminCatalogue', () => {
     api.getCatalogueSuggestion.mockRejectedValue(new Error('the source must be an https URL'));
     render(<AdminCatalogue />);
     await screen.findByText('Framing timber 45 × 95 mm');
-    fireEvent.click(within(rowOf('Framing timber 48 × 98 mm')).getByRole('button', { name: 'Suggest to Planqer' }));
+    fireEvent.click(within(rowOf('Framing timber 48 × 98 mm')).getByRole('button', { name: 'Suggest to Partsible' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('the source must be an https URL');
   });
 

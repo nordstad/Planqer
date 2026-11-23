@@ -1,4 +1,4 @@
-// The saved projects, groups and settings of the demo, kept in the browser.
+// The saved projects, groups and settings of Lite, kept in the browser.
 //
 // This mirrors the server's routes (routes/projects.py, sheet_projects.py,
 // tile_projects.py, wallpaper_projects.py, project_groups.py, settings.py) for a single local user.

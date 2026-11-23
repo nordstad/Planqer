@@ -1,0 +1,176 @@
+"""
+STEP cutlist processing for Partsible.
+
+Turns a STEP/STP file into a cutlist: one line per distinct part, with the real
+component names, materials and assembly paths the CAD tool wrote into the file.
+
+The geometry and metadata come from partsible.step_reader, a plain ISO 10303-21
+reader with no native dependency. What used to sit here instead was a stub that
+never opened the file and returned the same seven invented "Bench" components
+for any upload — see step_reader's own note.
+
+Classification is the STL path's rule, imported rather than re-stated: the same
+model exported both ways must produce the same cutlist.
+"""
+
+import logging
+import os
+import tempfile
+
+from partsible.errors import PartsibleError
+from partsible.step_policy import (
+    StepComponentType,
+    StepCutListItem,
+    measured_bodies_to_cutlist,
+)
+from partsible.step_reader import (
+    StepParseError,
+    read_step_file,
+    read_step_file_with_warnings,
+)
+from partsible.uploads import UploadedFile
+
+logger = logging.getLogger("partsible.step_cutlist")
+
+# STEP is verbose text and the reader is pure Python, so size is time. The
+# endpoint is rate limited to 3/minute for the same reason.
+MAX_UPLOAD_BYTES = 50 * 1024 * 1024
+
+# Millimetres per unit, for a file that declares no unit of its own.
+UNIT_SCALE = {
+    "mm": 1.0,
+    "cm": 10.0,
+    "m": 1000.0,
+    "in": 25.4,
+    "inch": 25.4,
+    "inches": 25.4,
+    "ft": 304.8,
+    "feet": 304.8,
+}
+
+
+class StepProcessor:
+    """Reads a STEP file and groups its solids into a cut list."""
+
+    def __init__(self, units: str = "mm", round_precision: int = 1):
+        self.units = units
+        self.round_precision = round_precision
+        # Only a fallback now. The file's own declared unit wins, because a
+        # STEP file that says it is in inches is in inches whatever the form said.
+        self.unit_scale = UNIT_SCALE.get(units.lower(), 1.0)
+
+    def process_step_file(
+        self, file_path: str, project_name: str | None = None
+    ) -> list[StepCutListItem]:
+        try:
+            bodies = read_step_file(file_path, fallback_scale=self.unit_scale)
+        except StepParseError as e:
+            # The file's own shape is the user's problem to fix, so say what is
+            # wrong with it rather than reporting a server fault.
+            raise PartsibleError(status_code=400, detail=str(e)) from e
+        except PartsibleError:
+            raise
+        except Exception as e:
+            logger.error(f"STEP processing failed: {e}")
+            raise PartsibleError(
+                status_code=500, detail=f"STEP processing failed: {e}"
+            ) from e
+
+        items = measured_bodies_to_cutlist(bodies, self.round_precision)
+        logger.info(f"STEP processing completed: {len(items)} distinct components")
+        return items
+
+    def process_step_file_with_warnings(
+        self, file_path: str, project_name: str | None = None
+    ):
+        try:
+            bodies, warnings = read_step_file_with_warnings(
+                file_path, fallback_scale=self.unit_scale
+            )
+        except StepParseError as e:
+            raise PartsibleError(status_code=400, detail=str(e)) from e
+        return measured_bodies_to_cutlist(bodies, self.round_precision), warnings
+
+    def convert_to_partsible_parts(
+        self, cutlist_items: list[StepCutListItem]
+    ) -> dict[str, int]:
+        """Board lengths and counts, in the shape the 1D optimizer takes."""
+        parts: dict[str, int] = {}
+        for item in cutlist_items:
+            if item.type == StepComponentType.BOARD:
+                key = str(int(item.length))
+                parts[key] = parts.get(key, 0) + item.quantity
+        return parts
+
+
+def _check_step_upload(filename: str | None, size: int | None) -> None:
+    if not filename or not filename.lower().endswith((".step", ".stp")):
+        raise PartsibleError(
+            status_code=400,
+            detail="File must be a STEP file (.step or .stp extension)",
+        )
+
+    if size and size > MAX_UPLOAD_BYTES:
+        raise PartsibleError(
+            status_code=400,
+            detail=f"File size too large. Maximum {MAX_UPLOAD_BYTES // (1024 * 1024)}MB allowed.",
+        )
+
+
+def process_step_bytes(
+    data: bytes,
+    filename: str | None,
+    units: str = "mm",
+    round_precision: int = 1,
+    project_name: str | None = None,
+    include_warnings: bool = False,
+) -> tuple[list[StepCutListItem], dict[str, int]]:
+    """Read the contents of a STEP file into cutlist items and the 1D parts payload.
+
+    `units` is the fallback for a file that declares no length unit; the file's
+    own declaration always wins.
+    """
+    _check_step_upload(filename, len(data))
+
+    temp_fd, temp_path = tempfile.mkstemp(prefix="partsible-step-", suffix=".step")
+    try:
+        os.chmod(temp_path, 0o600)
+        with os.fdopen(temp_fd, "wb") as temp_file:
+            temp_file.write(data)
+            temp_file.flush()
+
+        processor = StepProcessor(units=units, round_precision=round_precision)
+        cutlist_items, warnings = processor.process_step_file_with_warnings(
+            temp_path, project_name
+        )
+        parts = processor.convert_to_partsible_parts(cutlist_items)
+        return (
+            (cutlist_items, parts, warnings)
+            if include_warnings
+            else (cutlist_items, parts)
+        )
+    finally:
+        try:
+            os.unlink(temp_path)
+        except OSError:
+            pass
+
+
+async def process_uploaded_step(
+    file: UploadedFile,
+    units: str = "mm",
+    round_precision: int = 1,
+    project_name: str | None = None,
+    include_warnings: bool = False,
+) -> tuple[list[StepCutListItem], dict[str, int]]:
+    """Read an uploaded STEP file; see `process_step_bytes`."""
+    # Reject before reading the body, as the endpoint always has.
+    _check_step_upload(file.filename, file.size)
+    return process_step_bytes(
+        await file.read(),
+        file.filename,
+        units,
+        round_precision,
+        project_name,
+        include_warnings,
+    )

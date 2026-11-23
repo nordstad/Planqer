@@ -11,7 +11,7 @@ from itertools import combinations
 
 import pytest
 
-from planqer.sheet_optimization import (
+from partsible.sheet_optimization import (
     Rectangle,
     SheetLayout,
     SheetOptimizationAlgorithm,

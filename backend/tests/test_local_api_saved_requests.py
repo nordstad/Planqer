@@ -12,17 +12,17 @@ import uuid
 import pytest
 from fastapi.testclient import TestClient
 
-from planqer.local_api import handle
+from partsible.local_api import handle
 
 pytestmark = pytest.mark.api
 
 
 @pytest.fixture(scope="module")
 def client():
-    from planqer.api import app
+    from partsible.api import app
 
     with TestClient(app) as test_client:
-        test_client.headers["X-Planqer-Setup-Secret"] = "test-setup-secret"
+        test_client.headers["X-Partsible-Setup-Secret"] = "test-setup-secret"
         yield test_client
 
 

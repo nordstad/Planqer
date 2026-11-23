@@ -137,13 +137,13 @@ describe('MCP stdio integration', () => {
       cwd: projectRoot,
       env: {
         ...process.env,
-        PLANQER_API_URL: backendUrl,
+        PARTSIBLE_API_URL: backendUrl,
       } as Record<string, string>,
       stderr: 'pipe',
     });
 
     client = new Client({
-      name: 'planqer-mcp-integration-test',
+      name: 'partsible-mcp-integration-test',
       version: '1.0.0',
     });
 
@@ -176,8 +176,8 @@ describe('MCP stdio integration', () => {
 
     expect(names).toContain('optimize_cutting');
     expect(names).toContain('search_products');
-    expect(names).toContain('optimize_demo');
-    expect(names).toContain('get_demo_payloads');
+    expect(names).toContain('optimize_sample');
+    expect(names).toContain('get_sample_payloads');
     expect(names).toContain('get_cutting_example');
   });
 
@@ -207,8 +207,8 @@ describe('MCP stdio integration', () => {
       ['optimize_cutting', { parts: { '100': 1 }, available_board_lengths: [300], saw_blade_width: 3, project_name: 'Lines', product: 'Furu' }],
       ['optimize_cutting', { parts: { '100': 1 }, available_board_lengths: [300], saw_blade_width: 3, use_async: true }],
       ['get_cutting_example', {}],
-      ['get_demo_payloads', {}],
-      ['optimize_demo', { example: 'furniture_project' }],
+      ['get_sample_payloads', {}],
+      ['optimize_sample', { example: 'furniture_project' }],
     ] as const) {
       const result = await client!.callTool({ name, arguments: args });
       texts.push((result.content as any[])[0].text);
@@ -333,7 +333,7 @@ describe('MCP stdio integration', () => {
   it('keeps TypeScript stdio stdout free of non-JSON-RPC logs', async () => {
     const child = spawn('node', [serverEntry], {
       cwd: projectRoot,
-      env: { ...process.env, PLANQER_API_URL: backendUrl },
+      env: { ...process.env, PARTSIBLE_API_URL: backendUrl },
       stdio: ['pipe', 'pipe', 'pipe'],
     });
     let stdout = '';

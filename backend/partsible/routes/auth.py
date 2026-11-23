@@ -1,0 +1,191 @@
+import asyncio
+import hmac
+import os
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import BaseModel, EmailStr, field_validator
+from sqlalchemy import update
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import func, select
+
+from partsible.auth import (
+    create_access_token,
+    get_current_user,
+    get_password_hash,
+    validate_password,
+    verify_password,
+)
+from partsible.auth.single_user import is_single_user_mode
+from partsible.database import InstanceBootstrap, User, get_session
+
+from .common import limiter
+from .settings import new_user_settings
+
+router = APIRouter(prefix="/auth", tags=["authentication"])
+
+
+class UserCreate(BaseModel):
+    email: EmailStr
+    password: str
+
+    @field_validator("password")
+    @classmethod
+    def validate_password_policy(cls, value: str) -> str:
+        return validate_password(value)
+
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class UserResponse(BaseModel):
+    id: UUID
+    email: str
+    is_active: bool
+    is_admin: bool
+
+
+class SetupStatusResponse(BaseModel):
+    needs_setup: bool
+    single_user: bool = False
+
+
+@router.get("/setup-status", response_model=SetupStatusResponse)
+async def get_setup_status(session: AsyncSession = Depends(get_session)):
+    """Whether this self-hosted instance has no accounts yet, so the frontend can
+    offer first-run setup instead of a login form nobody could sign in to."""
+    if is_single_user_mode():
+        return SetupStatusResponse(needs_setup=False, single_user=True)
+    user_count = (await session.execute(select(func.count(User.id)))).scalar() or 0
+    return SetupStatusResponse(needs_setup=user_count == 0)
+
+
+@router.post(
+    "/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED
+)
+@limiter.limit("10/minute")
+async def register_user(
+    request: Request,
+    user_data: UserCreate,
+    session: AsyncSession = Depends(get_session),
+):
+    if is_single_user_mode():
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Accounts are disabled in single-user mode",
+        )
+
+    stmt = select(User).where(User.email == user_data.email)
+    result = await session.execute(stmt)
+    existing_user = result.scalar_one_or_none()
+
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered"
+        )
+
+    user_count = (await session.execute(select(func.count(User.id)))).scalar() or 0
+    if user_count == 0 and not _initial_registration_is_allowed(request):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Fresh-instance registration requires local access or the setup secret",
+        )
+
+    is_first_user = False
+    if user_count == 0:
+        claim = await session.execute(
+            update(InstanceBootstrap)
+            .where(
+                InstanceBootstrap.id == 1,
+                InstanceBootstrap.claimed == False,
+            )
+            .values(claimed=True)
+        )
+        is_first_user = claim.rowcount == 1
+
+    db_user = User(
+        email=user_data.email,
+        hashed_password=await asyncio.to_thread(get_password_hash, user_data.password),
+        is_admin=is_first_user,
+    )
+
+    session.add(db_user)
+    await session.commit()
+    await session.refresh(db_user)
+
+    session.add(new_user_settings(db_user.id))
+    await session.commit()
+
+    return UserResponse(
+        id=db_user.id,
+        email=db_user.email,
+        is_active=db_user.is_active,
+        is_admin=db_user.is_admin,
+    )
+
+
+def _initial_registration_is_allowed(request: Request) -> bool:
+    if os.environ.get("PARTSIBLE_TRUSTED_BOOTSTRAP", "").lower() == "true":
+        return True
+
+    client_host = request.client.host if request.client else None
+    if client_host in {"127.0.0.1", "::1", "localhost"}:
+        return True
+
+    setup_secret = os.environ.get("PARTSIBLE_SETUP_SECRET")
+    provided_secret = request.headers.get("X-Partsible-Setup-Secret", "")
+    return bool(setup_secret) and hmac.compare_digest(provided_secret, setup_secret)
+
+
+@router.post("/login", response_model=Token)
+@limiter.limit("10/minute")
+async def login_user(
+    request: Request,
+    user_data: UserLogin,
+    session: AsyncSession = Depends(get_session),
+):
+    stmt = select(User).where(User.email == user_data.email)
+    result = await session.execute(stmt)
+    user = result.scalar_one_or_none()
+
+    password_matches = (
+        await asyncio.to_thread(
+            verify_password, user_data.password, user.hashed_password
+        )
+        if user
+        else False
+    )
+    if not user or not password_matches:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user"
+        )
+
+    access_token = create_access_token(
+        data={"sub": str(user.id), "session_version": user.session_version}
+    )
+
+    return Token(access_token=access_token, token_type="bearer")
+
+
+@router.get("/me", response_model=UserResponse)
+async def get_current_user_info(current_user: User = Depends(get_current_user)):
+    return UserResponse(
+        id=current_user.id,
+        email=current_user.email,
+        is_active=current_user.is_active,
+        is_admin=current_user.is_admin,
+    )

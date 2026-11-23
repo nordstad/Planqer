@@ -1,70 +1,70 @@
 services:
   backend:
-    container_name: planqer-web-backend
-    image: ghcr.io/nordstad/planqer-backend:${PLANQER_VERSION:-latest}
+    container_name: partsible-web-backend
+    image: ghcr.io/nordstad/partsible-backend:${PARTSIBLE_VERSION:-latest}
     ports:
-      - "${PLANQER_BIND_ADDRESS:-127.0.0.1}:${BACKEND_PORT:-8002}:8002"
+      - "${PARTSIBLE_BIND_ADDRESS:-127.0.0.1}:${BACKEND_PORT:-8002}:8002"
     environment:
       # Optional override; otherwise the key is persisted in backend_data.
       - SECRET_KEY=${SECRET_KEY:-}
-      - PLANQER_SETUP_SECRET=${PLANQER_SETUP_SECRET:-}
+      - PARTSIBLE_SETUP_SECRET=${PARTSIBLE_SETUP_SECRET:-}
       # Safe only while the service is bound to loopback (the default below).
-      # Set false when exposing the service and use PLANQER_SETUP_SECRET instead.
-      - PLANQER_TRUSTED_BOOTSTRAP=${PLANQER_TRUSTED_BOOTSTRAP:-true}
+      # Set false when exposing the service and use PARTSIBLE_SETUP_SECRET instead.
+      - PARTSIBLE_TRUSTED_BOOTSTRAP=${PARTSIBLE_TRUSTED_BOOTSTRAP:-true}
       - DATABASE_URL=${DATABASE_URL:-}
       # Comma-separated origins allowed to call the API, in addition to
-      # localhost/127.0.0.1. Set this to the address(es) you reach Planqer on
-      # (e.g. http://192.168.1.50:3001,https://planqer.example.com) or the
+      # localhost/127.0.0.1. Set this to the address(es) you reach Partsible on
+      # (e.g. http://192.168.1.50:3001,https://partsible.example.com) or the
       # browser silently loses the ability to log in or register - the
       # request is just CORS-blocked.
-      - PLANQER_CORS_ORIGINS=${PLANQER_CORS_ORIGINS:-}
+      - PARTSIBLE_CORS_ORIGINS=${PARTSIBLE_CORS_ORIGINS:-}
       # Default catalogue country (SE or NO); users can pick their own. Empty: generic.
-      - PLANQER_CATALOGUE_COUNTRY=${PLANQER_CATALOGUE_COUNTRY:-}
+      - PARTSIBLE_CATALOGUE_COUNTRY=${PARTSIBLE_CATALOGUE_COUNTRY:-}
       # Set to true to drop accounts and sign-in: everyone who can reach
       # the app is its owner. Refused unless the app is bound to loopback (the
       # address below is what Compose publishes it on) or you accept the risk
-      # with PLANQER_ALLOW_OPEN_LAN=true.
-      - PLANQER_SINGLE_USER=${PLANQER_SINGLE_USER:-}
-      - PLANQER_BIND_ADDRESS=${PLANQER_BIND_ADDRESS:-127.0.0.1}
-      - PLANQER_ALLOW_OPEN_LAN=${PLANQER_ALLOW_OPEN_LAN:-}
+      # with PARTSIBLE_ALLOW_OPEN_LAN=true.
+      - PARTSIBLE_SINGLE_USER=${PARTSIBLE_SINGLE_USER:-}
+      - PARTSIBLE_BIND_ADDRESS=${PARTSIBLE_BIND_ADDRESS:-127.0.0.1}
+      - PARTSIBLE_ALLOW_OPEN_LAN=${PARTSIBLE_ALLOW_OPEN_LAN:-}
     volumes:
       # Local accounts + saved projects, on your own instance.
       - backend_data:/app/backend/data
     networks:
-      - planqer-network
+      - partsible-network
 
   frontend:
-    container_name: planqer-web-frontend
-    image: ghcr.io/nordstad/planqer-frontend:${PLANQER_VERSION:-latest}
+    container_name: partsible-web-frontend
+    image: ghcr.io/nordstad/partsible-frontend:${PARTSIBLE_VERSION:-latest}
     environment:
-      # The hostname you serve Planqer on. Vite refuses requests with a Host
+      # The hostname you serve Partsible on. Vite refuses requests with a Host
       # header it doesn't know, so serving this behind a reverse proxy without
       # setting this returns "Blocked request" and nothing else.
-      - PLANQER_HOST=${PLANQER_HOST:-}
+      - PARTSIBLE_HOST=${PARTSIBLE_HOST:-}
       # Only needed if the API is not reachable at the same origin as the app
       # (proxied) or at port 8002 on the same host (direct). An origin, no path.
       - VITE_API_URL=${VITE_API_URL:-}
     ports:
-      - "${PLANQER_BIND_ADDRESS:-127.0.0.1}:${FRONTEND_PORT:-3001}:3001"
+      - "${PARTSIBLE_BIND_ADDRESS:-127.0.0.1}:${FRONTEND_PORT:-3001}:3001"
     networks:
-      - planqer-network
+      - partsible-network
 
   mcp-server:
-    container_name: planqer-mcp-server
+    container_name: partsible-mcp-server
     profiles: [mcp]
-    image: ghcr.io/nordstad/planqer-mcp-server:${PLANQER_VERSION:-latest}
+    image: ghcr.io/nordstad/partsible-mcp-server:${PARTSIBLE_VERSION:-latest}
     environment:
-      - PLANQER_API_URL=http://backend:8002/api
+      - PARTSIBLE_API_URL=http://backend:8002/api
     depends_on:
       - backend
     networks:
-      - planqer-network
+      - partsible-network
     # MCP server runs as a service but doesn't expose ports (uses stdio)
     stdin_open: true
     tty: true
 
 networks:
-  planqer-network:
+  partsible-network:
     driver: bridge
 
 volumes:

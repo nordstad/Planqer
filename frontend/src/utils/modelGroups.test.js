@@ -230,7 +230,7 @@ describe('plan alone hand-off', () => {
   it('keeps the chosen product and its details', () => {
     const product = { ...initialConfig(board(), {}, catalogue).product, details: { species: 'spruce', treatment: '', grade: 'C24', profile: '', text: '' } };
     const { key, path, data } = standaloneHandoff(board(), { ...initialConfig(board()), product }, 'bench · Pine');
-    expect(key).toBe('planqer-3d-import');
+    expect(key).toBe('partsible-3d-import');
     expect(path).toBe('/cutting?import=3d');
     expect(data).toMatchObject({ boardThickness: 45, boardWidth: 95, source: 'model-cutlist', parts: { 1800: 2 } });
     expect(data.product).toEqual(product);
@@ -239,7 +239,7 @@ describe('plan alone hand-off', () => {
   it('keeps the user\'s own product for a sheet', () => {
     const config = { ...initialConfig(sheet()), product: freeTextSelection('sheet', 'Birch ply') };
     const { key, data } = standaloneHandoff(sheet(), config, 'bench');
-    expect(key).toBe('planqer-3d-sheet-import');
+    expect(key).toBe('partsible-3d-sheet-import');
     expect(data).toMatchObject({ product: { type: 'sheet-custom', text: 'Birch ply' }, sheetThickness: 15 });
   });
 

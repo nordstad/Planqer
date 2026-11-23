@@ -7,7 +7,7 @@ from collections import Counter
 
 import pytest
 
-from planqer.algorithms import (
+from partsible.algorithms import (
     OptimizationAlgorithm,
     best_fit,
     best_fit_decreasing,

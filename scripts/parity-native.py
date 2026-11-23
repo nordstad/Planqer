@@ -17,7 +17,7 @@ PARITY = ROOT / "frontend" / "tests" / "parity"
 
 sys.path.insert(0, str(ROOT / "backend"))
 
-from planqer.local_api import handle
+from partsible.local_api import handle
 
 
 def main() -> None:

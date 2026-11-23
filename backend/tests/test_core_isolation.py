@@ -35,15 +35,15 @@ SERVER_ONLY_PACKAGES = (
 MODEL_PACKAGES = ("numpy", "scipy", "networkx", "trimesh")
 
 CORE_MODULES = [
-    "planqer.services",
-    "planqer.threed_cutlist",
-    "planqer.step_cutlist",
-    "planqer.local_api",
-    "planqer.saved_diagrams",
-    "planqer.schemas.saved",
-    "planqer.catalogue",
-    "planqer.catalogue.local",
-    "planqer.catalogue.search",
+    "partsible.services",
+    "partsible.threed_cutlist",
+    "partsible.step_cutlist",
+    "partsible.local_api",
+    "partsible.saved_diagrams",
+    "partsible.schemas.saved",
+    "partsible.catalogue",
+    "partsible.catalogue.local",
+    "partsible.catalogue.search",
 ]
 
 
@@ -88,7 +88,7 @@ def test_a_cutting_plan_runs_without_the_server_stack():
     result = run_without_the_server_stack(
         """
         import json
-        from planqer.local_api import handle
+        from partsible.local_api import handle
 
         request = {
             "parts": {"100": 2, "50": 2},
@@ -108,7 +108,7 @@ def test_a_sheet_plan_runs_without_the_server_stack():
     result = run_without_the_server_stack(
         """
         import json
-        from planqer.local_api import handle
+        from partsible.local_api import handle
 
         request = {
             "parts": {"side": {"width": 600, "height": 400, "quantity": 2}},
@@ -129,7 +129,7 @@ def test_a_tile_layout_runs_without_the_server_stack():
     result = run_without_the_server_stack(
         """
         import json
-        from planqer.local_api import handle
+        from partsible.local_api import handle
 
         request = {
             "surface_width": 1500,
@@ -151,7 +151,7 @@ def test_a_model_cutlist_runs_without_the_server_stack():
         """
         import json
         import trimesh
-        from planqer.local_api import handle
+        from partsible.local_api import handle
 
         stl = trimesh.creation.box(extents=[1800, 95, 45]).export(file_type="stl")
         options = {"filename": "shelf.stl"}
@@ -171,7 +171,7 @@ def test_the_catalogue_runs_without_the_server_stack():
     result = run_without_the_server_stack(
         """
         import json
-        from planqer.local_api import handle
+        from partsible.local_api import handle
 
         reply = json.loads(handle("catalogue", json.dumps({"country": "SE"})))
         assert reply["status"] == 200 and reply["body"]["products"], reply
@@ -189,7 +189,7 @@ def test_the_solvers_run_without_the_model_import_packages():
     result = run_without_the_server_stack(
         """
         import json
-        from planqer.local_api import handle
+        from partsible.local_api import handle
 
         def call(op, request, data=None):
             return json.loads(handle(op, json.dumps(request), data))
@@ -245,7 +245,7 @@ def test_saved_diagrams_are_drawn_without_the_server_stack():
     result = run_without_the_server_stack(
         """
         import json
-        from planqer.local_api import handle
+        from partsible.local_api import handle
 
         def call(op, request):
             return json.loads(handle(op, json.dumps(request)))
@@ -308,7 +308,7 @@ def test_a_save_is_validated_without_the_server_stack():
     result = run_without_the_server_stack(
         """
         import json
-        from planqer.local_api import handle
+        from partsible.local_api import handle
 
         request = {
             "kind": "sheet",

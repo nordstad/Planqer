@@ -7,7 +7,7 @@ body:
     attributes:
       value: |
         Thanks for helping the catalogue grow. The easiest way to fill this in is
-        **Admin → Catalogue → Suggest to Planqer** in your own instance, which
+        **Admin → Catalogue → Suggest to Partsible** in your own instance, which
         pre-fills every field below from a product you have already added. Nothing
         is sent until you submit this issue.
 
@@ -42,7 +42,7 @@ body:
     id: snippet
     attributes:
       label: Catalogue entry (YAML)
-      description: A product group in the format of the files in `backend/planqer/catalogue/data/`.
+      description: A product group in the format of the files in `backend/partsible/catalogue/data/`.
       render: yaml
     validations:
       required: true

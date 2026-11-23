@@ -3,13 +3,13 @@ import time
 import pytest
 from fastapi.testclient import TestClient
 
-from planqer.api import app
-from planqer.async_processing import TaskStatus, task_manager
+from partsible.api import app
+from partsible.async_processing import TaskStatus, task_manager
 
 pytestmark = pytest.mark.api
 
 client = TestClient(app)
-client.headers["X-Planqer-Setup-Secret"] = "test-setup-secret"
+client.headers["X-Partsible-Setup-Secret"] = "test-setup-secret"
 
 
 def test_root():
@@ -17,7 +17,7 @@ def test_root():
     assert response.status_code == 404 or response.status_code == 200
 
 
-def test_planqer_success():
+def test_partsible_success():
     payload = {
         "parts": {"100": 2, "50": 2},
         "available_board_lengths": [200],
@@ -31,7 +31,7 @@ def test_planqer_success():
     assert "visualization" in data
 
 
-def test_planqer_plans_a_15_metre_glulam_beam():
+def test_partsible_plans_a_15_metre_glulam_beam():
     payload = {
         "parts": {"14500": 1, "500": 2},
         "available_board_lengths": [15000],
@@ -44,7 +44,7 @@ def test_planqer_plans_a_15_metre_glulam_beam():
     assert sorted(data["cut_list"][0], reverse=True) == [14500]
 
 
-def test_planqer_rejects_boards_longer_than_15_metres():
+def test_partsible_rejects_boards_longer_than_15_metres():
     payload = {
         "parts": {"1000": 1},
         "available_board_lengths": [15001],
@@ -53,7 +53,7 @@ def test_planqer_rejects_boards_longer_than_15_metres():
     assert client.post("/api/cutting-plans", json=payload).status_code == 422
 
 
-def test_planqer_invalid_board():
+def test_partsible_invalid_board():
     payload = {
         "parts": {"300": 1},
         "available_board_lengths": [200],
@@ -108,8 +108,8 @@ def test_cutting_timeout_returns_actionable_gateway_error(monkeypatch):
     def slow_optimization(*args, **kwargs):
         time.sleep(0.05)
 
-    monkeypatch.setattr("planqer.routes.cutting.run_optimization", slow_optimization)
-    monkeypatch.setattr("planqer.routes.cutting.OPTIMIZATION_TIMEOUT_SECONDS", 0.01)
+    monkeypatch.setattr("partsible.routes.cutting.run_optimization", slow_optimization)
+    monkeypatch.setattr("partsible.routes.cutting.OPTIMIZATION_TIMEOUT_SECONDS", 0.01)
 
     response = client.post(
         "/api/cutting-plans",
@@ -131,7 +131,7 @@ def test_async_submission_and_http_polling(monkeypatch):
         )
 
     monkeypatch.setattr(
-        "planqer.routes.cutting.process_optimization_async", complete_task
+        "partsible.routes.cutting.process_optimization_async", complete_task
     )
     payload = {
         "parts": {"100": 1},
@@ -164,7 +164,7 @@ def test_async_submission_forwards_cost_options(monkeypatch):
         )
 
     monkeypatch.setattr(
-        "planqer.routes.cutting.process_optimization_async", complete_task
+        "partsible.routes.cutting.process_optimization_async", complete_task
     )
     response = client.post(
         "/api/cutting-plans/async",

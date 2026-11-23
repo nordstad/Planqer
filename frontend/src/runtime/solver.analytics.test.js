@@ -89,7 +89,7 @@ it("leaves the stage out when the failure did not come from the engine", async (
   expect(track).toHaveBeenCalledWith("runtime_error", { reason: "engine", tool: "tile" });
 });
 
-it("counts a browser that cannot run the demo", async () => {
+it("counts a browser that cannot run Lite", async () => {
   vi.stubGlobal("Worker", undefined);
   await expect(solver.solverCall("tile_layout", {})).rejects.toThrow();
   expect(track).toHaveBeenCalledWith("runtime_error", {

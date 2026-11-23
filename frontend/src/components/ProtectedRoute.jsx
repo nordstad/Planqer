@@ -37,7 +37,7 @@ const ProtectedRoute = ({ children, fallbackMessage = 'access.default' }) => {
     return (
       <CatalogPage>
         <div className="card" style={{ maxWidth: '420px', margin: '80px auto', textAlign: 'center' }}>
-          <h2 className="section-title" style={{ marginBottom: '10px' }}>{t('common.setupPlanqer')}</h2>
+          <h2 className="section-title" style={{ marginBottom: '10px' }}>{t('common.setupPartsible')}</h2>
           <p style={{ color: 'var(--ink-2)', marginBottom: '18px' }}>
             {t('common.setupDescription')}
           </p>

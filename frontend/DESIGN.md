@@ -1,5 +1,5 @@
 ---
-name: Planqer
+name: Partsible
 description: The self-hosted README — a plain, warm open-source homepage with one amber signal, for a cutting-plan tool that proves itself with a real diagram.
 colors:
   ground: "#fafaf7"
@@ -142,13 +142,13 @@ components:
     size: "42px"
 ---
 
-# Design System: Planqer
+# Design System: Partsible
 
 ## Overview
 
 **Creative North Star: "The Self-Hosted README"**
 
-Planqer reads like a well-made open-source project's own homepage, not a printed
+Partsible reads like a well-made open-source project's own homepage, not a printed
 catalog and not a SaaS pitch deck. The whole product sits on warm, slightly
 grey-cream paper with ink type, rounded cards, and exactly one signal color —
 a warm amber-orange — reserved for the call to action, the one figure that
@@ -641,7 +641,7 @@ but make the diagram the single source for the sequence.
 ### The Homepage Illustration
 
 `.hp-visual` — one animated isometric illustration
-(`src/assets/planqer-hero-animated.svg`, transparent, cropped to the
+(`src/assets/partsible-hero-animated.svg`, transparent, cropped to the
 drawing at 895×490) of the
 materials the tools plan: a plywood sheet, oak boards with a hatched
 offcut, a tile grid with its amber start tile, wallpaper strips off a roll,
@@ -665,6 +665,34 @@ the finished plans at once. The page only mounts it when it first scrolls
 into view, so the sweep is seen on a phone too, where the illustration sits
 below the cards; the box keeps its aspect ratio until then, so nothing
 shifts.
+
+### The Logo
+
+The mark is a 3 by 3 grid of rounded parts in dark green-grey (`#4c5951`),
+with the last two pieces in burnt orange (`#d87328`): the offcuts. In the
+interface use the flat symbol (`public/partsible-symbol-flat.svg`) on the
+light theme and the dark symbol (`public/partsible-symbol-dark.svg`, parts
+`#e9e6da`) on the dark theme, switched with the same `isDark` check as the
+rest of the theme. The wordmark is lower case ("partsible") in the lockups
+and "Partsible" in prose. Keep clear space of at least one part around the
+mark. Do not recolour the orange pieces, add gradients to the interface
+versions, or redraw the grid. The gradient master and the lockups live in
+`docs/assets/brand/` for the README and the docs.
+
+### Footer and Support Link
+
+The self-hosted homepage footer (`.hp-footer`) and the Partsible Lite footer end
+with one plain text link, "Buy me a coffee", to `https://ko-fi.com/nordstad`.
+It looks like its neighbours (Help, Source, Licence): same type, same colour,
+no icon, no button, no banner or popup. It opens in a new tab with
+`rel="noopener noreferrer"`. It is never shown inside the tools, it has no
+analytics event, and it does not load a Ko-fi widget or script, so the app
+makes no third-party request until the link is clicked.
+
+The Partsible Lite footer, and the quiet notice above it, stay pinned to the
+bottom of the window (`position: sticky`) so the links are always in view. On a
+short page the footer sits at the bottom of the window, not just under the
+content. Both are small, muted text on the page ground.
 
 ### Notices
 

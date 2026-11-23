@@ -13,7 +13,7 @@ import xml.etree.ElementTree as ET
 
 import pytest
 
-from planqer.tile_layout.geometry import (
+from partsible.tile_layout.geometry import (
     Cutout,
     JointSpec,
     PlacedTile,
@@ -21,8 +21,8 @@ from planqer.tile_layout.geometry import (
     Tile,
     TileKind,
 )
-from planqer.tile_layout.solver import solve_tile_layout
-from planqer.tile_visualization import (
+from partsible.tile_layout.solver import solve_tile_layout
+from partsible.tile_visualization import (
     FULL_TILE_FILL,
     TileSVGVisualizer,
     assign_size_colors,

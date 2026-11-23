@@ -3,7 +3,7 @@ import base64
 import pytest
 from fastapi import HTTPException
 
-from planqer.saved_project_adapters import load_saved_json, update_saved_image
+from partsible.saved_project_adapters import load_saved_json, update_saved_image
 
 
 def test_load_saved_json_rejects_malformed_legacy_data_with_actionable_error():

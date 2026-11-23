@@ -1,4 +1,4 @@
-from planqer.cutting import min_boards_required_with_cut_list
+from partsible.cutting import min_boards_required_with_cut_list
 
 
 def test_min_boards_simple():

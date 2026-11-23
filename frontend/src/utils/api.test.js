@@ -57,7 +57,7 @@ it('sends the optional first-run setup code as a request header', async () => {
   expect(axios.post).toHaveBeenCalledWith(
     expect.stringMatching(/\/api\/auth\/register$/),
     { email: 'owner@example.com', password },
-    { headers: { 'X-Planqer-Setup-Secret': 'setup-code' } }
+    { headers: { 'X-Partsible-Setup-Secret': 'setup-code' } }
   );
 });
 

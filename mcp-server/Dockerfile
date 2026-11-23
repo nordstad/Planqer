@@ -21,7 +21,7 @@ FROM python:3.12-slim
 
 WORKDIR /app
 ENV PATH="/app/.venv/bin:${PATH}"
-ENV PLANQER_API_URL=http://backend:8002/api
+ENV PARTSIBLE_API_URL=http://backend:8002/api
 ENV PYTHONPATH=/app/src
 
 RUN useradd --create-home --shell /bin/bash mcpuser \
@@ -34,6 +34,6 @@ COPY --from=builder --chown=mcpuser:mcpuser /app/schemas ./schemas
 USER mcpuser
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD python -c "import planqer_mcp_server; print('healthy')"
+  CMD python -c "import partsible_mcp_server; print('healthy')"
 
-CMD ["planqer-mcp-server"]
+CMD ["partsible-mcp-server"]

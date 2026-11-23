@@ -5,13 +5,13 @@ import yaml
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
-from planqer.catalogue import (
+from partsible.catalogue import (
     available_countries,
     configured_country,
     get_catalogue,
     loader,
 )
-from planqer.catalogue.schema import ProductGroup, ProductType
+from partsible.catalogue.schema import ProductGroup, ProductType
 
 REQUIRED_BOARD_TYPES = {
     "regel",
@@ -304,11 +304,11 @@ def test_length_range_must_not_end_before_it_starts():
 
 
 def test_unset_or_unknown_country_falls_back_to_generic(monkeypatch):
-    monkeypatch.delenv("PLANQER_CATALOGUE_COUNTRY", raising=False)
+    monkeypatch.delenv("PARTSIBLE_CATALOGUE_COUNTRY", raising=False)
     assert configured_country() is None
-    monkeypatch.setenv("PLANQER_CATALOGUE_COUNTRY", "zz")
+    monkeypatch.setenv("PARTSIBLE_CATALOGUE_COUNTRY", "zz")
     assert configured_country() is None
-    monkeypatch.setenv("PLANQER_CATALOGUE_COUNTRY", " se ")
+    monkeypatch.setenv("PARTSIBLE_CATALOGUE_COUNTRY", " se ")
     assert configured_country() == "SE"
 
 
@@ -317,7 +317,7 @@ def test_unset_or_unknown_country_falls_back_to_generic(monkeypatch):
 
 @pytest.fixture
 def client():
-    from planqer.api import app
+    from partsible.api import app
 
     with TestClient(app) as test_client:
         yield test_client
@@ -325,7 +325,7 @@ def client():
 
 @pytest.mark.api
 def test_catalogue_endpoint_is_public_and_generic_by_default(client, monkeypatch):
-    monkeypatch.delenv("PLANQER_CATALOGUE_COUNTRY", raising=False)
+    monkeypatch.delenv("PARTSIBLE_CATALOGUE_COUNTRY", raising=False)
     response = client.get("/api/catalogue/")
     assert response.status_code == 200
     body = response.json()
@@ -336,7 +336,7 @@ def test_catalogue_endpoint_is_public_and_generic_by_default(client, monkeypatch
 
 @pytest.mark.api
 def test_catalogue_endpoint_serves_norway_too(client, monkeypatch):
-    monkeypatch.setenv("PLANQER_CATALOGUE_COUNTRY", "no")
+    monkeypatch.setenv("PARTSIBLE_CATALOGUE_COUNTRY", "no")
     body = client.get("/api/catalogue/").json()
     assert body["country"] == "NO"
     assert any(p["id"] == "no:regel:48x98" for p in body["products"])
@@ -345,7 +345,7 @@ def test_catalogue_endpoint_serves_norway_too(client, monkeypatch):
 
 @pytest.mark.api
 def test_catalogue_endpoint_serves_the_configured_country(client, monkeypatch):
-    monkeypatch.setenv("PLANQER_CATALOGUE_COUNTRY", "SE")
+    monkeypatch.setenv("PARTSIBLE_CATALOGUE_COUNTRY", "SE")
     body = client.get("/api/catalogue/").json()
     assert body["country"] == "SE"
     assert body["country_name"] == "Sweden"
@@ -354,14 +354,14 @@ def test_catalogue_endpoint_serves_the_configured_country(client, monkeypatch):
 
 @pytest.mark.api
 def test_catalogue_endpoint_supports_etag_revalidation(client, monkeypatch):
-    monkeypatch.setenv("PLANQER_CATALOGUE_COUNTRY", "SE")
+    monkeypatch.setenv("PARTSIBLE_CATALOGUE_COUNTRY", "SE")
     first = client.get("/api/catalogue/")
     etag = first.headers["etag"]
     assert first.headers["cache-control"] == "no-cache"
     again = client.get("/api/catalogue/", headers={"If-None-Match": etag})
     assert again.status_code == 304
     assert again.content == b""
-    monkeypatch.delenv("PLANQER_CATALOGUE_COUNTRY")
+    monkeypatch.delenv("PARTSIBLE_CATALOGUE_COUNTRY")
     other = client.get("/api/catalogue/", headers={"If-None-Match": etag})
     assert other.status_code == 200
     assert other.headers["etag"] != etag

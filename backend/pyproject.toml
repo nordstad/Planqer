@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "planqer"
-version = "0.14.0"
-description = "FastAPI backend for Planqer: Optimize board cutting to minimize waste."
+name = "partsible"
+version = "0.15.0"
+description = "FastAPI backend for Partsible: Plan the cuts and layouts for boards, sheets, tiles and wallpaper."
 license = "MIT"
 requires-python = ">=3.12"  # matches python:3.12-slim in Dockerfile
 authors = [
@@ -40,10 +40,10 @@ dependencies = [
 # so a bare `uv sync` is a complete install on Linux, macOS and Windows alike.
 
 [project.scripts]
-planqer = "planqer.cli:main"
+partsible = "partsible.cli:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["planqer"]
+packages = ["partsible"]
 
 [dependency-groups]
 dev = [

@@ -16,7 +16,7 @@ const signIn = (page) => page.addInitScript((token) => localStorage.setItem('aut
 test.beforeAll(async () => {
   const api = await playwrightRequest.newContext();
   const email = `model-measure-${Date.now()}@example.com`;
-  const credential = ['Planqer', Date.now(), 'e2e'].join('-') + '!1';
+  const credential = ['Partsible', Date.now(), 'e2e'].join('-') + '!1';
   await api.post(`${API}/api/auth/register`, { data: { email, password: credential } });
   const login = await api.post(`${API}/api/auth/login`, { data: { email, password: credential } });
   ({ access_token: accessToken } = await login.json());

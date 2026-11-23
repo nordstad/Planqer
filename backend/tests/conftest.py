@@ -6,7 +6,7 @@ import pytest
 
 _WORKER_ID = os.environ.get("PYTEST_XDIST_WORKER", "master")
 TEST_DB_PATH = str(
-    Path(tempfile.gettempdir()) / f"planqer-test-{_WORKER_ID}-{os.getpid()}.db"
+    Path(tempfile.gettempdir()) / f"partsible-test-{_WORKER_ID}-{os.getpid()}.db"
 )
 
 
@@ -19,12 +19,12 @@ def _remove_test_database() -> None:
 # process/worker suffix prevents parallel runs from opening the same database.
 _remove_test_database()
 
-# Set at collection time, before any test module's top-level `from planqer.api
-# import app` runs — planqer.database.connection reads DATABASE_URL once, at
+# Set at collection time, before any test module's top-level `from partsible.api
+# import app` runs — partsible.database.connection reads DATABASE_URL once, at
 # import time, so setting this inside a fixture would be too late for
 # whichever test file happens to get collected (and thus imported) first.
 os.environ["DATABASE_URL"] = f"sqlite+aiosqlite:///{TEST_DB_PATH}"
-os.environ["PLANQER_SETUP_SECRET"] = "test-setup-secret"
+os.environ["PARTSIBLE_SETUP_SECRET"] = "test-setup-secret"
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -49,7 +49,7 @@ def _reset_rate_limits(request):
         yield
         return
 
-    from planqer.api import app
+    from partsible.api import app
 
     app.state.limiter.reset()
     yield

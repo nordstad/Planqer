@@ -94,7 +94,7 @@ panel — that button is disabled for your own row.
 
 ## There is no self-service "forgot password"
 
-Planqer does not send email, so there is no password-reset link in the sign-in
+Partsible does not send email, so there is no password-reset link in the sign-in
 form. If you forget your password:
 
 - **Someone else is an admin on the instance:** ask them to reset it from
@@ -103,7 +103,7 @@ form. If you forget your password:
   script on the host, from outside the app:
 
   ```bash
-  docker exec -it planqer-web-backend python create_admin.py set-password <email>
+  docker exec -it partsible-web-backend python create_admin.py set-password <email>
   ```
 
   This is the supported recovery path — it prompts for a new password
@@ -115,7 +115,7 @@ form. If you forget your password:
 All commands below run the same way — from the host, outside the app:
 
 ```bash
-docker exec -it planqer-web-backend python create_admin.py <command>
+docker exec -it partsible-web-backend python create_admin.py <command>
 ```
 
 (Or `python create_admin.py <command>` if running from source.)
@@ -136,9 +136,9 @@ arguments:
 
 ```bash
 docker exec -it \
-  -e PLANQER_ADMIN_EMAIL=admin@example.com \
-  -e PLANQER_ADMIN_PASSWORD='a-strong-password' \
-  planqer-web-backend python create_admin.py
+  -e PARTSIBLE_ADMIN_EMAIL=admin@example.com \
+  -e PARTSIBLE_ADMIN_PASSWORD='a-strong-password' \
+  partsible-web-backend python create_admin.py
 ```
 
 Passwords must be at least 8 characters and include an uppercase letter, a

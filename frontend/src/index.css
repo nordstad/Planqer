@@ -2,7 +2,7 @@
 @config "../tailwind.config.js";
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   PLANQER — THE SELF-HOSTED README
+   PARTSIBLE — THE SELF-HOSTED README
    One world: a well-made open-source project's own homepage. Plain warm
    paper, ink type, rounded cards, one confident accent reserved for the
    action and the one figure that matters. No ruled catalog tables, no
@@ -31,7 +31,7 @@
     --signal-ink:  var(--accent-ink);
     --revision:    #cc2200;   /* over limit, unplaced, delete — stays red, distinct from the accent */
     --revision-bg: #fdeeea;
-    --builtin:     #3d6a2c;   /* ships with Planqer: the catalogue's built-in label, 4.5:1+ on its tint */
+    --builtin:     #3d6a2c;   /* ships with Partsible: the catalogue's built-in label, 4.5:1+ on its tint */
     --builtin-bg:  #eaf2e3;
     --shop:        #16150f;   /* saved / confirmed — ink, not a fifth colour */
     --waste-dot:   rgba(22,21,15,.16);
@@ -1471,3 +1471,25 @@
 @media (min-width: 768px) { .part-input-row { flex-direction: row; } }
 .part-input-row > div { margin-bottom: 8px; }
 @media (min-width: 768px) { .part-input-row > div { margin-bottom: 0; } }
+
+/* Partsible Lite footer. It sits at the bottom of the window on short pages at
+   any size, and is pinned there only when the window is roomy: on a short or
+   narrow window it would cover too much, and hide focused controls. */
+.lite-dock {
+  background: var(--ground);
+}
+@media (min-height: 720px) and (min-width: 700px) {
+  html {
+    scroll-padding-bottom: 3rem;
+  }
+  .lite-dock {
+    position: sticky;
+    bottom: 0;
+    z-index: 20;
+  }
+}
+@media print {
+  .lite-dock {
+    position: static;
+  }
+}

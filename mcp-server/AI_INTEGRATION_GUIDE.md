@@ -1,15 +1,15 @@
-# AI Integration Guide for Planqer MCP Server
+# AI Integration Guide for Partsible MCP Server
 
-This guide helps AI assistants and their users integrate with the Planqer cutting optimization system through the MCP server.
+This guide helps AI assistants and their users integrate with the Partsible cutting optimization system through the MCP server.
 
 ## Quick Start for AI Assistants
 
-The Planqer MCP server provides you with tools to help users optimize cutting plans for woodworking and similar projects. Here's how to use them effectively:
+The Partsible MCP server provides you with tools to help users optimize cutting plans for woodworking and similar projects. Here's how to use them effectively:
 
 ### Basic Workflow
 
 1. **Start with examples** - Use `get_cutting_example` to show users the format
-2. **Use demo payloads** - Try `optimize_demo` for quick demonstrations  
+2. **Use sample payloads** - Try `optimize_sample` for quick demonstrations  
 3. **Run optimizations** - Use `optimize_cutting` for user-specific problems
 4. **Handle complexity** - Use async mode for large/complex optimizations
 
@@ -26,8 +26,8 @@ Assistant: Let me show you how this works with an example...
 #### For Demonstrations  
 ```
 User: "Can you show me how this optimization works?"
-Assistant: I'll run a demo optimization for you...
-→ Call optimize_demo({"example": "kitchen_cabinets"})
+Assistant: I'll run a sample optimization for you...
+→ Call optimize_sample({"example": "kitchen_cabinets"})
 → Explain the results and what they mean
 ```
 
@@ -148,7 +148,7 @@ optimize_cutting({
 ### Scenario 1: Kitchen Cabinet Project
 ```
 User: "I'm building kitchen cabinets and need these pieces..."
-→ Use optimize_demo({"example": "kitchen_cabinets"}) to show similar project
+→ Use optimize_sample({"example": "kitchen_cabinets"}) to show similar project
 → Then adapt with user's specific measurements
 ```
 
@@ -162,7 +162,7 @@ User: "I have 300cm boards and need various pieces for furniture"
 ### Scenario 3: Workshop Storage
 ```
 User: "Quick optimization for some workshop shelving"
-→ Use optimize_demo({"example": "custom_project"}) 
+→ Use optimize_sample({"example": "custom_project"}) 
 → Fast synchronous optimization is fine
 ```
 
@@ -185,7 +185,7 @@ When errors occur, help users understand and resolve them:
 
 ### API Connection Errors
 ```
-"❌ Connection error: Could not reach the Planqer API"
+"❌ Connection error: Could not reach the Partsible API"
 ```
 **Explain**: "The optimization service isn't available right now. Please try again in a moment."
 

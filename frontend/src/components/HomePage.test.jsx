@@ -37,4 +37,18 @@ describe('HomePage', () => {
     const version = packageJson.version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     expect(await screen.findByText(new RegExp(`No cloud account.*v${version}`))).toBeInTheDocument();
   });
+
+  it('links to the Ko-fi page in the footer', async () => {
+    render(
+      <MemoryRouter>
+        <AuthProvider>
+          <HomePage />
+        </AuthProvider>
+      </MemoryRouter>
+    );
+
+    const link = await screen.findByRole('link', { name: 'Buy me a coffee' });
+    expect(link).toHaveAttribute('href', 'https://ko-fi.com/nordstad');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+  });
 });

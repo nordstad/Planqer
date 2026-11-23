@@ -9,14 +9,14 @@ from sqlmodel import SQLModel
 from alembic import context
 
 # Import all models so they are registered on SQLModel.metadata
-from planqer.database.models import (  # noqa: F401
+from partsible.database.models import (  # noqa: F401
     InstanceBootstrap,
     User,
     UserProject,
     UserSettings,
     UserSheetProject,
 )
-from planqer.database_url import resolve_database_url
+from partsible.database_url import resolve_database_url
 
 config = context.config
 

@@ -1,7 +1,7 @@
 import pytest
 
-from planqer.schemas.wallpaper import Cutout, Wall
-from planqer.wallpaper.geometry import (
+from partsible.schemas.wallpaper import Cutout, Wall
+from partsible.wallpaper.geometry import (
     cutout_bounds,
     strip_cutout_intersection,
     wall_outline,

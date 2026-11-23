@@ -1,6 +1,6 @@
-from planqer.schemas.wallpaper import Allowances, Cutout, Wall
-from planqer.wallpaper.pieces import split_strip_into_pieces
-from planqer.wallpaper.strips import lay_wall_strips
+from partsible.schemas.wallpaper import Allowances, Cutout, Wall
+from partsible.wallpaper.pieces import split_strip_into_pieces
+from partsible.wallpaper.strips import lay_wall_strips
 
 
 def strip():

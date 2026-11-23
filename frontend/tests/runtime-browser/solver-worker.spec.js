@@ -11,7 +11,7 @@ import { cannotLoadScipy, SCIPY_NOTE } from "./platform.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, "../../..");
-const python = process.env.PLANQER_PYTHON ?? join(root, "backend/.venv/bin/python");
+const python = process.env.PARTSIBLE_PYTHON ?? join(root, "backend/.venv/bin/python");
 const fixtures = JSON.parse(
   readFileSync(join(here, "../parity/fixtures.json"), "utf-8"),
 );

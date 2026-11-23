@@ -12,7 +12,7 @@ import { createLocalTransport } from '../runtime/localTransport';
   hostname, which is what a self-hosted app can actually rely on:
 
   - `VITE_API_URL` wins whenever it is set. Give it an origin
-    (`https://planqer.example.com`), not a path — the callers below add `/api`.
+    (`https://partsible.example.com`), not a path — the callers below add `/api`.
   - On the app's own port, the API is a sibling on 8002 — at the same host you
     typed, not at `localhost`. That difference is the whole point when the
     stack runs on a homelab box you reach over the LAN.
@@ -23,7 +23,7 @@ const API_PORT = '8002';
 
 const getApiUrl = () => {
   const configuredApiUrl = import.meta.env.VITE_API_URL ||
-    (typeof window !== 'undefined' ? window.__PLANQER_API_URL__ : '');
+    (typeof window !== 'undefined' ? window.__PARTSIBLE_API_URL__ : '');
   if (configuredApiUrl) {
     return configuredApiUrl;
   }
@@ -46,11 +46,11 @@ const getApiUrl = () => {
 const API_URL = getApiUrl();
 
 /*
-  Static mode (VITE_PLANQER_MODE=static) answers from the in-browser solver
+  Static mode (VITE_PARTSIBLE_MODE=static) answers from the in-browser solver
   instead of a server. It is a build-time constant, so a normal build drops the
   local branch, and the worker with it.
 */
-const http = import.meta.env.VITE_PLANQER_MODE === 'static'
+const http = import.meta.env.VITE_PARTSIBLE_MODE === 'static'
   ? createLocalTransport({
     call: (...args) => import('../runtime/solver').then(({ solverCall }) => solverCall(...args)),
     handle: (...args) => import('../runtime/localBackend').then(({ handle }) => handle(...args)),
@@ -107,7 +107,7 @@ axios.interceptors.response.use(
 
 export const registerUser = async (email, password, setupSecret = '') => {
   try {
-    const headers = setupSecret ? { 'X-Planqer-Setup-Secret': setupSecret } : undefined;
+    const headers = setupSecret ? { 'X-Partsible-Setup-Secret': setupSecret } : undefined;
     const response = await http.post(`${API_URL}/api/auth/register`, { email, password }, { headers });
     return response.data;
   } catch (error) {
@@ -148,7 +148,7 @@ export const getLatestRelease = async () => {
     // Ignore malformed cache entries and re-fetch.
   }
 
-  const response = await http.get('https://api.github.com/repos/nordstad/Planqer/releases/latest');
+  const response = await http.get('https://api.github.com/repos/nordstad/partsible/releases/latest');
   const tag = response.data.tag_name;
   localStorage.setItem(LATEST_RELEASE_CACHE_KEY, JSON.stringify({ tag, fetchedAt: Date.now() }));
   return tag;
@@ -552,7 +552,7 @@ export const downloadProjectImage = async (projectId, projectType) => {
   if (!endpoint) {
     throw new Error(`Unknown project type "${projectType}"`);
   }
-  if (import.meta.env.VITE_PLANQER_MODE === 'static') {
+  if (import.meta.env.VITE_PARTSIBLE_MODE === 'static') {
     try {
       const { data } = await http.get(`${API_URL}/api/${endpoint}/${projectId}/image`, { responseType: 'blob' });
       return data;

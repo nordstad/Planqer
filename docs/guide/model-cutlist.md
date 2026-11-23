@@ -12,13 +12,13 @@ Route: `/model-cutlist`.
 | **STL** | Every solid in the file, split out and measured. |
 | **STEP / STP** | The same, plus real component names, materials, and assembly hierarchy — because STEP carries that metadata and STL doesn't. |
 
-Files up to 50 MB. Planqer works in millimetres; the file's own declared unit
+Files up to 50 MB. Partsible works in millimetres; the file's own declared unit
 is used if it has one.
 
 !!! tip "No model to hand? Try the demo bench"
     The project ships a small demo model, a 1 800 × 800 × 770 mm workbench, so
     you can try this page without a CAD file of your own. Find both files in the
-    [`example/` folder](https://github.com/nordstad/Planqer/tree/main/example)
+    [`example/` folder](https://github.com/nordstad/partsible/tree/main/example)
     of the repository, or in `example/` if you have cloned it.
 
     - **`bench.stl`** shows the STL path: a preview in the browser, then 23
@@ -32,12 +32,12 @@ is used if it has one.
 ## Workflow
 
 1. Drop or browse to your file and click **Read the model**.
-2. Planqer measures every solid, classifies each as a board-shaped or
+2. Partsible measures every solid, classifies each as a board-shaped or
    sheet-shaped part, and groups them into cutlists by size. Any solid it
    cannot measure is left out, and a warning lists those parts by name.
 3. Review the cutlists. For each one you can rename it, choose a product
    (or leave it empty), and expand the list of lengths or sizes it contains.
-   Untick any you don't want. Planqer matches each measured cross-section to the
+   Untick any you don't want. Partsible matches each measured cross-section to the
    catalogue (within 1 mm) and pre-selects the common match, marked
    **Suggested** until you press **Looks right** or change it. A product you
    choose is remembered for that cross-section next time.
@@ -45,7 +45,7 @@ is used if it has one.
    A STEP file's own material names are read the same way. Names such as
    `C24`, `Furu`, `OSB/3` or `Birch plywood` are looked up among the catalogue's
    type names and aliases, species, treatments, profiles and grades, in any of
-   Planqer's languages and regardless of case or spacing, so equivalent names
+   Partsible's languages and regardless of case or spacing, so equivalent names
    (`C24`, `c24`) end up in one cutlist rather than two. When the name says what
    the product is (a type or a grade), exactly one product type fits it at the
    measured size, and nothing in it is ambiguous, the product is selected and
@@ -83,7 +83,7 @@ is used if it has one.
 
 ### STL preview
 
-When you choose an STL file, Planqer can show an interactive browser preview
+When you choose an STL file, Partsible can show an interactive browser preview
 before reading the model. Rotate, zoom, or pan the model to check that the
 correct file is selected. The preview is read from the selected file in your
 browser; it is not uploaded separately and is not saved with a project.
