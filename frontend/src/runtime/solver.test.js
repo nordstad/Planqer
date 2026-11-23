@@ -12,7 +12,7 @@ vi.mock("./solverClient", async (importOriginal) => ({
 let solver;
 let solverStatus;
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 
 beforeEach(async () => {
   vi.stubGlobal("Worker", class {});
@@ -20,6 +20,16 @@ beforeEach(async () => {
   vi.clearAllMocks();
   solver = await import("./solver");
   ({ solverStatus } = await import("./solverStatus"));
+});
+
+it("requests the content-addressed bundle provided by the build", async () => {
+  vi.stubEnv("VITE_PARTSIBLE_BUNDLE", "partsible-1234567890abcdef.zip");
+  vi.resetModules();
+  solver = await import("./solver");
+  client.call.mockResolvedValue({ status: 200, body: {} });
+  await solver.solverCall("cutting_plan", {});
+  const url = new URL(options.bundleUrl);
+  expect(url.pathname).toBe("/pyodide/partsible-1234567890abcdef.zip");
 });
 
 it("is busy while a call runs and idle again after it succeeds", async () => {

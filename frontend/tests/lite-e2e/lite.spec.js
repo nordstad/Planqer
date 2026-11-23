@@ -77,6 +77,15 @@ test("a wallpaper plan is solved in the browser, saved, and can be modified from
 });
 
 test("a plan is solved in the browser, saved, and still there after a reload", async ({ page }) => {
+  // A previous release's stale fixed-name bundle must never be used.
+  await page.route("**/pyodide/bundle.zip", (route) => route.fulfill({
+    status: 200, contentType: "application/zip", body: "stale solver bundle",
+  }));
+  const bundles = [];
+  page.on("request", (request) => {
+    const path = new URL(request.url()).pathname;
+    if (path.startsWith("/pyodide/") && path.endsWith(".zip") && !path.includes("/runtime/")) bundles.push(path);
+  });
   await page.goto(APP);
   const seen = watchRequests(page);
 
@@ -93,6 +102,12 @@ test("a plan is solved in the browser, saved, and still there after a reload", a
 
   // The first solve downloads and starts the runtime.
   await expect(page.getByRole("heading", { name: /your cutting plan/i })).toBeVisible({ timeout: 120000 });
+  expect(bundles).toHaveLength(1);
+  expect(bundles[0]).toMatch(/^\/pyodide\/partsible-[a-f0-9]{64}\.zip$/);
+  const diagram = await page.locator("#cutlist-image").getAttribute("src");
+  const svg = Buffer.from(diagram.split(",")[1], "base64").toString("utf8");
+  expect(svg).toContain(">600</text>");
+  expect(svg).toContain(">Front rail</text>");
 
   await page.getByRole("button", { name: /name and save/i }).click();
   await page.locator("#plan-name").fill("Lite smoke plan");
