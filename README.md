@@ -2,7 +2,7 @@
 <h1>
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/brand/partsible-symbol-dark.svg">
-    <img alt="" src="docs/assets/brand/partsible-symbol-flat.svg" width="40" align="center">
+    <img alt="" src="docs/assets/brand/partsible-symbol-flat.svg" width="28" align="center">
   </picture>
   Partsible
 </h1>
