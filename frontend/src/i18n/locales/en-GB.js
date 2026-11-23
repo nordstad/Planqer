@@ -764,7 +764,7 @@ Object.assign(locale, {
     },
     banner: {
       region: "Lite notice",
-      message: "You are using Partsible Lite, which runs in your browser. For accounts, projects on your own server, the API and MCP, run the self-hosted version.",
+      message: "Partsible Lite runs in your browser. For accounts, your own server, the API and MCP, use the self-hosted version.",
       cta: "Get the self-hosted version",
       dismiss: "Dismiss",
     },

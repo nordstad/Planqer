@@ -689,6 +689,11 @@ no icon, no button, no banner or popup. It opens in a new tab with
 analytics event, and it does not load a Ko-fi widget or script, so the app
 makes no third-party request until the link is clicked.
 
+The Partsible Lite footer, and the quiet notice above it, stay pinned to the
+bottom of the window (`position: sticky`) so the links are always in view. On a
+short page the footer sits at the bottom of the window, not just under the
+content. Both are small, muted text on the page ground.
+
 ### Notices
 
 - **Errata (`.alert-danger`):** Revision-tint field, revision border, an

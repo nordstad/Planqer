@@ -842,7 +842,7 @@ Object.assign(locale, {
     },
     banner: {
       region: "Melding om Lite",
-      message: "Du bruker Partsible Lite, som kjører i nettleseren din. For kontoer, prosjekter på din egen server, API og MCP, kjør den selvhostede versjonen.",
+      message: "Partsible Lite kjører i nettleseren din. For kontoer, din egen server, API og MCP, bruk den selvhostede versjonen.",
       cta: "Få den selvhostede versjonen",
       dismiss: "Lukk",
     },

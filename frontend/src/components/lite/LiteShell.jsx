@@ -35,19 +35,24 @@ const Banner = ({ onDismiss }) => {
       aria-label={t('lite.banner.region')}
       style={{
         display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: '6px 14px',
-        padding: '6px 16px', background: 'var(--accent-bg)', color: 'var(--ink)',
-        borderBottom: '1px solid var(--rule)', fontSize: '13px',
+        padding: '4px 16px', background: 'var(--ground-2)', color: 'var(--ink-3)',
+        borderTop: '1px solid var(--rule)', fontSize: '12px',
       }}
     >
       <span>{t('lite.banner.message')}</span>
       <a href={SELF_HOSTED_URL} target="_blank" rel="noopener noreferrer" onClick={countCta('banner')}>{t('lite.banner.cta')}</a>
-      <button type="button" className="btn btn-sm" onClick={onDismiss}>{t('lite.banner.dismiss')}</button>
+      <button
+        type="button"
+        onClick={onDismiss}
+        style={{ background: 'none', border: 0, padding: '2px 4px', color: 'inherit', font: 'inherit', textDecoration: 'underline', cursor: 'pointer' }}
+      >
+        {t('lite.banner.dismiss')}
+      </button>
     </section>
   );
 };
 
-/* Everything Lite adds around the app: the notice above it and the footer
-   below it. */
+/* Everything Lite adds around the app: the notice and the footer below it. */
 const LiteShell = ({ children }) => {
   const { t } = useTranslation();
   const [bannerOpen, setBannerOpen] = useState(() => !read(sessionStorage, BANNER_DISMISSED_KEY));
@@ -73,13 +78,14 @@ const LiteShell = ({ children }) => {
   };
 
   return (
-    <>
+    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ flex: 1 }}>{children}</div>
+      <div style={{ position: 'sticky', bottom: 0, zIndex: 20, background: 'var(--ground)' }}>
       {bannerOpen && <Banner onDismiss={dismissBanner} />}
-      {children}
       <footer
         style={{
-          display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '6px 18px',
-          padding: '16px', borderTop: '1px solid var(--rule)', color: 'var(--ink-3)', fontSize: '13px',
+          display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '4px 18px',
+          padding: '8px 16px', borderTop: '1px solid var(--rule)', color: 'var(--ink-3)', fontSize: '12px',
         }}
       >
         <span>{t('lite.footer.label')} · v{appVersion}</span>
@@ -104,7 +110,8 @@ const LiteShell = ({ children }) => {
           </span>
         )}
       </footer>
-    </>
+      </div>
+    </div>
   );
 };
 

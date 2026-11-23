@@ -70,7 +70,7 @@ describe('footer', () => {
     expect(footer.querySelector('a[href="https://ko-fi.com/nordstad"]')).not.toBeNull();
   });
 
-  it('renders the app between the banner and the footer', () => {
+  it('renders the app above the banner and the footer', () => {
     renderShell();
     expect(screen.getByText('the app')).toBeInTheDocument();
   });
