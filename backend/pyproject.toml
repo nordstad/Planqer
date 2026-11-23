@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "partsible"
-version = "0.14.0"
+version = "0.15.0"
 description = "FastAPI backend for Partsible: Plan the cuts and layouts for boards, sheets, tiles and wallpaper."
 license = "MIT"
 requires-python = ">=3.12"  # matches python:3.12-slim in Dockerfile
