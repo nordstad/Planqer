@@ -126,7 +126,7 @@ const loadToolsContract = (): Tool[] => {
 const loadSamplePayloads = (): SamplePayloadMap => {
   const parsed = JSON.parse(readFileSync(SAMPLE_PAYLOADS_PATH, 'utf8'));
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    throw new Error('Demo payloads contract must be an object');
+    throw new Error('Sample payloads contract must be an object');
   }
   return parsed as SamplePayloadMap;
 };
@@ -591,7 +591,7 @@ class PartsibleServer {
       };
     }
 
-    // Get the demo payload and add async flag if specified
+    // Get the sample payload and add async flag if specified
     const payload = { ...SAMPLE_PAYLOADS[example as keyof typeof SAMPLE_PAYLOADS] };
     if (useAsync) {
       (payload as any).use_async = true;
@@ -602,9 +602,9 @@ class PartsibleServer {
     // Run the optimization
     const result = await this.handleOptimizeCutting(payload, rid);
 
-    // Prepend demo information
+    // Prepend sample information
     if (result.content && result.content[0] && 'text' in result.content[0]) {
-      const sampleInfo = `🎯 **Optimizing with "${example.replace('_', ' ')}" demo payload:**\n\n`;
+      const sampleInfo = `🎯 **Optimizing with "${example.replace('_', ' ')}" sample payload:**\n\n`;
       result.content[0].text = sampleInfo + result.content[0].text;
     }
 
@@ -615,7 +615,7 @@ class PartsibleServer {
     const example = args.example || 'all';
 
     if (example === 'all') {
-      // Return all demo payloads
+      // Return all sample payloads
       const formattedPayloads = Object.entries(SAMPLE_PAYLOADS).map(([name, payload]) => 
         `**${name.replace('_', ' ').charAt(0).toUpperCase() + name.replace('_', ' ').slice(1)}:**\n\`\`\`json\n${JSON.stringify(payload, null, 2)}\n\`\`\``
       );
@@ -624,8 +624,8 @@ class PartsibleServer {
         content: [
           {
             type: 'text',
-            text: `🎯 **Demo Payloads for Partsible API Testing**\n\n` +
-                 `Here are pre-configured demo payloads you can use to test the cutting optimization API:\n\n` +
+            text: `🎯 **Sample Payloads for Partsible API Testing**\n\n` +
+                 `Here are pre-configured sample payloads you can use to test the cutting optimization API:\n\n` +
                  `${formattedPayloads.join('\n\n')}\n\n` +
                  `**How to use:**\n` +
                  `1. Copy any of the JSON payloads above\n` +
@@ -636,13 +636,13 @@ class PartsibleServer {
         ],
       };
     } else if (example in SAMPLE_PAYLOADS) {
-      // Return specific demo payload
+      // Return specific sample payload
       const payload = SAMPLE_PAYLOADS[example as keyof typeof SAMPLE_PAYLOADS];
       return {
         content: [
           {
             type: 'text',
-            text: `📋 **${example.replace('_', ' ').charAt(0).toUpperCase() + example.replace('_', ' ').slice(1)} Demo Payload:**\n\n` +
+            text: `📋 **${example.replace('_', ' ').charAt(0).toUpperCase() + example.replace('_', ' ').slice(1)} Sample Payload:**\n\n` +
                  `\`\`\`json\n${JSON.stringify(payload, null, 2)}\n\`\`\`\n\n` +
                  `**Ready to use with optimize_cutting tool!**\n\n` +
                  `This payload includes:\n` +
@@ -659,7 +659,7 @@ class PartsibleServer {
         content: [
           {
             type: 'text',
-            text: `❌ Unknown demo example: '${example}'. Available options: ${Object.keys(SAMPLE_PAYLOADS).join(', ')}, all`,
+            text: `❌ Unknown sample example: '${example}'. Available options: ${Object.keys(SAMPLE_PAYLOADS).join(', ')}, all`,
           },
         ],
         isError: true,

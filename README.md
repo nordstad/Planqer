@@ -1,7 +1,18 @@
 # Partsible
 
-Partsible is a self-hosted cutting optimization platform for woodworking and
-fabrication projects. It turns part lists or CAD files (STL/STEP) into
+<!-- markdownlint-disable MD033 -->
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/brand/partsible-lockup-dark.svg">
+    <img alt="Partsible" src="docs/assets/brand/partsible-lockup-flat.svg" width="260">
+  </picture>
+</p>
+<!-- markdownlint-enable MD033 -->
+
+Plan the cuts and layouts for boards, sheets, tiles and wallpaper.
+
+Partsible is a self-hosted planning tool for woodworking and fabrication
+projects. It turns part lists or CAD files (STL/STEP) into
 practical, kerf-aware cutting plans with visual diagrams and local project
 storage.
 
@@ -71,6 +82,9 @@ saves projects only in that browser, and has no accounts, REST API or MCP
 server. See
 [Lite or self-hosted](https://docs.partsible.com/lite-vs-self-hosted/).
 Running your own server (below) is the self-hosted version.
+
+Partsible is free and developed in my spare time. If it is useful to you, you
+can [buy me a coffee](https://ko-fi.com/nordstad).
 
 ## Quick Start
 

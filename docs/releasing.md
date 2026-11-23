@@ -198,10 +198,14 @@ its own workflow with `cloudflare/wrangler-action`. The workflows need the
 repository secrets `CLOUDFLARE_API_TOKEN` (a token limited to Cloudflare Pages:
 Edit) and `CLOUDFLARE_ACCOUNT_ID`.
 
+<!-- markdownlint-disable MD013 -->
+
 | Site | Project | Workflow |
 | ---- | ------- | -------- |
 | `https://partsible.com/` (Partsible Lite) | `partsible-lite` | `.github/workflows/lite.yml` |
 | `https://docs.partsible.com/` (the docs) | `partsible-docs` | `.github/workflows/docs.yml` |
+
+<!-- markdownlint-enable MD013 -->
 
 `www.partsible.com` redirects to `partsible.com`. The two sites are different
 origins, so browser storage is not shared between them.

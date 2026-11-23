@@ -11,4 +11,5 @@ export const LOCAL_USER = Object.freeze({ id: 'local', email: '', is_admin: true
 export const liteContext = () => (isStaticMode() ? { context: 'lite' } : {});
 
 export const SELF_HOSTED_URL = 'https://docs.partsible.com/getting-started/';
+export const SUPPORT_URL = 'https://ko-fi.com/nordstad';
 export const PRIVACY_URL = 'https://docs.partsible.com/privacy/';

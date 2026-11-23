@@ -74,7 +74,7 @@ def load_sample_payloads() -> dict[str, dict[str, Any]]:
         loaded = json.load(f)
 
     if not isinstance(loaded, dict):
-        raise TypeError("Demo payloads contract must be an object")
+        raise TypeError("Sample payloads contract must be an object")
 
     return loaded
 
@@ -645,7 +645,7 @@ async def handle_optimize_sample(
     arguments: dict[str, Any], request_id: str | None = None
 ) -> list[types.TextContent]:
     """
-    Handle cutting optimization using a pre-configured demo payload.
+    Handle cutting optimization using a pre-configured sample payload.
     """
     rid = request_id or make_request_id()
     example_choice = arguments.get("example")
@@ -659,7 +659,7 @@ async def handle_optimize_sample(
             )
         ]
 
-    # Get the demo payload and add async flag if specified
+    # Get the sample payload and add async flag if specified
     payload = SAMPLE_PAYLOADS[example_choice].copy()
     if use_async:
         payload["use_async"] = True
@@ -674,9 +674,9 @@ async def handle_optimize_sample(
     # Run the optimization
     result = await handle_optimize_cutting(payload, request_id=rid)
 
-    # Prepend info about which demo was used
+    # Prepend info about which sample was used
     if result and result[0].text:
-        sample_info = f'🎯 **Optimizing with "{example_choice.replace("_", " ")}" demo payload:**\n\n'
+        sample_info = f'🎯 **Optimizing with "{example_choice.replace("_", " ")}" sample payload:**\n\n'
         result[0].text = sample_info + result[0].text
 
     return result
@@ -725,12 +725,12 @@ optimize_cutting({json.dumps(example)})
 
 def handle_get_sample_payloads(arguments: dict[str, Any]) -> list[types.TextContent]:
     """
-    Return pre-configured demo payloads for testing the cutting optimization API.
+    Return pre-configured sample payloads for testing the cutting optimization API.
     """
     example_choice = arguments.get("example", "all")
 
     if example_choice == "all":
-        # Return all demo payloads
+        # Return all sample payloads
         formatted_payloads = []
         for name, payload in SAMPLE_PAYLOADS.items():
             formatted_payloads.append(
@@ -740,9 +740,9 @@ def handle_get_sample_payloads(arguments: dict[str, Any]) -> list[types.TextCont
         return [
             types.TextContent(
                 type="text",
-                text=f"""🎯 **Demo Payloads for Partsible API Testing**
+                text=f"""🎯 **Sample Payloads for Partsible API Testing**
 
-Here are pre-configured demo payloads you can use to test the cutting optimization API:
+Here are pre-configured sample payloads you can use to test the cutting optimization API:
 
 {chr(10).join(formatted_payloads)}
 
@@ -756,12 +756,12 @@ Here are pre-configured demo payloads you can use to test the cutting optimizati
             )
         ]
     elif example_choice in SAMPLE_PAYLOADS:
-        # Return specific demo payload
+        # Return specific sample payload
         payload = SAMPLE_PAYLOADS[example_choice]
         return [
             types.TextContent(
                 type="text",
-                text=f"""📋 **{example_choice.replace("_", " ").title()} Demo Payload:**
+                text=f"""📋 **{example_choice.replace("_", " ").title()} Sample Payload:**
 
 ```json
 {json.dumps(payload, indent=2)}
@@ -783,7 +783,7 @@ Copy the JSON above and use it with the `optimize_cutting` tool to get an optimi
         return [
             types.TextContent(
                 type="text",
-                text=f"❌ Unknown demo example: '{example_choice}'. Available options: {', '.join(SAMPLE_PAYLOADS.keys())}, all",
+                text=f"❌ Unknown sample example: '{example_choice}'. Available options: {', '.join(SAMPLE_PAYLOADS.keys())}, all",
             )
         ]
 

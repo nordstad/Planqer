@@ -67,6 +67,7 @@ describe('footer', () => {
     expect(footer).toHaveTextContent(/lite/i);
     expect(footer).toHaveTextContent(`v${packageJson.version}`);
     expect(footer.querySelector('a[href*="getting-started"]')).not.toBeNull();
+    expect(footer.querySelector('a[href="https://ko-fi.com/nordstad"]')).not.toBeNull();
   });
 
   it('renders the app between the banner and the footer', () => {

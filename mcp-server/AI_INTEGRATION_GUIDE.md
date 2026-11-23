@@ -9,7 +9,7 @@ The Partsible MCP server provides you with tools to help users optimize cutting 
 ### Basic Workflow
 
 1. **Start with examples** - Use `get_cutting_example` to show users the format
-2. **Use demo payloads** - Try `optimize_sample` for quick demonstrations  
+2. **Use sample payloads** - Try `optimize_sample` for quick demonstrations  
 3. **Run optimizations** - Use `optimize_cutting` for user-specific problems
 4. **Handle complexity** - Use async mode for large/complex optimizations
 
@@ -26,7 +26,7 @@ Assistant: Let me show you how this works with an example...
 #### For Demonstrations  
 ```
 User: "Can you show me how this optimization works?"
-Assistant: I'll run a demo optimization for you...
+Assistant: I'll run a sample optimization for you...
 → Call optimize_sample({"example": "kitchen_cabinets"})
 → Explain the results and what they mean
 ```

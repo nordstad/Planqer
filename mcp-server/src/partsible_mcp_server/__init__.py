@@ -3,7 +3,7 @@ Partsible MCP Server
 
 A Model Context Protocol server for AI assistants to interact with the Partsible
 cutting optimization API. Provides tools for optimizing cutting plans, getting
-demo payloads, and testing the API.
+sample payloads, and testing the API.
 """
 
 

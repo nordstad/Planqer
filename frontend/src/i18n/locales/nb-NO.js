@@ -50,6 +50,7 @@ const locale = {
     helpDocumentation: 'Hjelp og dokumentasjon',
     sourceGithub: 'Kildekode på GitHub',
     mitLicence: 'MIT-lisens',
+    supportKofi: 'Spander en kaffe',
     footerPrivacy: 'Ingen skykonto · ingen sporing · ingen analyse',
     versionAvailable: 'v{{version}} tilgjengelig',
   },
@@ -858,6 +859,7 @@ Object.assign(locale, {
       full: "Selvhostet versjon",
       docs: "Dokumentasjon",
       source: "Kildekode på GitHub",
+      support: "Spander en kaffe",
     },
     solver: {
       loadingEngine: "Laster beregningsmotoren. Dette skjer bare én gang og kan ta litt tid.",

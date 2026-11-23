@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
-import { SELF_HOSTED_URL, PRIVACY_URL } from '../../utils/mode';
+import { SELF_HOSTED_URL, PRIVACY_URL, SUPPORT_URL } from '../../utils/mode';
 import { analyticsState, setAnalyticsEnabled, startAnalytics, track } from '../../utils/analytics';
 import { version as appVersion } from '../../../package.json';
 
@@ -86,6 +86,7 @@ const LiteShell = ({ children }) => {
         <a href={SELF_HOSTED_URL} target="_blank" rel="noopener noreferrer" onClick={countCta('footer')}>{t('lite.footer.full')}</a>
         <a href={DOCS_URL} target="_blank" rel="noopener noreferrer">{t('lite.footer.docs')}</a>
         <a href={SOURCE_URL} target="_blank" rel="noopener noreferrer">{t('lite.footer.source')}</a>
+        <a href={SUPPORT_URL} target="_blank" rel="noopener noreferrer">{t('lite.footer.support')}</a>
         <a href={PRIVACY_URL} target="_blank" rel="noopener noreferrer">{t('lite.analytics.privacy')}</a>
         {analytics !== 'unavailable' && (
           <span>

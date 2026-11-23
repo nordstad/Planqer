@@ -58,6 +58,6 @@ and save it again on your server.
 
 ## Which should I use?
 
-Use Lite to try Partsible or for a one-off plan. Use the self-hosted version if you
-want your projects kept safely on a server, on more than one device, or if you
-want the API or AI assistants.
+Use Lite to try Partsible or for a one-off plan. Use the self-hosted version
+if you want your projects kept safely on a server, on more than one device, or
+if you want the API or AI assistants.

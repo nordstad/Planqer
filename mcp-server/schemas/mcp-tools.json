@@ -102,13 +102,13 @@
     },
     {
         "name": "optimize_sample",
-        "description": "Run cutting optimization with a pre-configured demo payload",
+        "description": "Run cutting optimization with a pre-configured sample payload",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "example": {
                     "type": "string",
-                    "description": "Which demo payload to optimize",
+                    "description": "Which sample payload to optimize",
                     "enum": [
                         "kitchen_cabinets",
                         "furniture_project",
@@ -127,13 +127,13 @@
     },
     {
         "name": "get_sample_payloads",
-        "description": "Get pre-configured demo payloads for testing the cutting optimization API",
+        "description": "Get pre-configured sample payloads for testing the cutting optimization API",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "example": {
                     "type": "string",
-                    "description": "Which demo payload to return (default: all)",
+                    "description": "Which sample payload to return (default: all)",
                     "enum": [
                         "kitchen_cabinets",
                         "furniture_project",

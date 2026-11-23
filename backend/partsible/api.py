@@ -112,7 +112,7 @@ async def lifespan(_: Starlette):
 
 api_app = FastAPI(
     title="partsible API",
-    description="Optimize board cutting to minimize waste.",
+    description="Plan the cuts and layouts for boards, sheets, tiles and wallpaper.",
     version=__version__,
 )
 

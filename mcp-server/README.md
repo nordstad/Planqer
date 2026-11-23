@@ -23,7 +23,7 @@
 
 **Just talk naturally to your assistant:**
 - *"I need to cut 4 pieces at 270cm, 8 at 179cm, 16 at 90cm, and 4 at 81cm from boards of 300, 360, or 500cm with 3mm saw kerf"*
-- *"Test the cutting optimizer with the furniture project demo"*
+- *"Test the cutting optimizer with the furniture project sample"*
 - *"What's the most efficient way to cut these parts with minimal waste?"*
 
 ### Key Benefits
@@ -32,7 +32,7 @@
 - **⚡ Instant Results**: Get optimized cutting plans in seconds
 - **📊 Smart Analysis**: AI can explain results and suggest improvements  
 - **🔄 Iterative Design**: Easily modify requirements and re-optimize
-- **📚 Built-in Examples**: Pre-configured demos for quick testing
+- **📚 Built-in Examples**: Pre-configured samples for quick testing
 
 ### MCP Server Features
 
@@ -42,7 +42,7 @@
 |------|---------|---------------|
 | `optimize_cutting` | Custom optimization with your data | *"Optimize cutting for my kitchen cabinet project"* |
 | `search_products` | Find a board or sheet product in the instance's catalogue | *"What 45×95 framing timber can I buy?"* |
-| `optimize_sample` | Quick test with furniture project | *"Run the demo optimization"* |
+| `optimize_sample` | Quick test with furniture project | *"Run the sample optimization"* |
 | `get_sample_payloads` | View all available examples | *"Show me example cutting scenarios"* |
 | `get_cutting_example` | Learn the API format | *"How do I format a cutting request?"* |
 
@@ -78,7 +78,7 @@ partsible/
     ├── Dockerfile
     ├── package.json
     ├── pyproject.toml
-    ├── schemas/          # Tool contract and demo payloads
+    ├── schemas/          # Tool contract and sample payloads
     ├── src/index.ts      # TypeScript implementation
     └── src/partsible_mcp_server/  # Python implementation
 ```
@@ -223,9 +223,9 @@ Any MCP client that can launch a stdio server works. Add this to its MCP server 
 Once configured, restart your client and try these conversations:
 
 ```
-You: "Test the cutting optimizer with the furniture project demo"
+You: "Test the cutting optimizer with the furniture project sample"
 
-Assistant: I'll run the furniture project demo for you using the optimize_sample tool...
+Assistant: I'll run the furniture project sample for you using the optimize_sample tool...
 ✅ Optimized cutting plan complete!
 • Total boards needed: 8
 • Total waste: 156 cm
@@ -244,7 +244,7 @@ Assistant: I'll optimize that cutting plan for you...
 
 **Iterative Design:**
 ```
-You: "Show me demo payloads"
+You: "Show me sample payloads"
 Assistant: [Shows available examples]
 
 You: "Use the kitchen cabinet example but change the board length to 400cm"
@@ -278,14 +278,14 @@ Install the MCP extension in VS Code and add this configuration to `.vscode/mcp.
 }
 ```
 
-### Built-in Demo Data
+### Built-in Sample Data
 
 The MCP server includes several pre-configured examples:
 
 - **Furniture Project** (`furniture_project`): Cabinet making with various part sizes
 - **Kitchen Cabinets** (`kitchen_cabinets`): Shelving and cabinet parts
 
-Access them with: *"Show me all demo payloads"* or *"Run the furniture project demo"*
+Access them with: *"Show me all sample payloads"* or *"Run the furniture project sample"*
 
 ### Real-World MCP Use Cases
 

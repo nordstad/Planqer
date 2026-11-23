@@ -50,6 +50,7 @@ const locale = {
     helpDocumentation: 'Help & documentation',
     sourceGithub: 'Source on GitHub',
     mitLicence: 'MIT licence',
+    supportKofi: 'Buy me a coffee',
     footerPrivacy: 'No cloud account · no tracking · no analytics',
     versionAvailable: 'v{{version}} available',
   },
@@ -780,6 +781,7 @@ Object.assign(locale, {
       full: "Self-hosted version",
       docs: "Documentation",
       source: "Source on GitHub",
+      support: "Buy me a coffee",
     },
     solver: {
       loadingEngine: "Loading the calculation engine. This happens once and can take a moment.",

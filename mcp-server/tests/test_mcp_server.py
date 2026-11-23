@@ -336,7 +336,7 @@ class TestOptimizeSample:
     @pytest.mark.asyncio
     @patch("partsible_mcp_server.server.handle_optimize_cutting")
     async def test_optimize_sample_success(self, mock_optimize):
-        """Test successful demo optimization."""
+        """Test successful sample optimization."""
         mock_optimize.return_value = [
             types.TextContent(type="text", text="Optimization result")
         ]
@@ -348,11 +348,11 @@ class TestOptimizeSample:
         assert len(result) == 1
         assert isinstance(result[0], types.TextContent)
         assert (
-            '🎯 **Optimizing with "kitchen cabinets" demo payload:**' in result[0].text
+            '🎯 **Optimizing with "kitchen cabinets" sample payload:**' in result[0].text
         )
         assert "Optimization result" in result[0].text
 
-        # Verify the demo payload was used
+        # Verify the sample payload was used
         mock_optimize.assert_called_once()
         call_args = mock_optimize.call_args[0][0]  # First positional argument
         expected_payload = SAMPLE_PAYLOADS["kitchen_cabinets"]
@@ -365,7 +365,7 @@ class TestOptimizeSample:
     @pytest.mark.asyncio
     @patch("partsible_mcp_server.server.handle_optimize_cutting")
     async def test_optimize_sample_async(self, mock_optimize):
-        """Test async demo optimization."""
+        """Test async sample optimization."""
         mock_optimize.return_value = [
             types.TextContent(type="text", text="Async task started")
         ]
@@ -381,7 +381,7 @@ class TestOptimizeSample:
 
     @pytest.mark.asyncio
     async def test_optimize_sample_invalid_example(self):
-        """Test demo optimization with invalid example."""
+        """Test sample optimization with invalid example."""
         arguments = {"example": "invalid_example"}
 
         result = await handle_optimize_sample(arguments)
@@ -396,19 +396,19 @@ class TestGetSamplePayloads:
     """Test the get_sample_payloads tool handler."""
 
     def test_get_sample_payloads_all(self):
-        """Test getting all demo payloads."""
+        """Test getting all sample payloads."""
         arguments = {"example": "all"}
 
         result = handle_get_sample_payloads(arguments)
 
         assert len(result) == 1
         assert isinstance(result[0], types.TextContent)
-        assert "🎯 **Demo Payloads for Partsible API Testing**" in result[0].text
+        assert "🎯 **Sample Payloads for Partsible API Testing**" in result[0].text
         assert "Kitchen Cabinets:" in result[0].text
         assert "Furniture Project:" in result[0].text
         assert "Custom Project:" in result[0].text
 
-        # Check that all demo payloads are included
+        # Check that all sample payloads are included
         for sample_name in SAMPLE_PAYLOADS:
             assert (
                 sample_name in result[0].text
@@ -416,38 +416,38 @@ class TestGetSamplePayloads:
             )
 
     def test_get_sample_payloads_specific(self):
-        """Test getting a specific demo payload."""
+        """Test getting a specific sample payload."""
         arguments = {"example": "kitchen_cabinets"}
 
         result = handle_get_sample_payloads(arguments)
 
         assert len(result) == 1
         assert isinstance(result[0], types.TextContent)
-        assert "📋 **Kitchen Cabinets Demo Payload:**" in result[0].text
+        assert "📋 **Kitchen Cabinets Sample Payload:**" in result[0].text
         assert (
             json.dumps(SAMPLE_PAYLOADS["kitchen_cabinets"], indent=2) in result[0].text
         )
         assert "Ready to use with optimize_cutting tool!" in result[0].text
 
     def test_get_sample_payloads_default_all(self):
-        """Test getting demo payloads with no example specified (defaults to all)."""
+        """Test getting sample payloads with no example specified (defaults to all)."""
         arguments = {}
 
         result = handle_get_sample_payloads(arguments)
 
         assert len(result) == 1
         assert isinstance(result[0], types.TextContent)
-        assert "🎯 **Demo Payloads for Partsible API Testing**" in result[0].text
+        assert "🎯 **Sample Payloads for Partsible API Testing**" in result[0].text
 
     def test_get_sample_payloads_invalid(self):
-        """Test getting demo payloads with invalid example."""
+        """Test getting sample payloads with invalid example."""
         arguments = {"example": "invalid_example"}
 
         result = handle_get_sample_payloads(arguments)
 
         assert len(result) == 1
         assert isinstance(result[0], types.TextContent)
-        assert "❌ Unknown demo example: 'invalid_example'" in result[0].text
+        assert "❌ Unknown sample example: 'invalid_example'" in result[0].text
 
 
 class TestGetExample:
@@ -473,10 +473,10 @@ class TestGetExample:
 
 
 class TestSamplePayloads:
-    """Test the demo payloads structure."""
+    """Test the sample payloads structure."""
 
     def test_sample_payloads_structure(self):
-        """Test that all demo payloads have required structure."""
+        """Test that all sample payloads have required structure."""
         required_fields = [
             "parts",
             "available_board_lengths",
@@ -486,7 +486,7 @@ class TestSamplePayloads:
 
         for sample_name, payload in SAMPLE_PAYLOADS.items():
             for field in required_fields:
-                assert field in payload, f"Demo {sample_name} missing field {field}"
+                assert field in payload, f"Sample {sample_name} missing field {field}"
 
             # Test parts structure
             assert isinstance(payload["parts"], dict)
@@ -512,12 +512,12 @@ class TestSamplePayloads:
             assert len(payload["project_name"]) > 0
 
     def test_sample_payloads_completeness(self):
-        """Test that we have the expected demo payloads."""
+        """Test that we have the expected sample payloads."""
         expected_samples = ["kitchen_cabinets", "furniture_project", "custom_project"]
 
         for sample_name in expected_samples:
             assert sample_name in SAMPLE_PAYLOADS, (
-                f"Missing demo payload: {sample_name}"
+                f"Missing sample payload: {sample_name}"
             )
 
         assert len(SAMPLE_PAYLOADS) == len(expected_samples)
@@ -531,10 +531,10 @@ async def test_integration_workflow():
     assert len(example_result) == 1
     assert "Kitchen Cabinet Shelves" in example_result[0].text
 
-    # 2. Get demo payloads
+    # 2. Get sample payloads
     sample_result = handle_get_sample_payloads({"example": "kitchen_cabinets"})
     assert len(sample_result) == 1
-    assert "Kitchen Cabinets Demo Payload" in sample_result[0].text
+    assert "Kitchen Cabinets Sample Payload" in sample_result[0].text
 
     # 3. Mock an optimization (we can't test the actual API call in unit tests)
     with patch("httpx.AsyncClient.post") as mock_post:
@@ -549,13 +549,13 @@ async def test_integration_workflow():
         }
         mock_post.return_value = mock_response
 
-        # Run demo optimization
+        # Run sample optimization
         optimization_result = await handle_optimize_sample(
             {"example": "kitchen_cabinets"}
         )
         assert len(optimization_result) == 1
         assert (
-            'Optimizing with "kitchen cabinets" demo payload'
+            'Optimizing with "kitchen cabinets" sample payload'
             in optimization_result[0].text
         )
         assert "**Optimal board length:** 120.0" in optimization_result[0].text

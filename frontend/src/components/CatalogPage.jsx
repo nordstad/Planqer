@@ -61,7 +61,7 @@ const CatalogPage = ({ children, bodyClassName = '' }) => {
       <nav className="app-nav">
         <div className="app-nav-row">
           <Link to="/" className="app-wordmark">
-            <img src={`${import.meta.env.BASE_URL}${isDark ? 'partsible_logo_white.png' : 'partsible_logo_black.png'}`} alt="" className="h-5 w-5" />
+            <img src={`${import.meta.env.BASE_URL}${isDark ? 'partsible-symbol-dark.svg' : 'partsible-symbol-flat.svg'}`} alt="" className="h-5 w-5" />
             partsible
           </Link>
           <div className="app-nav-links">

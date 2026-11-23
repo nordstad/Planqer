@@ -1,13 +1,18 @@
 # Partsible
 
-Partsible is a self-hosted cutting optimization platform for woodworking and
-fabrication projects. Give it a part list — or a 3D model you already
+Plan the cuts and layouts for boards, sheets, tiles and wallpaper.
+
+Partsible is a self-hosted planning tool for woodworking and fabrication
+projects. Give it a part list — or a 3D model you already
 designed — and it works out the fewest boards or sheets to buy, and exactly
 where every cut goes.
 
 **[Try it in your browser](https://partsible.com/)** with
 nothing to install. This is Partsible Lite; see
 [Lite or self-hosted](lite-vs-self-hosted.md).
+
+Partsible is free and developed in my spare time. If it saves you a trip to the
+lumber yard, you can [buy me a coffee](https://ko-fi.com/nordstad).
 
 !!! warning "Early development"
     Partsible is in beta. Features, APIs and behaviour may change between

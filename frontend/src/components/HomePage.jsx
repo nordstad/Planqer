@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import CatalogPage from './CatalogPage';
 import { BoardIcon, SheetIcon, CubeIcon, TileIcon, WallpaperIcon } from './icons';
 import { getHealth, getLatestRelease } from '../utils/api';
-import { isStaticMode } from '../utils/mode';
+import { isStaticMode, SUPPORT_URL } from '../utils/mode';
 import { version as appVersion } from '../../package.json';
 import heroIllustration from '../assets/partsible-hero-animated.svg?raw';
 
@@ -146,6 +146,9 @@ const HomePage = () => {
         </a>
         <a href="https://opensource.org/licenses/MIT" target="_blank" rel="noopener noreferrer">
            {t('home.mitLicence')}
+        </a>
+        <a href={SUPPORT_URL} target="_blank" rel="noopener noreferrer">
+           {t('home.supportKofi')}
         </a>
       </div>
 <span>
