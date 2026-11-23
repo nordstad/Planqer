@@ -1,13 +1,12 @@
-# Partsible
-
-<!-- markdownlint-disable MD033 -->
-<p align="center">
+<!-- markdownlint-disable MD033 MD041 -->
+<h1>
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/brand/partsible-lockup-dark.svg">
-    <img alt="Partsible" src="docs/assets/brand/partsible-lockup-flat.svg" width="260">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/brand/partsible-symbol-dark.svg">
+    <img alt="" src="docs/assets/brand/partsible-symbol-flat.svg" width="40" align="center">
   </picture>
-</p>
-<!-- markdownlint-enable MD033 -->
+  Partsible
+</h1>
+<!-- markdownlint-enable MD033 MD041 -->
 
 Plan the cuts and layouts for boards, sheets, tiles and wallpaper.
 
