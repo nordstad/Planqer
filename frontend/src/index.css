@@ -1471,3 +1471,25 @@
 @media (min-width: 768px) { .part-input-row { flex-direction: row; } }
 .part-input-row > div { margin-bottom: 8px; }
 @media (min-width: 768px) { .part-input-row > div { margin-bottom: 0; } }
+
+/* Partsible Lite footer. It sits at the bottom of the window on short pages at
+   any size, and is pinned there only when the window is roomy: on a short or
+   narrow window it would cover too much, and hide focused controls. */
+.lite-dock {
+  background: var(--ground);
+}
+@media (min-height: 720px) and (min-width: 700px) {
+  html {
+    scroll-padding-bottom: 3rem;
+  }
+  .lite-dock {
+    position: sticky;
+    bottom: 0;
+    z-index: 20;
+  }
+}
+@media print {
+  .lite-dock {
+    position: static;
+  }
+}

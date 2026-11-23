@@ -80,8 +80,8 @@ const LiteShell = ({ children }) => {
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
       <div style={{ flex: 1 }}>{children}</div>
-      <div style={{ position: 'sticky', bottom: 0, zIndex: 20, background: 'var(--ground)' }}>
       {bannerOpen && <Banner onDismiss={dismissBanner} />}
+      <div className="lite-dock">
       <footer
         style={{
           display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '4px 18px',
