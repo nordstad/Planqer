@@ -15,7 +15,7 @@ on:
         description: >-
           Tag, branch or commit to build Lite from. Leave empty for the latest
           release tag. To roll back, give the previous tag. Only releases from
-          0.15.0 on can be built, because earlier ones used another base path.
+          0.15.1 on can be built, because earlier ones used another base path.
         required: false
         default: ""
 

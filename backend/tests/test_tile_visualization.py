@@ -71,6 +71,59 @@ def _texts(svg):
     return re.findall(r"<text[^>]*>([^<]*)</text>", svg)
 
 
+def test_layout_tile_annotations_do_not_duplicate_dimensions_or_escape_pieces():
+    visualizer = TileSVGVisualizer()
+    rectangle = visualizer._create_tile_rect(
+        0, 0, 300, 600, "#abc", False, False, 0.2, 0, 0, "A"
+    )
+    full_polygon = visualizer._create_tile_polygon(
+        [(0, 50), (50, 0), (100, 50), (50, 100)],
+        "#abc",
+        False,
+        False,
+        True,
+        400,
+        200,
+        0.3,
+        0,
+        0,
+    )
+    small_polygon = visualizer._create_tile_polygon(
+        [(0, 0), (100, 0), (0, 8)],
+        "#abc",
+        False,
+        False,
+        False,
+        400,
+        200,
+        0.3,
+        0,
+        0,
+        "B",
+    )
+    assert _texts(rectangle) == ["A"]
+    assert _texts(full_polygon) == []
+    assert _texts(small_polygon) == []
+
+
+def test_layout_header_has_title_and_surface_on_separate_lines():
+    surface = Surface(width=2400, height=1200)
+    result = solve_tile_layout(
+        surface, Tile(width=300, height=600), JointSpec(joint_width=3), "running"
+    )
+    candidate = result.candidates[result.recommended_index]
+    svg = _decode(generate_tile_layout_visualization(candidate, surface))
+    root = ET.fromstring(svg)
+    ns = "{http://www.w3.org/2000/svg}"
+    title = root.find(f'{ns}text[@class="surface-title"]')
+    size = root.find(f'{ns}text[@class="surface-info"]')
+    drawing = root.find(f'{ns}rect[@data-tile-surface="true"]')
+    assert title.text == "Tile layout"
+    assert size.text == "Surface: 2400 × 1200 mm"
+    assert float(title.get("y")) < float(size.get("y")) < float(drawing.get("y"))
+    assert candidate.label not in _texts(svg)
+
+
 def _saw_lines(svg):
     return re.findall(r'<line[^>]*stroke="#d94801" stroke-width="3"', svg)
 
@@ -624,12 +677,8 @@ def test_diagonal_svg_has_intrinsic_dimensions_and_no_css_variables():
     assert "var(" not in svg
 
 
-def test_diagonal_svg_labels_only_full_tiles():
-    """A CUT/NOTCHED diagonal piece's bounding box isn't its real size, so
-    labeling it "width x height" the way an axis-aligned piece is labeled
-    would misrepresent an irregular shape as a rectangle — only FULL
-    diamonds (where nominal size is an honest fact) get a dimension label
-    (see _create_tile_polygon)."""
+def test_diagonal_svg_uses_cut_letters_not_repeated_dimensions():
+    """Dimensions belong in the cut list, not on every diagonal tile."""
     surface = Surface(width=1500, height=1200)
     tile = Tile(width=300, height=150)
     joint = JointSpec(joint_width=3)
@@ -650,7 +699,8 @@ def test_diagonal_svg_labels_only_full_tiles():
     svg = _decode(generate_tile_layout_visualization(candidate, surface))
 
     full_label = f"{full_tile.nominal_width:.0f}\u00d7{full_tile.nominal_height:.0f}"
-    assert full_label in svg
+    assert full_label not in _texts(svg)
+    assert any(re.fullmatch(r"[A-Z]+", text) for text in _texts(svg))
 
 
 def test_diagonal_piece_template_keeps_description_text_outside_svg():

@@ -318,7 +318,7 @@ test.describe('Partsible Frontend E2E Tests', () => {
     await expect(planButton).toBeEnabled();
   });
 
-  test('requires sheet thickness and accepts a sheet product of your own', async ({ page }) => {
+  test('defaults sheet thickness and accepts a sheet product of your own', async ({ page }) => {
     const email = `sheet-material-${Date.now()}@example.com`;
     const credential = ['Partsible', Date.now(), 'e2e'].join('-') + '!1';
     await page.request.post(`${API}/api/auth/register`, { data: { email, password: credential } });
@@ -328,9 +328,13 @@ test.describe('Partsible Frontend E2E Tests', () => {
 
     await page.goto('/sheet-cutting');
     const packButton = page.getByRole('button', { name: /plan the sheet cuts/i });
+    await expect(page.locator('#sheet-thickness')).toHaveValue('10');
     await expect(packButton).toBeDisabled();
     await page.getByRole('button', { name: /try an example/i }).click();
     await ownProduct(page, 'Product', 'Birch plywood');
+    await expect(packButton).toBeEnabled();
+    await page.locator('#sheet-thickness').fill('');
+    await expect(packButton).toBeDisabled();
     await page.locator('#sheet-thickness').fill('12');
     await expect(packButton).toBeEnabled();
     let optimizationPayload;
@@ -342,7 +346,7 @@ test.describe('Partsible Frontend E2E Tests', () => {
     expect(optimizationPayload).toMatchObject({ material_type: 'Birch plywood' });
   });
 
-  test('requires tile material details before solving a layout', async ({ page }) => {
+  test('starts tiles at 10 mm thick and still needs a thickness to solve', async ({ page }) => {
     const email = `tile-material-${Date.now()}@example.com`;
     const credential = ['Partsible', Date.now(), 'e2e'].join('-') + '!1';
     await page.request.post(`${API}/api/auth/register`, { data: { email, password: credential } });
@@ -352,8 +356,9 @@ test.describe('Partsible Frontend E2E Tests', () => {
 
     await page.goto('/tile-layout');
     const solveButton = page.getByRole('button', { name: /calculate layout/i });
-    await expect(solveButton).toBeDisabled();
-    await page.locator('#tile-thickness').fill('10');
+    await expect(page.locator('#tile-thickness')).toHaveValue('10');
     await expect(solveButton).toBeEnabled();
+    await page.locator('#tile-thickness').fill('');
+    await expect(solveButton).toBeDisabled();
   });
 });

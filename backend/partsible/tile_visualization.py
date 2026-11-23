@@ -18,6 +18,7 @@ import base64
 import colorsys
 import itertools
 import math
+import textwrap
 from xml.sax.saxutils import escape
 
 from .tile_layout.geometry import TileKind
@@ -170,20 +171,16 @@ class TileSVGVisualizer:
         svg_b64 = base64.b64encode(svg_content.encode("utf-8")).decode("utf-8")
         return f"data:image/svg+xml;base64,{svg_b64}"
 
-    def _create_header_section(
-        self, project_name: str | None, label: str | None
-    ) -> str:
-        parts = []
-        y = 16
-        if project_name:
-            parts.append(
-                f'<text x="24" y="{y}" class="figure-caption" text-anchor="start">{escape(project_name, _SVG_TEXT_ENTITIES)}</text>'
-            )
-            y += 18
-        if label:
-            parts.append(
-                f'<text x="24" y="{y}" class="surface-info" text-anchor="start">{escape(label, _SVG_TEXT_ENTITIES)}</text>'
-            )
+    def _create_header_section(self, title_lines: list[str], label: str) -> str:
+        parts = [
+            f'<text x="40" y="{28 + index * 22}" class="surface-title">'
+            f"{escape(line, _SVG_TEXT_ENTITIES)}</text>"
+            for index, line in enumerate(title_lines)
+        ]
+        parts.append(
+            f'<text x="40" y="{28 + len(title_lines) * 22}" class="surface-info">'
+            f"{escape(label, _SVG_TEXT_ENTITIES)}</text>"
+        )
         return "".join(parts)
 
     def _create_tile_rect(
@@ -219,22 +216,11 @@ class TileSVGVisualizer:
                 f'<rect x="{px:.1f}" y="{py:.1f}" width="{pw:.1f}" height="{ph:.1f}" fill="url(#notch-overlay)"/>'
             )
 
-        if pw > 26 and ph > 16:
-            label = f"{width:.0f}\u00d7{height:.0f}"
-            cx, cy = px + pw / 2, py + ph / 2
-            css_class = "sliver-label" if is_sliver else "tile-label"
+        if label and not is_notched and pw >= len(label) * 7 + 12 and ph >= 20:
             elements.append(
-                f'<text x="{cx:.1f}" y="{cy:.1f}" class="{css_class}" '
-                f'text-anchor="middle" dominant-baseline="middle">{label}</text>'
-            )
-            if is_sliver and ph > 30:
-                elements.append(
-                    f'<text x="{cx:.1f}" y="{cy + 11:.1f}" class="sliver-label" '
-                    f'text-anchor="middle" dominant-baseline="middle">SLIVER</text>'
-                )
-        if label and pw > 22 and ph > 22:
-            elements.append(
-                f'<text x="{px + 8:.1f}" y="{py + 11:.1f}" class="tile-label" font-weight="bold">{escape(label, _SVG_TEXT_ENTITIES)}</text>'
+                f'<text x="{px + pw / 2:.1f}" y="{py + ph / 2:.1f}" '
+                f'class="tile-label" font-weight="bold" text-anchor="middle" '
+                f'dominant-baseline="middle">{escape(label, _SVG_TEXT_ENTITIES)}</text>'
             )
 
         return "".join(elements)
@@ -254,13 +240,9 @@ class TileSVGVisualizer:
         label: str | None = None,
     ) -> str:
         """Diagonal counterpart to _create_tile_rect: the piece is an
-        arbitrary convex polygon (see geometry.place_and_clip_diagonal),
-        not a rectangle, so it's drawn as <polygon>, not <rect>. Only a
-        FULL diamond gets a dimension label — its bounding box isn't its
-        real size, so labeling a CUT/NOTCHED polygon with "width x height"
-        the way an axis-aligned piece is labeled would misrepresent an
-        irregular shape as a rectangle. The drawn outline itself, at true
-        scale, is what a CUT/NOTCHED piece's own shape communicates."""
+        arbitrary convex polygon (see geometry.place_and_clip_diagonal).
+        A cut letter is shown only if its whole text box fits inside the
+        polygon. Dimensions belong in the cut list, not on the drawing."""
         points = " ".join(
             f"{x_off + vx * scale:.1f},{y_off + vy * scale:.1f}" for vx, vy in vertices
         )
@@ -273,35 +255,32 @@ class TileSVGVisualizer:
         if is_notched:
             elements.append(f'<polygon points="{points}" fill="url(#notch-overlay)"/>')
 
-        if is_full:
-            # A rotated piece's *bounding box* is inflated relative to its
-            # true footprint (the same reason PlacedTile.area doesn't use
-            # width*height for one — see geometry.py) — using it here to
-            # decide "is there room for a label" was wrong: it can look
-            # roomy enough even when the tile's own true width/height, at
-            # this scale, is nowhere near big enough for horizontal text,
-            # which is exactly what caused labels to smear together at
-            # zoomed-out scales. Gate on the tile's real scaled size
-            # instead, with one stricter combined threshold (not the
-            # axis-aligned case's asymmetric 26-wide/16-tall) since a
-            # rotated tile needs room in *both* directions for text that
-            # isn't rotated along with it.
-            scaled_w, scaled_h = nominal_width * scale, nominal_height * scale
-            if scaled_w > 40 and scaled_h > 40:
-                xs = [x_off + vx * scale for vx, _vy in vertices]
-                ys = [y_off + vy * scale for _vx, vy in vertices]
-                label = f"{nominal_width:.0f}\u00d7{nominal_height:.0f}"
-                cx, cy = sum(xs) / len(xs), sum(ys) / len(ys)
+        if label and not is_full and not is_notched:
+            points_px = [(x_off + x * scale, y_off + y * scale) for x, y in vertices]
+            cx = sum(x for x, _ in points_px) / len(points_px)
+            cy = sum(y for _, y in points_px) / len(points_px)
+            half_width = len(label) * 3.5 + 6
+            half_height = 10
+
+            def inside(x, y):
+                crosses = [
+                    (x2 - x1) * (y - y1) - (y2 - y1) * (x - x1)
+                    for (x1, y1), (x2, y2) in zip(
+                        points_px, points_px[1:] + points_px[:1], strict=True
+                    )
+                ]
+                return all(c >= 0 for c in crosses) or all(c <= 0 for c in crosses)
+
+            if all(
+                inside(cx + dx, cy + dy)
+                for dx in (-half_width, half_width)
+                for dy in (-half_height, half_height)
+            ):
                 elements.append(
                     f'<text x="{cx:.1f}" y="{cy:.1f}" class="tile-label" '
-                    f'text-anchor="middle" dominant-baseline="middle">{label}</text>'
+                    f'font-weight="bold" text-anchor="middle" dominant-baseline="middle">'
+                    f"{escape(label, _SVG_TEXT_ENTITIES)}</text>"
                 )
-        if label and nominal_width * scale > 22 and nominal_height * scale > 22:
-            xs = [x_off + vx * scale for vx, _vy in vertices]
-            ys = [y_off + vy * scale for _vx, vy in vertices]
-            elements.append(
-                f'<text x="{sum(xs) / len(xs):.1f}" y="{min(ys) + 11:.1f}" class="tile-label" font-weight="bold">{escape(label, _SVG_TEXT_ENTITIES)}</text>'
-            )
 
         return "".join(elements)
 
@@ -332,7 +311,7 @@ class TileSVGVisualizer:
         parts.append(
             f'<text x="{cx + 14}" y="{y}" class="legend-text">Full tile</text>'
         )
-        cx += 90
+        cx += 110
 
         # A hatch sample over a neutral chip, since "notched" is the overlay
         # pattern now, not a fixed fill color — its own size still gets a
@@ -344,18 +323,18 @@ class TileSVGVisualizer:
             f'<rect x="{cx}" y="{y - 8}" width="10" height="10" fill="url(#notch-overlay)"/>'
         )
         parts.append(f'<text x="{cx + 14}" y="{y}" class="legend-text">Notched</text>')
-        cx += 90
+        cx += 110
 
         parts.append(
             f'<rect x="{cx}" y="{y - 8}" width="10" height="10" fill="none" stroke="{_SLIVER_STROKE}" stroke-width="2"/>'
         )
         parts.append(f'<text x="{cx + 14}" y="{y}" class="legend-text">Sliver</text>')
-        cx += 90
+        cx += 80
 
         if distinct_cut_sizes > 0:
-            note = f"{distinct_cut_sizes} cut size{'s' if distinct_cut_sizes != 1 else ''} \u2014 see the cut list below"
+            note = f"{distinct_cut_sizes} cut size{'s' if distinct_cut_sizes != 1 else ''} \u2014 see cut list"
             parts.append(
-                f'<text x="{cx}" y="{y}" class="legend-text">{escape(note, _SVG_TEXT_ENTITIES)} · letters match the cut list</text>'
+                f'<text x="{cx}" y="{y}" class="legend-text">{escape(note, _SVG_TEXT_ENTITIES)}</text>'
             )
 
         return "".join(parts)
@@ -369,7 +348,6 @@ class TileSVGVisualizer:
             return self._create_empty_svg()
 
         margin = 40
-        header_height = 40
         legend_height = 30
         target_width = 900
 
@@ -377,23 +355,24 @@ class TileSVGVisualizer:
         surface_w = surface.width * scale
         surface_h = surface.height * scale
 
-        total_width = surface_w + margin * 2
+        total_width = max(surface_w + margin * 2, 640)
+        title_lines = textwrap.wrap(
+            project_name or "Tile layout", width=max(1, int((total_width - 80) / 11))
+        ) or ["Tile layout"]
+        header_height = 28 + len(title_lines) * 22 + 20
         total_height = header_height + surface_h + legend_height + margin
 
         x_off, y_off = margin, header_height
 
-        label = (
-            f"{surface.width:g}\u00d7{surface.height:g}mm surface \u00b7 "
-            f"{candidate.label} \u00b7 {candidate.tiles_to_purchase} tiles to buy"
-        )
+        label = f"Surface: {surface.width:g} \u00d7 {surface.height:g} mm"
 
         size_colors = assign_size_colors(candidate.tiles)
         size_labels = assign_size_labels(candidate.tiles)
 
         svg_parts = [self._create_svg_header(int(total_width), int(total_height))]
-        svg_parts.append(self._create_header_section(project_name, label))
+        svg_parts.append(self._create_header_section(title_lines, label))
         svg_parts.append(
-            f'<rect x="{x_off}" y="{y_off}" width="{surface_w:.1f}" height="{surface_h:.1f}" '
+            f'<rect data-tile-surface="true" x="{x_off}" y="{y_off}" width="{surface_w:.1f}" height="{surface_h:.1f}" '
             f'fill="{_BACKGROUND}" stroke="{_INK}" stroke-width="2"/>'
         )
 

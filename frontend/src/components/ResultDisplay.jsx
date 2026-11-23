@@ -12,6 +12,8 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Download } from './icons';
 import { translateWithFallback } from '../i18n/translate';
+import { svgBlobToPngBlob } from '../utils/svgToPng';
+import { boardStockLabel } from '../utils/boardStockLabel';
 
 const mm = (n) => (Number.isFinite(n)
   ? n.toLocaleString('sv-SE', { maximumFractionDigits: 20 })
@@ -21,6 +23,8 @@ const ResultDisplay = ({ result, projectName, materialType, boardThickness, boar
   const { t } = useTranslation();
   const text = (key, vars) => translateWithFallback(t, key, vars);
   const [diagramOpen, setDiagramOpen] = useState(false);
+  const [downloadError, setDownloadError] = useState('');
+  const [downloading, setDownloading] = useState(false);
   const used = result.board_lengths_used;
   const byType = used
     ? used.reduce((acc, len) => ({ ...acc, [len]: (acc[len] || 0) + 1 }), {})
@@ -28,16 +32,25 @@ const ResultDisplay = ({ result, projectName, materialType, boardThickness, boar
       ?? { [result.optimal_board_length]: result.cut_list.length };
   const safeName = (projectName ? projectName : 'cutlist').replace(/[^a-zA-Z0-9_-]/g, '_');
 
-  const downloadDiagram = () => {
-    // The backend never rasterizes this live response — match the extension to
-    // the data URL's own declared type rather than hardcoding one that can drift.
-    const extension = result.visualization.startsWith('data:image/png') ? 'png' : 'svg';
-    const a = document.createElement('a');
-    a.href = result.visualization;
-    a.download = `${safeName}.${extension}`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+  const downloadDiagram = async () => {
+    setDownloading(true);
+    setDownloadError('');
+    try {
+      const source = await (await fetch(result.visualization)).blob();
+      const png = source.type === 'image/png' ? source : await svgBlobToPngBlob(source);
+      const url = URL.createObjectURL(png);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${safeName}.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      setDownloadError(text('projectUi.exportFailed', { format: 'PNG', message: error.message }));
+    } finally {
+      setDownloading(false);
+    }
   };
 
   return (
@@ -56,13 +69,14 @@ const ResultDisplay = ({ result, projectName, materialType, boardThickness, boar
           <span className="synthetic">
              {text('ui.diagramCaption', { count: result.cut_list.length })}
           </span>
-          <button type="button" className="btn btn-primary" onClick={downloadDiagram}>
-             <Download /> {text('workflow.downloadDiagram')}
+          <button type="button" className="btn btn-primary" onClick={downloadDiagram} disabled={downloading}>
+             <Download /> {text('projectUi.downloadPng')}
           </button>
         </figcaption>
+        {downloadError && <p className="alert-danger" role="alert">{downloadError}</p>}
       </figure>
 
-      <section style={{ marginTop: '34px', maxWidth: '300px' }}>
+      <section style={{ marginTop: '34px' }}>
           <div className="section-rule">
              <h2 className="section-title">{text('workflow.whatToBuy')}</h2>
           </div>
@@ -71,10 +85,8 @@ const ResultDisplay = ({ result, projectName, materialType, boardThickness, boar
             <tbody>
               {Object.entries(byType).map(([len, qty]) => (
                 <tr key={len}>
-                   <td>{materialType || text('ui.board')}</td>
-                   <td>{boardThickness && boardWidth
-                     ? `${mm(boardThickness)} × ${mm(boardWidth)} × ${mm(parseFloat(len))}`
-                     : mm(parseFloat(len))}</td>
+                   <td>{boardStockLabel(materialType, boardThickness, boardWidth, text('ui.board'))}</td>
+                   <td>{mm(parseFloat(len))}</td>
                   <td>{qty}</td>
                 </tr>
               ))}

@@ -40,29 +40,36 @@ const Swatch = ({ color, shape }) => {
   const maxY = Math.max(...ys);
   const rangeX = Math.max(maxX - minX, 1);
   const rangeY = Math.max(maxY - minY, 1);
-  const scale = 20 / Math.max(rangeX, rangeY);
-  const offsetX = (28 - rangeX * scale) / 2;
-  const offsetY = (28 - rangeY * scale) / 2;
+  const scale = 44 / Math.max(rangeX, rangeY);
+  const offsetX = (52 - rangeX * scale) / 2;
+  const offsetY = (52 - rangeY * scale) / 2;
   const normalized = points.map(([x, y]) => [
     offsetX + (x - minX) * scale,
-    offsetY + (maxY - y) * scale,
+    offsetY + (y - minY) * scale,
   ]);
+  const notchPath = !vertices && shape?.notches?.map(([x, y, width, height]) => {
+    const left = offsetX + x * scale;
+    const top = offsetY + y * scale;
+    return `M ${left} ${top} h ${width * scale} v ${height * scale} h ${-width * scale} Z`;
+  }).join(' ');
 
   return (
     <svg
       aria-hidden="true"
-      width="28"
-      height="28"
-      viewBox="0 0 28 28"
+      width="52"
+      height="52"
+      viewBox="0 0 52 52"
       style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }}
       focusable="false"
     >
-      <polygon points={normalized.map(([x, y]) => `${x},${y}`).join(' ')} fill={color} stroke="var(--ink-4)" strokeWidth="1" />
+      {notchPath
+        ? <path d={`M ${normalized.map(([x, y]) => `${x} ${y}`).join(' L ')} Z ${notchPath}`} fill={color} fillRule="evenodd" stroke="var(--ink-4)" strokeWidth="1" />
+        : <polygon points={normalized.map(([x, y]) => `${x},${y}`).join(' ')} fill={color} stroke="var(--ink-4)" strokeWidth="1" />}
     </svg>
   );
 };
 
-const TileCutListTable = ({ candidate }) => {
+const TileCutListTable = ({ candidate, selectedLabel, onCloseSelection, highlightedLabel, onHighlight, navigationRef, onShowInList }) => {
   const { t } = useTranslation();
   const text = (key, vars) => translateWithFallback(t, key, vars);
   const [template, setTemplate] = useState(null);
@@ -71,32 +78,37 @@ const TileCutListTable = ({ candidate }) => {
   const { fullCount, fullColor, fullShape, cutGroups } = buildCutList(candidate.tiles);
   if (fullCount === 0 && cutGroups.length === 0) return null;
   const hasDiagonalCuts = cutGroups.some((g) => g.isDiagonal);
+  const selectedGroup = selectedLabel && cutGroups.find((group) => group.label === selectedLabel);
+  const activeTemplate = template || (selectedGroup && candidate.piece_diagrams?.[selectedLabel]
+    ? { ...selectedGroup, image: candidate.piece_diagrams[selectedLabel] } : null);
+  const closeTemplate = () => { setTemplate(null); onCloseSelection?.(); };
 
   return (
-    <section>
+    <section className="tile-cut-panel" ref={navigationRef}>
       <div className="section-rule">
          <h2 className="section-title">{text('ui.cutList')}</h2>
          <span className="folio">{text('ui.cutListIntro')}</span>
       </div>
-      <table className="cat-table" style={{ marginTop: '14px' }}>
+      <div className="tile-cut-scroll">
+      <table className="cat-table tile-cut-list">
         <thead>
-           <tr><th>{text('workflow.sizeMm')}</th><th>{text('ui.kind')}</th><th>{text('ui.fromOffcut')}</th><th>{text('workflow.qty')}</th></tr>
+           <tr><th>{text('workflow.sizeMm')}</th><th>{text('ui.cutDetails')}</th><th>{text('ui.fromOffcut')}</th><th>{text('workflow.qty')}</th></tr>
         </thead>
         <tbody>
           {fullCount > 0 && (
-            <tr>
+            <tr className={highlightedLabel === '__full__' ? 'is-diagram-highlighted' : undefined} onPointerEnter={() => onHighlight?.('__full__')} onPointerLeave={() => onHighlight?.(null)}>
               <td style={{ textAlign: 'left', color: 'var(--ink)' }}>
-                 <Swatch color={fullColor} shape={fullShape} />{text('ui.fullTile')}
+                 <span className="tile-cut-size"><Swatch color={fullColor} shape={fullShape} /><span>{text('ui.fullTile')}</span></span>
               </td>
                <td style={{ textAlign: 'left', color: 'var(--ink-2)' }}>{text('ui.noCutNeeded')}</td>
-              <td>—</td>
-              <td>{fullCount}</td>
+              <td data-label={text('ui.fromOffcut')}>—</td>
+              <td data-label={text('workflow.qty')}>{fullCount}</td>
             </tr>
           )}
           {cutGroups.map((group, i) => (
-            <tr key={i}>
+            <tr key={i} data-cut-label={group.label || undefined} tabIndex="-1" className={group.label && highlightedLabel === group.label ? 'is-diagram-highlighted' : undefined} onPointerEnter={() => onHighlight?.(group.label)} onPointerLeave={() => onHighlight?.(null)} onFocus={() => onHighlight?.(group.label)} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) onHighlight?.(null); }}>
               <td style={{ textAlign: 'left', color: 'var(--ink)' }}>
-                <Swatch color={group.color} shape={group.shape} />{mm(group.width)} × {mm(group.height)}
+                <span className="tile-cut-size"><Swatch color={group.color} shape={group.shape} /><span>{mm(group.width)} × {mm(group.height)}</span></span>
                 {group.sliverCount > 0 && (
                   <span style={{ color: 'var(--revision)', fontWeight: 700, marginLeft: '8px' }}>
                      {group.sliverCount === group.count ? text('ui.sliver') : text('ui.sliverCount', { count: group.sliverCount })}
@@ -104,43 +116,40 @@ const TileCutListTable = ({ candidate }) => {
                 )}
               </td>
               <td style={{ textAlign: 'left', color: 'var(--ink-2)' }}>
-                {group.isDiagonal
-                  ? (
-                    <>
-                      {group.kind === 'notched' ? text('ui.diagonalOpening') : text('ui.diagonal')}
-                      {group.edgeLengths && ` · ${group.edgeLengths.map((length) => mm(length)).join(' · ')} mm`}
-                    </>
-                  )
-                  : (group.kind === 'notched' ? text('ui.openingDiagram') : text('ui.straightCut'))}
                 {candidate.piece_diagrams?.[group.label] && (
-                  <button type="button" className="btn btn-primary btn-sm" style={{ marginLeft: '8px' }} onClick={() => setTemplate({ ...group, image: candidate.piece_diagrams[group.label] })}>
+                  <button type="button" className="btn-text tile-cut-action" onClick={() => setTemplate({ ...group, image: candidate.piece_diagrams[group.label] })}>
                     {text('ui.viewCut', { label: group.label })}
                   </button>
                 )}
+                {!candidate.piece_diagrams?.[group.label] && (group.isDiagonal
+                  ? (group.kind === 'notched' ? text('ui.diagonalOpening') : text('ui.diagonal'))
+                  : (group.kind === 'notched' ? text('ui.openingDiagram') : text('ui.straightCut')))}
               </td>
-              <td>{group.reusedCount > 0 ? text('ui.reusedCount', { reused: group.reusedCount, count: group.count }) : '—'}</td>
-              <td>{group.count}</td>
+              <td data-label={text('ui.fromOffcut')}>{group.reusedCount > 0 ? text('ui.reusedCount', { reused: group.reusedCount, count: group.count }) : '—'}</td>
+              <td data-label={text('workflow.qty')}>{group.count}</td>
             </tr>
           ))}
         </tbody>
       </table>
+      </div>
       <p className="synthetic" style={{ marginTop: '10px' }}>
          {text('ui.cutListDescription')}
          {candidate.notched_count > 0 && ` ${text('ui.notchedDescription')}`}
          {candidate.reused_offcut_count > 0 && ` ${text('ui.reusedDescription')}`}
          {hasDiagonalCuts && ` ${text('ui.diagonalDescription')}`}
       </p>
-      {template && (
-         <div className="cat-overlay" role="dialog" aria-modal="true" aria-label={text('ui.cutTemplateAria', { label: template.label })} onClick={() => setTemplate(null)}>
+      {activeTemplate && (
+         <div className="cat-overlay" role="dialog" aria-modal="true" aria-label={text('ui.cutTemplateAria', { label: activeTemplate.label })} onClick={closeTemplate}>
           <div className="cat-sheet" style={{ maxWidth: '720px', maxHeight: '90vh', overflow: 'auto' }} onClick={(event) => event.stopPropagation()}>
             <div className="masthead" style={{ marginTop: 0 }}>
-               <span className="masthead-brand" style={{ fontSize: '13px' }}>{text('ui.cutTemplate', { label: template.label })}</span>
-               <button type="button" className="masthead-flash" onClick={() => setTemplate(null)}>{text('common.close')}</button>
+                <span className="masthead-brand" style={{ fontSize: '13px' }}>{text('ui.cutTemplate', { label: activeTemplate.label })}</span>
+                <button type="button" className="masthead-flash" onClick={closeTemplate}>{text('common.close')}</button>
             </div>
             <div style={{ padding: '16px 16px 0', color: 'var(--ink-2)', fontSize: '13px', lineHeight: '1.5' }}>
-               {pieceMeta(template, text)}
+               {pieceMeta(activeTemplate, text)}
+               {onShowInList && <div><button type="button" className="btn-text" onClick={() => { const label = activeTemplate.label; closeTemplate(); onShowInList(label); }}>{text('ui.showInCutList')}</button></div>}
             </div>
-            <img src={template.image} alt={text('ui.cutTemplateAria', { label: template.label })} style={{ display: 'block', width: '100%', maxHeight: '65vh', objectFit: 'contain', padding: '16px' }} />
+            <img src={activeTemplate.image} alt={text('ui.cutTemplateAria', { label: activeTemplate.label })} style={{ display: 'block', width: '100%', maxHeight: '65vh', objectFit: 'contain', padding: '16px' }} />
              <div style={{ padding: '0 16px 16px', color: 'var(--ink-2)', fontSize: '13px', lineHeight: '1.5' }}>
                <strong style={{ color: 'var(--ink)' }}>{text('ui.howToCut')}</strong> {text('ui.cutInstructions')}
             </div>

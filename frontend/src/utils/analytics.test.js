@@ -39,7 +39,7 @@ describe('loading the script', () => {
     const script = scripts()[0];
     expect(script.src).toBe('https://cloud.umami.is/script.js');
     expect(script.dataset.websiteId).toBe(SITE_ID);
-    expect(script.dataset.domains).toBe('nordstad.github.io');
+    expect(script.dataset.domains).toBe('partsible.com');
     expect(script.dataset.doNotTrack).toBe('true');
     expect(script.dataset.excludeSearch).toBe('true');
     expect(script.dataset.excludeHash).toBe('true');

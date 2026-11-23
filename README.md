@@ -219,7 +219,7 @@ template with every option is [`.env.example`](.env.example); see
 #### Upgrading
 
 Back up first, then pull and recreate in the same folder. To pin a version, set
-`PARTSIBLE_VERSION` in `.env` (for example `PARTSIBLE_VERSION=0.15.0`):
+`PARTSIBLE_VERSION` in `.env` (for example `PARTSIBLE_VERSION=15.1.0`):
 
 ```bash
 docker compose -f docker-compose.release.yml exec backend partsible backup

@@ -8,8 +8,8 @@ the optimizer in natural language, instead of you filling in the form.
 
 | Tool | Purpose |
 | --- | --- |
-| `optimize_cutting` | Run a real optimization from parts and stock lengths you describe. |
-| `search_products` | Search the instance's product catalogue by name, grade or size, and get product ids with their standard stock lengths. |
+| `optimize_cutting` | Optimize the parts and stock lengths you describe. |
+| `search_products` | Find products and stock lengths by name, grade or size. |
 | `optimize_sample` | Run a pre-configured demo project, for a quick test. |
 | `get_sample_payloads` | List the available demo payloads. |
 | `get_cutting_example` | Show the request format the API expects. |
@@ -72,7 +72,7 @@ docker compose --profile mcp up -d
 See [Configuration](../reference/configuration.md) for the environment
 variables.
 
-The two MCP runtimes share the same tool schema and version (`0.15.0`). In
+The two MCP runtimes share the same tool schema and version (`15.1.0`). In
 stdio mode, stdout is reserved for MCP JSON-RPC messages and logs go to stderr.
 Transient synchronous API failures (`408`, `425`, `429`, `500`, `502`, `503`,
 `504`) use bounded exponential backoff; async job submissions are not retried

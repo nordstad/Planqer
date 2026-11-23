@@ -241,6 +241,10 @@
     letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3);
   }
   .plan-fact dd { margin: 2px 0 0; font-size: 15px; font-weight: 700; }
+  .board-plan-answer .plan-facts { gap: 12px 30px; padding: 0; }
+  .board-plan-answer .plan-fact dt { font-family: inherit; font-size: 13px; font-weight: 400; letter-spacing: normal; text-transform: none; color: var(--ink-2); }
+  .board-plan-answer .plan-fact:first-child dt::first-letter { text-transform: uppercase; }
+  .board-plan-answer .plan-fact dd { font-size: 16px; }
 
   /* Cut order flows into as many columns as fit, so three boards and thirty
      both read at a glance instead of one becoming a scroll. */
@@ -1058,6 +1062,46 @@
     overflow: hidden; margin: 0; padding: 0; line-height: 0;
   }
   .cut-list-visualization img { display: block; width: 100%; height: auto; }
+  .tile-diagram { position: relative; width: 100%; }
+  .tile-diagram img { display: block; width: 100%; height: auto; }
+  .tile-plan-interactive { margin: 16px auto 0; }
+  .tile-diagram-targets { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .tile-diagram-targets [role="button"] { fill: transparent; stroke: transparent; stroke-width: 3px; pointer-events: all; cursor: pointer; }
+  .tile-diagram-targets [role="button"]:hover, .tile-diagram-targets [role="button"]:focus-visible { fill: rgba(255, 255, 255, .18); stroke: var(--accent); outline: none; }
+  .tile-diagram-full { fill: transparent; stroke: transparent; stroke-width: 3px; pointer-events: all; cursor: help; }
+  .tile-diagram-full:hover { fill: rgba(255, 255, 255, .18); stroke: var(--ink-2); }
+  .tile-cut-action { margin-left: 0; }
+  .tile-cut-list tbody tr:hover td, .tile-cut-list tbody tr:focus-within td { background: var(--ground-2); }
+  .tile-cut-list tr.is-diagram-highlighted td { background: var(--accent-bg); }
+  .tile-diagram-hint { margin: 8px 0 0; color: var(--ink-2); font-size: 14px; }
+  .tile-diagram-heading { display: flex; justify-content: space-between; align-items: end; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; }
+  .tile-diagram-heading p { margin: 4px 0 0; color: var(--ink-2); font-size: 14px; }
+  .tile-diagram-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tile-diagram-legend { display: flex; flex-wrap: wrap; gap: 10px 24px; margin-top: 12px; color: var(--ink-2); font-size: 14px; }
+  .tile-diagram-legend span { display: inline-flex; align-items: center; gap: 7px; }
+  .tile-diagram-legend i { display: inline-block; width: 16px; height: 16px; border: 1px solid var(--ink-2); }
+  .tile-legend-full { background: #c5d8bd; }
+  .tile-legend-notched { background: repeating-linear-gradient(135deg, #ecebe4 0 3px, #8f8d80 3px 4px); }
+  .tile-legend-sliver { background: var(--card); border: 2px solid var(--revision) !important; }
+  .tile-layout-pair { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; align-items: start; }
+  .tile-layout-visual, .tile-cut-panel { min-width: 0; }
+  .tile-cut-scroll { margin-top: 14px; }
+  .tile-cut-size { display: inline-flex; align-items: center; white-space: nowrap; }
+  .tile-cut-list th:nth-child(2) { text-align: left; }
+  .tile-diagram-targets [role="button"].is-list-highlighted, .tile-diagram-full.is-list-highlighted { fill: rgba(255, 255, 255, .18); stroke: var(--accent); }
+  @media (max-width: 767px) {
+    .tile-layout-pair { gap: 24px; }
+    .tile-cut-list, .tile-cut-list tbody { display: block; }
+    .tile-cut-list thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+    .tile-cut-list tr { display: grid; grid-template-columns: 1fr auto; border-bottom: 1px solid var(--rule-hair); padding: 8px 0; }
+    .tile-cut-list td { border: 0; padding: 4px 0; text-align: left; }
+    .tile-cut-list td:nth-child(1), .tile-cut-list td:nth-child(2) { grid-column: 1 / -1; }
+    .tile-cut-list td:nth-child(n+3)::before { content: attr(data-label) ": "; color: var(--ink-3); }
+    .tile-cut-list td:nth-child(4) { text-align: right; }
+    .tile-cut-action { display: inline-block; margin: 4px 0; }
+  }
+  .tile-diagram-preview { position: fixed; z-index: 30; width: 222px; pointer-events: none; padding: 10px 12px; border: 1px solid var(--field-line); border-radius: 8px; background: var(--card); color: var(--ink); box-shadow: 0 1px 2px rgba(22,21,15,.05); font-size: 12px; line-height: 1.4; }
+  .tile-diagram-preview strong, .tile-diagram-preview span { display: block; }
 
   /* The right end of a section rule, when a count and a control share it. */
   .section-rule-end { display: flex; align-items: center; gap: 14px; }
@@ -1188,6 +1232,13 @@
   .plan-summary > div { min-width: 140px; }
   .plan-summary dt { color: var(--ink-3); font-size: 12px; }
   .plan-summary dd { margin: 2px 0 0; font-weight: 700; }
+  @media screen and (max-width: 639px) {
+    .plan-summary { display: block; background: var(--card); border: 1px solid var(--rule-hair); border-radius: 12px; padding: 0 16px; }
+    .plan-summary > div { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 10px 0; min-width: 0; }
+    .plan-summary > div + div { border-top: 1px solid var(--rule-hair); }
+    .plan-summary dt { flex: 1 1 40%; }
+    .plan-summary dd { flex: 1 1 60%; min-width: 0; margin: 0; text-align: right; overflow-wrap: anywhere; }
+  }
   .plan-overview { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 320px); gap: 24px; align-items: start; }
   .plan-overview .wallpaper-room-overview { margin: 0; }
   .strip-table { width: 100%; margin-top: 16px; border-collapse: collapse; font-size: 13px; }

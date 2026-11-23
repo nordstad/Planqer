@@ -94,7 +94,7 @@ const SheetOptimizer = () => {
   const [sheetHeight, setSheetHeight] = useState("2500");
   const [kerfWidth, setKerfWidth] = useState("3");
   const [productSel, setProductSel] = useState(emptySelection);
-  const [sheetThickness, setSheetThickness] = useState("");
+  const [sheetThickness, setSheetThickness] = useState("10");
   const [algorithm, setAlgorithm] = useState("");
   const [allowRotation, setAllowRotation] = useState(true);
   const [unitPrice, setUnitPrice] = useState('');

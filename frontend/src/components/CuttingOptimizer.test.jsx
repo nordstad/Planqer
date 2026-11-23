@@ -256,7 +256,8 @@ describe('CuttingOptimizer', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Plan the cuts/i }));
     await screen.findByRole('heading', { name: /Your cutting plan/i });
-    expect(screen.getByTestId('plan-material-summary')).toHaveTextContent('Framing timber / studs 45 × 95 mm · 45 × 95 mm');
+    expect(screen.getByTestId('plan-material-summary')).toHaveTextContent('Framing timber / studs 45 × 95 mm');
+    expect(screen.getByTestId('plan-material-summary')).not.toHaveTextContent('mm · 45');
   });
 
   it('saves the plan with a snapshot of the chosen product and its details', async () => {

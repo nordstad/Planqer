@@ -85,7 +85,7 @@ export const buildCutList = (tiles) => {
         groups.set(key, {
           kind: tile.kind, width, height, count: 1, color: tile.fill_color,
           isDiagonal: !!tile.vertices,
-          shape: { vertices: tile.vertices, width: tile.width, height: tile.height },
+           shape: { vertices: tile.vertices, width: tile.width, height: tile.height, notches: tile.notches },
           nominalWidth: tile.nominal_width, nominalHeight: tile.nominal_height,
           sliverCount: tile.is_sliver ? 1 : 0, reusedCount: tile.is_reused_offcut ? 1 : 0,
           label: tile.size_label, // piece label (A, B, C, etc.) for accessing piece_diagrams

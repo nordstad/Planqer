@@ -23,6 +23,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { optimizeCutting, saveProject, getProjectGroups, getUserProjects, getUserSettings, movePlanToProject } from '../utils/api';
 import { materialLabel } from '../utils/materialLabel';
 import { boardPartCount, restoreBoardParts } from '../utils/boardParts';
+import { boardStockLabel } from '../utils/boardStockLabel';
 import ProductPicker from './ProductPicker';
 import {
   emptySelection, selectionName, buildSnapshot, selectionFromSnapshot, selectionFromLegacyMaterial,
@@ -942,7 +943,7 @@ const CuttingOptimizer = () => {
                 {t('workflow.cuttingPlanIntro')}
               </p>
               <p className="plan-material-summary" data-testid="plan-material-summary">
-                {material ? `${material} · ` : ''}{boardThickness} × {boardWidth} mm
+                {boardStockLabel(material, boardThickness, boardWidth)}
               </p>
             </div>
           </div>
@@ -955,14 +956,9 @@ const CuttingOptimizer = () => {
             aria-busy={loading}
             style={{ opacity: loading ? 0.45 : 1, transition: 'opacity .15s linear' }}
           >
-            <div className="plan-answer">
-              <div className="plan-answer-fig">
-                <b>{plan.boardsUsed}</b>
-                <span className="answer-kicker">
-                   {t('ui.forAllParts', { count: partCount }).replace('{{count}}', `${plan.boardsUsed} ${t(plan.boardsUsed === 1 ? 'ui.board' : 'ui.boards')}`)}
-                </span>
-              </div>
+            <div className="plan-answer board-plan-answer">
               <dl className="plan-facts">
+                <div className="plan-fact"><dt>{t(plan.boardsUsed === 1 ? 'ui.board' : 'ui.boards')}</dt><dd>{plan.boardsUsed}</dd></div>
                 {plan.bought !== null && (
                    <div className="plan-fact"><dt>{t('ui.materialBought')}</dt><dd>{mm(plan.bought)} mm</dd></div>
                 )}

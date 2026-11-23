@@ -1,6 +1,6 @@
 {
     "name": "partsible-mcp-server",
-    "version": "0.15.0",
+    "version": "15.1.0",
     "description": "MCP server for Partsible. Plan the cuts and layouts for boards, sheets, tiles and wallpaper.",
     "main": "dist/index.js",
     "type": "module",

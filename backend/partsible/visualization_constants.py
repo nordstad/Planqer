@@ -37,10 +37,10 @@ SVG_STYLES = {
     },
     "tile": {
         "figure_caption": f"font-family: {NARROW_FONT_STACK}; font-size: 11px; font-weight: 700; fill: {COLORS['primary_text']}; letter-spacing: 0.16em;",
-        "surface_title": f"font-family: {NARROW_FONT_STACK}; font-size: 16px; font-weight: 600; fill: {COLORS['primary_text']};",
+        "surface_title": f"font-family: {SYSTEM_FONT_STACK}; font-size: 18px; font-weight: 700; fill: {COLORS['primary_text']};",
         "tile_label": f"font-family: {SYSTEM_FONT_STACK}; font-size: 9px; fill: {COLORS['secondary_text']};",
-        "surface_info": f"font-family: {SYSTEM_FONT_STACK}; font-size: 12px; fill: {COLORS['secondary_text']};",
-        "legend_text": f"font-family: {SYSTEM_FONT_STACK}; font-size: 9px; fill: {COLORS['light_text']};",
+        "surface_info": f"font-family: {SYSTEM_FONT_STACK}; font-size: 14px; fill: {COLORS['secondary_text']};",
+        "legend_text": f"font-family: {SYSTEM_FONT_STACK}; font-size: 12px; fill: {COLORS['secondary_text']};",
         "sliver_label": f"font-family: {SYSTEM_FONT_STACK}; font-size: 9px; font-weight: bold; fill: #cc2200;",
     },
 }
