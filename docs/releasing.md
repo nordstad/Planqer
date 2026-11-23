@@ -248,7 +248,7 @@ to the latest release.
 
 ### Roll back
 
-Run the workflow by hand and give the previous release tag (from v0.15.0 on):
+Run the workflow by hand and give the previous release tag (from v0.15.1 on):
 
 ```bash
 gh workflow run lite.yml --ref main -f app_ref=vX.Y.Z

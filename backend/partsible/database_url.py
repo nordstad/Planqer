@@ -34,7 +34,7 @@ def resolve_database_url(
 def legacy_database_warning(database_url: str) -> str | None:
     """Explain a leftover planqer.db that Partsible will not read, if there is one.
 
-    Partsible was called Planqer before 0.15.0. It does not read or rename the
+    Partsible was called Planqer before 0.15.1. It does not read or rename the
     old file: it starts with an empty database next to it.
     """
     url = make_url(database_url)
