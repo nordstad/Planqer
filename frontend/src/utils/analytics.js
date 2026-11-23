@@ -9,7 +9,7 @@
    page. Pageviews and the browser's own details are collected by Umami. */
 
 const HOST = 'https://cloud.umami.is/script.js';
-const DOMAIN = 'nordstad.github.io';
+const DOMAIN = 'partsible.com';
 const OPT_OUT_KEY = 'partsible.analytics.optout';
 const HOOK = 'partsibleBeforeSend';
 const QUEUE_LIMIT = 20;
