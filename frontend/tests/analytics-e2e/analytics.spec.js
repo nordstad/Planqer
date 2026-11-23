@@ -61,7 +61,7 @@ test("counts the pageview and the tool, and nothing outside the allow-list", asy
   expect(named(seen).map((p) => p.name)).not.toContain("project_named");
 });
 
-test("counts a click on the footer's full-version link", async ({ page }) => {
+test("counts a click on the footer's self-hosted link", async ({ page }) => {
   const seen = await watchUmami(page);
   await page.goto(APP);
   await page.getByRole("contentinfo").getByRole("link", { name: "Self-hosted version" }).click({ modifiers: [] });
