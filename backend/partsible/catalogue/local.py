@@ -38,7 +38,7 @@ from partsible.errors import PartsibleError
 logger = logging.getLogger(__name__)
 
 LOCAL_PREFIX = "local"
-ISSUES_URL = "https://github.com/nordstad/Partsible/issues/new"
+ISSUES_URL = "https://github.com/nordstad/partsible/issues/new"
 ISSUE_TEMPLATE = "catalogue-product.yml"
 FREE_TEXT_TYPES = ("custom", "sheet-custom")
 _COUNTRY = re.compile(r"^[A-Z]{2}$")

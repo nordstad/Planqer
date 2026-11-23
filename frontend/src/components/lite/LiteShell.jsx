@@ -7,7 +7,7 @@ import { version as appVersion } from '../../../package.json';
 
 const BANNER_DISMISSED_KEY = 'partsible.lite.bannerDismissed';
 const DOCS_URL = 'https://docs.partsible.com/';
-const SOURCE_URL = 'https://github.com/nordstad/Partsible';
+const SOURCE_URL = 'https://github.com/nordstad/partsible';
 
 // Storage can be blocked (private modes, strict settings); Lite must still
 // work, it just forgets what it was told.

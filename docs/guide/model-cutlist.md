@@ -18,7 +18,7 @@ is used if it has one.
 !!! tip "No model to hand? Try the demo bench"
     The project ships a small demo model, a 1 800 × 800 × 770 mm workbench, so
     you can try this page without a CAD file of your own. Find both files in the
-    [`example/` folder](https://github.com/nordstad/Partsible/tree/main/example)
+    [`example/` folder](https://github.com/nordstad/partsible/tree/main/example)
     of the repository, or in `example/` if you have cloned it.
 
     - **`bench.stl`** shows the STL path: a preview in the browser, then 23

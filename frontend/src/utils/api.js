@@ -148,7 +148,7 @@ export const getLatestRelease = async () => {
     // Ignore malformed cache entries and re-fetch.
   }
 
-  const response = await http.get('https://api.github.com/repos/nordstad/Partsible/releases/latest');
+  const response = await http.get('https://api.github.com/repos/nordstad/partsible/releases/latest');
   const tag = response.data.tag_name;
   localStorage.setItem(LATEST_RELEASE_CACHE_KEY, JSON.stringify({ tag, fetchedAt: Date.now() }));
   return tag;

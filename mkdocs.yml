@@ -1,8 +1,8 @@
 site_name: Partsible
 site_description: Plan the cuts and layouts for boards, sheets, tiles and wallpaper.
 site_url: https://docs.partsible.com/
-repo_url: https://github.com/nordstad/Partsible
-repo_name: nordstad/Partsible
+repo_url: https://github.com/nordstad/partsible
+repo_name: nordstad/partsible
 edit_uri: edit/main/docs/
 
 theme:
@@ -42,7 +42,7 @@ theme:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/nordstad/Partsible
+      link: https://github.com/nordstad/partsible
     - icon: simple/kofi
       link: https://ko-fi.com/nordstad
 

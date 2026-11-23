@@ -8,11 +8,11 @@ behaviour may change between releases.
 
 ## Bugs, improvements and feedback
 
-Please [open an issue](https://github.com/nordstad/Partsible/issues/new/choose)
+Please [open an issue](https://github.com/nordstad/partsible/issues/new/choose)
 for bugs, improvement ideas, questions or other feedback. Include reproduction
 steps and relevant environment details when reporting a bug. Code and
 documentation improvements are welcome as
-[pull requests](https://github.com/nordstad/Partsible/pulls).
+[pull requests](https://github.com/nordstad/partsible/pulls).
 
 ## Backend (Python/FastAPI)
 
@@ -53,7 +53,7 @@ uv run partsible-mcp-server
 The built-in product catalogue (`backend/partsible/catalogue/data/<country>.yaml`)
 is optimized for Norway and Sweden and grows through suggestions. Want another
 country? Say which one by opening
-[an issue](https://github.com/nordstad/Partsible/issues/new/choose).
+[an issue](https://github.com/nordstad/partsible/issues/new/choose).
 If your instance is missing a product:
 
 1. Add it for your own instance first: **Admin → Catalogue → Add product**.

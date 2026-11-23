@@ -4,7 +4,7 @@ Localhost works with no configuration at all. Everything here is only needed
 for a hosted, proxied, or otherwise non-default deployment.
 
 Set variables in a `.env` file next to the compose files, or export them before
-running Docker Compose. Copy [`.env.example`](https://github.com/nordstad/Partsible/blob/main/.env.example)
+running Docker Compose. Copy [`.env.example`](https://github.com/nordstad/partsible/blob/main/.env.example)
 to `.env` as a starting point.
 
 Changed `.env` after containers already exist? A plain restart won't pick it

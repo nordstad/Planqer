@@ -39,7 +39,7 @@ page covers both.
 ## Simple install (recommended)
 
 ```bash
-curl -O https://raw.githubusercontent.com/nordstad/Partsible/main/docker-compose.simple.yml
+curl -O https://raw.githubusercontent.com/nordstad/partsible/main/docker-compose.simple.yml
 docker compose -f docker-compose.simple.yml up -d
 ```
 
@@ -61,7 +61,7 @@ use `docker-compose.simple.yml` in place of `docker-compose.release.yml`.
 ## Advanced install
 
 ```bash
-git clone https://github.com/nordstad/Partsible.git
+git clone https://github.com/nordstad/partsible.git
 cd Partsible
 docker compose -f docker-compose.release.yml up -d
 ```

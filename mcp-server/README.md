@@ -158,7 +158,7 @@ Operational guidance:
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/nordstad/Partsible.git
+   git clone https://github.com/nordstad/partsible.git
    cd Partsible
    ```
 

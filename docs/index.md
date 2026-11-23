@@ -17,7 +17,7 @@ lumber yard, you can [buy me a coffee](https://ko-fi.com/nordstad).
 !!! warning "Early development"
     Partsible is in beta. Features, APIs and behaviour may change between
     releases. Found a bug, have an improvement or want to share feedback? Use
-    the [issue tracker](https://github.com/nordstad/Partsible/issues/new/choose).
+    the [issue tracker](https://github.com/nordstad/partsible/issues/new/choose).
     Pull requests for code and documentation improvements are welcome.
 
 ![Partsible homepage](assets/screenshots/homepage.png)
@@ -29,7 +29,7 @@ lumber yard, you can [buy me a coffee](https://ko-fi.com/nordstad).
   tracking (see [Privacy](privacy.md)).
 - **Made for Norway and Sweden.** The built-in product catalogue covers Norway
   and Sweden, and the interface is in English, Norwegian and Swedish. Need
-  another country or language? [Open an issue](https://github.com/nordstad/Partsible/issues/new/choose).
+  another country or language? [Open an issue](https://github.com/nordstad/partsible/issues/new/choose).
 - **Kerf-aware.** Every plan subtracts the material your saw blade actually
   removes, so the numbers hold up at the saw.
 - **Five ways in.** Plan board cuts, sheet layouts, tile layouts, or wallpaper
@@ -108,8 +108,8 @@ lumber yard, you can [buy me a coffee](https://ko-fi.com/nordstad).
 
 ## Project links
 
-- Source: [github.com/nordstad/Partsible](https://github.com/nordstad/Partsible)
+- Source: [github.com/nordstad/partsible](https://github.com/nordstad/partsible)
 - License: [MIT](https://opensource.org/licenses/MIT)
 - Bugs, improvements and feedback: use the
-  [issue tracker](https://github.com/nordstad/Partsible/issues/new/choose).
-- Code and documentation improvements: [open a pull request](https://github.com/nordstad/Partsible/pulls).
+  [issue tracker](https://github.com/nordstad/partsible/issues/new/choose).
+- Code and documentation improvements: [open a pull request](https://github.com/nordstad/partsible/pulls).

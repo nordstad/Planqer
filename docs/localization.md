@@ -8,7 +8,7 @@ Partsible supports English, Swedish, and Norwegian Bokmal. The locale codes are
 The built-in product catalogue is optimized for Norway and Sweden, and the
 interface is available in English, Swedish and Norwegian Bokmal. Another
 country or language is welcome. Say which one by opening
-[an issue](https://github.com/nordstad/Partsible/issues/new/choose).
+[an issue](https://github.com/nordstad/partsible/issues/new/choose).
 A country's catalogue is data you can help build, see
 [Contributing catalogue data](contributing.md#contributing-catalogue-data).
 

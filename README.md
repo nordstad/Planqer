@@ -17,7 +17,7 @@ storage.
 
 [![Try it in your browser](https://img.shields.io/badge/Try-in%20your%20browser-orange.svg)](https://partsible.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Latest release](https://img.shields.io/github/v/release/nordstad/Partsible)](https://github.com/nordstad/Partsible/releases)
+[![Latest release](https://img.shields.io/github/v/release/nordstad/partsible)](https://github.com/nordstad/partsible/releases)
 [![Self-hosted: Docker Compose](https://img.shields.io/badge/Self--hosted-Docker%20Compose-2496ED.svg)](https://docs.partsible.com/getting-started/)
 
 ---
@@ -25,7 +25,7 @@ storage.
 > **Early development:** Partsible is still in beta and the product, APIs and
 > behaviour may change between releases. If you find a bug, have an improvement
 > or want to share feedback, please
-> [open an issue](https://github.com/nordstad/Partsible/issues/new/choose).
+> [open an issue](https://github.com/nordstad/partsible/issues/new/choose).
 > Pull requests for code and documentation improvements are welcome too.
 
 ## Features
@@ -37,7 +37,7 @@ storage.
   cutlists.
 - **Norway & Sweden**: The built-in product catalogue covers Norway and
   Sweden, and the interface is available in English, Norwegian and Swedish.
-  Need another country or language? [Open an issue](https://github.com/nordstad/Partsible/issues/new/choose).
+  Need another country or language? [Open an issue](https://github.com/nordstad/partsible/issues/new/choose).
 - **Metric units only**: All measurements are in millimetres. There is no
   imperial (inch/foot) support and no plans to add it at this time.
 - **Self-Hosted & Private**: Local accounts and data stay entirely on your
@@ -115,7 +115,7 @@ One person, one computer. No accounts or password, nothing to configure.
 
    ```bash
    mkdir partsible && cd partsible
-   curl -O https://raw.githubusercontent.com/nordstad/Partsible/main/docker-compose.simple.yml
+   curl -O https://raw.githubusercontent.com/nordstad/partsible/main/docker-compose.simple.yml
    ```
 
    Windows PowerShell (use `curl.exe`; plain `curl` is a different command
@@ -123,7 +123,7 @@ One person, one computer. No accounts or password, nothing to configure.
 
    ```powershell
    mkdir partsible; cd partsible
-   curl.exe -O https://raw.githubusercontent.com/nordstad/Partsible/main/docker-compose.simple.yml
+   curl.exe -O https://raw.githubusercontent.com/nordstad/partsible/main/docker-compose.simple.yml
    ```
 
    No terminal download? Open [`docker-compose.simple.yml`](docker-compose.simple.yml)
@@ -167,14 +167,14 @@ an optional MCP server.
 
    ```bash
    mkdir partsible && cd partsible
-   curl -O https://raw.githubusercontent.com/nordstad/Partsible/main/docker-compose.release.yml
+   curl -O https://raw.githubusercontent.com/nordstad/partsible/main/docker-compose.release.yml
    ```
 
    Windows PowerShell:
 
    ```powershell
    mkdir partsible; cd partsible
-   curl.exe -O https://raw.githubusercontent.com/nordstad/Partsible/main/docker-compose.release.yml
+   curl.exe -O https://raw.githubusercontent.com/nordstad/partsible/main/docker-compose.release.yml
    ```
 
 2. Start it and check it:
@@ -236,7 +236,7 @@ only if you want to delete the data too.
 Use `docker-compose.yml` to build the images yourself:
 
 ```bash
-git clone https://github.com/nordstad/Partsible.git
+git clone https://github.com/nordstad/partsible.git
 cd Partsible
 docker compose up -d --build
 ```

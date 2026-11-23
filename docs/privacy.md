@@ -58,4 +58,4 @@ browser data resets it.
 Software, Inc., and the data is stored in Umami Cloud's EU region.
 
 **Contact.** Questions or requests about this page: open an issue on
-[GitHub](https://github.com/nordstad/Partsible/issues).
+[GitHub](https://github.com/nordstad/partsible/issues).

@@ -44,7 +44,7 @@ beforeEach(() => {
   api.getAdminCatalogue.mockImplementation(async () => listing());
   [api.createCatalogueEntry, api.updateCatalogueEntry, api.hideCatalogueEntry, api.restoreCatalogueEntry, api.resetCatalogueEntry]
     .forEach((fn) => fn.mockResolvedValue({}));
-  api.getCatalogueSuggestion.mockResolvedValue({ snippet: '', url: 'https://github.com/nordstad/Partsible/issues/new' });
+  api.getCatalogueSuggestion.mockResolvedValue({ snippet: '', url: 'https://github.com/nordstad/partsible/issues/new' });
 });
 
 const rowOf = (name) => screen.getByText(name).closest('tr');
@@ -237,7 +237,7 @@ describe('AdminCatalogue', () => {
     api.getAdminCatalogue.mockResolvedValue([
       { product: product('local:regel:50x150', 'regel', 50, 150, { sources: [] }), origin: 'local', hidden: false },
     ]);
-    api.getCatalogueSuggestion.mockResolvedValue({ snippet: 'type: regel', url: 'https://github.com/nordstad/Partsible/issues/new?x' });
+    api.getCatalogueSuggestion.mockResolvedValue({ snippet: 'type: regel', url: 'https://github.com/nordstad/partsible/issues/new?x' });
     render(<AdminCatalogue />);
     await screen.findByText('Framing timber 50 × 150 mm');
     fireEvent.click(within(rowOf('Framing timber 50 × 150 mm')).getByRole('button', { name: 'Suggest to Partsible' }));
@@ -260,7 +260,7 @@ describe('AdminCatalogue', () => {
 
   it('prepares a GitHub issue as soon as it opens, with one link and no popup', async () => {
     api.getCatalogueSuggestion.mockResolvedValue({
-      snippet: 'country: SE\nproducts:\n- type: regel\n', url: 'https://github.com/nordstad/Partsible/issues/new?template=x',
+      snippet: 'country: SE\nproducts:\n- type: regel\n', url: 'https://github.com/nordstad/partsible/issues/new?template=x',
     });
     const open = vi.spyOn(window, 'open');
     render(<AdminCatalogue />);
@@ -272,7 +272,7 @@ describe('AdminCatalogue', () => {
 
     const link = await within(form).findByRole('link', { name: 'Open on GitHub' });
     expect(api.getCatalogueSuggestion).toHaveBeenCalledWith('local:regel:48x98', { source: 'https://www.traguiden.se/', country: 'SE' });
-    expect(link).toHaveAttribute('href', expect.stringContaining('github.com/nordstad/Partsible/issues/new'));
+    expect(link).toHaveAttribute('href', expect.stringContaining('github.com/nordstad/partsible/issues/new'));
     expect(link).toHaveAttribute('target', '_blank');
     expect(within(form).getByTestId('suggestion-snippet')).toHaveTextContent('type: regel');
     expect(within(form).getAllByRole('button').map((b) => b.textContent)).toEqual(['Close']);
@@ -280,7 +280,7 @@ describe('AdminCatalogue', () => {
   });
 
   it('says what happens next once the issue is opened', async () => {
-    api.getCatalogueSuggestion.mockResolvedValue({ snippet: 'type: regel', url: 'https://github.com/nordstad/Partsible/issues/new?x' });
+    api.getCatalogueSuggestion.mockResolvedValue({ snippet: 'type: regel', url: 'https://github.com/nordstad/partsible/issues/new?x' });
     render(<AdminCatalogue />);
     await screen.findByText('Framing timber 45 × 95 mm');
     fireEvent.click(within(rowOf('Framing timber 48 × 98 mm')).getByRole('button', { name: 'Suggest to Partsible' }));

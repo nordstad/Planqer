@@ -141,7 +141,7 @@ const HomePage = () => {
     {!isStaticMode() && <footer className="hp-footer">
       <div>
          <Link to="/help">{t('home.helpDocumentation')}</Link>
-        <a href="https://github.com/nordstad/Partsible" target="_blank" rel="noopener noreferrer">
+        <a href="https://github.com/nordstad/partsible" target="_blank" rel="noopener noreferrer">
            {t('home.sourceGithub')}
         </a>
         <a href="https://opensource.org/licenses/MIT" target="_blank" rel="noopener noreferrer">
@@ -156,7 +156,7 @@ const HomePage = () => {
         {updateAvailable && (
           <>
             {' · '}
-            <a href="https://github.com/nordstad/Partsible/releases/latest" target="_blank" rel="noopener noreferrer">
+            <a href="https://github.com/nordstad/partsible/releases/latest" target="_blank" rel="noopener noreferrer">
                {t('home.versionAvailable', { version: latestVersion })}
             </a>
           </>

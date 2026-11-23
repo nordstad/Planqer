@@ -173,12 +173,12 @@ maintainers:
   frontend and MCP server." Leave routine dependency bumps and internal
   refactors out of the sections above; they stay in the generated list.
 
-See [v0.12.0](https://github.com/nordstad/Partsible/releases/tag/v0.12.0) for the
+See [v0.12.0](https://github.com/nordstad/partsible/releases/tag/v0.12.0) for the
 expected shape. Write the highlights to a file and append the generated notes
 below them:
 
 ```bash
-gh api repos/nordstad/Partsible/releases/generate-notes \
+gh api repos/nordstad/partsible/releases/generate-notes \
   -f tag_name=vX.Y.Z -f previous_tag_name=vP.Q.R --jq .body > generated.md
 cat highlights.md generated.md > notes.md
 gh release create vX.Y.Z --title "vX.Y.Z" --notes-file notes.md

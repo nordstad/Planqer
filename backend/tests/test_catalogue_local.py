@@ -344,7 +344,7 @@ def test_suggestion_is_a_prefilled_issue_with_a_valid_yaml_snippet(client, admin
     assert (url.scheme, url.netloc, url.path) == (
         "https",
         "github.com",
-        "/nordstad/Partsible/issues/new",
+        "/nordstad/partsible/issues/new",
     )
     query = parse_qs(url.query)
     assert query["template"] == ["catalogue-product.yml"]
@@ -425,7 +425,7 @@ def test_building_a_suggestion_sends_nothing(monkeypatch):
     product = build_product("regel", 48, 98, ProductDetails(), country="SE")
     suggestion = build_suggestion(product, source="https://a.se", country="se")
     assert suggestion.url.startswith(
-        "https://github.com/nordstad/Partsible/issues/new?"
+        "https://github.com/nordstad/partsible/issues/new?"
     )
 
 

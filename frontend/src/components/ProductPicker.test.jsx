@@ -505,7 +505,7 @@ describe('ProductPicker: choosing the catalogue country', () => {
     getCatalogue.mockResolvedValue({ data: generic, etag: '"g"' });
     await show(<Harness />);
     const link = within(screen.getByTestId('generic-catalogue-prompt')).getByRole('link', { name: 'Ask for it' });
-    expect(link).toHaveAttribute('href', 'https://github.com/nordstad/Partsible/issues/new/choose');
+    expect(link).toHaveAttribute('href', 'https://github.com/nordstad/partsible/issues/new/choose');
     expect(link).toHaveAttribute('target', '_blank');
   });
 
