@@ -46,10 +46,10 @@ const CatalogPage = ({ children, bodyClassName = '' }) => {
   const isCurrent = (path) => pathname === path;
   const { user, isAuthenticated, logout, needsSetup, singleUser, setupCheckError } = useAuth();
   const [authModalOpen, setAuthModalOpen] = useState(false);
-  const demo = isStaticMode();
+  const lite = isStaticMode();
 
-  const navLinks = demo
-    ? [...BASE_NAV_LINKS, { path: '/catalogue', label: 'demo.catalogue.title' }]
+  const navLinks = lite
+    ? [...BASE_NAV_LINKS, { path: '/catalogue', label: 'lite.catalogue.title' }]
     : user?.is_admin
       // With no accounts the admin page is only the catalogue editor.
       ? [...BASE_NAV_LINKS, { path: '/admin', label: singleUser ? 'catalogueAdmin.tab.catalogue' : 'common.admin' }]
@@ -77,7 +77,7 @@ const CatalogPage = ({ children, bodyClassName = '' }) => {
             ))}
           </div>
           <div className="app-nav-right">
-            {demo || singleUser ? (
+            {lite || singleUser ? (
               <Link to="/dashboard" className={`app-nav-link ${isCurrent('/dashboard') ? 'is-current' : ''}`}>
                 {t('common.myProjects')}
               </Link>
@@ -112,7 +112,7 @@ const CatalogPage = ({ children, bodyClassName = '' }) => {
       <div className={`cat-body ${bodyClassName}`}>
         {children}
       </div>
-      {!demo && !setupCheckError && (
+      {!lite && !setupCheckError && (
         <AuthModal
           isOpen={authModalOpen}
           onClose={() => setAuthModalOpen(false)}

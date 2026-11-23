@@ -20,7 +20,7 @@ const Probe = () => {
 
 afterEach(() => vi.unstubAllEnvs());
 
-it('is signed in as the local user from the first render in the demo', async () => {
+it('is signed in as the local user from the first render in Lite', async () => {
   vi.stubEnv('VITE_PARTSIBLE_MODE', 'static');
   const api = await import('../utils/api');
   render(<AuthProvider><Probe /></AuthProvider>);

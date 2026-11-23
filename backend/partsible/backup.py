@@ -19,7 +19,7 @@ from alembic.script import ScriptDirectory
 from sqlalchemy.engine import make_url
 
 from partsible import __version__
-from partsible.database_url import resolve_database_url
+from partsible.database_url import LEGACY_DATABASE_FILENAME, resolve_database_url
 
 BACKUP_FORMAT = "partsible-backup-v1"
 DATABASE_FILENAME = "partsible.db"
@@ -201,6 +201,11 @@ def _extract_backup_archive(
 ) -> tuple[dict[str, Any], Path]:
     with tarfile.open(archive_path, "r:gz") as archive:
         member_names = {member.name for member in archive.getmembers()}
+        if LEGACY_DATABASE_FILENAME in member_names:
+            raise BackupError(
+                "This backup was made before Planqer was renamed to Partsible "
+                "and cannot be restored."
+            )
         expected_names = {MANIFEST_FILENAME, DATABASE_FILENAME}
         if member_names != expected_names:
             raise BackupError(
@@ -308,7 +313,9 @@ def _create_safety_copy(database_path: Path, *, now: datetime | None = None) -> 
     safety_dir = database_path.parent / "backups" / "pre-restore"
     safety_dir.mkdir(parents=True, exist_ok=True)
     timestamp = _utc_now(now).strftime("%Y-%m-%dT%H%M%SZ")
-    safety_copy_path = _unique_path(safety_dir / f"partsible-pre-restore-{timestamp}.db")
+    safety_copy_path = _unique_path(
+        safety_dir / f"partsible-pre-restore-{timestamp}.db"
+    )
     _copy_sqlite_database(database_path, safety_copy_path)
     return safety_copy_path
 

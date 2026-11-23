@@ -42,8 +42,8 @@
 |------|---------|---------------|
 | `optimize_cutting` | Custom optimization with your data | *"Optimize cutting for my kitchen cabinet project"* |
 | `search_products` | Find a board or sheet product in the instance's catalogue | *"What 45×95 framing timber can I buy?"* |
-| `optimize_demo` | Quick test with furniture project | *"Run the demo optimization"* |
-| `get_demo_payloads` | View all available examples | *"Show me example cutting scenarios"* |
+| `optimize_sample` | Quick test with furniture project | *"Run the demo optimization"* |
+| `get_sample_payloads` | View all available examples | *"Show me example cutting scenarios"* |
 | `get_cutting_example` | Learn the API format | *"How do I format a cutting request?"* |
 
 Partsible is a powerful cutting optimization solution that minimizes material waste when cutting boards to specific lengths. Built as a microservices application, it features a FastAPI backend for calculations and a React frontend for intuitive user interaction.
@@ -225,7 +225,7 @@ Once configured, restart your client and try these conversations:
 ```
 You: "Test the cutting optimizer with the furniture project demo"
 
-Assistant: I'll run the furniture project demo for you using the optimize_demo tool...
+Assistant: I'll run the furniture project demo for you using the optimize_sample tool...
 ✅ Optimized cutting plan complete!
 • Total boards needed: 8
 • Total waste: 156 cm
@@ -354,7 +354,7 @@ Assistant: Looking at your cutting plan, I can see the main waste factors:
 # Quick test that everything works
 cd mcp-server
 npx @modelcontextprotocol/inspector uv run partsible-mcp-server
-# Click "optimize_demo" in the inspector - should return cutting plan
+# Click "optimize_sample" in the inspector - should return cutting plan
 ```
 
 ## 🧑‍💻 Development

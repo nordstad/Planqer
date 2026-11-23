@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""Fail if a build of the self-hosted app contains any part of the browser demo.
+"""Fail if a build of the self-hosted app contains any part of Lite.
 
-The demo is the same code built with VITE_PARTSIBLE_MODE=static. A normal build
-must contain none of it: no Pyodide runtime, no worker, no demo screens, no
+Lite is the same code built with VITE_PARTSIBLE_MODE=static. A normal build
+must contain none of it: no Pyodide runtime, no worker, no Lite screens, no
 analytics. Run it on the output of `npm run build` (what the Docker image
 serves).
 
-    python3 scripts/check-no-demo-code.py frontend/build
+    python3 scripts/check-no-lite-code.py frontend/build
 """
 
 import sys
 from pathlib import Path
 
-# (text, ignore case). Each is something only demo code, or the code that loads
+# (text, ignore case). Each is something only Lite code, or the code that loads
 # analytics, contains. Identifiers are matched exactly: translations say
 # "Partsible-demon" and a privacy sentence may name Umami, and locale files ship
 # in every build, so those words alone must not trip the check. Umami is caught
@@ -21,8 +21,8 @@ MARKERS = (
     ("pyodide", True),
     ("solverWorker", False),
     ("loading-runtime", False),
-    ("partsible-demo", False),
-    ("partsible.demo.", False),
+    ("partsible-lite", False),
+    ("partsible.lite.", False),
     ("catalogue_admin", False),
     ("catalogue_entries", False),
     ("cloud.umami.is", True),
@@ -58,7 +58,7 @@ def main() -> None:
             raise SystemExit(f"{root} is not a directory; build the app first")
         problems += [f"{root}/{p}" for p in find_markers(root)]
     if problems:
-        print("The self-hosted build contains demo code:", file=sys.stderr)
+        print("The self-hosted build contains Lite code:", file=sys.stderr)
         print("\n".join(f"  {p}" for p in problems), file=sys.stderr)
         raise SystemExit(1)
     print(f"clean: {', '.join(str(r) for r in roots)}")

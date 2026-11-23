@@ -3,12 +3,12 @@ import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import CatalogPage from './CatalogPage';
 import { useAuth } from '../contexts/AuthContext';
-import { FULL_VERSION_URL, isStaticMode } from '../utils/mode';
+import { SELF_HOSTED_URL, isStaticMode } from '../utils/mode';
 import UserProjectsContent from './UserProjectsContent';
 import UserSettings from './UserSettings';
 
 // Literal comparison, so a normal build drops the panel and the runtime behind it.
-const BackupPanel = import.meta.env.VITE_PARTSIBLE_MODE === 'static' ? lazy(() => import('./demo/BackupPanel')) : null;
+const BackupPanel = import.meta.env.VITE_PARTSIBLE_MODE === 'static' ? lazy(() => import('./lite/BackupPanel')) : null;
 
 const TABS = [
   { key: 'projects', label: 'common.myProjects' },
@@ -31,8 +31,8 @@ const UserDashboard = () => {
         <>
           {isStaticMode() && (
             <p className="synthetic" role="note" style={{ marginBottom: '14px' }}>
-              {t('demo.fullVersionNote.text')}{' '}
-              <a href={FULL_VERSION_URL} target="_blank" rel="noopener noreferrer">{t('demo.fullVersionNote.cta')}</a>
+              {t('lite.selfHostedNote.text')}{' '}
+              <a href={SELF_HOSTED_URL} target="_blank" rel="noopener noreferrer">{t('lite.selfHostedNote.cta')}</a>
             </p>
           )}
           {!isStaticMode() && !singleUser && (

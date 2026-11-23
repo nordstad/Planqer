@@ -1,0 +1,44 @@
+name: Deploy docs
+
+# The documentation site at docs.partsible.com, on Cloudflare Pages. Partsible
+# Lite is published separately by lite.yml, because the two sites no longer have
+# to be deployed together.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - "mkdocs.yml"
+      - ".github/workflows/docs.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Install MkDocs Material
+        run: pip install -r docs/requirements.txt
+
+      - name: Build site
+        run: mkdocs build --strict
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy site --project-name=partsible-docs --branch=main

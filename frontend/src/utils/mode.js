@@ -1,14 +1,14 @@
-/* Static mode (VITE_PARTSIBLE_MODE=static) is the in-browser demo. Read at call
+/* Static mode (VITE_PARTSIBLE_MODE=static) is Lite. Read at call
    time so tests can switch it; a build still replaces the constant. */
 export const isStaticMode = () => import.meta.env.VITE_PARTSIBLE_MODE === 'static';
 
-/* The one user of the demo. There are no accounts, so nothing to sign in to.
+/* The one user of Lite. There are no accounts, so nothing to sign in to.
    They own the only catalogue there is, so they may edit it. */
 export const LOCAL_USER = Object.freeze({ id: 'local', email: '', is_admin: true });
 
-/* i18next picks `key_demo` over `key` when this context is passed, so a string
-   that is wrong in the demo (it says "account" or "instance") has a twin. */
-export const demoContext = () => (isStaticMode() ? { context: 'demo' } : {});
+/* i18next picks `key_lite` over `key` when this context is passed, so a string
+   that is wrong in Lite (it says "account" or "instance") has a twin. */
+export const liteContext = () => (isStaticMode() ? { context: 'lite' } : {});
 
-export const FULL_VERSION_URL = 'https://docs.partsible.com/getting-started/';
+export const SELF_HOSTED_URL = 'https://docs.partsible.com/getting-started/';
 export const PRIVACY_URL = 'https://docs.partsible.com/privacy/';

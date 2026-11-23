@@ -424,7 +424,9 @@ def test_building_a_suggestion_sends_nothing(monkeypatch):
     monkeypatch.setattr(socket, "create_connection", refuse)
     product = build_product("regel", 48, 98, ProductDetails(), country="SE")
     suggestion = build_suggestion(product, source="https://a.se", country="se")
-    assert suggestion.url.startswith("https://github.com/nordstad/Partsible/issues/new?")
+    assert suggestion.url.startswith(
+        "https://github.com/nordstad/Partsible/issues/new?"
+    )
 
 
 def test_bad_stored_data_is_ignored_not_fatal(client, admin):

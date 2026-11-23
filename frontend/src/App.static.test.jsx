@@ -59,10 +59,10 @@ it('does not talk about an account or an instance', async () => {
   expect(screen.queryByText(/local account|this instance/i)).not.toBeInTheDocument();
 });
 
-it('wraps the app in the demo notice and footer', async () => {
+it('wraps the app in Lite notice and footer', async () => {
   await renderAtHash('#/');
   await screen.findByRole('heading', { level: 1 });
-  expect(screen.getByRole('region', { name: 'Demo notice' })).toBeInTheDocument();
+  expect(screen.getByRole('region', { name: 'Lite notice' })).toBeInTheDocument();
   expect(screen.getAllByRole('contentinfo')).toHaveLength(1);
 });
 

@@ -17,9 +17,9 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const { language, changeLanguage } = useLanguage();
-  const demo = isStaticMode();
-  const [user, setUser] = useState(demo ? LOCAL_USER : null);
-  const [loading, setLoading] = useState(!demo);
+  const lite = isStaticMode();
+  const [user, setUser] = useState(lite ? LOCAL_USER : null);
+  const [loading, setLoading] = useState(!lite);
   const [error, setError] = useState(null);
   const [needsSetup, setNeedsSetup] = useState(false);
   const [singleUser, setSingleUser] = useState(false);
@@ -46,7 +46,7 @@ export const AuthProvider = ({ children }) => {
   }, [user]);
 
   useEffect(() => {
-    if (demo) return;
+    if (lite) return;
     const checkAuth = async () => {
       if (getAuthToken()) {
         try {

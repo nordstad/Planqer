@@ -25,7 +25,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   hasSavedWork.mockResolvedValue(true);
   getStorageStatus.mockResolvedValue({ supported: true, persisted: false, usageBytes: 3_000_000, quotaBytes: 1e9 });
-  backupExport.mockResolvedValue({ app: 'partsible-demo', format: 1, stores: {} });
+  backupExport.mockResolvedValue({ app: 'partsible-lite', format: 1, stores: {} });
   URL.createObjectURL = vi.fn(() => 'blob:backup');
   URL.revokeObjectURL = vi.fn();
   click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
@@ -55,7 +55,7 @@ it('downloads a dated backup file and records the export', async () => {
 
   await waitFor(() => expect(click).toHaveBeenCalled());
   expect(screen.getByText('Backup saved to your downloads.')).toBeInTheDocument();
-  expect(localStorage.getItem('partsible.demo.lastExported')).not.toBeNull();
+  expect(localStorage.getItem('partsible.lite.lastExported')).not.toBeNull();
   expect(screen.queryByRole('note')).not.toBeInTheDocument();
   expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:backup');
 });
@@ -65,7 +65,7 @@ it('says so when the backup cannot be made', async () => {
   await renderPanel();
   await userEvent.click(screen.getByRole('button', { name: 'Export backup' }));
   expect(await screen.findByText('Could not create the backup.')).toBeInTheDocument();
-  expect(localStorage.getItem('partsible.demo.lastExported')).toBeNull();
+  expect(localStorage.getItem('partsible.lite.lastExported')).toBeNull();
 });
 
 describe('import', () => {
@@ -78,13 +78,13 @@ describe('import', () => {
   it('restores a file and says what came back', async () => {
     backupImport.mockResolvedValue({ projects: 2, sheet_projects: 1, tile_projects: 0, groups: 2, settings: 1 });
     await renderPanel();
-    await choose('{"app":"partsible-demo"}');
+    await choose('{"app":"partsible-lite"}');
     expect(await screen.findByText('Restored 3 plans and 2 projects.')).toBeInTheDocument();
-    expect(backupImport).toHaveBeenCalledWith('{"app":"partsible-demo"}');
+    expect(backupImport).toHaveBeenCalledWith('{"app":"partsible-lite"}');
   });
 
   it.each([
-    ['notBackup', /not a Partsible demo backup/],
+    ['notBackup', /not a Partsible Lite backup/],
     ['tooNew', /newer version/],
     ['invalid', /damaged/],
   ])('explains a %s file in words', async (code, message) => {

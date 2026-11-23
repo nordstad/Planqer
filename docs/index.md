@@ -6,8 +6,8 @@ designed — and it works out the fewest boards or sheets to buy, and exactly
 where every cut goes.
 
 **[Try it in your browser](https://partsible.com/)** with
-nothing to install. It is the light version; see
-[Demo or full version](demo-vs-full.md).
+nothing to install. This is Partsible Lite; see
+[Lite or self-hosted](lite-vs-self-hosted.md).
 
 !!! warning "Early development"
     Partsible is in beta. Features, APIs and behaviour may change between

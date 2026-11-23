@@ -2,7 +2,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import '../../i18n';
-import DemoShell from './DemoShell';
+import LiteShell from './LiteShell';
 import packageJson from '../../../package.json';
 import * as analytics from '../../utils/analytics';
 
@@ -15,7 +15,7 @@ vi.mock('../../utils/analytics', () => ({
 
 const renderShell = (path = '/') => render(
   <MemoryRouter initialEntries={[path]}>
-    <DemoShell><main>the app</main></DemoShell>
+    <LiteShell><main>the app</main></LiteShell>
   </MemoryRouter>,
 );
 
@@ -28,43 +28,43 @@ beforeEach(() => {
   analytics.setAnalyticsEnabled.mockImplementation((enabled) => { state = enabled ? 'on' : 'off'; });
 });
 
-describe('demo information', () => {
-  it('does not interrupt the app with a dialog or an About this demo action', () => {
+describe('lite information', () => {
+  it('does not interrupt the app with a dialog or an About Lite action', () => {
     renderShell();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'About this demo' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'About Lite' })).not.toBeInTheDocument();
   });
 });
 
 describe('banner', () => {
-  it('says this is the light version and links to the full one', () => {
+  it('says this is Partsible Lite and links to the self-hosted version', () => {
     renderShell();
-    const banner = screen.getByRole('region', { name: 'Demo notice' });
-    expect(banner).toHaveTextContent(/light version/i);
+    const banner = screen.getByRole('region', { name: 'Lite notice' });
+    expect(banner).toHaveTextContent(/Partsible Lite/);
     expect(banner.querySelector('a')).toHaveAttribute('href', expect.stringContaining('getting-started'));
   });
 
   it('can be dismissed for the session and comes back in the next one', async () => {
     const { unmount } = renderShell();
     await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
-    expect(screen.queryByRole('region', { name: 'Demo notice' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Lite notice' })).not.toBeInTheDocument();
     unmount();
 
     renderShell();
-    expect(screen.queryByRole('region', { name: 'Demo notice' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Lite notice' })).not.toBeInTheDocument();
 
     sessionStorage.clear();
     unmount();
     renderShell();
-    expect(screen.getAllByRole('region', { name: 'Demo notice' }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('region', { name: 'Lite notice' }).length).toBeGreaterThan(0);
   });
 });
 
 describe('footer', () => {
-  it('names the demo, the version and the way to the full version', () => {
+  it('names Lite, the version and the way to the self-hosted version', () => {
     renderShell();
     const footer = screen.getByRole('contentinfo');
-    expect(footer).toHaveTextContent(/demo/i);
+    expect(footer).toHaveTextContent(/lite/i);
     expect(footer).toHaveTextContent(`v${packageJson.version}`);
     expect(footer.querySelector('a[href*="getting-started"]')).not.toBeNull();
   });
@@ -76,7 +76,7 @@ describe('footer', () => {
 });
 
 describe('analytics', () => {
-  it('starts counting when the demo opens', () => {
+  it('starts counting when Lite opens', () => {
     renderShell();
     expect(analytics.startAnalytics).toHaveBeenCalledTimes(1);
   });
@@ -114,10 +114,10 @@ describe('analytics', () => {
 
   it('counts a click on a full-version link, by where it was', async () => {
     renderShell();
-    await userEvent.click(within(screen.getByRole('region', { name: 'Demo notice' })).getByRole('link'));
+    await userEvent.click(within(screen.getByRole('region', { name: 'Lite notice' })).getByRole('link'));
     expect(analytics.track).toHaveBeenCalledWith('docker_cta_clicked', { where: 'banner' });
 
-    await userEvent.click(within(screen.getByRole('contentinfo')).getByRole('link', { name: 'Full version' }));
+    await userEvent.click(within(screen.getByRole('contentinfo')).getByRole('link', { name: 'Self-hosted version' }));
     expect(analytics.track).toHaveBeenCalledWith('docker_cta_clicked', { where: 'footer' });
   });
 });

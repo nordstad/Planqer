@@ -91,7 +91,7 @@ export function createLocalTransport({ call, handle = async () => null, entries 
       return { data: stored.body, status: stored.status, headers: {} };
     }
 
-    throw httpError(404, { detail: `Not available in the demo: ${method} ${path}` });
+    throw httpError(404, { detail: `Not available in Lite: ${method} ${path}` });
   }
 
   return {

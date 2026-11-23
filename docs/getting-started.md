@@ -8,15 +8,15 @@ what you want.
 
 ## Two ways to use Partsible
 
-**Try it in your browser (light version).** Open the
-[Partsible demo](https://partsible.com/). Nothing to install and
+**Try it in your browser (Partsible Lite).** Open
+[Partsible Lite](https://partsible.com/). Nothing to install and
 no account. It runs in your browser, so projects are saved only in that browser
 on that device, and clearing browser data deletes them. Export a backup to keep
 them. Partsible is built for computers, where there is more room to work. It
 also runs on phones: tested on a recent iPhone, other phones are untested. See
-[Demo or full version](demo-vs-full.md) for what is different.
+[Lite or self-hosted](lite-vs-self-hosted.md) for what is different.
 
-**Run your own server (full version, recommended).** Your projects are kept
+**Run your own server (self-hosted, recommended).** Your projects are kept
 on your own computer or server, with two ways to install it:
 
 - **Simple install (recommended).** For one person on one computer, such as a

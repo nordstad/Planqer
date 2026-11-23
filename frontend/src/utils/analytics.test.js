@@ -54,7 +54,7 @@ describe('loading the script', () => {
     expect(analyticsState()).toBe('unavailable');
   });
 
-  it('loads nothing outside the demo build', () => {
+  it('loads nothing outside Lite build', () => {
     configure({ mode: '' });
     startAnalytics();
     expect(scripts()).toHaveLength(0);
@@ -148,7 +148,7 @@ describe('track', () => {
     expect(window.umami.track).not.toHaveBeenCalled();
   });
 
-  it('sends nothing outside the demo build', () => {
+  it('sends nothing outside Lite build', () => {
     configure({ mode: '' });
     window.umami = { track: vi.fn() };
     track('project_exported');

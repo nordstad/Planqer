@@ -19,7 +19,7 @@ it('uses the regular wording on a multi-user instance and outside a provider', (
   expect(renderHook(() => useAccountContext()).result.current).toEqual({});
 });
 
-it('uses the demo wording in the demo', () => {
+it('uses Lite wording in Lite', () => {
   vi.stubEnv('VITE_PARTSIBLE_MODE', 'static');
-  expect(renderHook(() => useAccountContext()).result.current).toEqual({ context: 'demo' });
+  expect(renderHook(() => useAccountContext()).result.current).toEqual({ context: 'lite' });
 });

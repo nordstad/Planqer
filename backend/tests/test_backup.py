@@ -112,6 +112,24 @@ def test_restore_backup_rejects_tampered_archive(tmp_path: Path):
         )
 
 
+def test_restore_backup_explains_a_planqer_archive(tmp_path: Path):
+    archive_path = tmp_path / "old.tar.gz"
+    manifest_path = tmp_path / "manifest.json"
+    database_path = tmp_path / "planqer.db"
+    _create_database(database_path, project_name="old")
+    manifest_path.write_text("{}", encoding="utf-8")
+    with tarfile.open(archive_path, "w:gz") as archive:
+        archive.add(manifest_path, arcname="manifest.json")
+        archive.add(database_path, arcname="planqer.db")
+
+    with pytest.raises(BackupError, match="renamed to Partsible"):
+        restore_backup(
+            archive_path,
+            database_url=f"sqlite+aiosqlite:///{tmp_path / 'target.db'}",
+            offline_confirmed=True,
+        )
+
+
 def test_restore_backup_requires_manifest_checksum(tmp_path: Path):
     archive_path = tmp_path / "missing-checksum.tar.gz"
     manifest_path = tmp_path / "manifest.json"

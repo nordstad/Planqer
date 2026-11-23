@@ -1,7 +1,7 @@
-/* Anonymous, cookie-free usage counting for the public demo, through Umami
+/* Anonymous, cookie-free usage counting for Lite, through Umami
    Cloud. The self-hosted app contains none of it: every entry point starts with
    the literal build-mode check below, so the bundler drops the rest from a
-   normal build (scripts/check-no-demo-code.py proves it).
+   normal build (scripts/check-no-lite-code.py proves it).
 
    Nothing is sent unless the build has a website id, the visitor has not opted
    out, and the browser sends neither Do Not Track nor Global Privacy Control.

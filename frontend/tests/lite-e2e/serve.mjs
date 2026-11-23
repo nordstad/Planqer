@@ -1,5 +1,5 @@
-// Serves the built demo the way GitHub Pages will: under /, with
-// real 404s and no fallback to index.html. If the demo only works behind a
+// Serves Lite the way a plain static host would: under /, with
+// real 404s and no fallback to index.html. If Lite only works behind a
 // forgiving dev server, it must fail here.
 
 import { createReadStream, existsSync, statSync } from "node:fs";
@@ -8,8 +8,8 @@ import { dirname, extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const root = resolve(process.env.DEMO_DIR ?? join(here, "../../../build/demo"));
-const port = Number(process.env.DEMO_PORT ?? 3003);
+const root = resolve(process.env.LITE_DIR ?? join(here, "../../../build/lite"));
+const port = Number(process.env.LITE_PORT ?? 3003);
 const prefix = "/";
 
 const TYPES = {
@@ -53,4 +53,4 @@ createServer((request, response) => {
 
   response.writeHead(200, { "content-type": TYPES[extname(file)] ?? "application/octet-stream" });
   createReadStream(file).pipe(response);
-}).listen(port, "127.0.0.1", () => console.log(`demo at http://127.0.0.1:${port}${prefix} from ${root}`));
+}).listen(port, "127.0.0.1", () => console.log(`lite at http://127.0.0.1:${port}${prefix} from ${root}`));

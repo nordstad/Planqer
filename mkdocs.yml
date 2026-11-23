@@ -42,9 +42,6 @@ extra:
     - icon: fontawesome/brands/github
       link: https://github.com/nordstad/Partsible
 
-extra_javascript:
-  - assets/umami.js
-
 markdown_extensions:
   - admonition
   - attr_list
@@ -66,7 +63,7 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Getting started: getting-started.md
-  - Demo or full version: demo-vs-full.md
+  - Lite or self-hosted: lite-vs-self-hosted.md
   - Guide:
       - Board cutting: guide/board-cutting.md
       - Sheet cutting: guide/sheet-cutting.md

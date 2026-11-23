@@ -18,7 +18,7 @@ const download = (name, data) => {
   URL.revokeObjectURL(url);
 };
 
-/* The demo's answer to "what if I lose my browser data": export, import, a
+/* Lite's answer to "what if I lose my browser data": export, import, a
    reminder, and an honest word about whether the browser will keep it. */
 const BackupPanel = () => {
   const { t, i18n } = useTranslation();
@@ -43,9 +43,9 @@ const BackupPanel = () => {
       markExported();
       track('project_exported');
       setLastExported(readLastExported());
-      setFeedback({ text: t('demo.backup.exported') });
+      setFeedback({ text: t('lite.backup.exported') });
     } catch {
-      setFeedback({ text: t('demo.backup.exportFailed'), error: true });
+      setFeedback({ text: t('lite.backup.exportFailed'), error: true });
     }
   };
 
@@ -56,11 +56,11 @@ const BackupPanel = () => {
     try {
       const counts = await backupImport(await file.text());
       const plans = (counts.projects ?? 0) + (counts.sheet_projects ?? 0) + (counts.tile_projects ?? 0) + (counts.wallpaper_projects ?? 0);
-      setFeedback({ text: t('demo.backup.imported', { plans, projects: counts.groups ?? 0 }) });
+      setFeedback({ text: t('lite.backup.imported', { plans, projects: counts.groups ?? 0 }) });
       refresh();
     } catch (error) {
       const code = error?.name === 'BackupError' && BACKUP_ERRORS.includes(error.code) ? error.code : 'failed';
-      setFeedback({ text: t(`demo.backup.importFailed.${code}`), error: true });
+      setFeedback({ text: t(`lite.backup.importFailed.${code}`), error: true });
     }
   };
 
@@ -71,27 +71,27 @@ const BackupPanel = () => {
   };
 
   const storageText = !storage ? null
-    : !storage.supported ? t('demo.backup.storageUnsupported')
-      : storage.persisted ? t('demo.backup.storageProtected')
-        : t('demo.backup.storageUnprotected');
+    : !storage.supported ? t('lite.backup.storageUnsupported')
+      : storage.persisted ? t('lite.backup.storageProtected')
+        : t('lite.backup.storageUnprotected');
 
   return (
-    <section className="card" style={{ marginBottom: '20px' }} aria-labelledby="demo-backup-title">
-      <h2 className="section-title" id="demo-backup-title" style={{ marginBottom: '8px' }}>{t('demo.backup.title')}</h2>
-      <p style={{ color: 'var(--ink-2)', margin: '0 0 12px' }}>{t('demo.backup.intro')}</p>
+    <section className="card" style={{ marginBottom: '20px' }} aria-labelledby="lite-backup-title">
+      <h2 className="section-title" id="lite-backup-title" style={{ marginBottom: '8px' }}>{t('lite.backup.title')}</h2>
+      <p style={{ color: 'var(--ink-2)', margin: '0 0 12px' }}>{t('lite.backup.intro')}</p>
 
       {needsBackupReminder({ hasData: hasWork, lastExported }) && (
-        <p role="note" style={{ color: 'var(--accent)', margin: '0 0 12px', fontWeight: 600 }}>{t('demo.backup.reminder')}</p>
+        <p role="note" style={{ color: 'var(--accent)', margin: '0 0 12px', fontWeight: 600 }}>{t('lite.backup.reminder')}</p>
       )}
 
       <div className="flex flex-wrap items-center gap-2" style={{ marginBottom: '10px' }}>
-        <button type="button" className="btn btn-primary" onClick={exportNow}>{t('demo.backup.export')}</button>
-        <button type="button" className="btn" onClick={() => fileInput.current.click()}>{t('demo.backup.import')}</button>
+        <button type="button" className="btn btn-primary" onClick={exportNow}>{t('lite.backup.export')}</button>
+        <button type="button" className="btn" onClick={() => fileInput.current.click()}>{t('lite.backup.import')}</button>
         <input ref={fileInput} type="file" accept="application/json,.json" style={VISUALLY_HIDDEN} onChange={importFile} />
         <span style={{ color: 'var(--ink-3)', fontSize: '13px' }}>
           {lastExported
-            ? t('demo.backup.lastExported', { date: new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium' }).format(lastExported) })
-            : t('demo.backup.neverExported')}
+            ? t('lite.backup.lastExported', { date: new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium' }).format(lastExported) })
+            : t('lite.backup.neverExported')}
         </span>
       </div>
 
@@ -102,14 +102,14 @@ const BackupPanel = () => {
       {storageText && (
         <p style={{ color: 'var(--ink-3)', fontSize: '13px', margin: 0 }}>
           {storageText}
-          {storage.usageBytes != null && ` ${t('demo.backup.storageUsed', { used: (storage.usageBytes / 1_000_000).toFixed(1) })}`}
+          {storage.usageBytes != null && ` ${t('lite.backup.storageUsed', { used: (storage.usageBytes / 1_000_000).toFixed(1) })}`}
           {storage.supported && !storage.persisted && (
             <>
               {' '}
-              <button type="button" className="btn btn-sm" onClick={keepMyData}>{t('demo.backup.persist')}</button>
+              <button type="button" className="btn btn-sm" onClick={keepMyData}>{t('lite.backup.persist')}</button>
             </>
           )}
-          {persistRefused && <> {t('demo.backup.persistDenied')}</>}
+          {persistRefused && <> {t('lite.backup.persistDenied')}</>}
         </p>
       )}
     </section>

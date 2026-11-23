@@ -9,7 +9,7 @@ The Partsible MCP server provides you with tools to help users optimize cutting 
 ### Basic Workflow
 
 1. **Start with examples** - Use `get_cutting_example` to show users the format
-2. **Use demo payloads** - Try `optimize_demo` for quick demonstrations  
+2. **Use demo payloads** - Try `optimize_sample` for quick demonstrations  
 3. **Run optimizations** - Use `optimize_cutting` for user-specific problems
 4. **Handle complexity** - Use async mode for large/complex optimizations
 
@@ -27,7 +27,7 @@ Assistant: Let me show you how this works with an example...
 ```
 User: "Can you show me how this optimization works?"
 Assistant: I'll run a demo optimization for you...
-→ Call optimize_demo({"example": "kitchen_cabinets"})
+→ Call optimize_sample({"example": "kitchen_cabinets"})
 → Explain the results and what they mean
 ```
 
@@ -148,7 +148,7 @@ optimize_cutting({
 ### Scenario 1: Kitchen Cabinet Project
 ```
 User: "I'm building kitchen cabinets and need these pieces..."
-→ Use optimize_demo({"example": "kitchen_cabinets"}) to show similar project
+→ Use optimize_sample({"example": "kitchen_cabinets"}) to show similar project
 → Then adapt with user's specific measurements
 ```
 
@@ -162,7 +162,7 @@ User: "I have 300cm boards and need various pieces for furniture"
 ### Scenario 3: Workshop Storage
 ```
 User: "Quick optimization for some workshop shelving"
-→ Use optimize_demo({"example": "custom_project"}) 
+→ Use optimize_sample({"example": "custom_project"}) 
 → Fast synchronous optimization is fine
 ```
 

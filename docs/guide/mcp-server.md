@@ -10,8 +10,8 @@ the optimizer in natural language, instead of you filling in the form.
 | --- | --- |
 | `optimize_cutting` | Run a real optimization from parts and stock lengths you describe. |
 | `search_products` | Search the instance's product catalogue by name, grade or size, and get product ids with their standard stock lengths. |
-| `optimize_demo` | Run a pre-configured demo project, for a quick test. |
-| `get_demo_payloads` | List the available demo payloads. |
+| `optimize_sample` | Run a pre-configured demo project, for a quick test. |
+| `get_sample_payloads` | List the available demo payloads. |
 | `get_cutting_example` | Show the request format the API expects. |
 
 An assistant with this server connected can turn something like *"I need 4

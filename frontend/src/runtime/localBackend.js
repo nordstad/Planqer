@@ -1,4 +1,4 @@
-// The demo's whole backend in the browser: the solver worker plus the local
+// Lite's whole backend in the browser: the solver worker plus the local
 // store. api.js in static mode reaches it through the local transport.
 
 import { version as appVersion } from "../../package.json";

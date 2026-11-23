@@ -620,7 +620,7 @@ const TileOptimizer = () => {
             </div>
             {jointWrong && <p className="text-danger text-[12.5px] font-semibold" style={{ marginTop: '10px' }}>{inputErrors.jointWidth || inputErrors.perimeterGap}</p>}
             {isStaticMode() && isHeavyTileJob(bondPattern, surfaceWidth, surfaceHeight) && (
-              <p className="synthetic" role="note" style={{ marginTop: '6px', color: 'var(--accent)' }}>{t('demo.solver.heavyTile')}</p>
+              <p className="synthetic" role="note" style={{ marginTop: '6px', color: 'var(--accent)' }}>{t('lite.solver.heavyTile')}</p>
             )}
           </SectionCard>
 

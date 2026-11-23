@@ -65,18 +65,18 @@ pattern-matched cuts: [Wallpaper documentation](docs/guide/wallpaper.md).
 
 ## Try it in your browser
 
-**[Open the Partsible demo](https://partsible.com/)** to try it
-with nothing to install and no account. It is the light version: it runs
-entirely in your browser, saves projects only in that browser, and has no
-accounts, REST API or MCP server. See
-[demo or full version](https://docs.partsible.com/demo-vs-full/).
-Running your own server (below) is the full version.
+**[Open Partsible Lite](https://partsible.com/)** to try it
+with nothing to install and no account. It runs entirely in your browser,
+saves projects only in that browser, and has no accounts, REST API or MCP
+server. See
+[Lite or self-hosted](https://docs.partsible.com/lite-vs-self-hosted/).
+Running your own server (below) is the self-hosted version.
 
 ## Quick Start
 
 Partsible runs with Docker Compose. The recommended route pulls the published
 release images, so there is nothing to build. Just want a look first? Use the
-[browser demo](https://partsible.com/) above, with nothing to
+[Partsible Lite](https://partsible.com/) above, with nothing to
 install.
 
 **Before you start:** install [Docker Desktop](https://docs.docker.com/get-docker/)

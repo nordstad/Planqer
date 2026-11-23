@@ -24,7 +24,7 @@
     "test:parity": "vitest run --config vitest.parity.config.mjs",
     "test:runtime-browser": "playwright test --config playwright.runtime.config.js",
     "test:analytics": "playwright test --config playwright.analytics.config.js",
-    "test:demo": "playwright test --config playwright.demo.config.js",
+    "test:lite": "playwright test --config playwright.lite.config.js",
     "dev": "vite",
     "test:e2e": "playwright test"
   },

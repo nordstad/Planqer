@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
-import { FULL_VERSION_URL, PRIVACY_URL } from '../../utils/mode';
+import { SELF_HOSTED_URL, PRIVACY_URL } from '../../utils/mode';
 import { analyticsState, setAnalyticsEnabled, startAnalytics, track } from '../../utils/analytics';
 import { version as appVersion } from '../../../package.json';
 
-const BANNER_DISMISSED_KEY = 'partsible.demo.bannerDismissed';
+const BANNER_DISMISSED_KEY = 'partsible.lite.bannerDismissed';
 const DOCS_URL = 'https://docs.partsible.com/';
 const SOURCE_URL = 'https://github.com/nordstad/Partsible';
 
-// Storage can be blocked (private modes, strict settings); the demo must still
+// Storage can be blocked (private modes, strict settings); Lite must still
 // work, it just forgets what it was told.
 const read = (storage, key) => {
   try { return storage.getItem(key); } catch { return null; }
@@ -32,23 +32,23 @@ const Banner = ({ onDismiss }) => {
   const { t } = useTranslation();
   return (
     <section
-      aria-label={t('demo.banner.region')}
+      aria-label={t('lite.banner.region')}
       style={{
         display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: '6px 14px',
         padding: '6px 16px', background: 'var(--accent-bg)', color: 'var(--ink)',
         borderBottom: '1px solid var(--rule)', fontSize: '13px',
       }}
     >
-      <span>{t('demo.banner.message')}</span>
-      <a href={FULL_VERSION_URL} target="_blank" rel="noopener noreferrer" onClick={countCta('banner')}>{t('demo.banner.cta')}</a>
-      <button type="button" className="btn btn-sm" onClick={onDismiss}>{t('demo.banner.dismiss')}</button>
+      <span>{t('lite.banner.message')}</span>
+      <a href={SELF_HOSTED_URL} target="_blank" rel="noopener noreferrer" onClick={countCta('banner')}>{t('lite.banner.cta')}</a>
+      <button type="button" className="btn btn-sm" onClick={onDismiss}>{t('lite.banner.dismiss')}</button>
     </section>
   );
 };
 
-/* Everything the demo adds around the app: the notice above it and the footer
+/* Everything Lite adds around the app: the notice above it and the footer
    below it. */
-const DemoShell = ({ children }) => {
+const LiteShell = ({ children }) => {
   const { t } = useTranslation();
   const [bannerOpen, setBannerOpen] = useState(() => !read(sessionStorage, BANNER_DISMISSED_KEY));
   const [analytics, setAnalytics] = useState(analyticsState);
@@ -82,21 +82,21 @@ const DemoShell = ({ children }) => {
           padding: '16px', borderTop: '1px solid var(--rule)', color: 'var(--ink-3)', fontSize: '13px',
         }}
       >
-        <span>{t('demo.footer.label')} · v{appVersion}</span>
-        <a href={FULL_VERSION_URL} target="_blank" rel="noopener noreferrer" onClick={countCta('footer')}>{t('demo.footer.full')}</a>
-        <a href={DOCS_URL} target="_blank" rel="noopener noreferrer">{t('demo.footer.docs')}</a>
-        <a href={SOURCE_URL} target="_blank" rel="noopener noreferrer">{t('demo.footer.source')}</a>
-        <a href={PRIVACY_URL} target="_blank" rel="noopener noreferrer">{t('demo.analytics.privacy')}</a>
+        <span>{t('lite.footer.label')} · v{appVersion}</span>
+        <a href={SELF_HOSTED_URL} target="_blank" rel="noopener noreferrer" onClick={countCta('footer')}>{t('lite.footer.full')}</a>
+        <a href={DOCS_URL} target="_blank" rel="noopener noreferrer">{t('lite.footer.docs')}</a>
+        <a href={SOURCE_URL} target="_blank" rel="noopener noreferrer">{t('lite.footer.source')}</a>
+        <a href={PRIVACY_URL} target="_blank" rel="noopener noreferrer">{t('lite.analytics.privacy')}</a>
         {analytics !== 'unavailable' && (
           <span>
-            {analytics === 'on' && t('demo.analytics.on')}
-            {analytics === 'off' && t('demo.analytics.offFooter')}
-            {analytics === 'browser' && t('demo.analytics.browser')}
+            {analytics === 'on' && t('lite.analytics.on')}
+            {analytics === 'off' && t('lite.analytics.offFooter')}
+            {analytics === 'browser' && t('lite.analytics.browser')}
             {analytics !== 'browser' && (
               <>
                 {' · '}
                 <button type="button" className="app-nav-link" style={{ background: 'none', border: 0, font: 'inherit', cursor: 'pointer' }} onClick={() => switchAnalytics(analytics !== 'on')}>
-                  {analytics === 'on' ? t('demo.analytics.turnOff') : t('demo.analytics.turnOn')}
+                  {analytics === 'on' ? t('lite.analytics.turnOff') : t('lite.analytics.turnOn')}
                 </button>
               </>
             )}
@@ -107,4 +107,4 @@ const DemoShell = ({ children }) => {
   );
 };
 
-export default DemoShell;
+export default LiteShell;

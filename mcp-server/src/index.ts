@@ -103,9 +103,9 @@ const retryDelayMs = (attemptNumber: number): number => {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const TOOLS_CONTRACT_PATH = path.resolve(__dirname, '..', 'schemas', 'mcp-tools.json');
-const DEMO_PAYLOADS_PATH = path.resolve(__dirname, '..', 'schemas', 'demo-payloads.json');
+const SAMPLE_PAYLOADS_PATH = path.resolve(__dirname, '..', 'schemas', 'sample-payloads.json');
 
-type DemoPayload = {
+type SamplePayload = {
   parts: Record<string, number>;
   available_board_lengths: number[];
   saw_blade_width: number;
@@ -113,7 +113,7 @@ type DemoPayload = {
   product?: string;
 };
 
-type DemoPayloadMap = Record<string, DemoPayload>;
+type SamplePayloadMap = Record<string, SamplePayload>;
 
 const loadToolsContract = (): Tool[] => {
   const parsed = JSON.parse(readFileSync(TOOLS_CONTRACT_PATH, 'utf8'));
@@ -123,12 +123,12 @@ const loadToolsContract = (): Tool[] => {
   return parsed as Tool[];
 };
 
-const loadDemoPayloads = (): DemoPayloadMap => {
-  const parsed = JSON.parse(readFileSync(DEMO_PAYLOADS_PATH, 'utf8'));
+const loadSamplePayloads = (): SamplePayloadMap => {
+  const parsed = JSON.parse(readFileSync(SAMPLE_PAYLOADS_PATH, 'utf8'));
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
     throw new Error('Demo payloads contract must be an object');
   }
-  return parsed as DemoPayloadMap;
+  return parsed as SamplePayloadMap;
 };
 
 // Validation schemas
@@ -213,7 +213,7 @@ const AsyncOptimizeCuttingInputSchema = OptimizeCuttingInputSchema.extend({
   use_async: z.boolean().optional(),
 });
 
-const DEMO_PAYLOADS: DemoPayloadMap = loadDemoPayloads();
+const SAMPLE_PAYLOADS: SamplePayloadMap = loadSamplePayloads();
 
 const TOOLS: Tool[] = loadToolsContract();
 
@@ -257,10 +257,10 @@ class PartsibleServer {
           return await this.handleOptimizeCutting(request.params.arguments || {}, requestId);
         case 'search_products':
           return await this.handleSearchProducts(request.params.arguments || {}, requestId);
-        case 'optimize_demo':
-          return await this.handleOptimizeDemo(request.params.arguments || {}, requestId);
-        case 'get_demo_payloads':
-          return this.handleGetDemoPayloads(request.params.arguments || {});
+        case 'optimize_sample':
+          return await this.handleOptimizeSample(request.params.arguments || {}, requestId);
+        case 'get_sample_payloads':
+          return this.handleGetSamplePayloads(request.params.arguments || {});
         case 'get_cutting_example':
           return this.handleGetExample();
         default:
@@ -574,17 +574,17 @@ class PartsibleServer {
     }
   }
 
-  private async handleOptimizeDemo(args: any, requestId?: string): Promise<CallToolResult> {
+  private async handleOptimizeSample(args: any, requestId?: string): Promise<CallToolResult> {
     const rid = requestId || makeRequestId();
     const example = args.example;
     const useAsync = args.use_async || false;
     
-    if (!example || !(example in DEMO_PAYLOADS)) {
+    if (!example || !(example in SAMPLE_PAYLOADS)) {
       return {
         content: [
           {
             type: 'text',
-            text: `❌ Invalid or missing example. Available options: ${Object.keys(DEMO_PAYLOADS).join(', ')}`,
+            text: `❌ Invalid or missing example. Available options: ${Object.keys(SAMPLE_PAYLOADS).join(', ')}`,
           },
         ],
         isError: true,
@@ -592,31 +592,31 @@ class PartsibleServer {
     }
 
     // Get the demo payload and add async flag if specified
-    const payload = { ...DEMO_PAYLOADS[example as keyof typeof DEMO_PAYLOADS] };
+    const payload = { ...SAMPLE_PAYLOADS[example as keyof typeof SAMPLE_PAYLOADS] };
     if (useAsync) {
       (payload as any).use_async = true;
     }
 
-    log('DEBUG', 'demo_selected', { requestId: rid, example, async: Boolean(useAsync) });
+    log('DEBUG', 'sample_selected', { requestId: rid, example, async: Boolean(useAsync) });
 
     // Run the optimization
     const result = await this.handleOptimizeCutting(payload, rid);
 
     // Prepend demo information
     if (result.content && result.content[0] && 'text' in result.content[0]) {
-      const demoInfo = `🎯 **Optimizing with "${example.replace('_', ' ')}" demo payload:**\n\n`;
-      result.content[0].text = demoInfo + result.content[0].text;
+      const sampleInfo = `🎯 **Optimizing with "${example.replace('_', ' ')}" demo payload:**\n\n`;
+      result.content[0].text = sampleInfo + result.content[0].text;
     }
 
     return result;
   }
 
-  private handleGetDemoPayloads(args: any): CallToolResult {
+  private handleGetSamplePayloads(args: any): CallToolResult {
     const example = args.example || 'all';
 
     if (example === 'all') {
       // Return all demo payloads
-      const formattedPayloads = Object.entries(DEMO_PAYLOADS).map(([name, payload]) => 
+      const formattedPayloads = Object.entries(SAMPLE_PAYLOADS).map(([name, payload]) => 
         `**${name.replace('_', ' ').charAt(0).toUpperCase() + name.replace('_', ' ').slice(1)}:**\n\`\`\`json\n${JSON.stringify(payload, null, 2)}\n\`\`\``
       );
 
@@ -630,14 +630,14 @@ class PartsibleServer {
                  `**How to use:**\n` +
                  `1. Copy any of the JSON payloads above\n` +
                  `2. Use the \`optimize_cutting\` tool with the copied payload\n` +
-                 `3. Or call \`optimize_demo\` with a specific example name\n\n` +
-                 `**Available examples:** ${Object.keys(DEMO_PAYLOADS).join(', ')}`,
+                 `3. Or call \`optimize_sample\` with a specific example name\n\n` +
+                 `**Available examples:** ${Object.keys(SAMPLE_PAYLOADS).join(', ')}`,
           },
         ],
       };
-    } else if (example in DEMO_PAYLOADS) {
+    } else if (example in SAMPLE_PAYLOADS) {
       // Return specific demo payload
-      const payload = DEMO_PAYLOADS[example as keyof typeof DEMO_PAYLOADS];
+      const payload = SAMPLE_PAYLOADS[example as keyof typeof SAMPLE_PAYLOADS];
       return {
         content: [
           {
@@ -659,7 +659,7 @@ class PartsibleServer {
         content: [
           {
             type: 'text',
-            text: `❌ Unknown demo example: '${example}'. Available options: ${Object.keys(DEMO_PAYLOADS).join(', ')}, all`,
+            text: `❌ Unknown demo example: '${example}'. Available options: ${Object.keys(SAMPLE_PAYLOADS).join(', ')}, all`,
           },
         ],
         isError: true,
@@ -668,7 +668,7 @@ class PartsibleServer {
   }
 
   private handleGetExample(): CallToolResult {
-    const example = DEMO_PAYLOADS.kitchen_cabinets;
+    const example = SAMPLE_PAYLOADS.kitchen_cabinets;
 
     return {
       content: [

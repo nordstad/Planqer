@@ -42,7 +42,9 @@ PARTS_PROCESSED = Histogram(
 )
 
 BOARDS_USED = Histogram(
-    "partsible_boards_used_total", "Number of boards used in optimization", ["algorithm"]
+    "partsible_boards_used_total",
+    "Number of boards used in optimization",
+    ["algorithm"],
 )
 
 WASTE_PERCENTAGE = Histogram(

@@ -37,7 +37,7 @@ import ProductPicker, { CatalogueChoice } from './ProductPicker';
 import FormField, { SectionCard, SectionStatus } from './FormField';
 import AuthModal from './auth/AuthModal';
 import { useAuth } from '../contexts/AuthContext';
-import { demoContext } from '../utils/mode';
+import { liteContext } from '../utils/mode';
 import { useDebounce } from '../hooks/useDebounce';
 import { ArrowLeft, ArrowRight, Tick, Strike, CubeIcon } from './icons';
 import {
@@ -732,7 +732,7 @@ const ModelCutlistOptimizer = () => {
                    <h1 className="step-h1">{allDone ? t('modelUi.cutlistsSaved') : t('modelUi.planAndSave')}</h1>
                   <p className="step-lede">
                     {allDone
-                       ? t('modelUi.cutlistsSavedCount', { saved: savedCount, total: selectedGroups.length, ...demoContext() })
+                       ? t('modelUi.cutlistsSavedCount', { saved: savedCount, total: selectedGroups.length, ...liteContext() })
                        : t('modelUi.batchPlanIntro')}
                   </p>
                 </div>

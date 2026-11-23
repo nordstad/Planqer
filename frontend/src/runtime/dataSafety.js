@@ -1,7 +1,7 @@
-// What the demo does about the risk that browser data disappears: ask the
+// What Lite does about the risk that browser data disappears: ask the
 // browser to keep it, say how things stand, and remind the user to export.
 
-const LAST_EXPORTED_KEY = "partsible.demo.lastExported";
+const LAST_EXPORTED_KEY = "partsible.lite.lastExported";
 const REMINDER_DAYS = 30;
 
 export async function getStorageStatus(storage = globalThis.navigator?.storage) {

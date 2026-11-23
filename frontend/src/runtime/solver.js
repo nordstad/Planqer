@@ -26,11 +26,11 @@ function solverClient() {
 // own English messages are replaced by translated ones.
 function readable(error) {
   const t = (key, values) => i18n.t(key, values);
-  if (error instanceof SolverCancelledError) return new Error(t("demo.solver.cancelled"), { cause: error });
+  if (error instanceof SolverCancelledError) return new Error(t("lite.solver.cancelled"), { cause: error });
   if (error instanceof SolverTimeoutError) {
-    return new Error(t("demo.solver.timedOut", { seconds: error.timeoutMs / 1000 }), { cause: error });
+    return new Error(t("lite.solver.timedOut", { seconds: error.timeoutMs / 1000 }), { cause: error });
   }
-  return new Error(t("demo.solver.failed"), { cause: error });
+  return new Error(t("lite.solver.failed"), { cause: error });
 }
 
 const TOOL = {
@@ -81,7 +81,7 @@ export async function solverCall(op, payload, data, options) {
       reason: "unsupported",
       ...(TOOL[op] ? { tool: TOOL[op] } : {}),
     });
-    throw new Error(i18n.t("demo.solver.unsupported"));
+    throw new Error(i18n.t("lite.solver.unsupported"));
   }
   solverStatus.start();
   try {

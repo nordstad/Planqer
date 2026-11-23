@@ -1,7 +1,7 @@
-// The built demo in a real browser, served like GitHub Pages: first visit, a
+// Lite in a real browser, served like Cloudflare Pages: first visit, a
 // real solve in the Pyodide worker, saving, a reload, a deep link, a backup.
 // It also checks the two things only a real deploy shows: that nothing is
-// fetched from outside the demo's own origin, and that no request 404s.
+// fetched from outside Lite's own origin, and that no request 404s.
 
 import { expect, test } from "@playwright/test";
 
@@ -20,13 +20,13 @@ const watchRequests = (page) => {
   return seen;
 };
 
-test("a first visit shows the demo without interrupting it", async ({ page }) => {
+test("a first visit shows Lite without interrupting it", async ({ page }) => {
   await page.goto(APP);
 
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await expect(page.getByRole("region", { name: "Demo notice" })).toBeVisible();
-  await expect(page.getByRole("contentinfo")).toContainText(/demo · light version/i);
-  await expect(page.getByRole("button", { name: "About this demo" })).toHaveCount(0);
+  await expect(page.getByRole("region", { name: "Lite notice" })).toBeVisible();
+  await expect(page.getByRole("contentinfo")).toContainText(/Partsible Lite/i);
+  await expect(page.getByRole("button", { name: "About Lite" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Admin" })).toHaveCount(0);
 });
 
@@ -47,16 +47,16 @@ test("a wallpaper plan is solved in the browser, saved, and can be modified from
   await expect(page.getByText(/Buy \d+ rolls/)).toBeVisible();
 
   await page.getByRole("button", { name: /Save\s*Keep this project/ }).click();
-  await page.getByLabel("Plan name").fill("Demo wallpaper");
+  await page.getByLabel("Plan name").fill("Lite wallpaper");
   await page.getByRole("button", { name: "Save plan", exact: true }).click();
   await expect(page.getByRole("heading", { name: /plan saved/i })).toBeVisible();
 
-  // Stays inside the demo: a plain /dashboard would leave the hash router.
+  // Stays inside Lite: a plain /dashboard would leave the hash router.
   await page.getByRole("button", { name: /open your dashboard/i }).click();
   await expect(page).toHaveURL(/#\/dashboard$/);
   // Saving files the plan in the default project.
   await page.getByRole("link", { name: /My plans/ }).click();
-  const savedPlan = page.locator(".plan-item").filter({ hasText: "Demo wallpaper" });
+  const savedPlan = page.locator(".plan-item").filter({ hasText: "Lite wallpaper" });
   await expect(savedPlan).toBeVisible();
 
   await savedPlan.locator(".plan-item-acts .btn-primary").click();
@@ -95,7 +95,7 @@ test("a plan is solved in the browser, saved, and still there after a reload", a
   await expect(page.getByRole("heading", { name: /your cutting plan/i })).toBeVisible({ timeout: 120000 });
 
   await page.getByRole("button", { name: /name and save/i }).click();
-  await page.locator("#plan-name").fill("Demo smoke plan");
+  await page.locator("#plan-name").fill("Lite smoke plan");
   await page.getByRole("button", { name: /^save plan$/i }).click();
   await expect(page.getByRole("heading", { name: /plan saved/i })).toBeVisible();
   await expect(page.getByText(/saved in this browser on this device only/i)).toBeVisible();
@@ -104,8 +104,8 @@ test("a plan is solved in the browser, saved, and still there after a reload", a
   await page.getByRole("link", { name: "My projects" }).click();
   await expect(page).toHaveURL(/#\/dashboard$/);
   await page.getByRole("link", { name: /My plans/ }).click();
-  await expect(page.getByText("Demo smoke plan")).toBeVisible();
-  const savedPlan = page.locator(".plan-item").filter({ hasText: "Demo smoke plan" });
+  await expect(page.getByText("Lite smoke plan")).toBeVisible();
+  const savedPlan = page.locator(".plan-item").filter({ hasText: "Lite smoke plan" });
   await savedPlan.getByRole("button", { name: "More actions" }).click();
   await savedPlan.getByRole("menuitem", { name: "Modify", exact: true }).click();
   await expect(page.getByLabel("Name, item 1")).toHaveValue("Front rail");
@@ -165,7 +165,7 @@ test("a backup of what was saved can be downloaded", async ({ page }) => {
 
   expect(file.suggestedFilename()).toMatch(/^partsible-backup-\d{4}-\d{2}-\d{2}\.json$/);
   const backup = JSON.parse(await (await import("node:fs/promises")).readFile(await file.path(), "utf-8"));
-  expect(backup).toMatchObject({ app: "partsible-demo", format: 1 });
+  expect(backup).toMatchObject({ app: "partsible-lite", format: 1 });
   expect(backup.stores.projects.map((project) => project.name)).toContain("Backed up plan");
   await expect(page.getByRole("note").filter({ hasText: /no recent backup/i })).toHaveCount(0);
 });

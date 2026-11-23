@@ -1,27 +1,27 @@
-# Demo or full version
+# Lite or self-hosted
 
-Partsible comes in two forms. The [demo](https://partsible.com/)
-runs in your browser with nothing to install. The full version is the Docker
+Partsible comes in two forms. [Partsible Lite](https://partsible.com/)
+runs in your browser with nothing to install. The self-hosted version is the Docker
 Compose deployment on your own server (see [Getting started](getting-started.md)).
 Both run the same calculation code, so the results are the same.
 
-## The browser demo
+## Partsible Lite
 
-The demo is a static site served by GitHub Pages. The browser loads the React
+Lite is a static site served by Cloudflare Pages. The browser loads the React
 interface, Pyodide and the bundled Python code, then runs the calculation in a
 Web Worker. Projects and settings stay in this browser's IndexedDB; no backend
 server is involved.
 
-![Architecture of the browser demo: GitHub Pages serves static files while the browser runs the Partsible calculation locally.](assets/diagrams/demo-version.png)
+![Architecture of Partsible Lite: Cloudflare Pages serves static files while the browser runs the Partsible calculation locally.](assets/diagrams/lite-version.png)
 
-## The full version
+## The self-hosted version
 
-The full version runs as a Docker Compose stack on your own server. The browser
+The self-hosted version runs as a Docker Compose stack on your own server. The browser
 talks to the frontend and FastAPI backend over HTTP; the backend runs the native
 Python calculation engine and stores accounts, projects, settings and backups.
 The MCP server is optional.
 
-![Architecture of the full version: Docker Compose runs the frontend, backend and optional MCP server with server-side storage.](assets/diagrams/full-version.png)
+![Architecture of the self-hosted version: Docker Compose runs the frontend, backend and optional MCP server with server-side storage.](assets/diagrams/full-version.png)
 
 ## What is the same
 
@@ -32,7 +32,7 @@ output, catalogue search, and STEP and STL cutlists.
 
 <!-- markdownlint-disable MD013 -->
 
-| Area | Demo (browser) | Full version (Docker) |
+| Area | Lite (browser) | Self-hosted (Docker) |
 | --- | --- | --- |
 | Accounts, login and administration | Not available. One user, no sign-in | Local accounts on your server |
 | Where projects are stored | Only in this browser on this device | On your server |
@@ -52,12 +52,12 @@ output, catalogue search, and STEP and STL cutlists.
 
 ## Moving between them
 
-A demo backup cannot be imported into a self-hosted server, because the two
-store projects differently. To move over, open each saved project in the demo
+A Lite backup cannot be imported into a self-hosted server, because the two
+store projects differently. To move over, open each saved project in Lite
 and save it again on your server.
 
 ## Which should I use?
 
-Use the demo to try Partsible or for a one-off plan. Use the full version if you
+Use Lite to try Partsible or for a one-off plan. Use the self-hosted version if you
 want your projects kept safely on a server, on more than one device, or if you
 want the API or AI assistants.

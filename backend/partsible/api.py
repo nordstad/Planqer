@@ -17,6 +17,7 @@ from alembic import command as alembic_command
 from partsible import __version__
 from partsible.async_processing import start_periodic_cleanup
 from partsible.auth.single_user import check_single_user_bind
+from partsible.database_url import legacy_database_warning, resolve_database_url
 from partsible.errors import PartsibleError
 from partsible.helpers import load_config
 from partsible.logging_config import configure_structured_logging, get_logger
@@ -45,9 +46,9 @@ from partsible.schemas import (  # noqa: F401
     BoardCost,
     CostAnalysis,
     CutListItemResponse,
-    PlacedTileInfo,
     PartsibleRequest,
     PartsibleResponse,
+    PlacedTileInfo,
     SheetLayoutInfo,
     SheetOptimizationRequest,
     SheetOptimizationResponse,
@@ -102,6 +103,8 @@ def _run_migrations():
 @asynccontextmanager
 async def lifespan(_: Starlette):
     check_single_user_bind()
+    if warning := legacy_database_warning(resolve_database_url()):
+        logger.warning(warning)
     await asyncio.to_thread(_run_migrations)
     start_periodic_cleanup()
     yield

@@ -140,7 +140,7 @@ it('shows the tile material cost using the configured VAT basis', async () => {
   expect(await screen.findByText('250.00 SEK · including VAT (25%)')).toBeInTheDocument();
 });
 
-describe('the demo warning for large diagonal layouts', () => {
+describe('Lite warning for large diagonal layouts', () => {
   const renderTile = () => render(
     <MemoryRouter>
       <LanguageProvider>
@@ -157,14 +157,14 @@ describe('the demo warning for large diagonal layouts', () => {
 
   afterEach(() => vi.unstubAllEnvs());
 
-  it('warns in the demo', async () => {
+  it('warns in Lite', async () => {
     vi.stubEnv('VITE_PARTSIBLE_MODE', 'static');
     renderTile();
     makeBigDiagonal();
     expect(await screen.findByText(/can take ten seconds or more/i)).toBeInTheDocument();
   });
 
-  it('says nothing in the full version', async () => {
+  it('says nothing in the self-hosted version', async () => {
     renderTile();
     makeBigDiagonal();
     await waitFor(() => expect(document.getElementById('tile-bond').value).toBe('diagonal'));

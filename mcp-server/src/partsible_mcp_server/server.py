@@ -51,8 +51,8 @@ REDACT_FIELDS = {
 }
 
 TOOLS_CONTRACT_PATH = Path(__file__).resolve().parents[2] / "schemas" / "mcp-tools.json"
-DEMO_PAYLOADS_PATH = (
-    Path(__file__).resolve().parents[2] / "schemas" / "demo-payloads.json"
+SAMPLE_PAYLOADS_PATH = (
+    Path(__file__).resolve().parents[2] / "schemas" / "sample-payloads.json"
 )
 
 
@@ -69,8 +69,8 @@ def load_tools_contract() -> list[dict[str, Any]]:
 TOOLS_CONTRACT = load_tools_contract()
 
 
-def load_demo_payloads() -> dict[str, dict[str, Any]]:
-    with DEMO_PAYLOADS_PATH.open("r", encoding="utf-8") as f:
+def load_sample_payloads() -> dict[str, dict[str, Any]]:
+    with SAMPLE_PAYLOADS_PATH.open("r", encoding="utf-8") as f:
         loaded = json.load(f)
 
     if not isinstance(loaded, dict):
@@ -79,7 +79,7 @@ def load_demo_payloads() -> dict[str, dict[str, Any]]:
     return loaded
 
 
-DEMO_PAYLOADS = load_demo_payloads()
+SAMPLE_PAYLOADS = load_sample_payloads()
 
 
 def build_tools_from_contract() -> list[types.Tool]:
@@ -310,12 +310,12 @@ async def handle_call_tool(
         result = await handle_search_products(arguments, request_id=request_id)
         logger.info("event=mcp_call_end request_id=%s tool=%s", request_id, name)
         return types.CallToolResult(content=result, isError=_is_error_content(result))
-    elif name == "optimize_demo":
-        result = await handle_optimize_demo(arguments, request_id=request_id)
+    elif name == "optimize_sample":
+        result = await handle_optimize_sample(arguments, request_id=request_id)
         logger.info("event=mcp_call_end request_id=%s tool=%s", request_id, name)
         return types.CallToolResult(content=result, isError=_is_error_content(result))
-    elif name == "get_demo_payloads":
-        result = handle_get_demo_payloads(arguments)
+    elif name == "get_sample_payloads":
+        result = handle_get_sample_payloads(arguments)
         logger.info("event=mcp_call_end request_id=%s tool=%s", request_id, name)
         return types.CallToolResult(content=result, isError=_is_error_content(result))
     elif name == "get_cutting_example":
@@ -356,14 +356,20 @@ async def handle_optimize_cutting(
         saw_blade_width = arguments["saw_blade_width"]
         if not isinstance(parts, dict) or not parts:
             raise ValueError("parts must be a non-empty object")
-        if any(not isinstance(quantity, int) or quantity < 1 for quantity in parts.values()):
+        if any(
+            not isinstance(quantity, int) or quantity < 1 for quantity in parts.values()
+        ):
             raise ValueError("parts quantities must be positive integers")
         if (
             not isinstance(boards, list)
             or not boards
-            or any(not isinstance(length, (int, float)) or length < 1 for length in boards)
+            or any(
+                not isinstance(length, (int, float)) or length < 1 for length in boards
+            )
         ):
-            raise ValueError("available_board_lengths must contain values of at least 1")
+            raise ValueError(
+                "available_board_lengths must contain values of at least 1"
+            )
         if not isinstance(saw_blade_width, (int, float)) or saw_blade_width <= 0:
             raise ValueError("saw_blade_width must be greater than 0")
 
@@ -585,7 +591,11 @@ async def handle_search_products(
                 raise ValueError("kind must be 'board' or 'sheet'")
             params["kind"] = kind
         limit = arguments.get("limit", SEARCH_DEFAULT_LIMIT)
-        if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= 20:
+        if (
+            isinstance(limit, bool)
+            or not isinstance(limit, int)
+            or not 1 <= limit <= 20
+        ):
             raise ValueError("limit must be a whole number from 1 to 20")
         params["limit"] = limit
         language = arguments.get("language", "en")
@@ -631,7 +641,7 @@ async def handle_search_products(
         return [types.TextContent(type="text", text=f"❌ Unexpected error: {e!s}")]
 
 
-async def handle_optimize_demo(
+async def handle_optimize_sample(
     arguments: dict[str, Any], request_id: str | None = None
 ) -> list[types.TextContent]:
     """
@@ -641,21 +651,21 @@ async def handle_optimize_demo(
     example_choice = arguments.get("example")
     use_async = arguments.get("use_async", False)
 
-    if not example_choice or example_choice not in DEMO_PAYLOADS:
+    if not example_choice or example_choice not in SAMPLE_PAYLOADS:
         return [
             types.TextContent(
                 type="text",
-                text=f"❌ Invalid or missing example. Available options: {', '.join(DEMO_PAYLOADS.keys())}",
+                text=f"❌ Invalid or missing example. Available options: {', '.join(SAMPLE_PAYLOADS.keys())}",
             )
         ]
 
     # Get the demo payload and add async flag if specified
-    payload = DEMO_PAYLOADS[example_choice].copy()
+    payload = SAMPLE_PAYLOADS[example_choice].copy()
     if use_async:
         payload["use_async"] = True
 
     logger.debug(
-        "event=demo_selected request_id=%s example=%s async=%s",
+        "event=sample_selected request_id=%s example=%s async=%s",
         rid,
         example_choice,
         bool(use_async),
@@ -666,8 +676,8 @@ async def handle_optimize_demo(
 
     # Prepend info about which demo was used
     if result and result[0].text:
-        demo_info = f'🎯 **Optimizing with "{example_choice.replace("_", " ")}" demo payload:**\n\n'
-        result[0].text = demo_info + result[0].text
+        sample_info = f'🎯 **Optimizing with "{example_choice.replace("_", " ")}" demo payload:**\n\n'
+        result[0].text = sample_info + result[0].text
 
     return result
 
@@ -676,7 +686,7 @@ def handle_get_example() -> list[types.TextContent]:
     """
     Return an example of how to use the cutting optimization tool.
     """
-    example = DEMO_PAYLOADS["kitchen_cabinets"]
+    example = SAMPLE_PAYLOADS["kitchen_cabinets"]
 
     return [
         types.TextContent(
@@ -713,7 +723,7 @@ optimize_cutting({json.dumps(example)})
     ]
 
 
-def handle_get_demo_payloads(arguments: dict[str, Any]) -> list[types.TextContent]:
+def handle_get_sample_payloads(arguments: dict[str, Any]) -> list[types.TextContent]:
     """
     Return pre-configured demo payloads for testing the cutting optimization API.
     """
@@ -722,7 +732,7 @@ def handle_get_demo_payloads(arguments: dict[str, Any]) -> list[types.TextConten
     if example_choice == "all":
         # Return all demo payloads
         formatted_payloads = []
-        for name, payload in DEMO_PAYLOADS.items():
+        for name, payload in SAMPLE_PAYLOADS.items():
             formatted_payloads.append(
                 f"**{name.replace('_', ' ').title()}:**\n```json\n{json.dumps(payload, indent=2)}\n```"
             )
@@ -739,15 +749,15 @@ Here are pre-configured demo payloads you can use to test the cutting optimizati
 **How to use:**
 1. Copy any of the JSON payloads above
 2. Use the `optimize_cutting` tool with the copied payload
-3. Or call `optimize_demo` with a specific example name
+3. Or call `optimize_sample` with a specific example name
 
-**Available examples:** {", ".join(DEMO_PAYLOADS.keys())}
+**Available examples:** {", ".join(SAMPLE_PAYLOADS.keys())}
 """,
             )
         ]
-    elif example_choice in DEMO_PAYLOADS:
+    elif example_choice in SAMPLE_PAYLOADS:
         # Return specific demo payload
-        payload = DEMO_PAYLOADS[example_choice]
+        payload = SAMPLE_PAYLOADS[example_choice]
         return [
             types.TextContent(
                 type="text",
@@ -773,7 +783,7 @@ Copy the JSON above and use it with the `optimize_cutting` tool to get an optimi
         return [
             types.TextContent(
                 type="text",
-                text=f"❌ Unknown demo example: '{example_choice}'. Available options: {', '.join(DEMO_PAYLOADS.keys())}, all",
+                text=f"❌ Unknown demo example: '{example_choice}'. Available options: {', '.join(SAMPLE_PAYLOADS.keys())}, all",
             )
         ]
 

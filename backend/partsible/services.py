@@ -216,7 +216,9 @@ def normalize_optimization_options(partsible_request: PartsibleRequest):
         if partsible_request.algorithm
         else get_algorithm_recommendation(partsible_request.parts)
     )
-    if partsible_request.cost_analysis and partsible_request.cost_analysis.get("enabled"):
+    if partsible_request.cost_analysis and partsible_request.cost_analysis.get(
+        "enabled"
+    ):
         analysis = partsible_request.cost_analysis
         costs = {
             float(length): {

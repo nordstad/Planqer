@@ -180,7 +180,9 @@ async def test_process_optimization_async_success(clean_task_manager):
     mock_response = MockResponse()
 
     # Mock the run_optimization function
-    with patch("partsible.async_processing.run_optimization", return_value=mock_response):
+    with patch(
+        "partsible.async_processing.run_optimization", return_value=mock_response
+    ):
         # Create task
         clean_task_manager.create_task(task_id)
 
@@ -292,7 +294,9 @@ async def test_algorithm_auto_selection(clean_task_manager):
 
     mock_response = MockResponse()
 
-    with patch("partsible.async_processing.run_optimization", return_value=mock_response):
+    with patch(
+        "partsible.async_processing.run_optimization", return_value=mock_response
+    ):
         # Create task
         clean_task_manager.create_task(task_id)
 

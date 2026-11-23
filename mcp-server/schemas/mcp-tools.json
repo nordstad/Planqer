@@ -101,7 +101,7 @@
         }
     },
     {
-        "name": "optimize_demo",
+        "name": "optimize_sample",
         "description": "Run cutting optimization with a pre-configured demo payload",
         "inputSchema": {
             "type": "object",
@@ -126,7 +126,7 @@
         }
     },
     {
-        "name": "get_demo_payloads",
+        "name": "get_sample_payloads",
         "description": "Get pre-configured demo payloads for testing the cutting optimization API",
         "inputSchema": {
             "type": "object",

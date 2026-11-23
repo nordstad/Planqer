@@ -102,7 +102,9 @@ async def create_cutting_plan(request: Request, partsible_request: PartsibleRequ
 @router.post("/async", summary="Start async optimization with progress tracking")
 @limiter.limit("5/minute")
 async def create_cutting_plan_async(
-    request: Request, partsible_request: PartsibleRequest, background_tasks: BackgroundTasks
+    request: Request,
+    partsible_request: PartsibleRequest,
+    background_tasks: BackgroundTasks,
 ):
     task_id = generate_task_id()
     algorithm, costs, currency, enabled, optimize_for = normalize_optimization_options(

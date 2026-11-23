@@ -254,7 +254,9 @@ async def test_process_uploaded_stl_success(mock_processor_class):
 
     # Verify processor was called correctly
     mock_processor_class.assert_called_once_with(units="mm", round_precision=1)
-    mock_processor.convert_to_partsible_parts.assert_called_once_with([mock_cutlist_item])
+    mock_processor.convert_to_partsible_parts.assert_called_once_with(
+        [mock_cutlist_item]
+    )
 
 
 class TestIntegration:

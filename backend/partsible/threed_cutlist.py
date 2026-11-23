@@ -252,7 +252,9 @@ class STLProcessor:
             raise
         except Exception as e:
             logger.error(f"STL processing failed: {e}")
-            raise PartsibleError(status_code=500, detail=f"STL processing failed: {e!s}")
+            raise PartsibleError(
+                status_code=500, detail=f"STL processing failed: {e!s}"
+            )
 
     def convert_to_partsible_parts(
         self, cutlist_items: list[CutListItem]

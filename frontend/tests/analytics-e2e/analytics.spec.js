@@ -1,4 +1,4 @@
-// What the demo really sends to Umami, in a real browser. The Umami script is
+// What Lite really sends to Umami, in a real browser. The Umami script is
 // replaced by a stand-in that behaves like the real tracker where it matters:
 // it calls the page's data-before-send hook and sends only what that returns.
 // So this tests our loading rules, our allow-list and our hook, not Umami.
@@ -64,7 +64,7 @@ test("counts the pageview and the tool, and nothing outside the allow-list", asy
 test("counts a click on the footer's full-version link", async ({ page }) => {
   const seen = await watchUmami(page);
   await page.goto(APP);
-  await page.getByRole("contentinfo").getByRole("link", { name: "Full version" }).click({ modifiers: [] });
+  await page.getByRole("contentinfo").getByRole("link", { name: "Self-hosted version" }).click({ modifiers: [] });
 
   await expect.poll(() => named(seen)).toContainEqual({ name: "docker_cta_clicked", data: { where: "footer" } });
 });

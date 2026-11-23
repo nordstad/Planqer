@@ -70,12 +70,12 @@ test("a rejected request fails with the endpoint's own message", async ({ page }
   expect(message).toBe("No board is long enough for the largest part.");
 });
 
-test("a server-only feature says it is not available in the demo", async ({ page }) => {
+test("a server-only feature says it is not available in Lite", async ({ page }) => {
   const message = await page.evaluate(() =>
     window.api.getAdminUsers().then(() => null, (error) => error.message),
   );
 
-  expect(message).toMatch(/not available in the demo/i);
+  expect(message).toMatch(/not available in Lite/i);
 });
 
 test("saved projects, groups and settings live in the browser and survive a reload", async ({

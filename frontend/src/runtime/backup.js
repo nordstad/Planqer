@@ -1,4 +1,4 @@
-// Export and import of everything the demo keeps in this browser, as one
+// Export and import of everything Lite keeps in this browser, as one
 // versioned JSON file. It works on the same small db interface as the store, so
 // it is tested against memoryDb.js and runs on IndexedDB.
 //
@@ -12,7 +12,7 @@
 import { STORES } from "./indexedDb";
 
 export const BACKUP_FORMAT = 1;
-const APP = "partsible-demo";
+const APP = "partsible-lite";
 
 // `code` is for the UI to translate; the message is only for developers.
 export class BackupError extends Error {
@@ -48,10 +48,10 @@ function parse(content) {
 
 function validate(backup) {
   if (!isRecord(backup) || backup.app !== APP || !isRecord(backup.stores)) {
-    throw new BackupError("notBackup", "Not a Partsible demo backup");
+    throw new BackupError("notBackup", "Not a Partsible Lite backup");
   }
   if (typeof backup.format !== "number" || backup.format > BACKUP_FORMAT) {
-    throw new BackupError("tooNew", "Made by a newer version of the demo");
+    throw new BackupError("tooNew", "Made by a newer version of Lite");
   }
   for (const [store, records] of Object.entries(backup.stores)) {
     if (!STORES.includes(store) || !Array.isArray(records)) {

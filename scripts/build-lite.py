@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Build the browser demo, laid out exactly as it is served.
+"""Build Lite, laid out exactly as it is served.
 
-The output folder is what GitHub Pages serves at /: the static
+The output folder is what Cloudflare Pages serves at /: the static
 build of the app, the pinned Pyodide runtime (self-hosted, no CDN) and the zip
 of Partsible Python that runs in it.
 
-    python3 scripts/build-demo.py                    # build/demo
-    python3 scripts/build-demo.py --out DIR
-    python3 scripts/build-demo.py --skip-frontend    # reuse frontend/build-static
-    python3 scripts/build-demo.py --check-budget     # also fail if it grew too much
+    python3 scripts/build-lite.py                    # build/lite
+    python3 scripts/build-lite.py --out DIR
+    python3 scripts/build-lite.py --skip-frontend    # reuse frontend/build-static
+    python3 scripts/build-lite.py --check-budget     # also fail if it grew too much
 
 Needs Node (the app build) and network access the first time (the runtime
 download, which is then checksum-verified and cached under build/pyodide).
@@ -27,7 +27,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 FRONTEND = ROOT / "frontend"
 MANIFEST = FRONTEND / "src" / "runtime" / "manifest.json"
-DEFAULT_OUT = ROOT / "build" / "demo"
+DEFAULT_OUT = ROOT / "build" / "lite"
 BASE = "/"
 
 # Largest sizes in KB (raw, not compressed) we accept before someone has to
@@ -77,7 +77,7 @@ def frontend_version() -> str:
 
 
 def verify(out: Path, manifest: dict, expected_version: str) -> list[str]:
-    """Everything that must be true for the demo to start. Empty means fine."""
+    """Everything that must be true for Lite to start. Empty means fine."""
     problems = []
     index = out / "index.html"
     if not index.is_file():
@@ -101,7 +101,7 @@ def verify(out: Path, manifest: dict, expected_version: str) -> list[str]:
 
 
 def measure(out: Path, manifest: dict) -> dict[str, int]:
-    """Bytes in each part of the demo."""
+    """Bytes in each part of Lite."""
     runtime = out / "pyodide" / "runtime"
 
     def size(names):
@@ -148,7 +148,7 @@ def build(out: Path, skip_frontend: bool) -> None:
 
     problems = verify(out, manifest, frontend_version())
     if problems:
-        raise SystemExit("The demo is not complete:\n  " + "\n  ".join(problems))
+        raise SystemExit("Lite is not complete:\n  " + "\n  ".join(problems))
 
 
 def main() -> None:

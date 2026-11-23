@@ -1,4 +1,4 @@
-// The browser's database for the demo: IndexedDB, with the same small
+// The browser's database for Lite: IndexedDB, with the same small
 // interface as memoryDb.js (list, get, put, delete by store and id).
 //
 // localStorage cannot hold this: saved diagrams are SVG and exceed its 5 MB.
