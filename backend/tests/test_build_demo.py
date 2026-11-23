@@ -72,12 +72,12 @@ def test_a_bundle_from_another_version_is_reported(demo, tmp_path):
 def test_an_app_built_for_the_wrong_base_is_reported(demo, tmp_path):
     manifest = _complete_demo(demo, tmp_path / "demo")
     (tmp_path / "demo" / "index.html").write_text(
-        '<script src="/assets/x.js">', encoding="utf-8"
+        '<script src="/old-base/assets/x.js">', encoding="utf-8"
     )
 
     (problem,) = demo.verify(tmp_path / "demo", manifest, "1.2.3")
 
-    assert "/" in problem
+    assert "/assets/" in problem
 
 
 def test_missing_index_is_reported(demo, tmp_path):

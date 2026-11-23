@@ -82,8 +82,8 @@ def verify(out: Path, manifest: dict, expected_version: str) -> list[str]:
     index = out / "index.html"
     if not index.is_file():
         problems.append("index.html is missing")
-    elif f'"{BASE}' not in index.read_text(encoding="utf-8"):
-        problems.append(f"index.html does not reference assets under {BASE}")
+    elif f'"{BASE}assets/' not in index.read_text(encoding="utf-8"):
+        problems.append(f"index.html does not reference assets under {BASE}assets/")
 
     runtime = out / "pyodide" / "runtime"
     for name in sorted(core_files(manifest) | model_files(manifest)):
