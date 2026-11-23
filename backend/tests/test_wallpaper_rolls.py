@@ -1,4 +1,4 @@
-from planqer.wallpaper.rolls import RollPiece, assign_pieces_to_rolls
+from partsible.wallpaper.rolls import RollPiece, assign_pieces_to_rolls
 
 
 def test_patterned_pieces_start_at_their_required_phase():
@@ -60,7 +60,7 @@ def test_allocator_reuses_a_phase_compatible_alignment_offcut():
 
 
 def test_material_summary_counts_reused_offcuts_and_net_pattern_loss():
-    from planqer.wallpaper.plan import _material_summary, _unused_gaps
+    from partsible.wallpaper.plan import _material_summary, _unused_gaps
 
     rolls = assign_pieces_to_rolls(
         [RollPiece("long", 700, 500), RollPiece("short", 100, 0)],
@@ -91,7 +91,7 @@ def test_material_summary_counts_reused_offcuts_and_net_pattern_loss():
 
 
 def test_material_summary_counts_short_pieces_cut_from_a_roll_tail():
-    from planqer.wallpaper.plan import _material_summary
+    from partsible.wallpaper.plan import _material_summary
 
     rolls = assign_pieces_to_rolls(
         [RollPiece("a", 2400, 0), RollPiece("b", 2400, 0), RollPiece("band", 300, 0)],
@@ -106,7 +106,7 @@ def test_material_summary_counts_short_pieces_cut_from_a_roll_tail():
 
 
 def test_roll_fit_says_what_a_longer_roll_would_need():
-    from planqer.wallpaper.plan import _material_summary
+    from partsible.wallpaper.plan import _material_summary
 
     pieces = [RollPiece(f"p{index}", 2400, 0) for index in range(5)]
     rolls = assign_pieces_to_rolls(pieces, roll_length=10050, repeat=380)

@@ -1,7 +1,7 @@
 [project]
-name = "planqer-mcp-server"
+name = "partsible-mcp-server"
 version = "0.14.0"
-description = "MCP server for interacting with Planqer cutting optimization API"
+description = "MCP server for interacting with Partsible cutting optimization API"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.12"
@@ -18,7 +18,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project.scripts]
-planqer-mcp-server = "planqer_mcp_server:main"
+partsible-mcp-server = "partsible_mcp_server:main"
 
 [dependency-groups]
 dev = [

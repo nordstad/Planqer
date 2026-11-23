@@ -8,8 +8,8 @@ from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 
-from planqer.api import app
-from planqer.threed_cutlist import ComponentType, CutListItem
+from partsible.api import app
+from partsible.threed_cutlist import ComponentType, CutListItem
 
 # Patch the rate limiter at module level to disable it for all tests
 pytestmark = [pytest.mark.api, pytest.mark.usefixtures("disable_rate_limiting")]
@@ -26,7 +26,7 @@ def disable_rate_limiting():
 def client():
     """Create test client."""
     with TestClient(app) as test_client:
-        test_client.headers["X-Planqer-Setup-Secret"] = "test-setup-secret"
+        test_client.headers["X-Partsible-Setup-Secret"] = "test-setup-secret"
         user = {
             "email": f"model-test-{uuid.uuid4()}@example.com",
             "password": "Testpassword" + "123!",
@@ -73,7 +73,7 @@ def test_3d_cutlist_invalid_precision(client):
     assert "Round precision must be between 0 and 3" in response.json()["detail"]
 
 
-@patch("planqer.routes.cutlists.process_uploaded_stl")
+@patch("partsible.routes.cutlists.process_uploaded_stl")
 def test_3d_cutlist_success(mock_process, client):
     """Test successful 3D cutlist processing."""
     # Mock the processing function
@@ -97,8 +97,8 @@ def test_3d_cutlist_success(mock_process, client):
             volume=8640.0,
         ),
     ]
-    mock_planqer_parts = {"1200": 2}
-    mock_process.return_value = (mock_cutlist_items, mock_planqer_parts)
+    mock_partsible_parts = {"1200": 2}
+    mock_process.return_value = (mock_cutlist_items, mock_partsible_parts)
 
     # Make request
     files = {"file": ("test.stl", b"fake stl content", "application/octet-stream")}
@@ -115,7 +115,7 @@ def test_3d_cutlist_success(mock_process, client):
     assert result["sheet_count"] == 1
     assert result["project_name"] == "Test Project"
     assert result["units"] == "mm"
-    assert result["planqer_parts"] == {"1200": 2}
+    assert result["partsible_parts"] == {"1200": 2}
     assert result["total_volume"] == 32640.0  # 24000 + 8640
 
     # Verify cutlist items
@@ -165,7 +165,7 @@ def test_3d_cutlist_success(mock_process, client):
     assert sheet_item_all["volume"] == 8640.0
 
 
-@patch("planqer.routes.cutlists.process_uploaded_stl")
+@patch("partsible.routes.cutlists.process_uploaded_stl")
 def test_3d_cutlist_processing_error(mock_process, client):
     """Test 3D cutlist processing error handling."""
     # Mock processing to raise an exception
@@ -182,7 +182,7 @@ def test_3d_cutlist_processing_error(mock_process, client):
 
 def test_3d_cutlist_default_values(client):
     """Test 3D cutlist endpoint with default values."""
-    with patch("planqer.routes.cutlists.process_uploaded_stl") as mock_process:
+    with patch("partsible.routes.cutlists.process_uploaded_stl") as mock_process:
         mock_process.return_value = ([], {})
 
         files = {"file": ("test.stl", b"fake stl content", "application/octet-stream")}
@@ -205,7 +205,7 @@ def test_3d_cutlist_default_values(client):
 
 
 @pytest.mark.skip(reason="Rate limiter persists across tests causing 429 errors")
-@patch("planqer.routes.cutlists.process_uploaded_stl")
+@patch("partsible.routes.cutlists.process_uploaded_stl")
 def test_3d_cutlist_no_boards(mock_process, client):
     """Test 3D cutlist response when no board components found."""
     # Mock only sheet and other components
@@ -229,8 +229,8 @@ def test_3d_cutlist_no_boards(mock_process, client):
             volume=1000000.0,
         ),
     ]
-    mock_planqer_parts = {"100": 1}  # board_2
-    mock_process.return_value = (mock_cutlist_items, mock_planqer_parts)
+    mock_partsible_parts = {"100": 1}  # board_2
+    mock_process.return_value = (mock_cutlist_items, mock_partsible_parts)
 
     files = {"file": ("test.stl", b"fake stl content", "application/octet-stream")}
 
@@ -241,7 +241,7 @@ def test_3d_cutlist_no_boards(mock_process, client):
 
     assert result["board_count"] == 1
     assert result["sheet_count"] == 1
-    assert result["planqer_parts"] == {"100": 1}
+    assert result["partsible_parts"] == {"100": 1}
 
 
 @pytest.mark.skip(
@@ -254,7 +254,7 @@ def test_3d_cutlist_rate_limiting():
     with TestClient(app) as test_client:
         files = {"file": ("test.stl", b"fake stl content", "application/octet-stream")}
 
-        with patch("planqer.routes.cutlists.process_uploaded_stl") as mock_process:
+        with patch("partsible.routes.cutlists.process_uploaded_stl") as mock_process:
             mock_process.return_value = ([], {})
 
             # Make 6 rapid requests - first 5 should succeed, 6th should be rate limited
@@ -275,7 +275,7 @@ def test_3d_cutlist_rate_limiting():
 @pytest.mark.skip(reason="Rate limiter persists across tests causing 429 errors")
 def test_3d_cutlist_project_name_sanitization(client):
     """Test project name sanitization."""
-    with patch("planqer.routes.cutlists.process_uploaded_stl") as mock_process:
+    with patch("partsible.routes.cutlists.process_uploaded_stl") as mock_process:
         mock_process.return_value = ([], {})
 
         files = {"file": ("test.stl", b"fake stl content", "application/octet-stream")}

@@ -1,1 +1,1 @@
-window.__PLANQER_API_URL__ = "";
+window.__PARTSIBLE_API_URL__ = "";

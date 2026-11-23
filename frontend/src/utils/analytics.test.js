@@ -11,8 +11,8 @@ const SITE_ID = '325f5fce-eb47-46fb-bad7-da1137224c33';
 const scripts = () => [...document.head.querySelectorAll('script[data-website-id]')];
 
 const configure = ({ mode = 'static', id = SITE_ID } = {}) => {
-  vi.stubEnv('VITE_PLANQER_MODE', mode);
-  vi.stubEnv('VITE_PLANQER_UMAMI_ID', id);
+  vi.stubEnv('VITE_PARTSIBLE_MODE', mode);
+  vi.stubEnv('VITE_PARTSIBLE_UMAMI_ID', id);
 };
 
 const setBrowserSignal = (name, value) =>
@@ -22,7 +22,7 @@ beforeEach(() => {
   localStorage.clear();
   document.head.innerHTML = '';
   delete window.umami;
-  delete window.planqerBeforeSend;
+  delete window.partsibleBeforeSend;
   setBrowserSignal('doNotTrack', null);
   setBrowserSignal('globalPrivacyControl', undefined);
   configure();
@@ -43,8 +43,8 @@ describe('loading the script', () => {
     expect(script.dataset.doNotTrack).toBe('true');
     expect(script.dataset.excludeSearch).toBe('true');
     expect(script.dataset.excludeHash).toBe('true');
-    expect(script.dataset.beforeSend).toBe('planqerBeforeSend');
-    expect(window.planqerBeforeSend).toBe(beforeSend);
+    expect(script.dataset.beforeSend).toBe('partsibleBeforeSend');
+    expect(window.partsibleBeforeSend).toBe(beforeSend);
   });
 
   it('loads nothing without a website id', () => {
@@ -90,13 +90,13 @@ describe('the opt-out', () => {
 
     expect(scripts()).toHaveLength(0);
     expect(analyticsState()).toBe('off');
-    expect(localStorage.getItem('planqer.analytics.optout')).toBe('1');
+    expect(localStorage.getItem('partsible.analytics.optout')).toBe('1');
   });
 
   it('can be switched back on', () => {
     setAnalyticsEnabled(false);
     setAnalyticsEnabled(true);
-    expect(localStorage.getItem('planqer.analytics.optout')).toBeNull();
+    expect(localStorage.getItem('partsible.analytics.optout')).toBeNull();
     expect(scripts()).toHaveLength(1);
     expect(analyticsState()).toBe('on');
   });
@@ -171,7 +171,7 @@ describe('track', () => {
 });
 
 describe('beforeSend, the second line of defence', () => {
-  const pageview = { website: SITE_ID, url: '/Planqer/app/', title: 'Planqer' };
+  const pageview = { website: SITE_ID, url: '/', title: 'Partsible' };
 
   it('lets pageviews through', () => {
     expect(beforeSend('event', pageview)).toEqual(pageview);

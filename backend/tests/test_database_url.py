@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from planqer.backup import configured_database_url
-from planqer.database_url import resolve_database_url
+from partsible.backup import configured_database_url
+from partsible.database_url import resolve_database_url
 
 
 def test_runtime_and_backup_share_database_url_precedence(monkeypatch, tmp_path: Path):

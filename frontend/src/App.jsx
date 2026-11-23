@@ -21,9 +21,9 @@ const HelpPage = lazy(() => import('./components/Help'));
 const UserDashboard = lazy(() => import('./components/UserDashboard'));
 // Compared inline, not through isStaticMode(): only a literal comparison lets
 // the bundler drop the runtime from a normal build.
-const DemoShell = import.meta.env.VITE_PLANQER_MODE === 'static' ? lazy(() => import('./components/demo/DemoShell')) : null;
-const DemoCatalogue = import.meta.env.VITE_PLANQER_MODE === 'static' ? lazy(() => import('./components/demo/DemoCatalogue')) : null;
-const SolverStatus = import.meta.env.VITE_PLANQER_MODE === 'static' ? lazy(() => import('./components/SolverStatus')) : null;
+const DemoShell = import.meta.env.VITE_PARTSIBLE_MODE === 'static' ? lazy(() => import('./components/demo/DemoShell')) : null;
+const DemoCatalogue = import.meta.env.VITE_PARTSIBLE_MODE === 'static' ? lazy(() => import('./components/demo/DemoCatalogue')) : null;
+const SolverStatus = import.meta.env.VITE_PARTSIBLE_MODE === 'static' ? lazy(() => import('./components/SolverStatus')) : null;
 
 const App = () => {
   const demo = isStaticMode();

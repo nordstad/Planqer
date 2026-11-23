@@ -4,15 +4,15 @@ import pytest
 import yaml
 from fastapi.testclient import TestClient
 
-from planqer.auth.single_user import OWNER_EMAIL, check_single_user_bind
+from partsible.auth.single_user import OWNER_EMAIL, check_single_user_bind
 
 pytestmark = pytest.mark.api
 
 
 @pytest.fixture
 def single_client(monkeypatch):
-    monkeypatch.setenv("PLANQER_SINGLE_USER", "true")
-    from planqer.api import app
+    monkeypatch.setenv("PARTSIBLE_SINGLE_USER", "true")
+    from partsible.api import app
 
     with TestClient(app) as client:
         yield client
@@ -34,7 +34,7 @@ def test_owner_is_created_even_if_the_random_password_breaks_the_policy(
     from sqlalchemy import delete
     from sqlalchemy.ext.asyncio import AsyncSession
 
-    from planqer.database import User, engine
+    from partsible.database import User, engine
 
     async def remove_owner():
         async with AsyncSession(engine) as session:
@@ -74,8 +74,8 @@ def test_single_mode_blocks_registration(single_client):
 
 
 def test_multi_user_mode_still_requires_a_token(monkeypatch):
-    monkeypatch.delenv("PLANQER_SINGLE_USER", raising=False)
-    from planqer.api import app
+    monkeypatch.delenv("PARTSIBLE_SINGLE_USER", raising=False)
+    from partsible.api import app
 
     with TestClient(app) as client:
         assert client.get("/api/auth/me").status_code == 401
@@ -83,33 +83,33 @@ def test_multi_user_mode_still_requires_a_token(monkeypatch):
 
 @pytest.mark.parametrize("address", ["127.0.0.1", "::1", "localhost", ""])
 def test_bind_guard_allows_loopback_or_unknown(monkeypatch, address):
-    monkeypatch.setenv("PLANQER_SINGLE_USER", "true")
-    monkeypatch.setenv("PLANQER_BIND_ADDRESS", address)
+    monkeypatch.setenv("PARTSIBLE_SINGLE_USER", "true")
+    monkeypatch.setenv("PARTSIBLE_BIND_ADDRESS", address)
 
     check_single_user_bind()
 
 
 @pytest.mark.parametrize("address", ["0.0.0.0", "192.168.1.50"])
 def test_bind_guard_refuses_open_address(monkeypatch, address):
-    monkeypatch.setenv("PLANQER_SINGLE_USER", "true")
-    monkeypatch.setenv("PLANQER_BIND_ADDRESS", address)
-    monkeypatch.delenv("PLANQER_ALLOW_OPEN_LAN", raising=False)
+    monkeypatch.setenv("PARTSIBLE_SINGLE_USER", "true")
+    monkeypatch.setenv("PARTSIBLE_BIND_ADDRESS", address)
+    monkeypatch.delenv("PARTSIBLE_ALLOW_OPEN_LAN", raising=False)
 
-    with pytest.raises(RuntimeError, match="PLANQER_ALLOW_OPEN_LAN"):
+    with pytest.raises(RuntimeError, match="PARTSIBLE_ALLOW_OPEN_LAN"):
         check_single_user_bind()
 
 
 def test_bind_guard_allows_open_address_when_acknowledged(monkeypatch):
-    monkeypatch.setenv("PLANQER_SINGLE_USER", "true")
-    monkeypatch.setenv("PLANQER_BIND_ADDRESS", "0.0.0.0")
-    monkeypatch.setenv("PLANQER_ALLOW_OPEN_LAN", "true")
+    monkeypatch.setenv("PARTSIBLE_SINGLE_USER", "true")
+    monkeypatch.setenv("PARTSIBLE_BIND_ADDRESS", "0.0.0.0")
+    monkeypatch.setenv("PARTSIBLE_ALLOW_OPEN_LAN", "true")
 
     check_single_user_bind()
 
 
 def test_bind_guard_ignores_multi_user_mode(monkeypatch):
-    monkeypatch.delenv("PLANQER_SINGLE_USER", raising=False)
-    monkeypatch.setenv("PLANQER_BIND_ADDRESS", "0.0.0.0")
+    monkeypatch.delenv("PARTSIBLE_SINGLE_USER", raising=False)
+    monkeypatch.setenv("PARTSIBLE_BIND_ADDRESS", "0.0.0.0")
 
     check_single_user_bind()
 
@@ -125,8 +125,8 @@ def test_simple_compose_is_single_user_and_loopback_only():
     services = _compose("docker-compose.simple.yml")["services"]
     environment = services["backend"]["environment"]
 
-    assert "PLANQER_SINGLE_USER=true" in environment
-    assert "PLANQER_BIND_ADDRESS=127.0.0.1" in environment
+    assert "PARTSIBLE_SINGLE_USER=true" in environment
+    assert "PARTSIBLE_BIND_ADDRESS=127.0.0.1" in environment
     for service in services.values():
         assert all(port.startswith("127.0.0.1:") for port in service["ports"])
 

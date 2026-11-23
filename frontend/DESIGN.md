@@ -1,5 +1,5 @@
 ---
-name: Planqer
+name: Partsible
 description: The self-hosted README — a plain, warm open-source homepage with one amber signal, for a cutting-plan tool that proves itself with a real diagram.
 colors:
   ground: "#fafaf7"
@@ -142,13 +142,13 @@ components:
     size: "42px"
 ---
 
-# Design System: Planqer
+# Design System: Partsible
 
 ## Overview
 
 **Creative North Star: "The Self-Hosted README"**
 
-Planqer reads like a well-made open-source project's own homepage, not a printed
+Partsible reads like a well-made open-source project's own homepage, not a printed
 catalog and not a SaaS pitch deck. The whole product sits on warm, slightly
 grey-cream paper with ink type, rounded cards, and exactly one signal color —
 a warm amber-orange — reserved for the call to action, the one figure that
@@ -641,7 +641,7 @@ but make the diagram the single source for the sequence.
 ### The Homepage Illustration
 
 `.hp-visual` — one animated isometric illustration
-(`src/assets/planqer-hero-animated.svg`, transparent, cropped to the
+(`src/assets/partsible-hero-animated.svg`, transparent, cropped to the
 drawing at 895×490) of the
 materials the tools plan: a plywood sheet, oak boards with a hatched
 offcut, a tile grid with its amber start tile, wallpaper strips off a roll,

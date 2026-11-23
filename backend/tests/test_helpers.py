@@ -1,5 +1,5 @@
-from planqer.cache import generate_request_hash
-from planqer.helpers import check_waste_warning, compute_metrics
+from partsible.cache import generate_request_hash
+from partsible.helpers import check_waste_warning, compute_metrics
 
 
 def test_generate_request_hash_uses_sha256():

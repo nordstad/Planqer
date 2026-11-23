@@ -8,7 +8,7 @@ import UserProjectsContent from './UserProjectsContent';
 import UserSettings from './UserSettings';
 
 // Literal comparison, so a normal build drops the panel and the runtime behind it.
-const BackupPanel = import.meta.env.VITE_PLANQER_MODE === 'static' ? lazy(() => import('./demo/BackupPanel')) : null;
+const BackupPanel = import.meta.env.VITE_PARTSIBLE_MODE === 'static' ? lazy(() => import('./demo/BackupPanel')) : null;
 
 const TABS = [
   { key: 'projects', label: 'common.myProjects' },

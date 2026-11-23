@@ -1,7 +1,7 @@
 import pytest
 
-from planqer.schemas.wallpaper import Allowances, Wall
-from planqer.wallpaper.strips import lay_wall_strips
+from partsible.schemas.wallpaper import Allowances, Wall
+from partsible.wallpaper.strips import lay_wall_strips
 
 
 def wall(**overrides) -> Wall:

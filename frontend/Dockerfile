@@ -26,8 +26,8 @@ RUN npm run build
 FROM nginx:alpine AS production
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY docker-entrypoint.d/40-planqer-config.sh /docker-entrypoint.d/40-planqer-config.sh
-RUN chmod +x /docker-entrypoint.d/40-planqer-config.sh
+COPY docker-entrypoint.d/40-partsible-config.sh /docker-entrypoint.d/40-partsible-config.sh
+RUN chmod +x /docker-entrypoint.d/40-partsible-config.sh
 COPY --from=builder /app/build /usr/share/nginx/html
 RUN chmod -R a+rX /usr/share/nginx/html
 

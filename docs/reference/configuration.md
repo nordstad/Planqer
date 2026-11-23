@@ -4,7 +4,7 @@ Localhost works with no configuration at all. Everything here is only needed
 for a hosted, proxied, or otherwise non-default deployment.
 
 Set variables in a `.env` file next to the compose files, or export them before
-running Docker Compose. Copy [`.env.example`](https://github.com/nordstad/Planqer/blob/main/.env.example)
+running Docker Compose. Copy [`.env.example`](https://github.com/nordstad/Partsible/blob/main/.env.example)
 to `.env` as a starting point.
 
 Changed `.env` after containers already exist? A plain restart won't pick it
@@ -40,11 +40,11 @@ accounts and saved projects.
 
 ## Backend
 
-- `PLANQER_VERSION`: defaults to `latest` in
+- `PARTSIBLE_VERSION`: defaults to `latest` in
   `docker-compose.release.yml`. Selects the release image tag to pull from
   GitHub Container Registry. Pin it (e.g. `0.14.0`) for reproducible installs.
 - `SECRET_KEY`: optional explicit signing key for login sessions. When omitted,
-  Planqer generates a cryptographically random key and persists it at
+  Partsible generates a cryptographically random key and persists it at
   `data/.secret_key` inside the persistent backend data volume. The generated
   key survives container recreation as long as that volume is retained. Set
   `SECRET_KEY` explicitly for multiple backend replicas, externally managed
@@ -52,31 +52,31 @@ accounts and saved projects.
   values are never written to the generated key file. The application backup
   archive contains the database only, not `data/.secret_key`; retain the data
   volume or configure an explicit key when restoring elsewhere.
-- `PLANQER_BIND_ADDRESS`: defaults to `127.0.0.1`, so a new instance is only
+- `PARTSIBLE_BIND_ADDRESS`: defaults to `127.0.0.1`, so a new instance is only
   reachable from its own host. Set `0.0.0.0` only for LAN or reverse-proxy
   deployments.
-- `PLANQER_SINGLE_USER`: defaults to off. Set to `true` to remove accounts and
+- `PARTSIBLE_SINGLE_USER`: defaults to off. Set to `true` to remove accounts and
   sign-in: everyone who can reach the app is its owner, shown as **My
   projects**. Registration is disabled and the admin page shows only the
   catalogue. `docker-compose.simple.yml` sets it. Accounts already in the data
   volume are kept and used again if you turn it off.
-- `PLANQER_ALLOW_OPEN_LAN`: only for `PLANQER_SINGLE_USER=true`. Planqer
-  refuses to start when `PLANQER_BIND_ADDRESS` is not a loopback address,
+- `PARTSIBLE_ALLOW_OPEN_LAN`: only for `PARTSIBLE_SINGLE_USER=true`. Partsible
+  refuses to start when `PARTSIBLE_BIND_ADDRESS` is not a loopback address,
   because anyone on the network could then read and change your projects. Set
   to `true` to accept that, for example on a network you fully trust.
-- `PLANQER_TRUSTED_BOOTSTRAP`: defaults to `true` with the default loopback
+- `PARTSIBLE_TRUSTED_BOOTSTRAP`: defaults to `true` with the default loopback
   binding, allowing the first browser account to become administrator. Set it
   to `false` before exposing the instance.
-- `PLANQER_SETUP_SECRET`: required to claim the first administrator after
-  `PLANQER_TRUSTED_BOOTSTRAP=false`. Enter it in the first-run form's Setup
+- `PARTSIBLE_SETUP_SECRET`: required to claim the first administrator after
+  `PARTSIBLE_TRUSTED_BOOTSTRAP=false`. Enter it in the first-run form's Setup
   code field. The secret is accepted only for the first account and should be
   removed after setup.
-- `PLANQER_CORS_ORIGINS`: no default. Comma-separated list of extra origins
+- `PARTSIBLE_CORS_ORIGINS`: no default. Comma-separated list of extra origins
   allowed to call the API, added to the built-in defaults.
 - `DATABASE_URL`: defaults to a local SQLite file. Overrides the database
   location/engine.
 
-- `PLANQER_CATALOGUE_COUNTRY`: optional, no default. `SE` (Sweden) or `NO`
+- `PARTSIBLE_CATALOGUE_COUNTRY`: optional, no default. `SE` (Sweden) or `NO`
   (Norway). The catalogue used by anyone who hasn't chosen one and whose
   language and browser don't point to a country; leave it empty for the generic
   catalogue (product types and details, no sized entries). It is only a
@@ -107,7 +107,7 @@ structural timber over 5 400 mm is usually finger-jointed and glulam is normally
 stocked to 12 m, but publishes no length list, so the 1 800, 2 100 and
 2 400–5 400 mm (300 mm steps) set is a working assumption. Norwegian lengths come
 from Moelven's stated fixed lengths. Data files live in
-`backend/planqer/catalogue/data/`.
+`backend/partsible/catalogue/data/`.
 
 ### Changing the catalogue for your instance
 
@@ -133,12 +133,12 @@ old plan. Local entries are checked by the same rules as the built-in data
 (known types and details, https sources, 15 000 mm board length limit, 10 000 mm
 sheet limit).
 
-To share a product with every Planqer user, see
+To share a product with every Partsible user, see
 [Contributing catalogue data](../contributing.md#contributing-catalogue-data).
 
 ## Frontend
 
-- `PLANQER_HOST`: no default. The hostname you serve Planqer on. Vite's dev
+- `PARTSIBLE_HOST`: no default. The hostname you serve Partsible on. Vite's dev
   server refuses requests whose `Host` header it doesn't recognize. Behind a
   reverse proxy on any hostname other than `localhost`/`127.0.0.1`, set this or
   requests get "Blocked request".
@@ -158,7 +158,7 @@ profile when using a containerized MCP client:
 docker compose --profile mcp up -d
 ```
 
-- `PLANQER_API_URL`: defaults to `http://localhost:8002/api`. Where the MCP
+- `PARTSIBLE_API_URL`: defaults to `http://localhost:8002/api`. Where the MCP
   server sends optimization requests. The Docker Compose files point this at
   the `backend` service on the compose network.
 
@@ -166,18 +166,18 @@ docker compose --profile mcp up -d
 
 ```bash
 # Backend
-PLANQER_VERSION=0.14.0
+PARTSIBLE_VERSION=0.14.0
 # Optional when using a single backend with the persistent data volume.
 SECRET_KEY=<random-32-byte-hex>
-PLANQER_SETUP_SECRET=<random-32-byte-hex>
-PLANQER_BIND_ADDRESS=0.0.0.0
-PLANQER_TRUSTED_BOOTSTRAP=false
-PLANQER_CORS_ORIGINS=https://planqer.example.com,https://cuts.example.com
-PLANQER_CATALOGUE_COUNTRY=SE
+PARTSIBLE_SETUP_SECRET=<random-32-byte-hex>
+PARTSIBLE_BIND_ADDRESS=0.0.0.0
+PARTSIBLE_TRUSTED_BOOTSTRAP=false
+PARTSIBLE_CORS_ORIGINS=https://partsible.example.com,https://cuts.example.com
+PARTSIBLE_CATALOGUE_COUNTRY=SE
 
 # Frontend
-PLANQER_HOST=planqer.example.com
-VITE_API_URL=https://planqer.example.com
+PARTSIBLE_HOST=partsible.example.com
+VITE_API_URL=https://partsible.example.com
 ```
 
 If you need an explicit `SECRET_KEY`, generate it with:

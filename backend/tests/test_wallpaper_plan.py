@@ -1,13 +1,13 @@
 import pytest
 
-from planqer.schemas.wallpaper import (
+from partsible.schemas.wallpaper import (
     Cutout,
     Room,
     Wall,
     WallpaperPlanRequest,
     WallpaperSpec,
 )
-from planqer.wallpaper.plan import create_wallpaper_plan
+from partsible.wallpaper.plan import create_wallpaper_plan
 
 
 def test_plan_returns_every_strip_piece_and_roll_for_a_plain_wall():
@@ -119,7 +119,7 @@ def test_sloped_requires_lower_edge_below_upper_edge():
 
 
 def test_requested_first_strip_width_is_used_when_it_is_a_candidate():
-    from planqer.schemas.wallpaper import StartPosition
+    from partsible.schemas.wallpaper import StartPosition
 
     def request(start=None):
         return WallpaperPlanRequest(

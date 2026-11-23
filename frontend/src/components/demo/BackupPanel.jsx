@@ -39,7 +39,7 @@ const BackupPanel = () => {
   const exportNow = async () => {
     try {
       const backup = await backupExport();
-      download(`planqer-backup-${new Date().toISOString().slice(0, 10)}.json`, backup);
+      download(`partsible-backup-${new Date().toISOString().slice(0, 10)}.json`, backup);
       markExported();
       track('project_exported');
       setLastExported(readLastExported());

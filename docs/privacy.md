@@ -1,8 +1,8 @@
 # Privacy
 
-## Self-hosted Planqer
+## Self-hosted Partsible
 
-Self-hosted Planqer (Docker) contains no analytics. Its home page checks
+Self-hosted Partsible (Docker) contains no analytics. Its home page checks
 GitHub's public API for the newest release number so it can show an update
 notice. Like any web request, this exposes the visitor's IP address to GitHub,
 but no account, project or usage data is sent. Your project data stays on your
@@ -10,7 +10,7 @@ server.
 
 ## The demo
 
-The [demo](https://nordstad.github.io/Planqer/app/) runs in your browser. Your
+The [demo](https://partsible.com/) runs in your browser. Your
 projects are saved only in this browser on this device. They are never
 uploaded. Clearing browser data deletes them, so export a backup if you want to
 keep them.
@@ -27,14 +27,14 @@ whether a "full version" link was clicked, and whether the calculation engine
 failed, with the tool in use and the stage (starting up, calculating or
 crashing), but never the error text. Umami also records your browser,
 operating system, screen size, language and country. We use this only to learn which features are used
-and what is broken, so we can improve Planqer.
+and what is broken, so we can improve Partsible.
 
 **What we never collect.** Project names, measurements, uploaded files,
 anything you type, your name or email address, or your IP address as a stored
 value. Sizes are grouped into coarse ranges such as "6 to 20 parts", never
 exact values. The demo has no accounts, so nothing can be linked to a person.
 
-**Turn it off.** In the [demo](https://nordstad.github.io/Planqer/app/), select
+**Turn it off.** In the [demo](https://partsible.com/), select
 **Turn off** next to **Analytics: on** in the footer. That choice also covers
 these docs. We also respect your browser's Do Not Track and Global Privacy
 Control settings, and when either is set nothing is loaded at all.
@@ -46,4 +46,4 @@ browser data resets it.
 Software, Inc., and the data is stored in Umami Cloud's EU region.
 
 **Contact.** Questions or requests about this page: open an issue on
-[GitHub](https://github.com/nordstad/Planqer/issues).
+[GitHub](https://github.com/nordstad/Partsible/issues).

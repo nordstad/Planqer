@@ -21,14 +21,14 @@ def demo():
 def _bundle(path: Path, version: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(path, "w") as archive:
-        archive.writestr("planqer/__init__.py", f'__version__ = "{version}"\n')
+        archive.writestr("partsible/__init__.py", f'__version__ = "{version}"\n')
 
 
 def _complete_demo(demo, out: Path, version: str = "1.2.3") -> dict:
     manifest = demo._manifest()
     out.mkdir(parents=True)
     (out / "index.html").write_text(
-        '<script src="/Planqer/app/assets/index.js"></script>', encoding="utf-8"
+        '<script src="/assets/index.js"></script>', encoding="utf-8"
     )
     runtime = out / "pyodide" / "runtime"
     runtime.mkdir(parents=True)
@@ -77,7 +77,7 @@ def test_an_app_built_for_the_wrong_base_is_reported(demo, tmp_path):
 
     (problem,) = demo.verify(tmp_path / "demo", manifest, "1.2.3")
 
-    assert "/Planqer/app/" in problem
+    assert "/" in problem
 
 
 def test_missing_index_is_reported(demo, tmp_path):

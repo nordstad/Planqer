@@ -12,7 +12,7 @@ import { createSolverRuntime } from "../../src/runtime/solverRuntime";
 
 const here = dirname(fileURLToPath(import.meta.url));
 export const root = resolve(here, "../../..");
-export const python = process.env.PLANQER_PYTHON ?? join(root, "backend/.venv/bin/python");
+export const python = process.env.PARTSIBLE_PYTHON ?? join(root, "backend/.venv/bin/python");
 
 export function script(name, ...args) {
   return execFileSync(python, [join(root, "scripts", name), ...args], {
@@ -23,7 +23,7 @@ export function script(name, ...args) {
 
 export async function startRuntime() {
   const runtimeDir = join(root, "build/pyodide/runtime");
-  const bundleDir = mkdtempSync(join(tmpdir(), "planqer-bundle-"));
+  const bundleDir = mkdtempSync(join(tmpdir(), "partsible-bundle-"));
   script("fetch-pyodide-runtime.py", "--out", runtimeDir);
   const bundle = script("build-pyodide-bundle.py", "--out", bundleDir)
     .trim()

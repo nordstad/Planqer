@@ -1,10 +1,10 @@
-# AI Integration Guide for Planqer MCP Server
+# AI Integration Guide for Partsible MCP Server
 
-This guide helps AI assistants and their users integrate with the Planqer cutting optimization system through the MCP server.
+This guide helps AI assistants and their users integrate with the Partsible cutting optimization system through the MCP server.
 
 ## Quick Start for AI Assistants
 
-The Planqer MCP server provides you with tools to help users optimize cutting plans for woodworking and similar projects. Here's how to use them effectively:
+The Partsible MCP server provides you with tools to help users optimize cutting plans for woodworking and similar projects. Here's how to use them effectively:
 
 ### Basic Workflow
 
@@ -185,7 +185,7 @@ When errors occur, help users understand and resolve them:
 
 ### API Connection Errors
 ```
-"❌ Connection error: Could not reach the Planqer API"
+"❌ Connection error: Could not reach the Partsible API"
 ```
 **Explain**: "The optimization service isn't available right now. Please try again in a moment."
 

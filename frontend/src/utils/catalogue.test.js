@@ -68,7 +68,7 @@ describe('loading', () => {
 
     expect(getCatalogue).toHaveBeenCalledTimes(1);
     expect(getCatalogue).toHaveBeenCalledWith(undefined);
-    expect(JSON.parse(localStorage.getItem('planqer-catalogue-v1'))).toEqual({ etag: '"abc"', data: catalogue });
+    expect(JSON.parse(localStorage.getItem('partsible-catalogue-v1'))).toEqual({ etag: '"abc"', data: catalogue });
   });
 
   it('keeps a separate copy for each country', async () => {
@@ -82,13 +82,13 @@ describe('loading', () => {
     expect(getCatalogue).toHaveBeenNthCalledWith(2, undefined, 'NO');
     expect(await loadCatalogue('SE')).toBe(catalogue);
     expect(getCatalogue).toHaveBeenCalledTimes(2);
-    expect(JSON.parse(localStorage.getItem('planqer-catalogue-v1:SE')).etag).toBe('"se"');
-    expect(JSON.parse(localStorage.getItem('planqer-catalogue-v1:NO')).etag).toBe('"no"');
-    expect(localStorage.getItem('planqer-catalogue-v1')).toBeNull();
+    expect(JSON.parse(localStorage.getItem('partsible-catalogue-v1:SE')).etag).toBe('"se"');
+    expect(JSON.parse(localStorage.getItem('partsible-catalogue-v1:NO')).etag).toBe('"no"');
+    expect(localStorage.getItem('partsible-catalogue-v1')).toBeNull();
   });
 
   it('revalidates a stored copy and keeps it on 304', async () => {
-    localStorage.setItem('planqer-catalogue-v1', JSON.stringify({ etag: '"abc"', data: catalogue }));
+    localStorage.setItem('partsible-catalogue-v1', JSON.stringify({ etag: '"abc"', data: catalogue }));
     getCatalogue.mockResolvedValue({ notModified: true, etag: '"abc"' });
 
     expect(await loadCatalogue()).toEqual(catalogue);
@@ -96,15 +96,15 @@ describe('loading', () => {
   });
 
   it('replaces the stored copy when the server has a newer one', async () => {
-    localStorage.setItem('planqer-catalogue-v1', JSON.stringify({ etag: '"old"', data: { ...catalogue, products: [] } }));
+    localStorage.setItem('partsible-catalogue-v1', JSON.stringify({ etag: '"old"', data: { ...catalogue, products: [] } }));
     getCatalogue.mockResolvedValue({ data: catalogue, etag: '"new"' });
 
     expect(await loadCatalogue()).toEqual(catalogue);
-    expect(JSON.parse(localStorage.getItem('planqer-catalogue-v1')).etag).toBe('"new"');
+    expect(JSON.parse(localStorage.getItem('partsible-catalogue-v1')).etag).toBe('"new"');
   });
 
   it('falls back to the stored copy when the server cannot be reached', async () => {
-    localStorage.setItem('planqer-catalogue-v1', JSON.stringify({ etag: '"abc"', data: catalogue }));
+    localStorage.setItem('partsible-catalogue-v1', JSON.stringify({ etag: '"abc"', data: catalogue }));
     getCatalogue.mockRejectedValue(new Error('offline'));
 
     expect(await loadCatalogue()).toEqual(catalogue);
@@ -119,7 +119,7 @@ describe('loading', () => {
   });
 
   it('ignores a corrupt stored copy', async () => {
-    localStorage.setItem('planqer-catalogue-v1', '{nope');
+    localStorage.setItem('partsible-catalogue-v1', '{nope');
     getCatalogue.mockResolvedValue({ data: catalogue, etag: '"abc"' });
 
     expect(await loadCatalogue()).toBe(catalogue);
@@ -397,13 +397,13 @@ describe('remembering the last choice per cross-section', () => {
   });
 
   it('survives corrupt storage and drops the oldest choices past the limit', () => {
-    localStorage.setItem('planqer-product-choice-v1', 'not json');
+    localStorage.setItem('partsible-product-choice-v1', 'not json');
     expect(recallChoice('board:45x95')).toBeNull();
 
     for (let i = 0; i < 70; i += 1) rememberChoice(`board:${i}x${i}`, freeTextSelection('board', `p${i}`));
     expect(recallChoice('board:0x0')).toBeNull();
     expect(recallChoice('board:69x69').text).toBe('p69');
-    expect(Object.keys(JSON.parse(localStorage.getItem('planqer-product-choice-v1')))).toHaveLength(60);
+    expect(Object.keys(JSON.parse(localStorage.getItem('partsible-product-choice-v1')))).toHaveLength(60);
   });
 
   it('does not throw when storage refuses the write', () => {

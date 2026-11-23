@@ -426,7 +426,7 @@ const TileOptimizer = () => {
     try {
       const moved = await movePlanToProject({ ...saved, projectType: 'tile' }, group.id);
       setSaved(moved);
-      localStorage.setItem('planqer.lastProjectGroup', group.id);
+      localStorage.setItem('partsible.lastProjectGroup', group.id);
       return true;
     } catch (error) {
       setApiError(t('projectUi.moveFailed', { message: error.message }));

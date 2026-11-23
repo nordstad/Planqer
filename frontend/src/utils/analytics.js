@@ -10,8 +10,8 @@
 
 const HOST = 'https://cloud.umami.is/script.js';
 const DOMAIN = 'nordstad.github.io';
-const OPT_OUT_KEY = 'planqer.analytics.optout';
-const HOOK = 'planqerBeforeSend';
+const OPT_OUT_KEY = 'partsible.analytics.optout';
+const HOOK = 'partsibleBeforeSend';
 const QUEUE_LIMIT = 20;
 
 const TOOLS = ['board', 'sheet', 'tile', 'wallpaper', 'model'];
@@ -39,8 +39,8 @@ export const partsBucket = (count) => {
   return '51+';
 };
 
-const websiteId = () => import.meta.env.VITE_PLANQER_UMAMI_ID || '';
-const available = () => import.meta.env.VITE_PLANQER_MODE === 'static' && websiteId() !== '';
+const websiteId = () => import.meta.env.VITE_PARTSIBLE_UMAMI_ID || '';
+const available = () => import.meta.env.VITE_PARTSIBLE_MODE === 'static' && websiteId() !== '';
 
 const optedOut = () => {
   try { return localStorage.getItem(OPT_OUT_KEY) === '1'; } catch { return false; }
@@ -118,7 +118,7 @@ export function startAnalytics() {
 }
 
 export function setAnalyticsEnabled(enabled) {
-  if (import.meta.env.VITE_PLANQER_MODE !== 'static') return;
+  if (import.meta.env.VITE_PARTSIBLE_MODE !== 'static') return;
   try {
     if (enabled) localStorage.removeItem(OPT_OUT_KEY);
     else localStorage.setItem(OPT_OUT_KEY, '1');

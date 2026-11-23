@@ -7,7 +7,7 @@
 
 import { expect, test } from "@playwright/test";
 
-const APP = "/Planqer/app/";
+const APP = "/";
 const SCRIPT = "https://cloud.umami.is/script.js";
 const SEND = "https://cloud.umami.is/api/send";
 const ALLOWED = [

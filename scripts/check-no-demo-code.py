@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Fail if a build of the self-hosted app contains any part of the browser demo.
 
-The demo is the same code built with VITE_PLANQER_MODE=static. A normal build
+The demo is the same code built with VITE_PARTSIBLE_MODE=static. A normal build
 must contain none of it: no Pyodide runtime, no worker, no demo screens, no
 analytics. Run it on the output of `npm run build` (what the Docker image
 serves).
@@ -14,21 +14,21 @@ from pathlib import Path
 
 # (text, ignore case). Each is something only demo code, or the code that loads
 # analytics, contains. Identifiers are matched exactly: translations say
-# "Planqer-demon" and a privacy sentence may name Umami, and locale files ship
+# "Partsible-demon" and a privacy sentence may name Umami, and locale files ship
 # in every build, so those words alone must not trip the check. Umami is caught
 # by what loads it: its host, its tracking call, its tag attribute, our setting.
 MARKERS = (
     ("pyodide", True),
     ("solverWorker", False),
     ("loading-runtime", False),
-    ("planqer-demo", False),
-    ("planqer.demo.", False),
+    ("partsible-demo", False),
+    ("partsible.demo.", False),
     ("catalogue_admin", False),
     ("catalogue_entries", False),
     ("cloud.umami.is", True),
     ("umami.track", True),
     ("data-website-id", True),
-    ("VITE_PLANQER_UMAMI", True),
+    ("VITE_PARTSIBLE_UMAMI", True),
     ("googletagmanager", True),
     ("325f5fce-eb47-46fb-bad7-da1137224c33", True),
 )

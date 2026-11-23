@@ -3,7 +3,7 @@ import { test, expect, request as playwrightRequest } from '@playwright/test';
 // Runs against whichever mode the backend is in and skips the other mode's
 // tests, so run it once per mode:
 //   advanced: docker compose up -d backend           (needs an existing account)
-//   simple:   PLANQER_SINGLE_USER=true docker compose up -d backend
+//   simple:   PARTSIBLE_SINGLE_USER=true docker compose up -d backend
 // Use SKIP_WEB_SERVER=1 to test the frontend container on :3001.
 const API = process.env.PLAYWRIGHT_API_URL || 'http://localhost:8002';
 
@@ -28,7 +28,7 @@ const solved = {
 
 test.describe('Simple install (single user)', () => {
   test.beforeEach(() => {
-    test.skip(!singleUser, 'backend is not running with PLANQER_SINGLE_USER=true');
+    test.skip(!singleUser, 'backend is not running with PARTSIBLE_SINGLE_USER=true');
   });
 
   test('opens straight into the tools with no sign-in', async ({ page }) => {
@@ -38,7 +38,7 @@ test.describe('Simple install (single user)', () => {
     await expect(page.getByRole('link', { name: 'My projects' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Sign in' })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Sign out' })).toHaveCount(0);
-    await expect(page.getByText('owner@planqer.local')).toHaveCount(0);
+    await expect(page.getByText('owner@partsible.local')).toHaveCount(0);
   });
 
   test('keeps a saved plan under My projects without an account card', async ({ page }) => {
@@ -64,7 +64,7 @@ test.describe('Simple install (single user)', () => {
 
       await expect(page.getByText(name)).toBeVisible();
       await expect(page.getByText('Account', { exact: true })).toHaveCount(0);
-      await expect(page.getByText('owner@planqer.local')).toHaveCount(0);
+      await expect(page.getByText('owner@partsible.local')).toHaveCount(0);
       await expect(page.getByText(/under your account/i)).toHaveCount(0);
     } finally {
       await page.request.delete(`${API}/api/projects/${id}`);
@@ -89,7 +89,7 @@ test.describe('Simple install (single user)', () => {
 
   test('does not let anyone register an account', async ({ page }) => {
     const response = await page.request.post(`${API}/api/auth/register`, {
-      data: { email: `nobody-${Date.now()}@example.com`, password: ['Planqer', Date.now()].join('-') + '!1' },
+      data: { email: `nobody-${Date.now()}@example.com`, password: ['Partsible', Date.now()].join('-') + '!1' },
     });
 
     expect(response.status()).toBe(403);
@@ -98,7 +98,7 @@ test.describe('Simple install (single user)', () => {
 
 test.describe('Advanced install (accounts)', () => {
   test.beforeEach(() => {
-    test.skip(singleUser, 'backend is running with PLANQER_SINGLE_USER=true');
+    test.skip(singleUser, 'backend is running with PARTSIBLE_SINGLE_USER=true');
   });
 
   test('still asks you to sign in', async ({ page }) => {

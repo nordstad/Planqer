@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 /*
-  Planqer runs in one visual world: the self-hosted README. Plain warm paper,
+  Partsible runs in one visual world: the self-hosted README. Plain warm paper,
   ink type, one confident accent (a single warm amber-orange) reserved for the
   action and the one figure that matters. Rounded, quiet, credibility-first —
   the badges and code-flourish of a typical OSS landing page are gone; what's

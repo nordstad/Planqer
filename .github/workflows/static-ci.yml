@@ -11,7 +11,7 @@ on:
     branches: [main]
     paths:
       - "frontend/**"
-      - "backend/planqer/**"
+      - "backend/partsible/**"
       - "backend/tests/test_build_demo.py"
       - "backend/tests/test_no_demo_code.py"
       - "scripts/**"
@@ -20,7 +20,7 @@ on:
   pull_request:
     paths:
       - "frontend/**"
-      - "backend/planqer/**"
+      - "backend/partsible/**"
       - "backend/tests/test_build_demo.py"
       - "backend/tests/test_no_demo_code.py"
       - "scripts/**"
@@ -46,7 +46,7 @@ jobs:
       - name: Build the self-hosted app
         working-directory: frontend
         env:
-          VITE_PLANQER_UMAMI_ID: "325f5fce-eb47-46fb-bad7-da1137224c33"
+          VITE_PARTSIBLE_UMAMI_ID: "325f5fce-eb47-46fb-bad7-da1137224c33"
         run: |
           npm ci
           npm run build

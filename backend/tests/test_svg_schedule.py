@@ -1,4 +1,4 @@
-from planqer.svg_visualization import SVGCuttingVisualizer
+from partsible.svg_visualization import SVGCuttingVisualizer
 
 
 def test_svg_contains_whole_mm_cut_schedule_for_standalone_exports():

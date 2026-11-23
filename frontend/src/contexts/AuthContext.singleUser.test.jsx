@@ -21,7 +21,7 @@ const Probe = () => {
 it('signs in as the instance owner without a token when the backend is single-user', async () => {
   const api = await import('../utils/api');
   api.getSetupStatus.mockResolvedValue({ needs_setup: false, single_user: true });
-  api.getCurrentUser.mockResolvedValue({ id: 'owner', email: 'owner@planqer.local', is_admin: true });
+  api.getCurrentUser.mockResolvedValue({ id: 'owner', email: 'owner@partsible.local', is_admin: true });
 
   render(<AuthProvider><Probe /></AuthProvider>);
 

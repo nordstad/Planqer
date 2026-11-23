@@ -5,9 +5,9 @@ import { FULL_VERSION_URL, PRIVACY_URL } from '../../utils/mode';
 import { analyticsState, setAnalyticsEnabled, startAnalytics, track } from '../../utils/analytics';
 import { version as appVersion } from '../../../package.json';
 
-const BANNER_DISMISSED_KEY = 'planqer.demo.bannerDismissed';
-const DOCS_URL = 'https://nordstad.github.io/Planqer/';
-const SOURCE_URL = 'https://github.com/nordstad/Planqer';
+const BANNER_DISMISSED_KEY = 'partsible.demo.bannerDismissed';
+const DOCS_URL = 'https://docs.partsible.com/';
+const SOURCE_URL = 'https://github.com/nordstad/Partsible';
 
 // Storage can be blocked (private modes, strict settings); the demo must still
 // work, it just forgets what it was told.

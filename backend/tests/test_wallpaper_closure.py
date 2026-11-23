@@ -1,15 +1,15 @@
 import pytest
 from pydantic import ValidationError
 
-from planqer.schemas.wallpaper import (
+from partsible.schemas.wallpaper import (
     Corner,
     Room,
     Wall,
     WallpaperPlanRequest,
     WallpaperSpec,
 )
-from planqer.wallpaper.closure import CLOSURE_TOLERANCE_MM, room_closure
-from planqer.wallpaper.plan import create_wallpaper_plan
+from partsible.wallpaper.closure import CLOSURE_TOLERANCE_MM, room_closure
+from partsible.wallpaper.plan import create_wallpaper_plan
 
 
 def wall(width: float, name: str = "Wall") -> Wall:

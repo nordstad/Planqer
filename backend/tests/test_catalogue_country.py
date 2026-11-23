@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
-from planqer.database import CatalogueEntry, User, engine
+from partsible.database import CatalogueEntry, User, engine
 
 pytestmark = pytest.mark.api
 
@@ -17,11 +17,11 @@ PASSWORD = "Testpassword" + "123!"
 
 @pytest.fixture
 def client(monkeypatch):
-    from planqer.api import app
+    from partsible.api import app
 
-    monkeypatch.delenv("PLANQER_CATALOGUE_COUNTRY", raising=False)
+    monkeypatch.delenv("PARTSIBLE_CATALOGUE_COUNTRY", raising=False)
     with TestClient(app) as test_client:
-        test_client.headers["X-Planqer-Setup-Secret"] = "test-setup-secret"
+        test_client.headers["X-Partsible-Setup-Secret"] = "test-setup-secret"
         yield test_client
 
 
@@ -80,7 +80,7 @@ def test_each_request_can_ask_for_its_own_country(client):
 
 def test_without_a_country_the_instance_default_applies(client, monkeypatch):
     assert _country(client) is None
-    monkeypatch.setenv("PLANQER_CATALOGUE_COUNTRY", "SE")
+    monkeypatch.setenv("PARTSIBLE_CATALOGUE_COUNTRY", "SE")
     assert _country(client) == "SE"
     assert _country(client, "?country=NO") == "NO"
     assert _country(client, "?country=generic") is None
@@ -88,7 +88,7 @@ def test_without_a_country_the_instance_default_applies(client, monkeypatch):
 
 def test_an_unknown_country_falls_back_to_the_default(client, monkeypatch):
     assert _country(client, "?country=ZZ") is None
-    monkeypatch.setenv("PLANQER_CATALOGUE_COUNTRY", "NO")
+    monkeypatch.setenv("PARTSIBLE_CATALOGUE_COUNTRY", "NO")
     assert _country(client, "?country=ZZ") == "NO"
 
 
@@ -207,7 +207,7 @@ def test_new_accounts_start_with_the_instance_countrys_currency(
     client, monkeypatch, country, currency
 ):
     if country:
-        monkeypatch.setenv("PLANQER_CATALOGUE_COUNTRY", country)
+        monkeypatch.setenv("PARTSIBLE_CATALOGUE_COUNTRY", country)
     _, headers = _register(client)
     settings = client.get("/api/settings/", headers=headers).json()
     assert settings["default_currency"] == currency

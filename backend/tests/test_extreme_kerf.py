@@ -6,12 +6,12 @@ This test ensures that the kerf bug fix handles edge cases and extreme values pr
 
 import pytest
 
-from planqer.algorithms import (
+from partsible.algorithms import (
     OptimizationAlgorithm,
     first_fit_decreasing,
     optimize_cutting,
 )
-from planqer.cutting import min_boards_required_with_cut_list
+from partsible.cutting import min_boards_required_with_cut_list
 
 
 class TestExtremeKerfValues:
@@ -163,7 +163,7 @@ class TestExtremeKerfValues:
 
     def test_visualization_extreme_kerf(self):
         """Test that visualization handles extreme kerf correctly."""
-        from planqer.svg_visualization import SVGCuttingVisualizer
+        from partsible.svg_visualization import SVGCuttingVisualizer
 
         parts = {100.0: 2}
         board_length = 300.0

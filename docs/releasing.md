@@ -1,6 +1,6 @@
 # Releasing
 
-Planqer releases are published by pushing a semantic-version tag in the form
+Partsible releases are published by pushing a semantic-version tag in the form
 `vX.Y.Z`. The `Publish images` GitHub Actions workflow builds and publishes the
 backend, frontend, and MCP server images to GHCR. The same tag also updates the
 GitHub Pages site: the docs, and the browser demo built from that tag (see
@@ -84,7 +84,7 @@ Do not continue with the release if any check fails.
 
 Update the release version consistently in:
 
-- `backend/planqer/__init__.py`
+- `backend/partsible/__init__.py`
 - `backend/pyproject.toml`
 - `backend/uv.lock`
 - `frontend/package.json`
@@ -93,25 +93,25 @@ Update the release version consistently in:
 - `mcp-server/package-lock.json`
 - `mcp-server/pyproject.toml`
 - `mcp-server/src/index.ts`
-- `mcp-server/src/planqer_mcp_server/server.py`
+- `mcp-server/src/partsible_mcp_server/server.py`
 - `mcp-server/uv.lock`
 
 The demo shows the version from `frontend/package.json` in its footer, and the
-Python it runs is stamped with `backend/planqer/__init__.py`.
+Python it runs is stamped with `backend/partsible/__init__.py`.
 `scripts/build-demo.py` fails if the two differ, so the demo cannot ship a
 mismatched pair.
 
 The same version is also written in the documentation's examples, which users
 copy to pin a release. Update these too:
 
-- `docs/getting-started.md` (`PLANQER_VERSION` and the image tag)
+- `docs/getting-started.md` (`PARTSIBLE_VERSION` and the image tag)
 - `docs/reference/configuration.md` (the example `.env`)
 - `docs/guide/mcp-server.md` (the MCP runtimes' version)
-- `README.md` (`PLANQER_VERSION` in the upgrade instructions)
+- `README.md` (`PARTSIBLE_VERSION` in the upgrade instructions)
 - `.env.example` (the example version in the comment)
 
 Then check that nothing was missed. The script reads the version from
-`backend/planqer/__init__.py` and reports every place that disagrees, with its
+`backend/partsible/__init__.py` and reports every place that disagrees, with its
 line:
 
 ```bash
@@ -179,12 +179,12 @@ maintainers:
   frontend and MCP server." Leave routine dependency bumps and internal
   refactors out of the sections above; they stay in the generated list.
 
-See [v0.12.0](https://github.com/nordstad/Planqer/releases/tag/v0.12.0) for the
+See [v0.12.0](https://github.com/nordstad/Partsible/releases/tag/v0.12.0) for the
 expected shape. Write the highlights to a file and append the generated notes
 below them:
 
 ```bash
-gh api repos/nordstad/Planqer/releases/generate-notes \
+gh api repos/nordstad/Partsible/releases/generate-notes \
   -f tag_name=vX.Y.Z -f previous_tag_name=vP.Q.R --jq .body > generated.md
 cat highlights.md generated.md > notes.md
 gh release create vX.Y.Z --title "vX.Y.Z" --notes-file notes.md
@@ -199,7 +199,7 @@ gh run list --workflow=publish-images.yml --limit=1
 
 ## The Pages site
 
-`https://nordstad.github.io/Planqer/` is one site with one publisher
+`https://docs.partsible.com/` is one site with one publisher
 (`.github/workflows/pages.yml`):
 
 - the docs are at the root;
@@ -225,7 +225,7 @@ demo has no `scripts/build-demo.py`; the workflow then publishes the docs alone.
 
 ### Analytics on the demo
 
-Only this workflow builds the demo with `VITE_PLANQER_UMAMI_ID` (the public
+Only this workflow builds the demo with `VITE_PARTSIBLE_UMAMI_ID` (the public
 Umami website id), so only the published demo counts visits. CI builds and the
 Docker images have no id and contain no analytics, which
 `scripts/check-no-demo-code.py` enforces. The demo is cached per commit, so
@@ -257,7 +257,7 @@ gh workflow run pages.yml --ref main -f app_ref=main
 gh run watch
 ```
 
-Then open `https://nordstad.github.io/Planqer/app/`. Run it again with no
+Then open `https://partsible.com/`. Run it again with no
 `app_ref` to go back to the latest release.
 
 ### Roll back

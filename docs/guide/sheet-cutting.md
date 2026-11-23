@@ -14,7 +14,7 @@ stock. Route: `/sheet-cutting`.
 
 ## Running the plan
 
-Click **Plan the sheet cuts**. Planqer nests your parts onto as few sheets as it
+Click **Plan the sheet cuts**. Partsible nests your parts onto as few sheets as it
 can and returns:
 
 - The number of sheets required, and material used / waste per sheet.

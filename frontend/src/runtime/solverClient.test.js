@@ -38,7 +38,7 @@ function setup(options = {}) {
       return worker;
     },
     runtimeUrl: "/runtime/",
-    bundleUrl: "/planqer.zip",
+    bundleUrl: "/partsible.zip",
     onProgress,
     ...options,
   });
@@ -62,7 +62,7 @@ describe("solver client", () => {
     expect(workers[0].posted[0].message).toEqual({
       type: "init",
       runtimeUrl: "/runtime/",
-      bundleUrl: "/planqer.zip",
+      bundleUrl: "/partsible.zip",
     });
     workers[0].emit({ id: 1, ok: true, result: { status: 200, body: {} } });
     await expect(pending).resolves.toEqual({ status: 200, body: {} });

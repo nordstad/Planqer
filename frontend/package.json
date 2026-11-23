@@ -1,5 +1,5 @@
 {
-  "name": "planqer-frontend",
+  "name": "partsible-frontend",
   "version": "0.14.0",
   "private": true,
   "license": "MIT",
@@ -19,7 +19,7 @@
   "scripts": {
     "start": "vite",
     "build": "vite build",
-    "build:static": "VITE_PLANQER_MODE=static PUBLIC_URL=/Planqer/app/ BUILD_PATH=build-static vite build",
+    "build:static": "VITE_PARTSIBLE_MODE=static PUBLIC_URL=/ BUILD_PATH=build-static vite build",
     "test": "vitest run",
     "test:parity": "vitest run --config vitest.parity.config.mjs",
     "test:runtime-browser": "playwright test --config playwright.runtime.config.js",

@@ -11,7 +11,7 @@ there are (n-1) cuts needed, so kerf_total = (n-1) * saw_blade_width.
 
 import pytest
 
-from planqer.algorithms import (
+from partsible.algorithms import (
     OptimizationAlgorithm,
     best_fit,
     best_fit_decreasing,
@@ -19,8 +19,8 @@ from planqer.algorithms import (
     first_fit_decreasing,
     optimize_cutting,
 )
-from planqer.cutting import min_boards_required_with_cut_list
-from planqer.helpers import compute_metrics
+from partsible.cutting import min_boards_required_with_cut_list
+from partsible.helpers import compute_metrics
 
 
 class TestKerfCalculations:

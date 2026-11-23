@@ -137,13 +137,13 @@ describe('MCP stdio integration', () => {
       cwd: projectRoot,
       env: {
         ...process.env,
-        PLANQER_API_URL: backendUrl,
+        PARTSIBLE_API_URL: backendUrl,
       } as Record<string, string>,
       stderr: 'pipe',
     });
 
     client = new Client({
-      name: 'planqer-mcp-integration-test',
+      name: 'partsible-mcp-integration-test',
       version: '1.0.0',
     });
 
@@ -333,7 +333,7 @@ describe('MCP stdio integration', () => {
   it('keeps TypeScript stdio stdout free of non-JSON-RPC logs', async () => {
     const child = spawn('node', [serverEntry], {
       cwd: projectRoot,
-      env: { ...process.env, PLANQER_API_URL: backendUrl },
+      env: { ...process.env, PARTSIBLE_API_URL: backendUrl },
       stdio: ['pipe', 'pipe', 'pipe'],
     });
     let stdout = '';

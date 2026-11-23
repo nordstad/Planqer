@@ -47,20 +47,20 @@ key names depend on the client, so check its documentation:
 ```json
 {
   "mcpServers": {
-    "planqer-cutting-optimizer": {
+    "partsible-cutting-optimizer": {
       "command": "uv",
       "args": [
         "--directory",
-        "/path/to/planqer/mcp-server",
+        "/path/to/partsible/mcp-server",
         "run",
-        "planqer-mcp-server"
+        "partsible-mcp-server"
       ]
     }
   }
 }
 ```
 
-The server talks to the backend over `PLANQER_API_URL`, which defaults to
+The server talks to the backend over `PARTSIBLE_API_URL`, which defaults to
 `http://localhost:8002/api`. When run through Compose, the `mcp-server`
 service is wired to the `backend` container on the Compose network. It is
 optional and must be enabled with the `mcp` profile:
@@ -86,13 +86,13 @@ cd mcp-server
 uv sync
 npm install
 npm run build
-uv run planqer-mcp-server
+uv run partsible-mcp-server
 ```
 
 Debug it with the [MCP Inspector](https://github.com/modelcontextprotocol/inspector):
 
 ```bash
-npx @modelcontextprotocol/inspector uv run planqer-mcp-server
+npx @modelcontextprotocol/inspector uv run partsible-mcp-server
 ```
 
 See `mcp-server/README.md` and `mcp-server/AI_INTEGRATION_GUIDE.md` in the

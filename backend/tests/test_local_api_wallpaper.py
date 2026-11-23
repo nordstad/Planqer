@@ -2,8 +2,8 @@ import json
 
 from fastapi.testclient import TestClient
 
-from planqer.api import app
-from planqer.local_api import handle
+from partsible.api import app
+from partsible.local_api import handle
 
 PAYLOAD = {
     "wallpaper": {

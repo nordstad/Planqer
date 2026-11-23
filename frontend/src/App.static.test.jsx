@@ -17,7 +17,7 @@ vi.mock('./runtime/localBackend', () => ({
 }));
 
 const renderAtHash = async (hash) => {
-  vi.stubEnv('VITE_PLANQER_MODE', 'static');
+  vi.stubEnv('VITE_PARTSIBLE_MODE', 'static');
   window.history.pushState({}, '', '/');
   window.location.hash = hash;
   const { default: App } = await import('./App');

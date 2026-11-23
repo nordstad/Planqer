@@ -1,7 +1,7 @@
 // The browser's solver: one shared worker, created on first use.
 //
 // The static build serves the Pyodide runtime under <base>pyodide/runtime/ and
-// the planqer bundle as <base>pyodide/bundle.zip. Only api.js in static mode
+// the partsible bundle as <base>pyodide/bundle.zip. Only api.js in static mode
 // imports this file.
 
 import i18n from "../i18n";

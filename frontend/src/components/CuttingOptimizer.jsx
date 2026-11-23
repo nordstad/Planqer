@@ -179,7 +179,7 @@ const CuttingOptimizer = () => {
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
     if (urlParams.get('import') !== '3d') return;
-    const importData = localStorage.getItem('planqer-3d-import');
+    const importData = localStorage.getItem('partsible-3d-import');
     if (!importData) return;
     try {
       const data = JSON.parse(importData);
@@ -193,7 +193,7 @@ const CuttingOptimizer = () => {
         if (data.product?.type) setProductSel(data.product);
         if (data.boardThickness != null) setBoardThickness(String(data.boardThickness));
         if (data.boardWidth != null) setBoardWidth(String(data.boardWidth));
-        localStorage.removeItem('planqer-3d-import');
+        localStorage.removeItem('partsible-3d-import');
         navigate(location.pathname, { replace: true });
       }
     } catch (err) {
@@ -600,7 +600,7 @@ const CuttingOptimizer = () => {
     try {
       const moved = await movePlanToProject({ ...saved, projectType: 'board' }, group.id);
       setSaved(moved);
-      localStorage.setItem('planqer.lastProjectGroup', group.id);
+      localStorage.setItem('partsible.lastProjectGroup', group.id);
       return true;
     } catch (error) {
       setApiError(t('projectUi.moveFailed', { message: error.message }));

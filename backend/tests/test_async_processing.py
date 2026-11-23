@@ -7,8 +7,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from planqer.algorithms import OptimizationAlgorithm
-from planqer.async_processing import (
+from partsible.algorithms import OptimizationAlgorithm
+from partsible.async_processing import (
     TaskStatus,
     cleanup_old_tasks,
     generate_task_id,
@@ -180,7 +180,7 @@ async def test_process_optimization_async_success(clean_task_manager):
     mock_response = MockResponse()
 
     # Mock the run_optimization function
-    with patch("planqer.async_processing.run_optimization", return_value=mock_response):
+    with patch("partsible.async_processing.run_optimization", return_value=mock_response):
         # Create task
         clean_task_manager.create_task(task_id)
 
@@ -213,7 +213,7 @@ async def test_process_optimization_async_failure(clean_task_manager):
 
     # Mock the run_optimization function to raise an exception
     with patch(
-        "planqer.async_processing.run_optimization",
+        "partsible.async_processing.run_optimization",
         side_effect=ValueError("Test error"),
     ):
         # Create task
@@ -292,7 +292,7 @@ async def test_algorithm_auto_selection(clean_task_manager):
 
     mock_response = MockResponse()
 
-    with patch("planqer.async_processing.run_optimization", return_value=mock_response):
+    with patch("partsible.async_processing.run_optimization", return_value=mock_response):
         # Create task
         clean_task_manager.create_task(task_id)
 

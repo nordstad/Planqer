@@ -1,4 +1,4 @@
-// Runs the Python solvers (planqer.local_api) inside Pyodide.
+// Runs the Python solvers (partsible.local_api) inside Pyodide.
 //
 // Everything that touches the outside world is passed in, so the logic can be
 // tested without downloading a runtime. solverWorker.js wires in the real
@@ -31,7 +31,7 @@ export function createSolverRuntime({
     pyodide.unpackArchive(bundle, "zip", { extractDir: sitePackages });
     pyodide.runPython(`
 import json
-from planqer.local_api import handle
+from partsible.local_api import handle
 
 def call_local_api(op, payload, data):
     return handle(op, payload, None if data is None else bytes(data.to_py()))

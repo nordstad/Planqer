@@ -25,7 +25,7 @@ describe('HelpPage', () => {
     expect(screen.getAllByRole('link', { name: 'Read the full documentation' })).toHaveLength(2);
     expect(screen.getAllByRole('link', { name: 'Read the full documentation' })[0]).toHaveAttribute(
       'href',
-      'https://nordstad.github.io/Planqer/',
+      'https://docs.partsible.com/',
     );
   });
 

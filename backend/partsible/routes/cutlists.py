@@ -1,0 +1,95 @@
+import time
+
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from starlette.requests import Request
+
+from partsible.auth import get_current_user
+from partsible.cutlist_services import (
+    build_3d_cutlist_response,
+    build_step_cutlist_response,
+    validate_cutlist_options,
+)
+from partsible.errors import PartsibleError
+from partsible.schemas import StepCutlistResponse, ThreeDCutlistResponse
+from partsible.step_cutlist import process_uploaded_step
+from partsible.threed_cutlist import process_uploaded_stl
+from partsible.validation import sanitize_project_name
+
+router = APIRouter(tags=["3D Model Cutlist", "STEP Model Cutlist"])
+from .common import limiter
+
+
+@router.post("/3d-cutlist", response_model=ThreeDCutlistResponse)
+@limiter.limit("5/minute")
+async def create_3d_cutlist(
+    request: Request,
+    file: UploadFile = File(...),
+    units: str = Form("mm"),
+    round_precision: int = Form(1),
+    project_name: str = Form(None),
+    current_user=Depends(get_current_user),
+):
+    validate_cutlist_options(units, round_precision)
+    project_name = sanitize_project_name(project_name) if project_name else None
+    started = time.time()
+    try:
+        result = await process_uploaded_stl(
+            file=file,
+            units=units,
+            round_precision=round_precision,
+            project_name=project_name,
+            include_warnings=True,
+        )
+        items, parts, *warnings = result
+        return build_3d_cutlist_response(
+            items,
+            parts,
+            warnings[0] if warnings else [],
+            project_name=project_name,
+            units=units,
+            started=started,
+        )
+    except (HTTPException, PartsibleError):
+        raise
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500, detail=f"3D cutlist processing failed: {exc!s}"
+        )
+
+
+@router.post("/step-cutlist", response_model=StepCutlistResponse)
+@limiter.limit("3/minute")
+async def create_step_cutlist(
+    request: Request,
+    file: UploadFile = File(...),
+    units: str = Form("mm"),
+    round_precision: int = Form(1),
+    project_name: str = Form(None),
+    current_user=Depends(get_current_user),
+):
+    validate_cutlist_options(units, round_precision)
+    project_name = sanitize_project_name(project_name) if project_name else None
+    started = time.time()
+    try:
+        result = await process_uploaded_step(
+            file=file,
+            units=units,
+            round_precision=round_precision,
+            project_name=project_name,
+            include_warnings=True,
+        )
+        items, parts, *warnings = result
+        return build_step_cutlist_response(
+            items,
+            parts,
+            warnings[0] if warnings else [],
+            project_name=project_name,
+            units=units,
+            started=started,
+        )
+    except (HTTPException, PartsibleError):
+        raise
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500, detail=f"STEP cutlist processing failed: {exc!s}"
+        )

@@ -45,7 +45,7 @@ const boardPlan = (name, material, lengths, extra = {}) => ({
 test.describe('Project shopping list', () => {
   test('merges identical products, adds spare, and exports a CSV that matches the screen', async ({ page }) => {
     const email = `shopping-${Date.now()}@example.com`;
-    const credential = ['Planqer', Date.now(), 'e2e'].join('-') + '!1';
+    const credential = ['Partsible', Date.now(), 'e2e'].join('-') + '!1';
     await page.request.post(`${API}/api/auth/register`, { data: { email, password: credential } });
     const login = await page.request.post(`${API}/api/auth/login`, { data: { email, password: credential } });
     const { access_token: accessToken } = await login.json();

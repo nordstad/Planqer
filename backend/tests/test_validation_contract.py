@@ -1,13 +1,13 @@
 import pytest
 from pydantic import ValidationError
 
-from planqer.schemas.cutting import PlanqerRequest
-from planqer.schemas.sheet import SheetOptimizationRequest
-from planqer.schemas.tile import TileLayoutRequest
+from partsible.schemas.cutting import PartsibleRequest
+from partsible.schemas.sheet import SheetOptimizationRequest
+from partsible.schemas.tile import TileLayoutRequest
 
 
 def test_board_schema_accepts_decimal_and_boundary_values():
-    request = PlanqerRequest(
+    request = PartsibleRequest(
         parts={0.1: 1, 15000: 1},
         available_board_lengths=[1, 15000],
         saw_blade_width=0.1,
@@ -44,9 +44,9 @@ def test_tile_schema_accepts_zero_joint_and_decimal_values():
 
 def test_board_schema_rejects_values_outside_the_shared_contract():
     with pytest.raises(ValidationError):
-        PlanqerRequest(parts={15000.1: 1}, available_board_lengths=[1000])
+        PartsibleRequest(parts={15000.1: 1}, available_board_lengths=[1000])
     with pytest.raises(ValidationError):
-        PlanqerRequest(parts={1000: 1}, available_board_lengths=[15000.1])
+        PartsibleRequest(parts={1000: 1}, available_board_lengths=[15000.1])
 
 
 def test_sheet_side_limit_stays_at_10000():

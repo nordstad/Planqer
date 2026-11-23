@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Check that every hard-coded Planqer version agrees.
+"""Check that every hard-coded Partsible version agrees.
 
-The source of truth is `__version__` in backend/planqer/__init__.py. Run this
+The source of truth is `__version__` in backend/partsible/__init__.py. Run this
 after bumping a release (docs/releasing.md); the publish workflow runs it with
 the pushed tag, so a tag that doesn't match the files never publishes images.
 
@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-SOURCE = "backend/planqer/__init__.py"
+SOURCE = "backend/partsible/__init__.py"
 
 # (file, pattern, what it is). Every match must carry the release version, and
 # there must be at least one.
@@ -24,15 +24,15 @@ TEXT_CHECKS = [
     ("backend/pyproject.toml", r'^version = "([^"]+)"', "backend package version"),
     ("mcp-server/pyproject.toml", r'^version = "([^"]+)"', "MCP Python package version"),
     ("mcp-server/src/index.ts", r"MCP_SERVER_VERSION = '([^']+)'", "TypeScript MCP server version"),
-    ("mcp-server/src/planqer_mcp_server/server.py", r'MCP_SERVER_VERSION = "([^"]+)"', "Python MCP server version"),
-    ("mcp-server/src/planqer_mcp_server/server.py", r'^\s+version="([^"]+)",', "Python MCP server protocol version"),
-    ("backend/uv.lock", r'^name = "planqer"\nversion = "([^"]+)"', "backend lock file"),
-    ("mcp-server/uv.lock", r'^name = "planqer-mcp-server"\nversion = "([^"]+)"', "MCP lock file"),
-    ("docs/getting-started.md", r"PLANQER_VERSION=(\d[^\s`]*)", "pinned version in Getting started"),
-    ("docs/getting-started.md", r"planqer-(?:backend|frontend|mcp-server):(\d[^\s`)]*)", "image tag in Getting started"),
-    ("docs/reference/configuration.md", r"PLANQER_VERSION=(\d[^\s`]*)", "example .env in Configuration"),
+    ("mcp-server/src/partsible_mcp_server/server.py", r'MCP_SERVER_VERSION = "([^"]+)"', "Python MCP server version"),
+    ("mcp-server/src/partsible_mcp_server/server.py", r'^\s+version="([^"]+)",', "Python MCP server protocol version"),
+    ("backend/uv.lock", r'^name = "partsible"\nversion = "([^"]+)"', "backend lock file"),
+    ("mcp-server/uv.lock", r'^name = "partsible-mcp-server"\nversion = "([^"]+)"', "MCP lock file"),
+    ("docs/getting-started.md", r"PARTSIBLE_VERSION=(\d[^\s`]*)", "pinned version in Getting started"),
+    ("docs/getting-started.md", r"partsible-(?:backend|frontend|mcp-server):(\d[^\s`)]*)", "image tag in Getting started"),
+    ("docs/reference/configuration.md", r"PARTSIBLE_VERSION=(\d[^\s`]*)", "example .env in Configuration"),
     ("docs/guide/mcp-server.md", r"share the same tool schema and version \(`([^`]+)`\)", "MCP version in the MCP guide"),
-    ("README.md", r"PLANQER_VERSION=(\d[^\s`]*)", "pinned version in the README"),
+    ("README.md", r"PARTSIBLE_VERSION=(\d[^\s`]*)", "pinned version in the README"),
     (".env.example", r"\(e\.g\. (\d[^)\s]*)\)", "example version in .env.example"),
 ]
 JSON_CHECKS = [

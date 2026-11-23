@@ -44,7 +44,7 @@ describe("last exported", () => {
   });
 
   it("ignores a damaged value", () => {
-    localStorage.setItem("planqer.demo.lastExported", "yesterday-ish");
+    localStorage.setItem("partsible.demo.lastExported", "yesterday-ish");
     expect(readLastExported()).toBeNull();
   });
 });

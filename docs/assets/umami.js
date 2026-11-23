@@ -4,7 +4,7 @@
    frontend/src/utils/docsAnalytics.test.js. Pageviews only: every named event
    is cancelled. The opt-out flag is the one the demo uses (same origin). */
 (function () {
-  var KEY = "planqer.analytics.optout";
+  var KEY = "partsible.analytics.optout";
   var ID = "325f5fce-eb47-46fb-bad7-da1137224c33";
 
   function optedOut() {
@@ -17,7 +17,7 @@
   function enabled() { return !optedOut() && !browserSaysNo(); }
   function script() { return document.head.querySelector("script[data-website-id]"); }
 
-  window.planqerDocsBeforeSend = function (type, payload) {
+  window.partsibleDocsBeforeSend = function (type, payload) {
     return enabled() && type === "event" && !payload.name ? payload : false;
   };
 
@@ -31,7 +31,7 @@
     el.dataset.doNotTrack = "true";
     el.dataset.excludeSearch = "true";
     el.dataset.excludeHash = "true";
-    el.dataset.beforeSend = "planqerDocsBeforeSend";
+    el.dataset.beforeSend = "partsibleDocsBeforeSend";
     document.head.appendChild(el);
   }
 

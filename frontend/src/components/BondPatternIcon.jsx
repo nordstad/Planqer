@@ -2,7 +2,7 @@
   A tiny swatch of what each bond pattern actually looks like, so picking one
   from the Bond select doesn't require running the solver first to find out.
   The cell math here is a direct, deliberately simplified port of the real
-  generators in backend/planqer/tile_layout/bonds.py (HerringboneBond,
+  generators in backend/partsible/tile_layout/bonds.py (HerringboneBond,
   DoubleHerringboneBond, etc.) — same translation vectors, same motif — just
   evaluated over a small fixed margin instead of clipped to a real surface.
   Diagonal variants reuse the axis-aligned cells and rotate the whole group

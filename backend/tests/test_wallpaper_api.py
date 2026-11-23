@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 
-from planqer.api import app
+from partsible.api import app
 
 
 def test_wallpaper_plan_endpoint_returns_a_plan():

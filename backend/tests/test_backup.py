@@ -6,18 +6,18 @@ from pathlib import Path
 
 import pytest
 
-from planqer.backup import (
+from partsible.backup import (
     BACKUP_FORMAT,
     BackupError,
     create_backup,
     database_path_from_url,
     restore_backup,
 )
-from planqer.cli import main
+from partsible.cli import main
 
 
 def test_create_backup_uses_sqlite_backup_api_and_writes_manifest(tmp_path: Path):
-    database_path = tmp_path / "planqer.db"
+    database_path = tmp_path / "partsible.db"
     _create_database(database_path, project_name="kitchen")
 
     result = create_backup(
@@ -26,13 +26,13 @@ def test_create_backup_uses_sqlite_backup_api_and_writes_manifest(tmp_path: Path
         now=datetime(2026, 8, 26, 21, 15, 30, tzinfo=UTC),
     )
 
-    assert result.archive_path.name == "planqer-backup-2026-08-26T211530Z.tar.gz"
+    assert result.archive_path.name == "partsible-backup-2026-08-26T211530Z.tar.gz"
     assert result.archive_path.exists()
 
     with tarfile.open(result.archive_path, "r:gz") as archive:
         assert {member.name for member in archive.getmembers()} == {
             "manifest.json",
-            "planqer.db",
+            "partsible.db",
         }
         manifest_file = archive.extractfile("manifest.json")
         assert manifest_file is not None
@@ -90,19 +90,19 @@ def test_restore_backup_replaces_database_and_keeps_safety_copy(tmp_path: Path):
 
     assert _project_names(target_path) == ["backup"]
     assert result.safety_copy_path is not None
-    assert result.safety_copy_path.name == "planqer-pre-restore-2026-08-26T220000Z.db"
+    assert result.safety_copy_path.name == "partsible-pre-restore-2026-08-26T220000Z.db"
     assert _project_names(result.safety_copy_path) == ["current"]
 
 
 def test_restore_backup_rejects_tampered_archive(tmp_path: Path):
     archive_path = tmp_path / "bad.tar.gz"
     manifest_path = tmp_path / "manifest.json"
-    database_path = tmp_path / "planqer.db"
+    database_path = tmp_path / "partsible.db"
     _create_database(database_path, project_name="backup")
     manifest_path.write_text(json.dumps(_manifest("0" * 64)), encoding="utf-8")
     with tarfile.open(archive_path, "w:gz") as archive:
         archive.add(manifest_path, arcname="manifest.json")
-        archive.add(database_path, arcname="planqer.db")
+        archive.add(database_path, arcname="partsible.db")
 
     with pytest.raises(BackupError, match="checksum"):
         restore_backup(
@@ -115,14 +115,14 @@ def test_restore_backup_rejects_tampered_archive(tmp_path: Path):
 def test_restore_backup_requires_manifest_checksum(tmp_path: Path):
     archive_path = tmp_path / "missing-checksum.tar.gz"
     manifest_path = tmp_path / "manifest.json"
-    database_path = tmp_path / "planqer.db"
+    database_path = tmp_path / "partsible.db"
     _create_database(database_path, project_name="backup")
     manifest = _manifest("0" * 64)
     del manifest["database"]["sha256"]
     manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
     with tarfile.open(archive_path, "w:gz") as archive:
         archive.add(manifest_path, arcname="manifest.json")
-        archive.add(database_path, arcname="planqer.db")
+        archive.add(database_path, arcname="partsible.db")
 
     with pytest.raises(BackupError, match="sha256"):
         restore_backup(
@@ -135,13 +135,13 @@ def test_restore_backup_requires_manifest_checksum(tmp_path: Path):
 def test_restore_backup_rejects_schema_revision_mismatch(tmp_path: Path):
     archive_path = tmp_path / "old-schema.tar.gz"
     manifest_path = tmp_path / "manifest.json"
-    database_path = tmp_path / "planqer.db"
+    database_path = tmp_path / "partsible.db"
     _create_database(database_path, project_name="backup")
     manifest = _manifest(_sha256(database_path), alembic_revision="006_add_board_costs")
     manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
     with tarfile.open(archive_path, "w:gz") as archive:
         archive.add(manifest_path, arcname="manifest.json")
-        archive.add(database_path, arcname="planqer.db")
+        archive.add(database_path, arcname="partsible.db")
 
     with pytest.raises(BackupError, match="schema revision"):
         restore_backup(
@@ -167,7 +167,7 @@ def test_database_path_uses_config_yaml_when_env_is_unset(
 def test_cli_backup_prints_created_archive(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
-    database_path = tmp_path / "planqer.db"
+    database_path = tmp_path / "partsible.db"
     _create_database(database_path, project_name="kitchen")
 
     exit_code = main(
@@ -216,10 +216,10 @@ def _manifest(
     return {
         "format": BACKUP_FORMAT,
         "created_at": "2026-08-26T21:15:30Z",
-        "planqer_version": "0.1.0",
+        "partsible_version": "0.1.0",
         "database": {
             "type": "sqlite",
-            "filename": "planqer.db",
+            "filename": "partsible.db",
             "sha256": sha256,
             "alembic_revision": alembic_revision,
         },

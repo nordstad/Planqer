@@ -28,11 +28,11 @@ def builder():
 
 
 def test_the_bundle_is_stamped_with_the_package_version(builder, tmp_path):
-    import planqer
+    import partsible
 
     target = builder.build_bundle(tmp_path)
 
-    assert target.name == f"planqer-{planqer.__version__}.zip"
+    assert target.name == f"partsible-{partsible.__version__}.zip"
 
 
 def test_the_bundle_contains_exactly_the_allow_list(builder, tmp_path):
@@ -63,12 +63,12 @@ def test_the_code_only_imports_allow_listed_modules(builder):
         import json
         import sys
         import trimesh
-        from planqer.local_api import handle
+        from partsible.local_api import handle
 
         stl = trimesh.creation.box(extents=[1800, 95, 45]).export(file_type="stl")
         handle("cutlist_3d", json.dumps({"filename": "shelf.stl"}), stl)
         handle("catalogue", json.dumps({"country": "SE"}))
-        print(json.dumps(sorted(m for m in sys.modules if m.startswith("planqer"))))
+        print(json.dumps(sorted(m for m in sys.modules if m.startswith("partsible"))))
         """
     )
     result = subprocess.run(

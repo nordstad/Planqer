@@ -467,7 +467,7 @@ const WallpaperOptimizer = () => {
       const moved = await movePlanToProject({ ...saved, projectType: 'wallpaper' }, group.id);
       setSaved(moved);
       setProjectGroupId(group.id);
-      localStorage.setItem('planqer.lastProjectGroup', group.id);
+      localStorage.setItem('partsible.lastProjectGroup', group.id);
       return true;
     } catch (err) {
       setError(t('projectUi.moveFailed', { message: err.message }));

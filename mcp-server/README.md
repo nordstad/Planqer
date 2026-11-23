@@ -1,6 +1,6 @@
 <!-- markdownlint-disable -->
 
-# Planqer
+# Partsible
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
 
@@ -46,7 +46,7 @@
 | `get_demo_payloads` | View all available examples | *"Show me example cutting scenarios"* |
 | `get_cutting_example` | Learn the API format | *"How do I format a cutting request?"* |
 
-Planqer is a powerful cutting optimization solution that minimizes material waste when cutting boards to specific lengths. Built as a microservices application, it features a FastAPI backend for calculations and a React frontend for intuitive user interaction.
+Partsible is a powerful cutting optimization solution that minimizes material waste when cutting boards to specific lengths. Built as a microservices application, it features a FastAPI backend for calculations and a React frontend for intuitive user interaction.
 
 ## 🚀 Features
 
@@ -59,7 +59,7 @@ Planqer is a powerful cutting optimization solution that minimizes material wast
 ## 📋 Project Structure
 
 ```text
-planqer/
+partsible/
 ├── LICENSE
 ├── README.md
 ├── docker-compose.yml
@@ -69,7 +69,7 @@ planqer/
 ├── backend/             # FastAPI service with optimization algorithms
 │   ├── Dockerfile
 │   ├── pyproject.toml
-│   └── planqer/         # Core optimization logic
+│   └── partsible/         # Core optimization logic
 ├── frontend/            # React application
 │   ├── Dockerfile
 │   ├── package.json
@@ -80,7 +80,7 @@ planqer/
     ├── pyproject.toml
     ├── schemas/          # Tool contract and demo payloads
     ├── src/index.ts      # TypeScript implementation
-    └── src/planqer_mcp_server/  # Python implementation
+    └── src/partsible_mcp_server/  # Python implementation
 ```
 
 ## ✅ MCP Validation Commands
@@ -158,8 +158,8 @@ Operational guidance:
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/nordstad/Planqer.git
-   cd Planqer
+   git clone https://github.com/nordstad/Partsible.git
+   cd Partsible
    ```
 
 2. Build and run with Docker Compose:
@@ -188,14 +188,14 @@ curl -X POST "http://localhost:8002/api/cutting-plans" \
 ### Swagger Docs
 
 <http://localhost:8002/docs> — or the same path on whatever host you serve
-Planqer from.
+Partsible from.
 
 ### Getting Started with MCP
 
 **1. Test with MCP Inspector (Recommended for first-time users):**
 ```bash
 cd mcp-server
-npx @modelcontextprotocol/inspector uv run planqer-mcp-server
+npx @modelcontextprotocol/inspector uv run partsible-mcp-server
 ```
 
 **2. Connect an MCP client:**
@@ -205,13 +205,13 @@ Any MCP client that can launch a stdio server works. Add this to its MCP server 
 ```json
 {
   "mcpServers": {
-    "planqer-cutting-optimizer": {
+    "partsible-cutting-optimizer": {
       "command": "uv",
       "args": [
         "--directory",
-        "/path/to/planqer/mcp-server",
+        "/path/to/partsible/mcp-server",
         "run",
-        "planqer-mcp-server"
+        "partsible-mcp-server"
       ]
     }
   }
@@ -270,9 +270,9 @@ Install the MCP extension in VS Code and add this configuration to `.vscode/mcp.
 ```json
 {
   "mcpServers": {
-    "planqer": {
+    "partsible": {
       "command": "uv",
-      "args": ["--directory", "./mcp-server", "run", "planqer-mcp-server"]
+      "args": ["--directory", "./mcp-server", "run", "partsible-mcp-server"]
     }
   }
 }
@@ -333,7 +333,7 @@ Assistant: Looking at your cutting plan, I can see the main waste factors:
    ```bash
    # Test server directly
    cd mcp-server
-   uv run planqer-mcp-server
+   uv run partsible-mcp-server
    ```
 
 3. **"Client not connecting"**
@@ -346,14 +346,14 @@ Assistant: Looking at your cutting plan, I can see the main waste factors:
    # Start the full stack first
    docker compose up -d
    # Then test MCP
-   cd mcp-server && uv run planqer-mcp-server
+   cd mcp-server && uv run partsible-mcp-server
    ```
 
 **Verification:**
 ```bash
 # Quick test that everything works
 cd mcp-server
-npx @modelcontextprotocol/inspector uv run planqer-mcp-server
+npx @modelcontextprotocol/inspector uv run partsible-mcp-server
 # Click "optimize_demo" in the inspector - should return cutting plan
 ```
 
@@ -361,7 +361,7 @@ npx @modelcontextprotocol/inspector uv run planqer-mcp-server
 
 ### Backend
 
-The core optimization logic is located in `backend/planqer/`. To set up a local development environment:
+The core optimization logic is located in `backend/partsible/`. To set up a local development environment:
 
 ```bash
 # Set up backend development environment
@@ -387,7 +387,7 @@ To develop or test the MCP server:
 ```bash
 cd mcp-server
 uv sync  # Install dependencies
-uv run planqer-mcp-server  # Run the server
+uv run partsible-mcp-server  # Run the server
 ```
 
 ## 🤝 Contributing
@@ -406,5 +406,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 👥 Acknowledgments
 
-- Special thanks to all contributors who have helped shape Planqer
+- Special thanks to all contributors who have helped shape Partsible
 - Inspired by real-world cutting optimization challenges in woodworking and manufacturing

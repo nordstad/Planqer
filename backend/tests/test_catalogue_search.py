@@ -7,9 +7,9 @@ from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
-from planqer.catalogue import get_catalogue
-from planqer.catalogue.search import fold, search_products
-from planqer.database import CatalogueEntry, engine
+from partsible.catalogue import get_catalogue
+from partsible.catalogue.search import fold, search_products
+from partsible.database import CatalogueEntry, engine
 
 
 def ids(results):
@@ -100,9 +100,9 @@ def test_detail_aliases_are_unambiguous():
 
 @pytest.fixture
 def client(monkeypatch):
-    from planqer.api import app
+    from partsible.api import app
 
-    monkeypatch.setenv("PLANQER_CATALOGUE_COUNTRY", "SE")
+    monkeypatch.setenv("PARTSIBLE_CATALOGUE_COUNTRY", "SE")
     with TestClient(app) as test_client:
         yield test_client
 

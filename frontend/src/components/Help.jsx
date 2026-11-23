@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAccountContext } from '../contexts/useAccountContext';
 import CatalogPage from './CatalogPage';
 
-const DOCS_URL = 'https://nordstad.github.io/Planqer/';
+const DOCS_URL = 'https://docs.partsible.com/';
 
 const sections = [
   { id: 'getting-started', title: 'help.sectionGettingStarted', no: '01' },

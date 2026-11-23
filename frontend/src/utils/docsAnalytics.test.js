@@ -14,7 +14,7 @@ beforeEach(() => {
   localStorage.clear();
   document.head.innerHTML = '';
   document.body.innerHTML = '';
-  delete window.planqerDocsBeforeSend;
+  delete window.partsibleDocsBeforeSend;
   signal('doNotTrack', null);
   signal('globalPrivacyControl', undefined);
 });
@@ -32,7 +32,7 @@ it('loads Umami for pageviews only, on the real host, without search or hash', (
 });
 
 it('loads nothing after the same opt-out flag the demo uses', () => {
-  localStorage.setItem('planqer.analytics.optout', '1');
+  localStorage.setItem('partsible.analytics.optout', '1');
   run();
   expect(scripts()).toHaveLength(0);
 });
@@ -45,8 +45,8 @@ it.each([['doNotTrack', '1'], ['globalPrivacyControl', true]])('loads nothing wh
 
 it('cancels named events and identities, and lets pageviews through', () => {
   run();
-  const pageview = { url: '/Planqer/' };
-  expect(window.planqerDocsBeforeSend('event', pageview)).toBe(pageview);
-  expect(window.planqerDocsBeforeSend('event', { name: 'x' })).toBe(false);
-  expect(window.planqerDocsBeforeSend('identify', { id: 'a' })).toBe(false);
+  const pageview = { url: '/Partsible/' };
+  expect(window.partsibleDocsBeforeSend('event', pageview)).toBe(pageview);
+  expect(window.partsibleDocsBeforeSend('event', { name: 'x' })).toBe(false);
+  expect(window.partsibleDocsBeforeSend('identify', { id: 'a' })).toBe(false);
 });

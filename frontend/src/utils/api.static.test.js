@@ -21,7 +21,7 @@ let api;
 beforeEach(async () => {
   vi.clearAllMocks();
   entries.mockResolvedValue([]);
-  vi.stubEnv('VITE_PLANQER_MODE', 'static');
+  vi.stubEnv('VITE_PARTSIBLE_MODE', 'static');
   vi.resetModules();
   api = await import('./api');
 });

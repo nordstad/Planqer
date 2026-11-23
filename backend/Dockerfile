@@ -15,7 +15,7 @@ COPY LICENSE ../LICENSE
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-install-project --no-dev
 
-COPY backend/planqer ./planqer
+COPY backend/partsible ./partsible
 COPY backend/config.yaml ./
 COPY backend/alembic ./alembic
 COPY backend/alembic.ini ./
@@ -33,7 +33,7 @@ RUN useradd --create-home --shell /bin/bash appuser \
     && install -d -o appuser -g appuser /app/backend/data
 
 COPY --from=builder --chown=appuser:appuser /app/backend/.venv ./.venv
-COPY --from=builder --chown=appuser:appuser /app/backend/planqer ./planqer
+COPY --from=builder --chown=appuser:appuser /app/backend/partsible ./partsible
 COPY --from=builder --chown=appuser:appuser /app/backend/config.yaml ./
 COPY --from=builder --chown=appuser:appuser /app/backend/alembic ./alembic
 COPY --from=builder --chown=appuser:appuser /app/backend/alembic.ini ./
@@ -46,4 +46,4 @@ EXPOSE 8002
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8002/api/health')"
 
-CMD ["uvicorn", "planqer.api:app", "--host", "0.0.0.0", "--port", "8002"]
+CMD ["uvicorn", "partsible.api:app", "--host", "0.0.0.0", "--port", "8002"]

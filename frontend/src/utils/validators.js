@@ -1,5 +1,5 @@
-// These limits mirror the numeric contracts in backend/planqer/validation.py
-// and backend/planqer/schemas/*.py. All dimensions are millimetres. Board and
+// These limits mirror the numeric contracts in backend/partsible/validation.py
+// and backend/partsible/schemas/*.py. All dimensions are millimetres. Board and
 // part lengths reach 15 m (long glulam); sheet sides stay at 10 m.
 export const MIN_PART_LENGTH = 1;
 export const MAX_PART_LENGTH = 15000;

@@ -1,18 +1,18 @@
 # Getting started
 
-Planqer is officially supported via Docker Compose. The recommended install
+Partsible is officially supported via Docker Compose. The recommended install
 uses published release images from GitHub Container Registry, so Docker does
 not need to build the frontend, backend, or MCP server locally. Running from
 source is a contributor path — see [Contributing](contributing.md) if that's
 what you want.
 
-## Two ways to use Planqer
+## Two ways to use Partsible
 
 **Try it in your browser (light version).** Open the
-[Planqer demo](https://nordstad.github.io/Planqer/app/). Nothing to install and
+[Partsible demo](https://partsible.com/). Nothing to install and
 no account. It runs in your browser, so projects are saved only in that browser
 on that device, and clearing browser data deletes them. Export a backup to keep
-them. Planqer is built for computers, where there is more room to work. It
+them. Partsible is built for computers, where there is more room to work. It
 also runs on phones: tested on a recent iPhone, other phones are untested. See
 [Demo or full version](demo-vs-full.md) for what is different.
 
@@ -39,7 +39,7 @@ page covers both.
 ## Simple install (recommended)
 
 ```bash
-curl -O https://raw.githubusercontent.com/nordstad/Planqer/main/docker-compose.simple.yml
+curl -O https://raw.githubusercontent.com/nordstad/Partsible/main/docker-compose.simple.yml
 docker compose -f docker-compose.simple.yml up -d
 ```
 
@@ -50,9 +50,9 @@ projects**, and the catalogue is under **Catalogue**.
 !!! note "Only this computer"
     The simple install is reachable only from the computer it runs on. That is
     what makes it safe to run without a password. If you open it to your
-    network, anyone on that network can read and change your projects. Planqer
+    network, anyone on that network can read and change your projects. Partsible
     refuses to start without sign-in on a network address unless you set
-    `PLANQER_ALLOW_OPEN_LAN=true`. If you want other devices, use the advanced
+    `PARTSIBLE_ALLOW_OPEN_LAN=true`. If you want other devices, use the advanced
     install instead.
 
 To upgrade, back up first, then pull and recreate. See [Upgrade](#upgrade) and
@@ -61,8 +61,8 @@ use `docker-compose.simple.yml` in place of `docker-compose.release.yml`.
 ## Advanced install
 
 ```bash
-git clone https://github.com/nordstad/Planqer.git
-cd Planqer
+git clone https://github.com/nordstad/Partsible.git
+cd Partsible
 docker compose -f docker-compose.release.yml up -d
 ```
 
@@ -73,26 +73,26 @@ Open:
 - Health check: <http://localhost:8002/health>
 
 !!! note "First account is the admin"
-    The default Compose files bind Planqer only to `127.0.0.1`. Open the app on
+    The default Compose files bind Partsible only to `127.0.0.1`. Open the app on
     the same computer and create the first account in the browser; it becomes
     the instance administrator. Every account is **local to that instance** —
     there is no cloud tier, and accounts never leave your own server.
 
 !!! warning "LAN and reverse-proxy deployments"
-    Before exposing a fresh instance, set `PLANQER_BIND_ADDRESS=0.0.0.0`,
-    `PLANQER_TRUSTED_BOOTSTRAP=false`, and a random `PLANQER_SETUP_SECRET` in
+    Before exposing a fresh instance, set `PARTSIBLE_BIND_ADDRESS=0.0.0.0`,
+    `PARTSIBLE_TRUSTED_BOOTSTRAP=false`, and a random `PARTSIBLE_SETUP_SECRET` in
     `.env`. The first-run form has a **Setup code** field: enter that secret
     there to create the first administrator. Remove the secret after setup.
 
 !!! note "Backups"
     Saved projects and local accounts live in the backend data volume. Create
     a live-safe backup with
-    `docker compose -f docker-compose.release.yml exec backend planqer backup`;
+    `docker compose -f docker-compose.release.yml exec backend partsible backup`;
     see [Backup and restore](guide/backup-and-restore.md) before restoring one.
 
 !!! note "Release image version"
     The release compose file uses `latest` by default. Set
-    `PLANQER_VERSION` in `.env` to pin a specific release image.
+    `PARTSIBLE_VERSION` in `.env` to pin a specific release image.
 
 ## Upgrade
 
@@ -101,7 +101,7 @@ Run these commands from the directory containing `docker-compose.release.yml`
 
 ```bash
 # Back up accounts and saved projects before upgrading.
-docker compose -f docker-compose.release.yml exec backend planqer backup
+docker compose -f docker-compose.release.yml exec backend partsible backup
 docker compose -f docker-compose.release.yml pull
 docker compose -f docker-compose.release.yml up -d
 ```
@@ -109,17 +109,17 @@ docker compose -f docker-compose.release.yml up -d
 To pin a release, set the version in `.env` before running the commands:
 
 ```dotenv
-PLANQER_VERSION=0.14.0
+PARTSIBLE_VERSION=0.14.0
 ```
 
 Verify that the running containers use the requested images:
 
 ```bash
 docker compose -f docker-compose.release.yml ps
-docker inspect planqer-web-backend --format '{{.Config.Image}}'
+docker inspect partsible-web-backend --format '{{.Config.Image}}'
 ```
 
-The output should include `ghcr.io/nordstad/planqer-backend:0.14.0` (and the
+The output should include `ghcr.io/nordstad/partsible-backend:0.14.0` (and the
 corresponding frontend tag). The named `backend_data` volume is preserved by
 this procedure, so local accounts and saved projects remain available. Keep
 using the same directory and Compose project name for future upgrades: Docker
@@ -129,7 +129,7 @@ upgrade with:
 
 ```bash
 docker compose -f docker-compose.release.yml config --volumes
-docker volume inspect planqer_backend_data
+docker volume inspect partsible_backend_data
 ```
 
 After an upgrade, verify that expected accounts are still present:
@@ -142,7 +142,7 @@ docker compose -f docker-compose.release.yml exec backend \
 ## Private package access
 
 GitHub Container Registry packages can be private. If `docker compose` cannot
-pull the images anonymously, either make the Planqer packages public in GitHub
+pull the images anonymously, either make the Partsible packages public in GitHub
 Packages or log in before starting the stack:
 
 ```bash
@@ -188,9 +188,9 @@ docker compose -f docker-compose.release.yml --profile mcp up -d
 
 ## Configuration for a real deployment
 
-Running on `localhost` needs no configuration. If you're putting Planqer
+Running on `localhost` needs no configuration. If you're putting Partsible
 behind a reverse proxy or a real hostname, see
-[Configuration](reference/configuration.md) — in particular `PLANQER_HOST`,
+[Configuration](reference/configuration.md) — in particular `PARTSIBLE_HOST`,
 which the frontend's dev server requires or it will refuse requests with a
 "Blocked request" error.
 

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Build the browser demo, laid out exactly as it is served.
 
-The output folder is what GitHub Pages serves at /Planqer/app/: the static
+The output folder is what GitHub Pages serves at /: the static
 build of the app, the pinned Pyodide runtime (self-hosted, no CDN) and the zip
-of Planqer Python that runs in it.
+of Partsible Python that runs in it.
 
     python3 scripts/build-demo.py                    # build/demo
     python3 scripts/build-demo.py --out DIR
@@ -28,7 +28,7 @@ ROOT = Path(__file__).resolve().parent.parent
 FRONTEND = ROOT / "frontend"
 MANIFEST = FRONTEND / "src" / "runtime" / "manifest.json"
 DEFAULT_OUT = ROOT / "build" / "demo"
-BASE = "/Planqer/app/"
+BASE = "/"
 
 # Largest sizes in KB (raw, not compressed) we accept before someone has to
 # look. About 20% above what the build measured when they were set, so ordinary
@@ -38,7 +38,7 @@ BUDGET_KB = {
     "app": 2500,  # everything except pyodide/ (measured 2035)
     "runtime_core": 18000,  # the interpreter every visitor downloads (15126)
     "runtime_model": 23500,  # numpy, scipy, networkx, trimesh, on first STL (19417)
-    "bundle": 200,  # the Planqer Python zip (112)
+    "bundle": 200,  # the Partsible Python zip (112)
 }
 
 
@@ -67,7 +67,7 @@ def model_files(manifest: dict) -> set[str]:
 
 def bundle_version(bundle: Path) -> str | None:
     with zipfile.ZipFile(bundle) as archive:
-        source = archive.read("planqer/__init__.py").decode("utf-8")
+        source = archive.read("partsible/__init__.py").decode("utf-8")
     match = re.search(r'^__version__ = "([^"]+)"', source, re.MULTILINE)
     return match.group(1) if match else None
 

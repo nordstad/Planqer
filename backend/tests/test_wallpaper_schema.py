@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from planqer.schemas.wallpaper import (
+from partsible.schemas.wallpaper import (
     Allowances,
     Cutout,
     Room,

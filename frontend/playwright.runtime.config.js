@@ -24,6 +24,6 @@ export default defineConfig({
     reuseExistingServer: false,
     timeout: 60000,
     // api.js is built in static mode for the api.html harness.
-    env: { VITE_PLANQER_MODE: "static" },
+    env: { VITE_PARTSIBLE_MODE: "static" },
   },
 });

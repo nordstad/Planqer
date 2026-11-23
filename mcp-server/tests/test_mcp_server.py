@@ -1,5 +1,5 @@
 """
-Tests for the Planqer MCP Server functionality.
+Tests for the Partsible MCP Server functionality.
 """
 
 import asyncio
@@ -10,7 +10,7 @@ import httpx
 import pytest
 from mcp import types
 
-from planqer_mcp_server.server import (
+from partsible_mcp_server.server import (
     DEMO_PAYLOADS,
     format_optimization_result,
     handle_call_tool,
@@ -221,7 +221,7 @@ class TestOptimizeCutting:
         
         assert len(result) == 1
         assert isinstance(result[0], types.TextContent)
-        assert "❌ Connection error: Could not reach the Planqer API" in result[0].text
+        assert "❌ Connection error: Could not reach the Partsible API" in result[0].text
     
     @pytest.mark.asyncio
     @patch('httpx.AsyncClient.post')
@@ -242,7 +242,7 @@ class TestOptimizeCutting:
         assert "❌ Request timeout: The API took too long to respond" in result[0].text
 
     @pytest.mark.asyncio
-    @patch("planqer_mcp_server.server.asyncio.sleep")
+    @patch("partsible_mcp_server.server.asyncio.sleep")
     @patch("httpx.AsyncClient.post")
     async def test_optimize_cutting_retries_transient_status(
         self, mock_post, mock_sleep
@@ -332,7 +332,7 @@ class TestOptimizeDemo:
     """Test the optimize_demo tool handler."""
     
     @pytest.mark.asyncio
-    @patch('planqer_mcp_server.server.handle_optimize_cutting')
+    @patch('partsible_mcp_server.server.handle_optimize_cutting')
     async def test_optimize_demo_success(self, mock_optimize):
         """Test successful demo optimization."""
         mock_optimize.return_value = [types.TextContent(
@@ -357,7 +357,7 @@ class TestOptimizeDemo:
         assert call_args["available_board_lengths"] == expected_payload["available_board_lengths"]
     
     @pytest.mark.asyncio
-    @patch('planqer_mcp_server.server.handle_optimize_cutting')
+    @patch('partsible_mcp_server.server.handle_optimize_cutting')
     async def test_optimize_demo_async(self, mock_optimize):
         """Test async demo optimization."""
         mock_optimize.return_value = [types.TextContent(
@@ -398,7 +398,7 @@ class TestGetDemoPayloads:
         
         assert len(result) == 1
         assert isinstance(result[0], types.TextContent)
-        assert "🎯 **Demo Payloads for Planqer API Testing**" in result[0].text
+        assert "🎯 **Demo Payloads for Partsible API Testing**" in result[0].text
         assert "Kitchen Cabinets:" in result[0].text
         assert "Furniture Project:" in result[0].text
         assert "Custom Project:" in result[0].text
@@ -427,7 +427,7 @@ class TestGetDemoPayloads:
         
         assert len(result) == 1
         assert isinstance(result[0], types.TextContent)
-        assert "🎯 **Demo Payloads for Planqer API Testing**" in result[0].text
+        assert "🎯 **Demo Payloads for Partsible API Testing**" in result[0].text
     
     def test_get_demo_payloads_invalid(self):
         """Test getting demo payloads with invalid example."""

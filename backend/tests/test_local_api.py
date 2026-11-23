@@ -12,11 +12,11 @@ import trimesh
 from fastapi.testclient import TestClient
 from step_fixtures import _box_corners, _product, _step_file
 
-from planqer.api import app
-from planqer.local_api import handle
+from partsible.api import app
+from partsible.local_api import handle
 
 client = TestClient(app)
-client.headers["X-Planqer-Setup-Secret"] = "test-setup-secret"
+client.headers["X-Partsible-Setup-Secret"] = "test-setup-secret"
 
 
 def call(op, payload, data=None):
@@ -205,7 +205,7 @@ def test_tile_layout_errors_match_the_http_endpoint():
 @pytest.fixture
 def signed_in_client():
     with TestClient(app) as authed:
-        authed.headers["X-Planqer-Setup-Secret"] = "test-setup-secret"
+        authed.headers["X-Partsible-Setup-Secret"] = "test-setup-secret"
         user = {
             "email": f"local-api-{uuid.uuid4()}@example.com",
             "password": "Testpassword" + "123!",

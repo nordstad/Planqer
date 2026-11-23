@@ -1,7 +1,7 @@
 import { test, expect, request as playwrightRequest } from '@playwright/test';
 
-// Needs a backend with PLANQER_CATALOGUE_COUNTRY=SE whose first account is an
-// admin, i.e. a fresh database (or PLANQER_SETUP_SECRET in the environment).
+// Needs a backend with PARTSIBLE_CATALOGUE_COUNTRY=SE whose first account is an
+// admin, i.e. a fresh database (or PARTSIBLE_SETUP_SECRET in the environment).
 const API = process.env.PLAYWRIGHT_API_URL || 'http://localhost:8002';
 
 let accessToken;
@@ -10,8 +10,8 @@ let isAdmin = false;
 test.beforeAll(async () => {
   const api = await playwrightRequest.newContext();
   const email = `catalogue-admin-${Date.now()}@example.com`;
-  const credential = ['Planqer', Date.now(), 'e2e'].join('-') + '!1';
-  const headers = process.env.PLANQER_SETUP_SECRET ? { 'X-Planqer-Setup-Secret': process.env.PLANQER_SETUP_SECRET } : {};
+  const credential = ['Partsible', Date.now(), 'e2e'].join('-') + '!1';
+  const headers = process.env.PARTSIBLE_SETUP_SECRET ? { 'X-Partsible-Setup-Secret': process.env.PARTSIBLE_SETUP_SECRET } : {};
   await api.post(`${API}/api/auth/register`, { data: { email, password: credential }, headers });
   const login = await api.post(`${API}/api/auth/login`, { data: { email, password: credential } });
   ({ access_token: accessToken } = await login.json());
@@ -79,16 +79,16 @@ test.describe('Admin catalogue', () => {
     await page.goto('/admin');
     await page.getByRole('tab', { name: 'Catalogue' }).click();
     await page.getByLabel('Search products').fill('45x95');
-    // Built-ins already ship with Planqer: nothing to suggest.
-    await expect(page.getByRole('row', { name: /Framing timber.*45 × 95 mm/ }).getByRole('button', { name: 'Suggest to Planqer' })).toHaveCount(0);
+    // Built-ins already ship with Partsible: nothing to suggest.
+    await expect(page.getByRole('row', { name: /Framing timber.*45 × 95 mm/ }).getByRole('button', { name: 'Suggest to Partsible' })).toHaveCount(0);
 
     await page.getByLabel('Search products').fill('48x98');
     const pages = context.pages().length;
-    await page.getByRole('row', { name: /48 × 98 mm/ }).getByRole('button', { name: 'Suggest to Planqer' }).click();
-    const form = page.getByRole('form', { name: 'Suggest to Planqer' });
+    await page.getByRole('row', { name: /48 × 98 mm/ }).getByRole('button', { name: 'Suggest to Partsible' }).click();
+    const form = page.getByRole('form', { name: 'Suggest to Partsible' });
     await expect(form.getByTestId('suggestion-snippet')).toContainText('type: regel');
     const link = form.getByRole('link', { name: 'Open on GitHub' });
-    await expect(link).toHaveAttribute('href', /github\.com\/nordstad\/Planqer\/issues\/new\?template=catalogue-product\.yml/);
+    await expect(link).toHaveAttribute('href', /github\.com\/nordstad\/Partsible\/issues\/new\?template=catalogue-product\.yml/);
     expect(context.pages().length).toBe(pages);
 
     await request.delete(`${API}/api/admin/catalogue/${encodeURIComponent(product.id)}`, { headers });

@@ -20,7 +20,7 @@ function setup(overrides = {}) {
   const options = {
     loadPyodide: vi.fn(async () => pyodide),
     runtimeUrl: "/runtime/",
-    bundleUrl: "/planqer.zip",
+    bundleUrl: "/partsible.zip",
     manifest,
     fetchBytes: vi.fn(async () => new Uint8Array([1, 2, 3])),
     onProgress: vi.fn(),
@@ -47,7 +47,7 @@ describe("solver runtime", () => {
     const names = pyodide.loadPackage.mock.calls[0][0];
     expect(names).toEqual(expect.arrayContaining(["pydantic", "pyyaml"]));
     expect(names).not.toEqual(expect.arrayContaining(["numpy"]));
-    expect(options.fetchBytes).toHaveBeenCalledWith("/planqer.zip");
+    expect(options.fetchBytes).toHaveBeenCalledWith("/partsible.zip");
     expect(pyodide.unpackArchive).toHaveBeenCalledWith(
       new Uint8Array([1, 2, 3]),
       "zip",

@@ -143,7 +143,7 @@ jobs:
       - name: Build the demo
         if: steps.detect.outputs.supported == 'true' && steps.cache.outputs.cache-hit != 'true'
         env:
-          VITE_PLANQER_UMAMI_ID: "325f5fce-eb47-46fb-bad7-da1137224c33"
+          VITE_PARTSIBLE_UMAMI_ID: "325f5fce-eb47-46fb-bad7-da1137224c33"
         run: |
           npm ci --prefix src/frontend
           python3 src/scripts/build-demo.py --out "$GITHUB_WORKSPACE/app-out" --check-budget

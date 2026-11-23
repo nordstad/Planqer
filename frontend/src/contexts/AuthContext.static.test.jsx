@@ -21,7 +21,7 @@ const Probe = () => {
 afterEach(() => vi.unstubAllEnvs());
 
 it('is signed in as the local user from the first render in the demo', async () => {
-  vi.stubEnv('VITE_PLANQER_MODE', 'static');
+  vi.stubEnv('VITE_PARTSIBLE_MODE', 'static');
   const api = await import('../utils/api');
   render(<AuthProvider><Probe /></AuthProvider>);
 

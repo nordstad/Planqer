@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 import pytest
 
-from planqer.services import secure_temp_file
+from partsible.services import secure_temp_file
 
 
 def test_secure_temp_file_creates_secure_file():
@@ -27,7 +27,7 @@ def test_secure_temp_file_creates_secure_file():
 
         # File should have expected prefix and suffix
         filename = os.path.basename(temp_path)
-        assert filename.startswith("planqer_")
+        assert filename.startswith("partsible_")
         assert filename.endswith(".png")
 
 
@@ -129,7 +129,7 @@ def test_temp_file_unpredictable_names():
     # Names should not be easily predictable (should contain random elements)
     for name in file_names:
         # Should have more than just the prefix and suffix
-        name_without_ext = name.replace(".png", "").replace("planqer_", "")
+        name_without_ext = name.replace(".png", "").replace("partsible_", "")
         assert len(name_without_ext) > 0  # Random part should exist
 
 
@@ -138,7 +138,7 @@ def test_visualization_uses_secure_temp_file():
     """Test that the visualization generation uses secure temp files."""
     from fastapi.testclient import TestClient
 
-    from planqer.api import app
+    from partsible.api import app
 
     client = TestClient(app)
 

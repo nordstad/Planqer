@@ -1,8 +1,8 @@
-site_name: Planqer
+site_name: Partsible
 site_description: Self-hosted cutting optimization for boards and sheet goods
-site_url: https://nordstad.github.io/Planqer/
-repo_url: https://github.com/nordstad/Planqer
-repo_name: nordstad/Planqer
+site_url: https://docs.partsible.com/
+repo_url: https://github.com/nordstad/Partsible
+repo_name: nordstad/Partsible
 edit_uri: edit/main/docs/
 
 theme:
@@ -40,7 +40,7 @@ theme:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/nordstad/Planqer
+      link: https://github.com/nordstad/Partsible
 
 extra_javascript:
   - assets/umami.js

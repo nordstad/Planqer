@@ -22,13 +22,13 @@ it('shows the account in a normal build', () => {
 });
 
 it('has no account to show in the demo', () => {
-  vi.stubEnv('VITE_PLANQER_MODE', 'static');
+  vi.stubEnv('VITE_PARTSIBLE_MODE', 'static');
   renderDashboard({ id: 'local', email: '' });
   expect(screen.queryByText('Account')).not.toBeInTheDocument();
 });
 
 it('points to the full version for accounts, sync, the API and MCP in the demo', () => {
-  vi.stubEnv('VITE_PLANQER_MODE', 'static');
+  vi.stubEnv('VITE_PARTSIBLE_MODE', 'static');
   renderDashboard({ id: 'local', email: '' });
   const note = screen.getByRole('note');
   expect(note).toHaveTextContent(/accounts/i);

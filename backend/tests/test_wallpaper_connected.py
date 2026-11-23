@@ -1,6 +1,6 @@
 import pytest
 
-from planqer.schemas.wallpaper import (
+from partsible.schemas.wallpaper import (
     Allowances,
     Corner,
     Cutout,
@@ -9,8 +9,8 @@ from planqer.schemas.wallpaper import (
     WallpaperPlanRequest,
     WallpaperSpec,
 )
-from planqer.wallpaper.plan import create_wallpaper_plan
-from planqer.wallpaper.strips import connected_runs, lay_run_strips
+from partsible.wallpaper.plan import create_wallpaper_plan
+from partsible.wallpaper.strips import connected_runs, lay_run_strips
 
 
 def wall(width: float, name: str = "Wall", **overrides) -> Wall:

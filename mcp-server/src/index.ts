@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
 
 // API configuration - using localhost for local development, can be configured via env
-const API_BASE_URL = process.env.PLANQER_API_URL || 'http://localhost:8002/api';
+const API_BASE_URL = process.env.PARTSIBLE_API_URL || 'http://localhost:8002/api';
 
 const LOG_LEVELS = { DEBUG: 10, INFO: 20, WARN: 30, ERROR: 40 } as const;
 type LogLevel = keyof typeof LOG_LEVELS;
@@ -217,13 +217,13 @@ const DEMO_PAYLOADS: DemoPayloadMap = loadDemoPayloads();
 
 const TOOLS: Tool[] = loadToolsContract();
 
-class PlanqerServer {
+class PartsibleServer {
   private server: Server;
 
   constructor() {
     this.server = new Server(
       {
-        name: 'planqer-mcp-server',
+        name: 'partsible-mcp-server',
         version: MCP_SERVER_VERSION,
       },
       {
@@ -496,7 +496,7 @@ class PlanqerServer {
             error.response.data?.detail || error.response.data?.message || error.response.statusText
           } (${retryableLabel})`;
         } else if (error.request) {
-          errorMessage = `❌ Network error: Could not reach the Planqer API at ${API_BASE_URL}. Please check if the service is running. (retryable)`;
+          errorMessage = `❌ Network error: Could not reach the Partsible API at ${API_BASE_URL}. Please check if the service is running. (retryable)`;
         } else {
           errorMessage = `❌ Request error: ${error.message}`;
         }
@@ -561,7 +561,7 @@ class PlanqerServer {
             error.response.data?.detail || error.response.statusText
           }`;
         } else if (error.request) {
-          errorMessage = `❌ Network error: Could not reach the Planqer API at ${API_BASE_URL}. Please check if the service is running.`;
+          errorMessage = `❌ Network error: Could not reach the Partsible API at ${API_BASE_URL}. Please check if the service is running.`;
         } else {
           errorMessage = `❌ Request error: ${error.message}`;
         }
@@ -624,7 +624,7 @@ class PlanqerServer {
         content: [
           {
             type: 'text',
-            text: `🎯 **Demo Payloads for Planqer API Testing**\n\n` +
+            text: `🎯 **Demo Payloads for Partsible API Testing**\n\n` +
                  `Here are pre-configured demo payloads you can use to test the cutting optimization API:\n\n` +
                  `${formattedPayloads.join('\n\n')}\n\n` +
                  `**How to use:**\n` +
@@ -703,5 +703,5 @@ class PlanqerServer {
   }
 }
 
-const server = new PlanqerServer();
+const server = new PartsibleServer();
 server.run().catch((error) => log('ERROR', 'mcp_server_fatal', { error: String(error) }));

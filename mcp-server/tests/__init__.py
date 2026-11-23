@@ -1,1 +1,1 @@
-# Tests for Planqer MCP Server
+# Tests for Partsible MCP Server

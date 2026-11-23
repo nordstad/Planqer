@@ -158,7 +158,7 @@ describe('the demo warning for large diagonal layouts', () => {
   afterEach(() => vi.unstubAllEnvs());
 
   it('warns in the demo', async () => {
-    vi.stubEnv('VITE_PLANQER_MODE', 'static');
+    vi.stubEnv('VITE_PARTSIBLE_MODE', 'static');
     renderTile();
     makeBigDiagonal();
     expect(await screen.findByText(/can take ten seconds or more/i)).toBeInTheDocument();

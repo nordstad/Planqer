@@ -1,6 +1,6 @@
-from planqer.schemas.wallpaper import Allowances, Wall
-from planqer.wallpaper.pattern import pattern_datum, strip_phase
-from planqer.wallpaper.strips import lay_wall_strips
+from partsible.schemas.wallpaper import Allowances, Wall
+from partsible.wallpaper.pattern import pattern_datum, strip_phase
+from partsible.wallpaper.strips import lay_wall_strips
 
 
 def wall(height_left: float, height_right: float) -> Wall:

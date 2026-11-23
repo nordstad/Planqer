@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Admin user management script for Planqer.
+Admin user management script for Partsible.
 
 Creates admin users, promotes existing users to admin, and lists users on a
 self-hosted instance.
@@ -15,8 +15,8 @@ import sys
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
-from planqer.auth import get_password_hash, validate_password
-from planqer.database import User, engine
+from partsible.auth import get_password_hash, validate_password
+from partsible.database import User, engine
 
 
 def validate_email(email: str) -> bool:
@@ -187,7 +187,7 @@ async def check_database_connection():
 
 
 def print_usage():
-    print("Planqer Admin User Management")
+    print("Partsible Admin User Management")
     print("=" * 50)
     print()
     print("Usage:")
@@ -204,15 +204,15 @@ def print_usage():
     )
     print()
     print("Environment Variables:")
-    print("  PLANQER_ADMIN_EMAIL      Admin email address")
-    print("  PLANQER_ADMIN_PASSWORD   Admin password (use with caution)")
+    print("  PARTSIBLE_ADMIN_EMAIL      Admin email address")
+    print("  PARTSIBLE_ADMIN_PASSWORD   Admin password (use with caution)")
     print()
     print("Docker usage:")
-    print("  docker exec -it planqer-web-backend python create_admin.py")
+    print("  docker exec -it partsible-web-backend python create_admin.py")
 
 
 async def main():
-    print("Planqer Admin User Management")
+    print("Partsible Admin User Management")
     print("=" * 50)
 
     if not await check_database_connection():
@@ -221,8 +221,8 @@ async def main():
     if len(sys.argv) == 1:
         print("Interactive admin creation mode\n")
 
-        env_email = os.getenv("PLANQER_ADMIN_EMAIL")
-        env_password = os.getenv("PLANQER_ADMIN_PASSWORD")
+        env_email = os.getenv("PARTSIBLE_ADMIN_EMAIL")
+        env_password = os.getenv("PARTSIBLE_ADMIN_PASSWORD")
 
         if env_email:
             print(f"Found admin email in environment: {env_email}")

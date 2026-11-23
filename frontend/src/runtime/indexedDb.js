@@ -8,7 +8,7 @@
 // never needs the user to do anything. Add a migration to the end of the list;
 // never change one that has shipped.
 
-export const DATABASE_NAME = "planqer";
+export const DATABASE_NAME = "partsible";
 
 export const STORES = ["projects", "sheet_projects", "tile_projects", "wallpaper_projects", "groups", "settings", "catalogue_entries"];
 

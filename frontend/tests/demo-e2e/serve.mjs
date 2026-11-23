@@ -1,4 +1,4 @@
-// Serves the built demo the way GitHub Pages will: under /Planqer/app/, with
+// Serves the built demo the way GitHub Pages will: under /, with
 // real 404s and no fallback to index.html. If the demo only works behind a
 // forgiving dev server, it must fail here.
 
@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(process.env.DEMO_DIR ?? join(here, "../../../build/demo"));
 const port = Number(process.env.DEMO_PORT ?? 3003);
-const prefix = "/Planqer/app/";
+const prefix = "/";
 
 const TYPES = {
   ".html": "text/html; charset=utf-8",

@@ -6,7 +6,7 @@ import { BoardIcon, SheetIcon, CubeIcon, TileIcon, WallpaperIcon } from './icons
 import { getHealth, getLatestRelease } from '../utils/api';
 import { isStaticMode } from '../utils/mode';
 import { version as appVersion } from '../../package.json';
-import heroIllustration from '../assets/planqer-hero-animated.svg?raw';
+import heroIllustration from '../assets/partsible-hero-animated.svg?raw';
 
 // Compares two dotted version strings, e.g. isNewer('0.2.0', '0.1.0') -> true
 const isNewer = (latest, current) => {
@@ -141,7 +141,7 @@ const HomePage = () => {
     {!isStaticMode() && <footer className="hp-footer">
       <div>
          <Link to="/help">{t('home.helpDocumentation')}</Link>
-        <a href="https://github.com/nordstad/Planqer" target="_blank" rel="noopener noreferrer">
+        <a href="https://github.com/nordstad/Partsible" target="_blank" rel="noopener noreferrer">
            {t('home.sourceGithub')}
         </a>
         <a href="https://opensource.org/licenses/MIT" target="_blank" rel="noopener noreferrer">
@@ -153,7 +153,7 @@ const HomePage = () => {
         {updateAvailable && (
           <>
             {' · '}
-            <a href="https://github.com/nordstad/Planqer/releases/latest" target="_blank" rel="noopener noreferrer">
+            <a href="https://github.com/nordstad/Partsible/releases/latest" target="_blank" rel="noopener noreferrer">
                {t('home.versionAvailable', { version: latestVersion })}
             </a>
           </>

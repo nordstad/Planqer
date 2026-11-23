@@ -1,6 +1,6 @@
-from planqer.cad_policy import is_sheet
-from planqer.step_policy import StepComponentType, measured_bodies_to_cutlist
-from planqer.step_reader import StepBody
+from partsible.cad_policy import is_sheet
+from partsible.step_policy import StepComponentType, measured_bodies_to_cutlist
+from partsible.step_reader import StepBody
 
 
 def test_shared_policy_classifies_sheet_and_board_without_cad_or_http_imports():

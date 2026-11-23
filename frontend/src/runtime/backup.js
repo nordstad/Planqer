@@ -6,13 +6,13 @@
 // and everything else in the browser stays. A restore can therefore never
 // delete work. The whole file is checked before anything is written.
 //
-// A backup from a self-hosted server (`planqer backup`) is a SQLite archive and
+// A backup from a self-hosted server (`partsible backup`) is a SQLite archive and
 // is not importable here.
 
 import { STORES } from "./indexedDb";
 
 export const BACKUP_FORMAT = 1;
-const APP = "planqer-demo";
+const APP = "partsible-demo";
 
 // `code` is for the UI to translate; the message is only for developers.
 export class BackupError extends Error {
@@ -48,7 +48,7 @@ function parse(content) {
 
 function validate(backup) {
   if (!isRecord(backup) || backup.app !== APP || !isRecord(backup.stores)) {
-    throw new BackupError("notBackup", "Not a Planqer demo backup");
+    throw new BackupError("notBackup", "Not a Partsible demo backup");
   }
   if (typeof backup.format !== "number" || backup.format > BACKUP_FORMAT) {
     throw new BackupError("tooNew", "Made by a newer version of the demo");

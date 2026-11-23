@@ -8,7 +8,7 @@ verified by arithmetic, not just by re-running the code under test).
 
 import pytest
 
-from planqer.tile_layout.bonds import (
+from partsible.tile_layout.bonds import (
     DiagonalBond,
     DiagonalDoubleHerringboneBond,
     DiagonalHerringboneBond,
@@ -19,7 +19,7 @@ from planqer.tile_layout.bonds import (
     RunningBond,
     StackBond,
 )
-from planqer.tile_layout.geometry import (
+from partsible.tile_layout.geometry import (
     Cutout,
     JointSpec,
     PlacedTile,
@@ -30,8 +30,8 @@ from planqer.tile_layout.geometry import (
     place_and_clip_at_angle,
     place_and_clip_diagonal,
 )
-from planqer.tile_layout.offcuts import match_diagonal_offcuts, match_offcuts
-from planqer.tile_layout.scoring import score_layout
+from partsible.tile_layout.offcuts import match_diagonal_offcuts, match_offcuts
+from partsible.tile_layout.scoring import score_layout
 
 # ── Surface / Cutout validation ──────────────────────────────────────────
 

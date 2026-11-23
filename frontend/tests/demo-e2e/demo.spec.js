@@ -5,7 +5,7 @@
 
 import { expect, test } from "@playwright/test";
 
-const APP = "/Planqer/app/";
+const APP = "/";
 
 const watchRequests = (page) => {
   const seen = { outside: [], failed: [] };
@@ -163,9 +163,9 @@ test("a backup of what was saved can be downloaded", async ({ page }) => {
   await page.getByRole("button", { name: "Export backup" }).click();
   const file = await download;
 
-  expect(file.suggestedFilename()).toMatch(/^planqer-backup-\d{4}-\d{2}-\d{2}\.json$/);
+  expect(file.suggestedFilename()).toMatch(/^partsible-backup-\d{4}-\d{2}-\d{2}\.json$/);
   const backup = JSON.parse(await (await import("node:fs/promises")).readFile(await file.path(), "utf-8"));
-  expect(backup).toMatchObject({ app: "planqer-demo", format: 1 });
+  expect(backup).toMatchObject({ app: "partsible-demo", format: 1 });
   expect(backup.stores.projects.map((project) => project.name)).toContain("Backed up plan");
   await expect(page.getByRole("note").filter({ hasText: /no recent backup/i })).toHaveCount(0);
 });

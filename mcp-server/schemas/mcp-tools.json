@@ -61,7 +61,7 @@
     },
     {
         "name": "search_products",
-        "description": "Search this Planqer instance's product catalogue of boards and building sheets (Swedish and Norwegian timber, plywood, OSB and more, plus the instance's own additions) by name, grade or size. Returns product ids, sizes, grades, species and standard stock lengths. Use an id as the product in optimize_cutting.",
+        "description": "Search this Partsible instance's product catalogue of boards and building sheets (Swedish and Norwegian timber, plywood, OSB and more, plus the instance's own additions) by name, grade or size. Returns product ids, sizes, grades, species and standard stock lengths. Use an id as the product in optimize_cutting.",
         "inputSchema": {
             "type": "object",
             "properties": {

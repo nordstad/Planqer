@@ -17,7 +17,7 @@ const everything = async (db) =>
 it("writes a versioned file with every store", async () => {
   const backup = await exportBackup(await filled(), { now: new Date("2026-10-13T10:00:00Z"), appVersion: "0.8.2" });
   expect(backup).toMatchObject({
-    app: "planqer-demo",
+    app: "partsible-demo",
     format: BACKUP_FORMAT,
     exported_at: "2026-10-13T10:00:00.000Z",
     app_version: "0.8.2",
@@ -59,17 +59,17 @@ describe("a file it cannot trust", () => {
   it("is not JSON", () => reject("not json {", "notBackup"));
   it("is JSON of another kind", () => reject({ hello: "world" }, "notBackup"));
   it("comes from a newer version of the demo", () =>
-    reject({ app: "planqer-demo", format: BACKUP_FORMAT + 1, stores: {} }, "tooNew"));
+    reject({ app: "partsible-demo", format: BACKUP_FORMAT + 1, stores: {} }, "tooNew"));
   it("names a store that does not exist", () =>
-    reject({ app: "planqer-demo", format: BACKUP_FORMAT, stores: { hacked: [] } }, "invalid"));
+    reject({ app: "partsible-demo", format: BACKUP_FORMAT, stores: { hacked: [] } }, "invalid"));
   it("holds a record without an id", () =>
-    reject({ app: "planqer-demo", format: BACKUP_FORMAT, stores: { projects: [{ name: "x" }] } }, "invalid"));
+    reject({ app: "partsible-demo", format: BACKUP_FORMAT, stores: { projects: [{ name: "x" }] } }, "invalid"));
 
   it("writes nothing when any record is bad", async () => {
     const db = createMemoryDb();
     await expect(
       importBackup(db, {
-        app: "planqer-demo",
+        app: "partsible-demo",
         format: BACKUP_FORMAT,
         stores: { groups: [{ id: "g1" }], projects: [{ name: "no id" }] },
       }),

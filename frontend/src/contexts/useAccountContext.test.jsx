@@ -20,6 +20,6 @@ it('uses the regular wording on a multi-user instance and outside a provider', (
 });
 
 it('uses the demo wording in the demo', () => {
-  vi.stubEnv('VITE_PLANQER_MODE', 'static');
+  vi.stubEnv('VITE_PARTSIBLE_MODE', 'static');
   expect(renderHook(() => useAccountContext()).result.current).toEqual({ context: 'demo' });
 });

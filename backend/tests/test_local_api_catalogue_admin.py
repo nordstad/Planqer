@@ -11,7 +11,7 @@ import json
 import pytest
 from test_catalogue_local import NEW_BOARD, _login, clean_entries, client  # noqa: F401
 
-from planqer.local_api import handle
+from partsible.local_api import handle
 
 pytestmark = pytest.mark.api
 

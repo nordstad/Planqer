@@ -1,0 +1,359 @@
+import { test, expect } from '@playwright/test';
+
+const API = process.env.PLAYWRIGHT_API_URL || 'http://localhost:8002';
+
+// Keep the user's own words as the product: no catalogue needed.
+const ownProduct = async (page, label, text) => {
+  await page.getByRole('combobox', { name: label }).fill(text);
+  await page.getByRole('option', { name: `Use “${text}” as my own product` }).click();
+};
+
+test.describe('Partsible Frontend E2E Tests', () => {
+  test('homepage loads successfully', async ({ page }) => {
+    await page.goto('/');
+    
+    // Check if the page loads
+    await expect(page).toHaveTitle(/Partsible|Partsible/);
+    
+    // Check for main content
+    await expect(page.locator('body')).toBeVisible();
+  });
+
+  test('navigates to cutting optimizer', async ({ page }) => {
+    await page.goto('/');
+    
+    // Look for navigation to cutting page
+    const cuttingLink = page.locator('a[href*="cutting"], button').first();
+    if (await cuttingLink.isVisible()) {
+      await cuttingLink.click();
+      await page.waitForLoadState('networkidle');
+    } else {
+      // Direct navigation if no link found
+      await page.goto('/cutting');
+    }
+    
+    // Verify we're on a page with cutting functionality
+    await expect(page.locator('body')).toBeVisible();
+  });
+
+  test('complete optimization workflow', async ({ page }) => {
+    // Quick smoke test for the complete optimization workflow
+    await page.goto('/');
+    
+    // Navigate to cutting optimizer
+    const cuttingLink = page.locator('a[href*="cutting"], button').first();
+    if (await cuttingLink.isVisible()) {
+      await cuttingLink.click();
+      await page.waitForLoadState('networkidle');
+    } else {
+      await page.goto('/cutting');
+    }
+    
+    // Verify the main interface elements are present
+    await expect(page.locator('body')).toBeVisible();
+    
+    // This is a smoke test - we just verify the page loads
+    // Full workflow testing can be done separately
+  });
+
+  test('tile layout route is reachable and requires sign-in', async ({ page }) => {
+    await page.goto('/tile-layout');
+
+    // Protected route: unauthenticated visitors see the sign-in prompt,
+    // not a crash — same gate as /cutting and /sheet-cutting.
+    await expect(page.getByText(/sign in required/i)).toBeVisible();
+  });
+
+  test('failed sign-in shows an auth error and exits loading state', async ({ page }) => {
+    await page.goto('/cutting');
+
+    await expect(page.getByText(/sign in required/i)).toBeVisible();
+
+    const signInButton = page.getByRole('button', { name: /sign in/i }).first();
+    await expect(signInButton).toBeVisible();
+    await signInButton.click();
+
+    const signInDialog = page.getByRole('dialog', { name: /sign in/i });
+    await signInDialog.locator('#login-email').fill('e2e-signin@example.com');
+    await signInDialog.locator('#login-password').fill('wrong-password');
+    await signInDialog.getByRole('button', { name: /^sign in$/i }).click();
+
+    await expect(signInDialog.getByRole('alert')).toContainText(/incorrect email or password/i);
+    await expect(signInDialog.getByRole('button', { name: /^sign in$/i })).toBeVisible();
+  });
+
+  test('modifies an existing board plan from the dashboard', async ({ page }) => {
+    const email = `modify-${Date.now()}@example.com`;
+    const credential = ['Partsible', Date.now(), 'e2e'].join('-') + '!1';
+
+    await page.request.post(`${API}/api/auth/register`, {
+      data: { email, password: credential },
+    });
+    const loginResponse = await page.request.post(`${API}/api/auth/login`, {
+      data: { email, password: credential },
+    });
+    const { access_token: accessToken } = await loginResponse.json();
+    await page.addInitScript((token) => localStorage.setItem('auth_token', token), accessToken);
+
+    await page.goto('/cutting');
+    await page.getByRole('button', { name: /try an example/i }).click();
+    await ownProduct(page, 'Product', 'Oak');
+    await page.getByLabel('Thickness (mm)').fill('45');
+    await page.getByLabel('Width (mm)').fill('45');
+    await page.getByRole('button', { name: /plan the cuts/i }).click();
+    await expect(page.getByRole('heading', { name: /your cutting plan/i })).toBeVisible();
+    await expect(page.getByTestId('plan-material-summary')).toContainText('Oak · 45 × 45 mm');
+    await page.getByRole('button', { name: /name and save/i }).click();
+    await expect(page.getByRole('heading', { name: /save this plan/i })).toBeVisible();
+    await page.locator('#plan-name').fill('E2E modify plan');
+    let savedPayload;
+    page.on('request', (request) => {
+      if (request.method() === 'POST' && request.url().endsWith('/api/projects/')) savedPayload = request.postDataJSON();
+    });
+    const saveResponse = page.waitForResponse((r) => r.request().method() === 'POST' && r.url().endsWith('/api/projects/'));
+    await page.getByRole('button', { name: /^save plan$/i }).click();
+    await expect(page.getByRole('heading', { name: /plan saved/i })).toBeVisible();
+    const { project_group_id: groupId } = await (await saveResponse).json();
+    expect(savedPayload).toMatchObject({
+      material_type: 'Oak', board_thickness: 45, board_width: 45,
+      product: { type: 'custom', name: 'Oak', catalogue_id: null },
+    });
+
+    await page.goto(`/dashboard/project/${groupId}`);
+    await expect(page.getByText('E2E modify plan')).toBeVisible();
+    await expect(page.locator('.plan-item-material')).toContainText('Oak · 45×45mm');
+    await expect(page.getByRole('checkbox', { name: 'Select plan "E2E modify plan"' })).not.toBeAttached();
+    await expect(page.getByRole('button', { name: 'What to buy', exact: true })).toBeEnabled();
+    await expect(page.getByRole('button', { name: 'Print project', exact: true })).toBeEnabled();
+    await page.locator('.plan-item-acts').getByRole('button', { name: 'Open plan', exact: true }).click();
+    await expect(page).toHaveURL(/\/cutting\/plan\//);
+    await expect(page.getByRole('heading', { name: 'Summary' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: /Board 1/i })).toHaveAttribute('aria-selected', 'true');
+    await page.getByRole('button', { name: 'Print', exact: true }).click();
+    await expect(page.locator('iframe[aria-hidden="true"]')).toHaveCount(1);
+    await page.goto(`/dashboard/project/${groupId}`);
+    await page.getByRole('button', { name: 'What to buy', exact: true }).click();
+    await expect(page.locator('iframe[aria-hidden="true"]')).toHaveCount(1);
+
+    await page.getByRole('button', { name: 'More actions' }).click();
+    await page.getByRole('menuitem', { name: 'Modify', exact: true }).click();
+    await expect(page).toHaveURL(/\/cutting\?edit=[^/]+/);
+    await expect(page.locator('#plan-name')).not.toBeVisible();
+    await expect(page.locator('input').filter({ hasValue: '80' }).first()).toBeVisible();
+
+    await page.getByRole('button', { name: /plan the cuts/i }).click();
+    await expect(page.getByRole('heading', { name: /your cutting plan/i })).toBeVisible();
+    await page.getByRole('button', { name: /name and save/i }).click();
+    await page.getByRole('button', { name: /update plan/i }).click();
+    const updateDialog = page.getByRole('alertdialog');
+    await expect(updateDialog).toContainText(/replace the saved result/i);
+    await updateDialog.getByRole('button', { name: /update existing plan/i }).click();
+    await expect(page.getByRole('heading', { name: /plan saved/i })).toBeVisible();
+  });
+
+  test('prints a saved sheet plan as one document with non-splitting sheets', async ({ page }) => {
+    const email = `sheet-print-${Date.now()}@example.com`;
+    const password = ['Partsible', Date.now(), 'sheet'].join('-') + '!1';
+    await page.request.post(`${API}/api/auth/register`, {
+      data: { email, password },
+    });
+    const loginResponse = await page.request.post(`${API}/api/auth/login`, {
+      data: { email, password },
+    });
+    const { access_token: accessToken } = await loginResponse.json();
+    const sheets = [1, 2].map((number) => ({
+      sheet_width: 1200,
+      sheet_height: 2500,
+      used_area: 480000,
+      waste_area: 2520000,
+      efficiency: 16,
+      parts_count: 1,
+      parts: [{
+        part_id: `shelf_${number}`,
+        width: 600,
+        height: 800,
+        x: 0,
+        y: 0,
+        rotated: false,
+      }],
+    }));
+    const saveResponse = await page.request.post(`${API}/api/sheet-projects/`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      data: {
+        name: 'E2E printable sheets',
+        parts_data: [{ name: 'Shelf', width: 600, height: 800, quantity: 2 }],
+        sheet_width: 1200,
+        sheet_height: 2500,
+        kerf_width: 3,
+        material_type: 'plywood',
+        sheet_thickness: 18,
+        allow_rotation: true,
+        optimization_result: { sheets },
+      },
+    });
+    expect(saveResponse.ok()).toBeTruthy();
+
+    await page.addInitScript((token) => localStorage.setItem('auth_token', token), accessToken);
+    await page.goto('/dashboard/project/none');
+    const planName = page.getByText('E2E printable sheets');
+    await expect(planName).toBeVisible();
+    await expect(page.getByRole('checkbox', { name: 'Select plan "E2E printable sheets"' })).not.toBeAttached();
+    await page.getByRole('button', { name: 'Open plan', exact: true }).last().click();
+    await expect(page).toHaveURL(/\/sheet-cutting\/plan\//);
+    await expect(page.getByRole('heading', { name: 'Summary' })).toBeVisible();
+    await page.getByRole('button', { name: /Sheet 2/i }).click();
+    await expect(page.getByRole('button', { name: /Sheet 2/i })).toHaveAttribute('aria-pressed', 'true');
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(page.getByRole('heading', { name: 'Sheet 2' })).toBeVisible();
+    await page.goto('/dashboard/project/none');
+    await page.getByRole('button', { name: 'Print', exact: true }).click();
+
+    const printDocument = page.locator('iframe[aria-hidden="true"]');
+    await expect(printDocument).toHaveCount(1);
+    await expect.poll(() => printDocument.evaluate((iframe) => iframe.contentDocument?.querySelectorAll('.plan').length || 0)).toBe(1);
+    const printLayout = await printDocument.evaluate((iframe) => ({
+      images: iframe.contentDocument?.querySelectorAll('.plan img').length,
+      sheets: iframe.contentDocument?.querySelectorAll('.sheet-plan-sheet').length,
+      styles: iframe.contentDocument?.querySelector('style')?.textContent,
+    }));
+    expect(printLayout.images).toBe(2);
+    expect(printLayout.sheets).toBe(2);
+    expect(printLayout.styles).toContain('page-break-inside: avoid');
+
+    const printHtml = await printDocument.evaluate(async (iframe) => {
+      const document = iframe.contentDocument;
+      const toDataUrl = async (url) => {
+        const blob = await fetch(url).then((response) => response.blob());
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.readAsDataURL(blob);
+        });
+      };
+      await Promise.all(Array.from(document.images).map(async (image) => {
+        image.src = await toDataUrl(image.src);
+      }));
+      return document.documentElement.outerHTML;
+    });
+    const pdfPage = await page.context().newPage();
+    await pdfPage.setContent(printHtml, { waitUntil: 'load' });
+    const pdf = await pdfPage.pdf({ format: 'A4', preferCSSPageSize: true, printBackground: true });
+    await pdfPage.close();
+    expect((pdf.toString('latin1').match(/\/Type\s*\/Page\b/g) || []).length).toBe(2);
+  });
+
+  test('switches between project overview, shopping list, and cut diagram views', async ({ page }) => {
+    const email = `workspace-${Date.now()}@example.com`;
+    const credential = ['Partsible', Date.now(), 'e2e'].join('-') + '!1';
+    await page.request.post(`${API}/api/auth/register`, {
+      data: { email, password: credential },
+    });
+    const loginResponse = await page.request.post(`${API}/api/auth/login`, {
+      data: { email, password: credential },
+    });
+    const { access_token: accessToken } = await loginResponse.json();
+    await page.addInitScript((token) => localStorage.setItem('auth_token', token), accessToken);
+
+    await page.goto('/cutting');
+    await page.getByRole('button', { name: /try an example/i }).click();
+    await ownProduct(page, 'Product', 'Oak');
+    await page.getByLabel('Thickness (mm)').fill('45');
+    await page.getByLabel('Width (mm)').fill('45');
+    await page.getByRole('button', { name: /plan the cuts/i }).click();
+    await page.getByRole('button', { name: /name and save/i }).click();
+    await page.locator('#plan-name').fill('E2E workspace plan');
+    const saveResponse = page.waitForResponse((r) => r.request().method() === 'POST' && r.url().endsWith('/api/projects/'));
+    await page.getByRole('button', { name: /^save plan$/i }).click();
+    await expect(page.getByRole('heading', { name: /plan saved/i })).toBeVisible();
+    const { project_group_id: groupId } = await (await saveResponse).json();
+
+    await page.goto(`/dashboard/project/${groupId}`);
+    await expect(page.getByRole('button', { name: 'Overview' })).toHaveAttribute('aria-current', 'page');
+    await expect(page.getByTestId('project-shopping-list')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Shopping list' }).click();
+    await expect(page.getByTestId('project-shopping-list')).toBeVisible();
+    await expect(page.getByRole('checkbox', { name: 'Select plan "E2E workspace plan"' })).not.toBeAttached();
+
+    await page.getByRole('button', { name: 'Cut diagrams' }).click();
+    await expect(page.getByRole('button', { name: 'Cut diagrams' })).toHaveAttribute('aria-current', 'page');
+    await expect(page.getByRole('checkbox', { name: 'Select plan "E2E workspace plan"' })).not.toBeAttached();
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    const tabs = page.locator('.project-view-tab');
+    for (let index = 0; index < await tabs.count(); index += 1) {
+      const box = await tabs.nth(index).boundingBox();
+      expect(box).not.toBeNull();
+      expect(box.x + box.width).toBeLessThanOrEqual(390);
+    }
+    const actions = page.locator('.plan-item-acts');
+    const actionsBox = await actions.boundingBox();
+    expect(actionsBox).not.toBeNull();
+    expect(actionsBox.x + actionsBox.width).toBeLessThanOrEqual(390);
+    for (let index = 0; index < await actions.locator('button').count(); index += 1) {
+      const buttonBox = await actions.locator('button').nth(index).boundingBox();
+      expect(buttonBox).not.toBeNull();
+      expect(buttonBox.x + buttonBox.width).toBeLessThanOrEqual(390);
+    }
+  });
+
+  test('plans a board from its dimensions alone and accepts a product of your own', async ({ page }) => {
+    const email = `material-${Date.now()}@example.com`;
+    const credential = ['Partsible', Date.now(), 'e2e'].join('-') + '!1';
+    await page.request.post(`${API}/api/auth/register`, { data: { email, password: credential } });
+    const loginResponse = await page.request.post(`${API}/api/auth/login`, { data: { email, password: credential } });
+    const { access_token: accessToken } = await loginResponse.json();
+    await page.addInitScript((token) => localStorage.setItem('auth_token', token), accessToken);
+
+    await page.goto('/cutting');
+    const planButton = page.getByRole('button', { name: /plan the cuts/i });
+    await expect(planButton).toBeDisabled();
+    await expect(page.locator('#board-material').getByText('2 required fields empty: Thickness, Width')).toBeVisible();
+    await page.getByLabel('Thickness (mm)').fill('30');
+    await page.getByLabel('Width (mm)').fill('80');
+    await page.getByRole('button', { name: /try an example/i }).click();
+    await expect(planButton).toBeEnabled();
+    await ownProduct(page, 'Product', 'Ash');
+    await expect(page.getByTestId('product-summary')).toContainText('Ash');
+    await expect(planButton).toBeEnabled();
+  });
+
+  test('requires sheet thickness and accepts a sheet product of your own', async ({ page }) => {
+    const email = `sheet-material-${Date.now()}@example.com`;
+    const credential = ['Partsible', Date.now(), 'e2e'].join('-') + '!1';
+    await page.request.post(`${API}/api/auth/register`, { data: { email, password: credential } });
+    const loginResponse = await page.request.post(`${API}/api/auth/login`, { data: { email, password: credential } });
+    const { access_token: accessToken } = await loginResponse.json();
+    await page.addInitScript((token) => localStorage.setItem('auth_token', token), accessToken);
+
+    await page.goto('/sheet-cutting');
+    const packButton = page.getByRole('button', { name: /plan the sheet cuts/i });
+    await expect(packButton).toBeDisabled();
+    await page.getByRole('button', { name: /try an example/i }).click();
+    await ownProduct(page, 'Product', 'Birch plywood');
+    await page.locator('#sheet-thickness').fill('12');
+    await expect(packButton).toBeEnabled();
+    let optimizationPayload;
+    page.on('request', (request) => {
+      if (request.method() === 'POST' && request.url().endsWith('/api/sheet-optimization')) optimizationPayload = request.postDataJSON();
+    });
+    await packButton.click();
+    await expect(page.getByRole('heading', { name: /your sheet layout/i })).toBeVisible();
+    expect(optimizationPayload).toMatchObject({ material_type: 'Birch plywood' });
+  });
+
+  test('requires tile material details before solving a layout', async ({ page }) => {
+    const email = `tile-material-${Date.now()}@example.com`;
+    const credential = ['Partsible', Date.now(), 'e2e'].join('-') + '!1';
+    await page.request.post(`${API}/api/auth/register`, { data: { email, password: credential } });
+    const loginResponse = await page.request.post(`${API}/api/auth/login`, { data: { email, password: credential } });
+    const { access_token: accessToken } = await loginResponse.json();
+    await page.addInitScript((token) => localStorage.setItem('auth_token', token), accessToken);
+
+    await page.goto('/tile-layout');
+    const solveButton = page.getByRole('button', { name: /calculate layout/i });
+    await expect(solveButton).toBeDisabled();
+    await page.locator('#tile-thickness').fill('10');
+    await expect(solveButton).toBeEnabled();
+  });
+});

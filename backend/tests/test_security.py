@@ -5,7 +5,7 @@ Security tests for input sanitization and validation.
 import pytest
 from fastapi.testclient import TestClient
 
-from planqer.api import (
+from partsible.api import (
     app,
     sanitize_board_lengths,
     sanitize_parts_dict,
@@ -16,7 +16,7 @@ from planqer.api import (
 pytestmark = pytest.mark.api
 
 client = TestClient(app)
-client.headers["X-Planqer-Setup-Secret"] = "test-setup-secret"
+client.headers["X-Partsible-Setup-Secret"] = "test-setup-secret"
 
 
 def test_sanitize_project_name_basic():

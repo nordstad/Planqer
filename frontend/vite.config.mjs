@@ -65,21 +65,21 @@ function devServerPlugin() {
   return {
     name: "dev-server-plugin",
     config(_, { mode }) {
-      const { HOST, PORT, HTTPS, SSL_CRT_FILE, SSL_KEY_FILE, PLANQER_HOST } = loadEnv(mode, ".", [
+      const { HOST, PORT, HTTPS, SSL_CRT_FILE, SSL_KEY_FILE, PARTSIBLE_HOST } = loadEnv(mode, ".", [
         "HOST",
         "PORT",
         "HTTPS",
         "SSL_CRT_FILE",
         "SSL_KEY_FILE",
-        "PLANQER_HOST",
+        "PARTSIBLE_HOST",
       ]);
       const httpsEnabled = HTTPS === "true";
       // Vite rejects requests whose Host header isn't listed here. This was one
-      // hardcoded homelab hostname, which meant self-hosting Planqer behind a
+      // hardcoded homelab hostname, which meant self-hosting Partsible behind a
       // proxy on any other name was refused by the dev server — and the compose
       // deployment runs exactly this server. Loopback always works; name your
-      // own host with PLANQER_HOST, the same variable the Traefik labels read.
-      const extraHost = PLANQER_HOST || process.env.PLANQER_HOST;
+      // own host with PARTSIBLE_HOST, the same variable the Traefik labels read.
+      const extraHost = PARTSIBLE_HOST || process.env.PARTSIBLE_HOST;
       return {
         server: {
           host: HOST || "0.0.0.0",

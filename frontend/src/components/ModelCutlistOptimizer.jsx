@@ -5,12 +5,12 @@
   — grouping into cutlists, planning them, saving them — was duplicated for no
   reason two files couldn't share.
 
-  Units are gone from the form entirely: Planqer is millimetres throughout
+  Units are gone from the form entirely: Partsible is millimetres throughout
   (see PRODUCT.md), so a unit picker on this one page was the one place asking
   a question the rest of the product already answers.
 
   Three steps, matching the board and sheet pages' own rail:
-    01 Model     — upload, and Planqer measures every part in it
+    01 Model     — upload, and Partsible measures every part in it
     02 Cutlists  — the distinct sizes found, grouped, pick which to keep
     03 Save      — each cutlist's stock, kerf and optional prices, planned and
                    saved together
@@ -415,7 +415,7 @@ const ModelCutlistOptimizer = () => {
       const moved = await Promise.all(savedPlans.map((plan) => movePlanToProject(plan, group.id)));
       setSavedPlans(moved.map((plan, index) => ({ ...plan, projectType: savedPlans[index].projectType })));
       setSelectedGroupId(group.id);
-      localStorage.setItem('planqer.lastProjectGroup', group.id);
+      localStorage.setItem('partsible.lastProjectGroup', group.id);
       return true;
     } catch (err) {
       setApiError(t('projectUi.moveFailed', { message: err.message }));

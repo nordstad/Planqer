@@ -6,7 +6,7 @@ export const LANGUAGES = [
 
 export const LANGUAGE_CODES = LANGUAGES.map(({ code }) => code);
 export const DEFAULT_LANGUAGE = 'en-GB';
-export const LANGUAGE_STORAGE_KEY = 'planqer_language';
+export const LANGUAGE_STORAGE_KEY = 'partsible_language';
 
 export const normalizeLanguage = (language) => {
   if (!language) return null;

@@ -2,10 +2,10 @@ import { test, expect } from '@playwright/test';
 
 test('creates the first administrator through the browser on a fresh Compose install', async ({ page }) => {
   const email = `first-admin-${Date.now()}@example.com`;
-  const password = ['Planqer', Date.now(), 'bootstrap'].join('-') + '!1';
+  const password = ['Partsible', Date.now(), 'bootstrap'].join('-') + '!1';
 
   await page.goto('/cutting');
-  await expect(page.getByRole('heading', { name: /set up planqer/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /set up partsible/i })).toBeVisible();
   await page.getByRole('button', { name: /get started/i }).click();
 
   const setupDialog = page.getByRole('dialog', { name: /create account/i });

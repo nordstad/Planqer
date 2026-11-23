@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 
-from planqer.api import app
+from partsible.api import app
 
 client = TestClient(app)
 
@@ -18,9 +18,9 @@ def test_docs_point_at_the_matching_openapi_url():
 
 def test_lifespan_runs_once_per_startup(monkeypatch):
     calls = []
-    monkeypatch.setattr("planqer.api.check_single_user_bind", lambda: None)
-    monkeypatch.setattr("planqer.api._run_migrations", lambda: calls.append("m"))
-    monkeypatch.setattr("planqer.api.start_periodic_cleanup", lambda: calls.append("c"))
+    monkeypatch.setattr("partsible.api.check_single_user_bind", lambda: None)
+    monkeypatch.setattr("partsible.api._run_migrations", lambda: calls.append("m"))
+    monkeypatch.setattr("partsible.api.start_periodic_cleanup", lambda: calls.append("c"))
     with TestClient(app) as c:
         c.get("/api/health")
     assert calls == ["m", "c"]

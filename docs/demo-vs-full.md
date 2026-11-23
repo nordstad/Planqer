@@ -1,6 +1,6 @@
 # Demo or full version
 
-Planqer comes in two forms. The [demo](https://nordstad.github.io/Planqer/app/)
+Partsible comes in two forms. The [demo](https://partsible.com/)
 runs in your browser with nothing to install. The full version is the Docker
 Compose deployment on your own server (see [Getting started](getting-started.md)).
 Both run the same calculation code, so the results are the same.
@@ -12,7 +12,7 @@ interface, Pyodide and the bundled Python code, then runs the calculation in a
 Web Worker. Projects and settings stay in this browser's IndexedDB; no backend
 server is involved.
 
-![Architecture of the browser demo: GitHub Pages serves static files while the browser runs the Planqer calculation locally.](assets/diagrams/demo-version.png)
+![Architecture of the browser demo: GitHub Pages serves static files while the browser runs the Partsible calculation locally.](assets/diagrams/demo-version.png)
 
 ## The full version
 
@@ -37,7 +37,7 @@ output, catalogue search, and STEP and STL cutlists.
 | Accounts, login and administration | Not available. One user, no sign-in | Local accounts on your server |
 | Where projects are stored | Only in this browser on this device | On your server |
 | Sync between devices | Not available. Export and import a backup file | Every device that reaches your server |
-| Data loss risk | Clearing browser data deletes projects; Safari can clear unused storage after about seven days | Your server's own backups (`planqer backup`) |
+| Data loss risk | Clearing browser data deletes projects; Safari can clear unused storage after about seven days | Your server's own backups (`partsible backup`) |
 | MCP server for AI assistants | Not available | Included |
 | REST API and Swagger docs | Not available | Included |
 | Custom catalogue entries | The Catalogue page, stored in this browser | Edited by the instance admin |
@@ -58,6 +58,6 @@ and save it again on your server.
 
 ## Which should I use?
 
-Use the demo to try Planqer or for a one-off plan. Use the full version if you
+Use the demo to try Partsible or for a one-off plan. Use the full version if you
 want your projects kept safely on a server, on more than one device, or if you
 want the API or AI assistants.

@@ -153,7 +153,7 @@ test("the user's own catalogue entries are edited, kept and shown in the picker"
   const result = await page.evaluate(async () => {
     const { api } = window;
     // As if the user had chosen Sweden in the catalogue selector.
-    localStorage.setItem("planqer-catalogue-country-v1", "SE");
+    localStorage.setItem("partsible-catalogue-country-v1", "SE");
     const ids = (list) => list.data.products.map((product) => product.id);
     const entry = {
       type: "regel", thickness: 48, width: 98, lengths: [2400, 3000], grades: ["C24"],
@@ -193,7 +193,7 @@ test("the user's own catalogue entries are edited, kept and shown in the picker"
 
 test("the user's own catalogue entries survive a reload and are in the backup", async ({ page }) => {
   await page.evaluate(() => {
-    localStorage.setItem("planqer-catalogue-country-v1", "SE");
+    localStorage.setItem("partsible-catalogue-country-v1", "SE");
     return window.api.createCatalogueEntry({
       type: "regel", thickness: 48, width: 98, lengths: [2400], grades: ["C24"],
       species: ["spruce"], sources: ["https://www.traguiden.se/example"],

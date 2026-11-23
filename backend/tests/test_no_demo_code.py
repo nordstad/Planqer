@@ -22,7 +22,7 @@ def guard():
 def test_a_clean_build_passes(guard, tmp_path):
     (tmp_path / "assets").mkdir()
     (tmp_path / "assets" / "app.js").write_text(
-        "const app = 'planqer';", encoding="utf-8"
+        "const app = 'partsible';", encoding="utf-8"
     )
 
     assert guard.find_markers(tmp_path) == []
@@ -34,14 +34,14 @@ def test_a_clean_build_passes(guard, tmp_path):
         "pyodide",
         "solverWorker",
         "loading-runtime",
-        "planqer-demo",
-        "planqer.demo.",
+        "partsible-demo",
+        "partsible.demo.",
         "catalogue_admin",
         "catalogue_entries",
         "cloud.umami.is",
         "umami.track",
         "data-website-id",
-        "VITE_PLANQER_UMAMI",
+        "VITE_PARTSIBLE_UMAMI",
         "googletagmanager",
         "325f5fce-eb47-46fb-bad7-da1137224c33",
     ],
@@ -61,10 +61,10 @@ def test_some_markers_are_found_whatever_the_case(guard, tmp_path):
 
 
 def test_translated_text_about_the_demo_is_not_demo_code(guard, tmp_path):
-    # Locale files ship in every build. "Planqer-demon" is Swedish for the demo
+    # Locale files ship in every build. "Partsible-demon" is Swedish for the demo
     # and a privacy sentence may name Umami; neither is the demo's code.
     (tmp_path / "locale.js").write_text(
-        'sv:"Du använder Planqer-demon", note:"Statistik hos Umami Cloud"',
+        'sv:"Du använder Partsible-demon", note:"Statistik hos Umami Cloud"',
         encoding="utf-8",
     )
 
@@ -110,5 +110,5 @@ def test_the_command_fails_on_a_leak_and_succeeds_when_clean(tmp_path):
 def test_the_docker_files_never_switch_the_demo_on(path):
     text = (ROOT / path).read_text(encoding="utf-8").lower()
 
-    assert "planqer_mode" not in text
+    assert "partsible_mode" not in text
     assert "umami" not in text

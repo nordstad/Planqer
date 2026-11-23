@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
-from planqer.database import (
+from partsible.database import (
     ProjectGroup,
     User,
     UserProject,
@@ -26,7 +26,7 @@ pytestmark = pytest.mark.api
 
 @pytest.fixture
 def app():
-    from planqer.api import app
+    from partsible.api import app
 
     return app
 
@@ -34,7 +34,7 @@ def app():
 @pytest.fixture
 def client(app):
     with TestClient(app) as test_client:
-        test_client.headers["X-Planqer-Setup-Secret"] = "test-setup-secret"
+        test_client.headers["X-Partsible-Setup-Secret"] = "test-setup-secret"
         yield test_client
 
 

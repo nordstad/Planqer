@@ -8,8 +8,8 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 from fastapi import UploadFile
 
-from planqer.errors import PlanqerError
-from planqer.threed_cutlist import (
+from partsible.errors import PartsibleError
+from partsible.threed_cutlist import (
     ComponentType,
     CutListItem,
     STLProcessor,
@@ -109,7 +109,7 @@ class TestSTLProcessor:
             assert result == mock_mesh
             mock_load_stl.assert_called_once_with(temp_file.name)
 
-    @patch("planqer.threed_cutlist.trimesh.load")
+    @patch("partsible.threed_cutlist.trimesh.load")
     def test_load_stl_failure(self, mock_load):
         """Test STL loading failure."""
         mock_load.side_effect = Exception("Invalid STL file")
@@ -117,7 +117,7 @@ class TestSTLProcessor:
         processor = STLProcessor()
 
         with tempfile.NamedTemporaryFile(suffix=".stl") as temp_file:
-            with pytest.raises(PlanqerError) as exc_info:
+            with pytest.raises(PartsibleError) as exc_info:
                 processor._load_stl(temp_file.name)
 
             assert exc_info.value.status_code == 400
@@ -196,7 +196,7 @@ async def test_process_uploaded_stl_invalid_extension():
     mock_file.filename = "test.obj"  # Wrong extension
     mock_file.size = 1024
 
-    with pytest.raises(PlanqerError) as exc_info:
+    with pytest.raises(PartsibleError) as exc_info:
         await process_uploaded_stl(mock_file)
 
     assert exc_info.value.status_code == 400
@@ -210,7 +210,7 @@ async def test_process_uploaded_stl_file_too_large():
     mock_file.filename = "test.stl"
     mock_file.size = 60 * 1024 * 1024  # 60MB, over the 50MB limit
 
-    with pytest.raises(PlanqerError) as exc_info:
+    with pytest.raises(PartsibleError) as exc_info:
         await process_uploaded_stl(mock_file)
 
     assert exc_info.value.status_code == 400
@@ -218,7 +218,7 @@ async def test_process_uploaded_stl_file_too_large():
 
 
 @pytest.mark.asyncio
-@patch("planqer.threed_cutlist.STLProcessor")
+@patch("partsible.threed_cutlist.STLProcessor")
 async def test_process_uploaded_stl_success(mock_processor_class):
     """Test successful STL processing."""
     # Mock file
@@ -239,29 +239,29 @@ async def test_process_uploaded_stl_success(mock_processor_class):
         volume=12000.0,
     )
     mock_processor.process_stl_file.return_value = [mock_cutlist_item]
-    mock_processor.convert_to_planqer_parts.return_value = {"1200": 1}
+    mock_processor.convert_to_partsible_parts.return_value = {"1200": 1}
     mock_processor_class.return_value = mock_processor
 
     # Test the function
-    cutlist_items, planqer_parts = await process_uploaded_stl(
+    cutlist_items, partsible_parts = await process_uploaded_stl(
         file=mock_file, units="mm", round_precision=1, project_name="Test Project"
     )
 
     # Verify results
     assert len(cutlist_items) == 1
     assert cutlist_items[0] == mock_cutlist_item
-    assert planqer_parts == {"1200": 1}
+    assert partsible_parts == {"1200": 1}
 
     # Verify processor was called correctly
     mock_processor_class.assert_called_once_with(units="mm", round_precision=1)
-    mock_processor.convert_to_planqer_parts.assert_called_once_with([mock_cutlist_item])
+    mock_processor.convert_to_partsible_parts.assert_called_once_with([mock_cutlist_item])
 
 
 class TestIntegration:
     """Integration tests for the 3D cutlist functionality."""
 
-    def test_processor_convert_to_planqer_parts(self):
-        """Test conversion of cutlist items to Planqer parts format."""
+    def test_processor_convert_to_partsible_parts(self):
+        """Test conversion of cutlist items to Partsible parts format."""
         processor = STLProcessor()
 
         cutlist_items = [
@@ -303,7 +303,7 @@ class TestIntegration:
             ),
         ]
 
-        planqer_parts = processor.convert_to_planqer_parts(cutlist_items)
+        partsible_parts = processor.convert_to_partsible_parts(cutlist_items)
 
         # Only board types should be included
         expected = {
@@ -312,9 +312,9 @@ class TestIntegration:
             "100": 1,  # board_3
         }
 
-        assert planqer_parts == expected
+        assert partsible_parts == expected
 
-    def test_processor_convert_to_planqer_parts_empty(self):
+    def test_processor_convert_to_partsible_parts_empty(self):
         """Test conversion with no board components."""
         processor = STLProcessor()
 
@@ -330,8 +330,8 @@ class TestIntegration:
             )
         ]
 
-        planqer_parts = processor.convert_to_planqer_parts(cutlist_items)
-        assert planqer_parts == {}
+        partsible_parts = processor.convert_to_partsible_parts(cutlist_items)
+        assert partsible_parts == {}
 
     def test_processor_convert_combines_similar_boards(self):
         """Test that similar board lengths are combined."""
@@ -358,11 +358,11 @@ class TestIntegration:
             ),
         ]
 
-        planqer_parts = processor.convert_to_planqer_parts(cutlist_items)
+        partsible_parts = processor.convert_to_partsible_parts(cutlist_items)
 
         # Should combine quantities for same length
         expected = {"1200": 5}  # 2 + 3
-        assert planqer_parts == expected
+        assert partsible_parts == expected
 
 
 def _box_stl(length, width, thickness):
@@ -397,7 +397,7 @@ def test_process_stl_bytes_reports_skipped_components():
 
 
 def test_process_stl_bytes_rejects_a_file_that_is_not_stl():
-    with pytest.raises(PlanqerError) as exc_info:
+    with pytest.raises(PartsibleError) as exc_info:
         process_stl_bytes(_box_stl(1000, 95, 45), "shelf.obj")
 
     assert exc_info.value.status_code == 400

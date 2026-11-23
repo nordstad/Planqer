@@ -17,8 +17,8 @@ export default defineConfig({
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
     command:
-      "VITE_PLANQER_UMAMI_ID=325f5fce-eb47-46fb-bad7-da1137224c33 npm run build:static && DEMO_DIR=build-static DEMO_PORT=3004 node tests/demo-e2e/serve.mjs",
-    url: "http://127.0.0.1:3004/Planqer/app/",
+      "VITE_PARTSIBLE_UMAMI_ID=325f5fce-eb47-46fb-bad7-da1137224c33 npm run build:static && DEMO_DIR=build-static DEMO_PORT=3004 node tests/demo-e2e/serve.mjs",
+    url: "http://127.0.0.1:3004/",
     reuseExistingServer: false,
     timeout: 120000,
   },

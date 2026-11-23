@@ -2,7 +2,7 @@ from itertools import pairwise
 
 import pytest
 
-from planqer.schemas.wallpaper import (
+from partsible.schemas.wallpaper import (
     Corner,
     Cutout,
     Room,
@@ -10,7 +10,7 @@ from planqer.schemas.wallpaper import (
     WallpaperPlanRequest,
     WallpaperSpec,
 )
-from planqer.wallpaper.plan import create_wallpaper_plan
+from partsible.wallpaper.plan import create_wallpaper_plan
 
 
 def wall(name: str, width: float, cutouts: list[Cutout] | None = None) -> Wall:
