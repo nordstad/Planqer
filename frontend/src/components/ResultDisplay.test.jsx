@@ -19,8 +19,14 @@ describe('ResultDisplay', () => {
     expect(screen.getByAltText(/Cutting plan diagram/i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /What to buy/i })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /Cut order/i })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Download diagram/i })).toBeInTheDocument();
-    expect(screen.getByText('45 × 45 × 300')).toBeInTheDocument();
-    expect(screen.getAllByText('oak').length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: /Download PNG/i })).toBeInTheDocument();
+    expect(screen.getAllByText('300').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('oak · 45 × 45 mm').length).toBeGreaterThan(0);
+  });
+
+  it('does not duplicate dimensions already present in the stock name', () => {
+    render(<ResultDisplay result={{ board_lengths_used: [3000], cut_list: [[100]], visualization: 'data:image/svg+xml;base64,PHN2Zy8+' }} materialType="Framing timber / studs 48 × 98 mm" boardThickness={48} boardWidth={98} />);
+    expect(screen.getByText('Framing timber / studs 48 × 98 mm')).toBeInTheDocument();
+    expect(screen.queryByText(/98 mm · 48/)).not.toBeInTheDocument();
   });
 });

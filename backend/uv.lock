@@ -706,7 +706,7 @@ wheels = [
 
 [[package]]
 name = "partsible"
-version = "0.15.1"
+version = "15.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "aiosqlite" },

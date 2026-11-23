@@ -214,10 +214,13 @@ it('reruns restored rows without collapsing identical names', async () => {
   ));
 });
 
-it('treats an empty sheet thickness as missing, names it and links to the sheet card', () => {
+it('defaults to 10 mm and treats a cleared sheet thickness as missing', () => {
   window.history.replaceState({}, '', '/sheet-cutting');
   renderSheetOptimizer();
 
+  expect(screen.getByLabelText('Thickness (mm)')).toHaveValue(10);
+  expect(screen.getByRole('button', { name: /plan the sheet cuts/i })).toBeEnabled();
+  fireEvent.change(screen.getByLabelText('Thickness (mm)'), { target: { value: '' } });
   expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   expect(screen.getByLabelText('Thickness (mm)')).not.toHaveClass('form-input-error');
   expect(screen.getByLabelText('Thickness (mm)')).toHaveAttribute('aria-required', 'true');
@@ -293,6 +296,7 @@ it('fills in a product\'s thickness when it is picked and takes its standard she
   getCatalogue.mockResolvedValue({ data: catalogue, etag: '"x"' });
   window.history.replaceState({}, '', '/sheet-cutting');
   renderSheetOptimizer();
+  expect(document.getElementById('sheet-thickness')).toHaveValue(10);
 
   const box = screen.getByRole('combobox', { name: 'Product' });
   fireEvent.focus(box);

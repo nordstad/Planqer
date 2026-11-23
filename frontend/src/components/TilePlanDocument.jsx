@@ -1,6 +1,9 @@
 import { useTranslation } from 'react-i18next';
 import PlanSummary from './plan/PlanSummary';
 import TileCutListTable from './TileCutListTable';
+import TileDiagram from './TileDiagram';
+import { useState } from 'react';
+import useTileNavigation from './useTileNavigation';
 
 const mm = (value) => `${Math.round(value)} mm`;
 
@@ -18,11 +21,17 @@ export const tileSummaryRows = (project, t, language) => {
 
 const TilePlanDocument = ({ project }) => {
   const { t, i18n } = useTranslation();
+  const [selectedCut, setSelectedCut] = useState(null);
+  const [highlightedCut, setHighlightedCut] = useState(null);
+  const [listHighlight, setListHighlight] = useState(null);
   const result = project.layout_result;
+  const { listRef, activeCut, showInList } = useTileNavigation(result);
   return <div className="tile-plan-document">
     <PlanSummary title={t('wallpaperUi.summaryTitle')} rows={tileSummaryRows(project, t, i18n.language)} />
-    <section><div className="section-rule"><h2 className="section-title">{t('ui.tileLayout')}</h2></div>{result.visualization && <img className="tile-plan-diagram" src={result.visualization} alt={t('ui.tileDiagramAlt')} />}</section>
-    <TileCutListTable candidate={result} />
+    <div className="tile-layout-pair">
+      <section className="tile-layout-visual"><div className="section-rule"><h2 className="section-title">{t('ui.tileLayout')}</h2></div>{result.visualization && <TileDiagram className="tile-plan-interactive" candidate={result} highlightedLabel={listHighlight || activeCut} onSelect={setSelectedCut} onHighlight={setHighlightedCut} alt={t('ui.tileDiagramAlt')} />}</section>
+      <TileCutListTable candidate={result} highlightedLabel={highlightedCut || activeCut} onHighlight={setListHighlight} selectedLabel={selectedCut} onCloseSelection={() => setSelectedCut(null)} navigationRef={listRef} onShowInList={showInList} />
+    </div>
   </div>;
 };
 

@@ -44,6 +44,9 @@ const mm = (n) => (Number.isFinite(n) ? Math.round(n).toLocaleString('sv-SE') : 
 const STEP_SURFACE = 0;
 const STEP_LAYOUT = 1;
 const STEP_KEEP = 2;
+// 10 mm is a common floor tile thickness. Thickness is stored with the plan but
+// does not affect the calculation yet, so it starts filled in.
+const DEFAULT_TILE_THICKNESS = '10';
 
 const isBlank = (value) => value == null || String(value).trim() === '';
 
@@ -114,7 +117,7 @@ const TileOptimizer = () => {
   const [tileHeight, setTileHeight] = useState('600');
   const [materialType, setMaterialType] = useState('ceramic');
   const [customMaterial, setCustomMaterial] = useState('');
-  const [tileThickness, setTileThickness] = useState('');
+  const [tileThickness, setTileThickness] = useState(DEFAULT_TILE_THICKNESS);
   const [allowRotation, setAllowRotation] = useState(false);
   const [unitPrice, setUnitPrice] = useState('');
   const [pricingDefaults, setPricingDefaults] = useState({ currency: 'SEK', vatRate: 25, pricesIncludeVat: true });
@@ -243,7 +246,7 @@ const TileOptimizer = () => {
     setTileHeight(project.tile_data.height.toString());
     setMaterialType(project.tile_data.material_type || 'ceramic');
     setCustomMaterial('');
-    setTileThickness(project.tile_data.thickness ? String(project.tile_data.thickness) : '');
+    setTileThickness(project.tile_data.thickness ? String(project.tile_data.thickness) : DEFAULT_TILE_THICKNESS);
     setAllowRotation(!!project.tile_data.allow_rotation);
     setJointWidth((project.bond_data.joint_width ?? 3).toString());
     setPerimeterGap((project.bond_data.perimeter_gap ?? 0).toString());
@@ -493,7 +496,7 @@ const TileOptimizer = () => {
             summary={t('workflow.surfaceHint')}
             status={surfaceWrong ? <SectionStatus error={t('formUi.checkValues')} /> : <SectionStatus missing={surfaceMissing} />}
           >
-            <div className="grid gap-x-6 gap-y-4 md:grid-cols-2">
+            <div className="grid gap-x-6 gap-y-4 grid-cols-2">
               <FormField label={t('tileUi.surfaceWidth')} unit="mm" required>
                 <input id="tile-surface-width" type="number" step="0.1" min="100" value={surfaceWidth} onChange={(e) => setField(setSurfaceWidth)(e.target.value)} className={`form-input dimension-input ${inputErrors.surfaceWidth ? 'form-input-error' : ''}`} aria-invalid={!!inputErrors.surfaceWidth || undefined} />
               </FormField>
@@ -533,7 +536,7 @@ const TileOptimizer = () => {
             summary={t('workflow.tileHintCorrect')}
             status={tileWrong ? <SectionStatus error={t('formUi.checkValues')} /> : <SectionStatus missing={tileMissing} />}
           >
-            <div className="grid gap-x-6 gap-y-4 md:grid-cols-2">
+            <div className="grid gap-x-6 gap-y-4 grid-cols-2">
               <FormField label={t('tileUi.tileWidth')} unit="mm" required>
                 <input id="tile-width" type="number" step="0.1" min="10" value={tileWidth} onChange={(e) => setField(setTileWidth)(e.target.value)} className={`form-input dimension-input ${inputErrors.tileWidth ? 'form-input-error' : ''}`} aria-invalid={!!inputErrors.tileWidth || undefined} />
               </FormField>
@@ -583,14 +586,14 @@ const TileOptimizer = () => {
             summary={t('tileUi.jointBondHint')}
             status={jointWrong ? <SectionStatus error={t('formUi.checkValues')} /> : <SectionStatus missing={jointMissing} />}
           >
-            <div className="grid gap-x-6 gap-y-4 md:grid-cols-2">
+            <div className="grid gap-x-6 gap-y-4 grid-cols-2">
               <FormField label={t('tileUi.joint')} unit="mm" required>
                 <input id="tile-joint" type="number" step="0.1" min="0" value={jointWidth} onChange={(e) => setField(setJointWidth)(e.target.value)} className={`form-input dimension-input ${inputErrors.jointWidth ? 'form-input-error' : ''}`} aria-invalid={!!inputErrors.jointWidth || undefined} />
               </FormField>
               <FormField label={t('tileUi.perimeterGap')} unit="mm" required>
                 <input id="tile-perimeter" type="number" step="0.1" min="0" value={perimeterGap} onChange={(e) => setField(setPerimeterGap)(e.target.value)} className={`form-input dimension-input ${inputErrors.perimeterGap ? 'form-input-error' : ''}`} aria-invalid={!!inputErrors.perimeterGap || undefined} />
               </FormField>
-              <div className="flex items-end gap-3 md:col-span-2">
+              <div className="flex items-end gap-3 col-span-2">
                 <span className="bond-preview" style={{ color: 'var(--accent)' }} aria-hidden="true">
                   <BondPatternIcon pattern={bondPattern} size={44} />
                 </span>
@@ -747,7 +750,7 @@ const TileOptimizer = () => {
             </dl>
           </div>
 
-          <TileResultDisplay candidate={selected} projectName={projectName} />
+          <TileResultDisplay candidate={selected} projectName={projectName} surfaceWidth={surfaceWidth} surfaceHeight={surfaceHeight} />
 
           <div className="step-foot">
             <button type="button" className="btn-text" onClick={() => setStep(STEP_SURFACE)}>

@@ -11,6 +11,15 @@ from .visualization_constants import get_css_styles
 _SVG_TEXT_ENTITIES = {'"': "&quot;", "'": "&apos;"}
 
 
+def _cut_label(length: float) -> str:
+    return f"{length:.12g}"
+
+
+def _cut_label_fits(length: float, width: float) -> bool:
+    label_width = len(_cut_label(length)) * 6 + 8
+    return width >= label_width or (width >= 13 and label_width <= 52)
+
+
 class SVGCuttingVisualizer:
     """Modern SVG-based cutting diagram generator."""
 
@@ -93,7 +102,8 @@ class SVGCuttingVisualizer:
         for idx, part in enumerate(board):
             part_width = part * scale
             color = part_colors[round(part, 2)]
-            label = part_labels.get(round(part, 2), f"{part:.0f}")
+            label = _cut_label(part)
+            description = part_labels.get(round(part, 2), "")
 
             # Part rectangle with proper scaling
             svg_elements.append(f'''
@@ -105,19 +115,27 @@ class SVGCuttingVisualizer:
             text_x = x_pos + part_width / 2
             text_y = y_pos + row_height / 2 + 3
 
-            if part_width < 13:
+            if not _cut_label_fits(part, part_width):
                 # Too narrow to letter without bleeding past the rules. The page's
                 # CUT ORDER table lists every cut in order, so nothing is lost.
                 pass
-            elif part_width < 40:  # set on its side, but only where it still fits
+            elif part_width < len(label) * 6 + 8:
                 svg_elements.append(f'''
                 <text x="{text_x}" y="{text_y}" class="part-label-small" 
                       text-anchor="middle" transform="rotate(-90 {text_x} {text_y})">{label}</text>
                 ''')
             else:
+                has_description = (
+                    description and len(description) * 6 + 12 <= part_width
+                )
+                length_y = text_y - 8 if has_description else text_y
                 svg_elements.append(f'''
-                <text x="{text_x}" y="{text_y}" class="part-label" text-anchor="middle">{label}</text>
+                <text x="{text_x}" y="{length_y}" class="part-label" text-anchor="middle">{label}</text>
                 ''')
+                if has_description:
+                    svg_elements.append(f'''
+                    <text x="{text_x}" y="{text_y + 9}" class="part-label-small" text-anchor="middle">{escape(description, _SVG_TEXT_ENTITIES)}</text>
+                    ''')
 
             x_pos += part_width
 
@@ -144,7 +162,7 @@ class SVGCuttingVisualizer:
             ''')
 
             # Add "WASTE" label if waste area is wide enough
-            if waste_width > 30:
+            if waste_width >= 50:
                 waste_text_x = x_pos + waste_width / 2
                 waste_text_y = y_pos + row_height / 2 + 3
                 svg_elements.append(f'''
@@ -218,7 +236,7 @@ class SVGCuttingVisualizer:
             f'<text x="80" y="{start_y}" class="board-label">CUT SCHEDULE</text>'
         ]
         for index, cuts in enumerate(cut_list):
-            values = " · ".join(f"{cut:.0f}" for cut in cuts)
+            values = " · ".join(_cut_label(cut) for cut in cuts)
             svg_elements.append(
                 f'<text x="80" y="{start_y + 18 + index * 18}" '
                 f'class="legend-text">B{index + 1}: {values} MM</text>'
@@ -267,7 +285,12 @@ class SVGCuttingVisualizer:
         width = 1000
         header_height = 22  # just enough air for the one-line job-name caption
         row_height = 95  # Increased spacing for better visual separation between boards
-        schedule_height = 42 + num_boards * 18
+        needs_schedule = any(
+            not _cut_label_fits(part, part * scale)
+            for board in cut_list
+            for part in board
+        )
+        schedule_height = 42 + num_boards * 18 if needs_schedule else 0
         # Add extra space for board labels positioned above each board
         label_padding = 25
         height = (
@@ -313,12 +336,13 @@ class SVGCuttingVisualizer:
             )
             current_y += row_height
 
-        svg_parts.append(
-            self._create_cut_schedule(
-                cut_list,
-                header_height + (num_boards * row_height) + label_padding,
+        if needs_schedule:
+            svg_parts.append(
+                self._create_cut_schedule(
+                    cut_list,
+                    header_height + (num_boards * row_height) + label_padding,
+                )
             )
-        )
         # Add legend
         svg_parts.append("</svg>")
 

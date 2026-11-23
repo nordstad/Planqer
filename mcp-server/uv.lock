@@ -485,7 +485,7 @@ wheels = [
 
 [[package]]
 name = "partsible-mcp-server"
-version = "0.15.1"
+version = "15.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "httpx" },

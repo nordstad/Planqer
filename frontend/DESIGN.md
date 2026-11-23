@@ -48,7 +48,7 @@ typography:
     fontWeight: 800
     lineHeight: 1.12
     letterSpacing: "-.015em"
-  title:
+  'title':
     fontFamily: "Archivo, system-ui, sans-serif"
     fontSize: "15px"
     fontWeight: 700
@@ -146,7 +146,7 @@ components:
 
 ## Overview
 
-**Creative North Star: "The Self-Hosted README"**
+### Creative North Star: "The Self-Hosted README"
 
 Partsible reads like a well-made open-source project's own homepage, not a printed
 catalog and not a SaaS pitch deck. The whole product sits on warm, slightly
@@ -240,7 +240,7 @@ one red for correction.
   border color in the system; used at 1–1.5px for every card, table row, and
   control outline.
 
-### Named Rules
+### Color Rules
 
 **The One Accent Rule.** Amber marks exactly one thing per surface: the
 action, or the figure that leads to it. A screen with two amber elements
@@ -277,7 +277,7 @@ uppercase label read as a label, not as a second brand voice.
 - **Label** (`{typography.label}`): Archivo Narrow, uppercase, 11px,
   `.1em` tracking — job-block terms, form labels, table headers.
 
-### Named Rules
+### Typography Rules
 
 **The Legible Floor Rule.** No functional or caption text renders below
 11px, and running-prose-style captions (`.synthetic`, `.folio`) sit at 12px.
@@ -313,7 +313,7 @@ read the plan, keep it — so the page renders one step at a time under a
 `.plan-steps` rail. `.step-view.is-form` holds steps 1 and 3 at a 620px form
 measure; step 2 drops the cap so the diagram gets the full 1080px.
 
-### Named Rules
+### Layout Rules
 
 **The One Step Rule.** An optimizer page draws the step in hand and nothing
 else. Anything a step needs but most users never touch (prices, packing
@@ -363,7 +363,7 @@ uses exist and both are deliberately quiet:
   `.cat-sheet` — the one real lift in the system, for a modal floating over
   a dimmed scrim.
 
-### Named Rules
+### Elevation Rules
 
 **The Quiet Lift Rule.** Shadow exists only to separate a raised surface from
 the page behind it or to answer a hover/focus state. It never simulates
@@ -379,7 +379,7 @@ switch, radio dots). This is a full reversal of the previous system's
 zero-radius rule; Tailwind's `borderRadius` scale now resolves to real
 values rather than clamping every step to 0.
 
-### Named Rules
+### Shape Rules
 
 **The Radius Ladder Rule.** A new surface picks a step off this ladder by the
 size and weight of the thing it's drawing (small control → 4–8px, card-scale
@@ -457,6 +457,19 @@ radius, 42px square).
   or price does not need free-text width and should use a compact 112px control;
   tightly scoped controls such as kerf may use 78px. Names, product search,
   project names, and comma-separated lists remain full-width.
+- **Tile dimensions on phones:** Surface width / height, tile width / height,
+  and joint / perimeter gap remain paired in two columns, including on narrow
+  screens. Keep labels, units, and error states readable within each column;
+  related measurements should not consume two rows merely because the screen
+  is a phone.
+- **Tile thickness:** New tile plans start at an editable 10 mm. This is a
+  convenient common starting point, not a universal tile specification;
+  thickness is saved but does not currently affect the calculation. The field
+  stays visible and required, and clearing it blocks calculation.
+- **Sheet thickness:** New sheet plans also start at an editable 10 mm, not a
+  claim about the stock. A catalogue product's thickness replaces the default;
+  an explicitly cleared thickness still blocks planning. Thickness is saved
+  but does not currently change the sheet placement calculation.
 - **Required and optional fields:** Every required label carries an ink `*`
   (`.req-mark`, hidden from screen readers, with `aria-required` on the
   control), and the form opens with one "* Required" legend. An optional field
@@ -521,10 +534,61 @@ and quantity) before the cutting diagram. This is distinct from the project
 shopping list: the former is the job's cut specification, while the latter
 aggregates raw stock to buy.
 
+Board diagram cells prioritise the cut length, with a part name only when it
+also fits. A cut schedule is included in the image only when a piece is too
+narrow to label. The live diagram downloads as PNG. The live "What to buy"
+table uses the available width and keeps stock dimensions separate from length.
+The board result summary uses one consistent label-and-value style, and shows
+the stock profile only once when it is already present in the product name.
+
+**The Measurement Comes First Rule.** A part description must never replace
+its actual cut length. Show the length first, preserve decimal precision, and
+add a description only if it fits without obscuring the measurement. If a
+piece is too small for its length, a standalone diagram must retain a readable
+fallback schedule: removing redundant text must never remove a required cut.
+
 `components/plan/PlanPageShell` owns the saved-plan loading states, back link,
 title, and Print / Modify actions. `PlanSummary` renders the common labelled
-summary list. Do not force a common selector: the wallpaper wall picker is
+summary list. On phones, its facts form one bordered list with labels on the
+left, values on the right, and hairline row dividers; print keeps its own
+layout. Do not force a common selector: the wallpaper wall picker is
 synchronised to the room drawing while the sheet selector is an image overview.
+
+### Tile Diagrams and Cut Lists
+
+The full-width diagram precedes the cut list. The list uses proportional,
+colour-matched shape swatches, intact measurements, quantities and a quiet
+**View cut** action. Avoid repeating a cut type or edge measurements in the
+row when the template already gives the details. Older plans without a
+template retain a description instead. On phones, rows stack their facts
+without breaking a measurement across lines.
+
+Hovering or focusing a row subtly highlights it and its matching pieces;
+hovering a piece highlights the matching row without moving the page. A
+pointer-adjacent preview shows the cut's size and quantity even if its row is
+off-screen. Selecting a cut opens its template, which can navigate to the
+matching row and keep it highlighted. A full tile explains that no cut is
+needed and has no cut action. When an older diagram cannot be matched safely
+to its tiles, leave the cut-list actions available rather than guessing.
+
+**Rejected experiment:** A side-by-side diagram and independently scrolling
+cut list kept both in view, but made the diagram too small, broke measurements
+across lines, and introduced nested scrolling. Do not reintroduce that layout
+to solve an off-screen hover state. The current interaction does not promise
+that both the hovered piece and its highlighted row are simultaneously visible.
+
+Tile diagrams show centred cut letters only when they fit inside the piece.
+They omit repeated dimensions and labels on notched pieces; the cut list and
+templates carry those details. Dense or diagonal diagrams must not let labels
+overlap or cross tile edges.
+
+The live tile diagram puts the surface dimensions and matching secondary
+enlarge / PNG actions above the drawing, with a legible HTML legend below it.
+Its on-screen SVG is cropped to the surface; the downloadable image retains
+its own caption and legend. The exported image uses a title (the saved plan
+name when available) and a separate surface-size line, not a run-on ranking
+summary. Saved diagrams are stored images: changes to diagram generation do
+not retroactively redraw existing plans.
 
 ### Wall Picker
 
@@ -546,10 +610,11 @@ The shopping list is a **workshop order sheet**, not a spreadsheet: one framed
 material sheet with a plate-paper heading band, strong stock names, and a
 quietly tinted **Quantity** column that makes the actionable purchase quantity
 the visual anchor. Its 12px, weight-800 column labels are intentionally more
-prominent than a standard table's micro-labels. It remains a semantic table so stock, size, quantity,
-optional unit price, and cost stay easy to scan and export. Quantity already
-includes the project's spare allowance; the internal required count is not
-shown. Unpriced rows are deliberately quiet; the subtotal and note explain
+prominent than a standard table's micro-labels. It remains a semantic table so
+stock, size, quantity, optional unit price, and cost stay easy to scan and
+export. Quantity already includes the project's spare allowance; the
+internal required count is not shown. Unpriced rows are deliberately quiet;
+the subtotal and note explain
 when the visible cost is incomplete.
 
 ### The Step Rail
@@ -624,10 +689,11 @@ amber text — no more "bleeding ink" box-shadow trick, just a flat fill.
 
 ### The Answer
 
-`.plan-answer` opens the plan step: the boards-or-sheets figure in amber at
-display scale, its unit label beneath, and the supporting figures (`material
-bought`, `offcut`, `blade takes`, `efficiency`, `cost`) as one plain
-`.plan-facts` row of label-over-value pairs beside it — not four stat cards.
+`.plan-answer` opens the plan step. Sheet and tile plans use an amber
+display-scale answer with supporting facts beside it; the board plan instead
+uses one consistent row of label-over-value pairs for its board count and
+supporting figures (`material bought`, `offcut`, `blade takes`, `efficiency`,
+`cost`). Neither treatment uses a grid of separate stat cards.
 Only figures the API actually returns are printed, each conditional on its
 value being present; the UI derives no number of its own.
 
@@ -712,7 +778,7 @@ whole affordance, with `aria-label`/`title` covering the rest.
 
 ## Do's and Don'ts
 
-### Do:
+### Do
 
 - **Do** spend the amber accent on exactly one thing per surface: the action,
   or the figure that leads to it.
@@ -730,7 +796,7 @@ whole affordance, with `aria-label`/`title` covering the rest.
 - **Do** reference roles through the CSS custom properties (`var(--ink-3)`,
   `var(--accent)`) so both editions stay one system.
 
-### Don't:
+### Don't
 
 - **Don't** introduce a fifth color, or let revision red and the accent
   amber sit close enough in hue to be confused in a small mark.

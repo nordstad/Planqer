@@ -172,7 +172,7 @@ describe('Lite warning for large diagonal layouts', () => {
   });
 });
 
-it('names an empty tile thickness as missing instead of flagging it red', async () => {
+it('starts with a 10 mm thickness, and names it as missing when it is cleared', async () => {
   render(
     <MemoryRouter>
       <LanguageProvider>
@@ -182,6 +182,10 @@ it('names an empty tile thickness as missing instead of flagging it red', async 
   );
 
   const thickness = await screen.findByLabelText('Thickness (mm)');
+  expect(thickness).toHaveValue(10);
+  expect(screen.getByRole('button', { name: /Calculate layout/i })).toBeEnabled();
+
+  fireEvent.change(thickness, { target: { value: '' } });
   expect(thickness).toHaveValue(null);
   expect(thickness).not.toHaveClass('form-input-error');
   expect(thickness).toHaveAttribute('aria-required', 'true');

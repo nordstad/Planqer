@@ -24,7 +24,7 @@ describe('TileCutListTable', () => {
       />,
     );
 
-    expect(screen.getAllByText('Cut around an opening — see diagram')).toHaveLength(2);
+    expect(screen.queryByText('Cut around an opening — see diagram')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'View cut B' }));
     expect(screen.getByAltText('Cut template for piece B')).toHaveAttribute('src', diagram('b'));
   });
@@ -44,7 +44,7 @@ describe('TileCutListTable', () => {
       />,
     );
 
-    expect(screen.getAllByText('Straight cut')).toHaveLength(2);
+    expect(screen.queryByText('Straight cut')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'View cut A' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'View cut B' })).toBeInTheDocument();
   });
@@ -86,6 +86,17 @@ describe('TileCutListTable', () => {
     fireEvent.click(screen.getByRole('button', { name: 'View cut A' }));
 
     expect(screen.getByAltText('Cut template for piece A')).toBeInTheDocument();
+  });
+
+  it('opens and closes a cut selected from the diagram', () => {
+    const close = vi.fn();
+    render(<TileCutListTable candidate={{
+      tiles: [piece({ kind: 'cut', size_label: 'A' })],
+      piece_diagrams: { A: diagram('a') },
+    }} selectedLabel="A" onCloseSelection={close} />);
+    expect(screen.getByRole('dialog', { name: 'Cut template for piece A' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(close).toHaveBeenCalledOnce();
   });
 
   it('renders diagonal template details as selectable text outside the image', () => {
