@@ -18,10 +18,11 @@ def lite():
     return module
 
 
-def _bundle(path: Path, version: str) -> None:
+def _bundle(path: Path, version: str, source: str = "") -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(path, "w") as archive:
         archive.writestr("partsible/__init__.py", f'__version__ = "{version}"\n')
+        archive.writestr("partsible/solver.py", source)
 
 
 def _complete_lite(lite, out: Path, version: str = "1.2.3") -> dict:
@@ -34,13 +35,31 @@ def _complete_lite(lite, out: Path, version: str = "1.2.3") -> dict:
     runtime.mkdir(parents=True)
     for name in lite.core_files(manifest) | lite.model_files(manifest):
         (runtime / name).write_bytes(b"x" * 1024)
-    _bundle(out / "pyodide" / "bundle.zip", version)
+    bundle = out / "pyodide" / "bundle.zip"
+    _bundle(bundle, version)
+    name = lite.bundle_filename(bundle)
+    bundle.rename(out / "pyodide" / name)
+    (out / "assets").mkdir()
+    (out / "assets" / "solver.js").write_text(
+        f'const bundle = "{name}";', encoding="utf-8"
+    )
     return manifest
 
 
 def test_a_complete_lite_has_no_problems(lite, tmp_path):
     manifest = _complete_lite(lite, tmp_path / "lite")
     assert lite.verify(tmp_path / "lite", manifest, "1.2.3") == []
+
+
+def test_lite_cache_headers_are_not_in_self_hosted_public_files(lite, tmp_path):
+    headers = lite.FRONTEND / "public" / "_headers"
+    assert "/pyodide/bundle.zip" not in headers.read_text()
+    output_headers = tmp_path / "_headers"
+    output_headers.write_text(headers.read_text())
+
+    lite.add_lite_headers(tmp_path)
+
+    assert "/pyodide/bundle.zip\n  Cache-Control: no-cache" in output_headers.read_text()
 
 
 def test_a_missing_runtime_file_is_named(lite, tmp_path):
@@ -54,11 +73,39 @@ def test_a_missing_runtime_file_is_named(lite, tmp_path):
 
 def test_a_missing_bundle_is_reported(lite, tmp_path):
     manifest = _complete_lite(lite, tmp_path / "lite")
-    (tmp_path / "lite" / "pyodide" / "bundle.zip").unlink()
+    name = next(iter(lite.frontend_bundle_names(tmp_path / "lite")))
+    (tmp_path / "lite" / "pyodide" / name).unlink()
 
     assert lite.verify(tmp_path / "lite", manifest, "1.2.3") == [
-        "pyodide/bundle.zip is missing"
+        f"pyodide/{name} is missing"
     ]
+
+
+def test_a_changed_bundle_gets_a_new_name_and_the_old_frontend_is_rejected(
+    lite, tmp_path
+):
+    out = tmp_path / "lite"
+    manifest = _complete_lite(lite, out)
+    old_name = next(iter(lite.frontend_bundle_names(out)))
+    old_bundle = out / "pyodide" / old_name
+    _bundle(old_bundle, "1.2.3", "changed solver")
+    new_name = lite.bundle_filename(old_bundle)
+    assert new_name != old_name
+    assert any(
+        "does not match its content hash" in problem
+        for problem in lite.verify(out, manifest, "1.2.3")
+    )
+
+
+def test_rejects_frontend_built_for_a_different_bundle(lite, tmp_path):
+    out = tmp_path / "lite"
+    manifest = _complete_lite(lite, out)
+    (out / "assets" / "solver.js").write_text(
+        f'const bundle = "partsible-{"a" * 64}.zip";'
+    )
+    assert any(
+        "is missing" in problem for problem in lite.verify(out, manifest, "1.2.3")
+    )
 
 
 def test_a_bundle_from_another_version_is_reported(lite, tmp_path):
@@ -89,7 +136,6 @@ def test_missing_index_is_reported(lite, tmp_path):
 
 def test_sizes_are_counted_per_part(lite, tmp_path):
     manifest = _complete_lite(lite, tmp_path / "lite")
-    (tmp_path / "lite" / "assets").mkdir()
     (tmp_path / "lite" / "assets" / "app.js").write_bytes(b"x" * 5000)
 
     sizes = lite.measure(tmp_path / "lite", manifest)

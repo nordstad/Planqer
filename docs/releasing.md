@@ -70,6 +70,14 @@ app, or Lite has grown past its size budget. `test:lite` runs it in three
 browser engines. The `Static Lite CI` workflow runs the same checks on every
 pull request that touches the app, the Python it runs, or the scripts.
 
+The build names the solver ZIP using its SHA-256 content hash and embeds that
+name in the frontend. It verifies that the referenced ZIP exists, has the
+matching hash, and contains the expected version. This prevents a browser or
+CDN from pairing a new frontend with a cached solver from an older release.
+The unversioned `bundle.zip` remains for older open tabs and is served with
+`no-cache`; new frontends do not use it. A tab opened on a previous release can
+still need a reload if its old content-addressed bundle is no longer available.
+
 If the size budget fails because of a change you meant to make, raise the
 limit in `BUDGET_KB` in `scripts/build-lite.py` in the same pull request.
 

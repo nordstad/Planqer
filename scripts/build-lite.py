@@ -15,8 +15,10 @@ download, which is then checksum-verified and cached under build/pyodide).
 """
 
 import argparse
+import hashlib
 import importlib.util
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -76,6 +78,20 @@ def frontend_version() -> str:
     return json.loads((FRONTEND / "package.json").read_text(encoding="utf-8"))["version"]
 
 
+def bundle_filename(bundle: Path) -> str:
+    digest = hashlib.sha256(bundle.read_bytes()).hexdigest()
+    return f"partsible-{digest}.zip"
+
+
+def frontend_bundle_names(out: Path) -> set[str]:
+    pattern = r"partsible-[0-9a-f]{64}\.zip"
+    return {
+        name
+        for asset in (out / "assets").glob("*.js")
+        for name in re.findall(pattern, asset.read_text(encoding="utf-8"))
+    }
+
+
 def verify(out: Path, manifest: dict, expected_version: str) -> list[str]:
     """Everything that must be true for Lite to start. Empty means fine."""
     problems = []
@@ -90,10 +106,17 @@ def verify(out: Path, manifest: dict, expected_version: str) -> list[str]:
         if not (runtime / name).is_file():
             problems.append(f"runtime file missing: pyodide/runtime/{name}")
 
-    bundle = out / "pyodide" / "bundle.zip"
-    if not bundle.is_file():
-        problems.append("pyodide/bundle.zip is missing")
+    names = frontend_bundle_names(out)
+    if len(names) != 1:
+        problems.append("frontend must reference exactly one content-addressed solver bundle")
     else:
+        name = next(iter(names))
+        bundle = out / "pyodide" / name
+        if not bundle.is_file():
+            problems.append(f"pyodide/{name} is missing")
+            return problems
+        if bundle_filename(bundle) != name:
+            problems.append(f"pyodide/{name} does not match its content hash")
         stamped = bundle_version(bundle)
         if stamped != expected_version:
             problems.append(f"bundle is stamped {stamped}, the app is {expected_version}")
@@ -110,7 +133,8 @@ def measure(out: Path, manifest: dict) -> dict[str, int]:
     pyodide = out / "pyodide"
     everything = sum(p.stat().st_size for p in out.rglob("*") if p.is_file())
     under_pyodide = sum(p.stat().st_size for p in pyodide.rglob("*") if p.is_file())
-    bundle = out / "pyodide" / "bundle.zip"
+    names = frontend_bundle_names(out)
+    bundle = out / "pyodide" / next(iter(names)) if len(names) == 1 else out / "pyodide" / "bundle.zip"
     return {
         "app": everything - under_pyodide,
         "runtime_core": size(core_files(manifest)),
@@ -127,13 +151,21 @@ def over_budget(sizes: dict[str, int], budget_kb: dict[str, int] = BUDGET_KB) ->
     ]
 
 
+def add_lite_headers(out: Path) -> None:
+    with (out / "_headers").open("a", encoding="utf-8") as headers:
+        headers.write("\n/pyodide/bundle.zip\n  Cache-Control: no-cache\n")
+
+
 def build(out: Path, skip_frontend: bool) -> None:
     manifest = _manifest()
+    bundle = _load("build-pyodide-bundle.py").build_bundle(ROOT / "build" / "pyodide")
+    bundle_name = bundle_filename(bundle)
     if not skip_frontend:
         npm = shutil.which("npm")
         if npm is None:
             raise SystemExit("npm was not found; install Node to build the app")
-        subprocess.run([npm, "run", "build:static"], cwd=FRONTEND, check=True)
+        env = {**os.environ, "VITE_PARTSIBLE_BUNDLE": bundle_name}
+        subprocess.run([npm, "run", "build:static"], cwd=FRONTEND, check=True, env=env)
     built = FRONTEND / "build-static"
     if not (built / "index.html").is_file():
         raise SystemExit(f"{built} has no build; run without --skip-frontend")
@@ -141,9 +173,11 @@ def build(out: Path, skip_frontend: bool) -> None:
     if out.exists():
         shutil.rmtree(out)
     shutil.copytree(built, out)
+    add_lite_headers(out)
 
     _load("fetch-pyodide-runtime.py").fetch_runtime(manifest, out / "pyodide" / "runtime")
-    bundle = _load("build-pyodide-bundle.py").build_bundle(ROOT / "build" / "pyodide")
+    shutil.copy2(bundle, out / "pyodide" / bundle_name)
+    # Older open tabs still request this path. New builds never reference it.
     shutil.copy2(bundle, out / "pyodide" / "bundle.zip")
 
     problems = verify(out, manifest, frontend_version())

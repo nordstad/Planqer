@@ -1,8 +1,7 @@
 // The browser's solver: one shared worker, created on first use.
 //
 // The static build serves the Pyodide runtime under <base>pyodide/runtime/ and
-// the partsible bundle as <base>pyodide/bundle.zip. Only api.js in static mode
-// imports this file.
+// a content-addressed partsible bundle. Only api.js in static mode imports this.
 
 import i18n from "../i18n";
 import { createSolverClient, SolverCancelledError, SolverTimeoutError } from "./solverClient";
@@ -17,7 +16,7 @@ function solverClient() {
     createWorker: () =>
       new Worker(new URL("./solverWorker.js", import.meta.url), { type: "module" }),
     runtimeUrl: new URL(`${import.meta.env.BASE_URL}pyodide/runtime/`, window.location.href).href,
-    bundleUrl: new URL(`${import.meta.env.BASE_URL}pyodide/bundle.zip`, window.location.href).href,
+    bundleUrl: new URL(`${import.meta.env.BASE_URL}pyodide/${import.meta.env.VITE_PARTSIBLE_BUNDLE || "bundle.zip"}`, window.location.href).href,
   });
   return client;
 }
