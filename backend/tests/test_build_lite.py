@@ -51,6 +51,17 @@ def test_a_complete_lite_has_no_problems(lite, tmp_path):
     assert lite.verify(tmp_path / "lite", manifest, "1.2.3") == []
 
 
+def test_lite_cache_headers_are_not_in_self_hosted_public_files(lite, tmp_path):
+    headers = lite.FRONTEND / "public" / "_headers"
+    assert "/pyodide/bundle.zip" not in headers.read_text()
+    output_headers = tmp_path / "_headers"
+    output_headers.write_text(headers.read_text())
+
+    lite.add_lite_headers(tmp_path)
+
+    assert "/pyodide/bundle.zip\n  Cache-Control: no-cache" in output_headers.read_text()
+
+
 def test_a_missing_runtime_file_is_named(lite, tmp_path):
     manifest = _complete_lite(lite, tmp_path / "lite")
     (tmp_path / "lite" / "pyodide" / "runtime" / "pyodide.asm.wasm").unlink()

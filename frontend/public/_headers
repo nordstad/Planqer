@@ -4,6 +4,3 @@
 
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
-
-/pyodide/bundle.zip
-  Cache-Control: no-cache

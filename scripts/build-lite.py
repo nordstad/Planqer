@@ -151,6 +151,11 @@ def over_budget(sizes: dict[str, int], budget_kb: dict[str, int] = BUDGET_KB) ->
     ]
 
 
+def add_lite_headers(out: Path) -> None:
+    with (out / "_headers").open("a", encoding="utf-8") as headers:
+        headers.write("\n/pyodide/bundle.zip\n  Cache-Control: no-cache\n")
+
+
 def build(out: Path, skip_frontend: bool) -> None:
     manifest = _manifest()
     bundle = _load("build-pyodide-bundle.py").build_bundle(ROOT / "build" / "pyodide")
@@ -168,6 +173,7 @@ def build(out: Path, skip_frontend: bool) -> None:
     if out.exists():
         shutil.rmtree(out)
     shutil.copytree(built, out)
+    add_lite_headers(out)
 
     _load("fetch-pyodide-runtime.py").fetch_runtime(manifest, out / "pyodide" / "runtime")
     shutil.copy2(bundle, out / "pyodide" / bundle_name)
