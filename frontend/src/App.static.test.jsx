@@ -13,6 +13,7 @@ vi.mock('./runtime/localBackend', () => ({
   handle: vi.fn().mockResolvedValue(null),
   backupExport: vi.fn(),
   backupImport: vi.fn(),
+  backupPreview: vi.fn(),
   hasSavedWork: vi.fn().mockResolvedValue(false),
 }));
 

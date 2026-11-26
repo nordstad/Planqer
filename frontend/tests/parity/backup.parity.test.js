@@ -1,12 +1,15 @@
 // Actual importer + memory store + Python contracts running in real Pyodide.
 import { beforeAll, expect, it } from "vitest";
 import fixture from "../contract/backup.json";
-import { importBackup, exportBackup } from "../../src/runtime/backup";
+import { importBackup as commitBackup, previewBackup, exportBackup } from "../../src/runtime/backup";
 import { createMemoryDb } from "../../src/runtime/memoryDb";
 import { createLocalApi } from "../../src/runtime/localApi";
 import { startRuntime } from "./startRuntime";
 
 let call;
+// Explicit test-only approval; UI consent is covered separately.
+const importBackup = async (db, content, validate) =>
+  commitBackup(db, await previewBackup(db, content, validate), { replaceExisting: true });
 beforeAll(async () => {
   const { runtime } = await startRuntime();
   call = (op, payload) => runtime.call(op, payload);

@@ -8,7 +8,9 @@ const runImport = async (page, scenario) => {
   await page.goto('/');
   return page.evaluate(async ({ mode, failAt = 4, subset = false, retry = false }) => {
     const { openDatabase, STORES } = await import('/src/runtime/indexedDb.js');
-    const { importBackup, exportBackup, BACKUP_FORMAT } = await import('/src/runtime/backup.js');
+    const { importBackup: commitBackup, previewBackup, exportBackup, BACKUP_FORMAT } = await import('/src/runtime/backup.js');
+    const importBackup = async (db, content, call) =>
+      commitBackup(db, await previewBackup(db, content, call), { replaceExisting: true });
     const name = `partsible-atomicity-test-${crypto.randomUUID()}`;
     let db = await openDatabase({ name });
     const originalPut = IDBObjectStore.prototype.put;

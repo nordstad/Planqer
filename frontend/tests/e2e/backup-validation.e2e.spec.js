@@ -39,7 +39,9 @@ test('validates real saved records in the worker before native IndexedDB writes'
   await page.goto('/');
   const result = await page.evaluate(async (backup) => {
     const { openDatabase } = await import('/src/runtime/indexedDb.js');
-    const { importBackup, exportBackup } = await import('/src/runtime/backup.js');
+    const { importBackup: commitBackup, previewBackup, exportBackup } = await import('/src/runtime/backup.js');
+    const importBackup = async (db, content) =>
+      commitBackup(db, await previewBackup(db, content), { replaceExisting: true });
     const name = `partsible-validation-test-${crypto.randomUUID()}`;
     let db = await openDatabase({ name });
     const failures = [];

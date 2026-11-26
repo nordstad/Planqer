@@ -2,6 +2,8 @@
 // Values are copied on the way in and out, as IndexedDB does, so a caller can
 // never change a stored record by holding on to it.
 
+import { sameRecord, StaleSnapshotError } from "./recordSnapshot";
+
 export function createMemoryDb() {
   const stores = new Map();
   const table = (name) => {
@@ -20,7 +22,15 @@ export function createMemoryDb() {
     async put(store, record) {
       table(store).set(record.id, structuredClone(record));
     },
-    async putMany(recordsByStore) {
+    async snapshot(keys) {
+      return keys.map(({ store, id }) => ({
+        store, id, value: structuredClone(table(store).get(id)),
+      }));
+    },
+    async putMany(recordsByStore, { expected = [] } = {}) {
+      for (const { store, id, value } of expected) {
+        if (!sameRecord(table(store).get(id), value)) throw new StaleSnapshotError();
+      }
       // Clone the whole batch before publishing any change, as IndexedDB does.
       const staged = Object.entries(recordsByStore).map(([store, records]) => [
         store, records.map((record) => structuredClone(record)),

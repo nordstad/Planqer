@@ -725,8 +725,31 @@ Before writing, imports reject unsupported formats, duplicate IDs within a store
 invalid saved-record shapes, and missing project-group references in the merged
 library. Validation preserves the original supported metadata rather than
 normalizing it or re-solving plans. Rejection leaves storage unchanged and tells
-the user to keep the original file and try another backup. Matching-ID preview,
-replacement confirmation, and revalidation after relevant changes remain separate.
+the user to keep the original file and try another backup.
+
+Choosing an import file prepares a read-only inline review in the existing backup
+panel; it never writes immediately. Show additions/replacements for each affected
+record type, with expandable record names, IDs, and current replacement names.
+Matching IDs count as replacements even when their contents are identical,
+including Defaults and catalogue entries. Require an unchecked-by-default explicit
+replacement approval before enabling the destructive restore action.
+
+Changing the file, cancelling, leaving the panel, or a failed/stale restore
+retires the current UI approval. Pending obsolete file reads/previews cannot
+restore eligibility or feedback. A restore is single-use and locks its actions
+until commit/rollback; cancellation is available before, not during, that write.
+Reread the selected file before handing off the write; changed or unreadable
+contents cannot be restored using the previous preview.
+Empty backups remain read-only. Move keyboard focus to the ready review heading
+and back to Import after cancellation or a completed restore attempt.
+
+Preview owns an immutable copy of the validated file and a consistent snapshot
+of affected IDs plus referenced retained groups. The write transaction rechecks
+those records before enqueueing any writes, including absent IDs that might have
+become replacements. A relevant mismatch aborts without writes and requires a
+fresh preview and new approval. Unrelated record changes do not invalidate it.
+This does not introduce a new backup-panel placement or refresh mounted project/
+Defaults/catalogue views after restore; those remain separate work.
 
 Defaults are editable and saveable only after a successful read for the current
 user. A pending read shows the existing loader; a failed read shows the load error

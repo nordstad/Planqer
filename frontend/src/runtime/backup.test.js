@@ -1,9 +1,14 @@
-import { BackupError, BACKUP_FORMAT, exportBackup, importBackup } from "./backup";
+import { BackupError, BACKUP_FORMAT, exportBackup, importBackup as commitBackup, previewBackup } from "./backup";
 import { createMemoryDb } from "./memoryDb";
 import { STORES } from "./indexedDb";
 // Transaction tests deliberately use sparse synthetic records. The real Python
 // contracts are exercised in tests/parity/backup.parity.test.js.
 vi.mock("./solver", () => ({ solverCall: vi.fn(async () => ({ status: 200 })) }));
+
+// These existing validation/atomicity checks explicitly approve the preview.
+// Confirmation and freshness behavior have their own backupPreview.test.js suite.
+const importBackup = async (db, content, call) =>
+  commitBackup(db, await previewBackup(db, content, call), { replaceExisting: true });
 
 const filled = async () => {
   const db = createMemoryDb();
@@ -92,10 +97,10 @@ it("leaves every store unchanged when a later write cannot be cloned", async () 
   const db = await filled();
   const before = await everything(db);
   const putMany = db.putMany;
-  db.putMany = (stores) => putMany({
+  db.putMany = (stores, options) => putMany({
     ...stores,
     projects: stores.projects.map((record) => ({ ...record, uncloneable: () => {} })),
-  });
+  }, options);
   await expect(importBackup(db, {
     app: "partsible-lite", format: BACKUP_FORMAT,
     stores: {
@@ -110,14 +115,16 @@ it("returns import counts only after the atomic batch commits", async () => {
   let commit;
   let reported = false;
   const db = {
+    ...createMemoryDb(),
     put: vi.fn(),
     putMany: vi.fn(() => new Promise((resolve) => { commit = resolve; })),
   };
   const stores = { groups: [{ id: "g1" }], projects: [{ id: "p1" }] };
-  const importing = importBackup(db, { app: "partsible-lite", format: BACKUP_FORMAT, stores })
+  const preview = await previewBackup(db, { app: "partsible-lite", format: BACKUP_FORMAT, stores });
+  const importing = commitBackup(db, preview)
     .then((counts) => { reported = true; return counts; });
   await Promise.resolve();
-  expect(db.putMany).toHaveBeenCalledWith(stores);
+  expect(db.putMany).toHaveBeenCalledWith(stores, { expected: expect.any(Array) });
   expect(db.put).not.toHaveBeenCalled();
   await Promise.resolve();
   expect(reported).toBe(false);
@@ -127,7 +134,7 @@ it("returns import counts only after the atomic batch commits", async () => {
 
 it("propagates batch failure rather than reporting import counts or falling back to per-record writes", async () => {
   const failure = new DOMException("Injected abort", "AbortError");
-  const db = { put: vi.fn(), putMany: vi.fn().mockRejectedValue(failure) };
+  const db = { ...createMemoryDb(), put: vi.fn(), putMany: vi.fn().mockRejectedValue(failure) };
   await expect(importBackup(db, {
     app: "partsible-lite", format: BACKUP_FORMAT, stores: { groups: [{ id: "g1" }] },
   })).rejects.toBe(failure);
@@ -165,13 +172,13 @@ for (const failAt of [0, 6, 13]) {
     // Inject at the batch boundary, after the importer owns/validates its copy,
     // so this still tests the memory adapter's staging rather than early cloning.
     const putMany = db.putMany;
-    db.putMany = (batch) => {
+    db.putMany = (batch, options) => {
       let index = 0;
       return putMany(Object.fromEntries(Object.entries(batch).map(([store, records]) => [
         store, records.map((record) => ({
           ...record, ...(index++ === failAt ? { uncloneable: () => {} } : {}),
         })),
-      ])));
+      ])), options);
     };
     const before = await everything(db);
     await expect(importBackup(db, {
