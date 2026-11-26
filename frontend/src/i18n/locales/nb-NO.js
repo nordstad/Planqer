@@ -822,7 +822,7 @@ Object.assign(locale, {
       title: "Produktkatalog",
     },
     backup: {
-      title: "Sikkerhetskopier prosjektene dine",
+      title: "Sikkerhetskopi",
       intro: "Prosjektene dine lagres bare i denne nettleseren på denne enheten. Eksporter en sikkerhetskopi for å holde dem trygge, eller for å flytte dem til en annen nettleser.",
       export: "Eksporter sikkerhetskopi",
       import: "Importer sikkerhetskopi",

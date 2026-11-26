@@ -736,7 +736,7 @@ Object.assign(locale, {
       title: "Catalogue",
     },
     backup: {
-      title: "Back up your projects",
+      title: "Backup",
       intro: "Your projects are stored only in this browser on this device. Export a backup file to keep them safe, or to move them to another browser.",
       export: "Export backup",
       import: "Import backup",

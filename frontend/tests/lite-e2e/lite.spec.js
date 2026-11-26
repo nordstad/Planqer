@@ -174,6 +174,7 @@ test("a backup of what was saved can be downloaded", async ({ page }) => {
   await page.getByRole("link", { name: "My projects", exact: true }).click();
   await expect(page.getByRole("note").filter({ hasText: /no recent backup/i })).toBeVisible();
 
+  await page.getByRole("button", { name: "Backup", exact: true }).click();
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Export backup" }).click();
   const file = await download;
@@ -199,6 +200,7 @@ test("Browse files and Import backup open the file picker", async ({ page }) => 
   expect((await chooser).isMultiple()).toBe(false);
 
   await page.goto(`${APP}#/dashboard`);
+  await page.getByRole("button", { name: "Backup", exact: true }).click();
   const importChooser = page.waitForEvent("filechooser");
   await page.getByRole("button", { name: "Import backup" }).click();
   await importChooser;

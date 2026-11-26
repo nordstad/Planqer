@@ -6,6 +6,7 @@ import {
 } from '../../runtime/dataSafety';
 import { track } from '../../utils/analytics';
 import { VISUALLY_HIDDEN } from '../../utils/visuallyHidden';
+import { Chevron } from '../icons';
 
 const BACKUP_ERRORS = ['notBackup', 'tooNew', 'invalid', 'stale', 'previewRequired', 'confirmationRequired'];
 
@@ -22,6 +23,7 @@ const download = (name, data) => {
    reminder, and an honest word about whether the browser will keep it. */
 const BackupPanel = () => {
   const { t, i18n } = useTranslation();
+  const disclosureButton = useRef(null);
   const fileInput = useRef(null);
   const importButton = useRef(null);
   const previewHeading = useRef(null);
@@ -40,6 +42,7 @@ const BackupPanel = () => {
   const [checking, setChecking] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const refresh = useCallback(async () => {
     setHasWork(await hasSavedWork().catch(() => false));
@@ -169,100 +172,122 @@ const BackupPanel = () => {
       : storage.persisted ? t('lite.backup.storageProtected')
         : t('lite.backup.storageUnprotected');
 
+  const toggleExpanded = () => {
+    if (committing.current) return;
+    if (expanded && file) cancelImport();
+    setExpanded(!expanded);
+    disclosureButton.current?.focus();
+  };
+
   return (
-    <section className="card" style={{ marginBottom: '20px' }} aria-labelledby="lite-backup-title">
-      <h2 className="section-title" id="lite-backup-title" style={{ marginBottom: '8px' }}>{t('lite.backup.title')}</h2>
-      <p style={{ color: 'var(--ink-2)', margin: '0 0 12px' }}>{t('lite.backup.intro')}</p>
+    <section style={{ borderTop: '1px solid var(--rule-hair)', paddingTop: '12px', marginBottom: '20px' }} aria-labelledby="lite-backup-title">
+      <h2 id="lite-backup-title" style={{ margin: 0 }}>
+        <button ref={disclosureButton} type="button" className="btn-text" aria-expanded={expanded}
+          aria-controls="lite-backup-content" onClick={toggleExpanded} disabled={restoring}
+          style={restoring ? { color: 'var(--ink-3)', cursor: 'not-allowed' } : undefined}>
+          {t('lite.backup.title')}
+          <Chevron open={expanded} />
+        </button>
+      </h2>
 
       {needsBackupReminder({ hasData: hasWork, lastExported }) && (
-        <p role="note" style={{ color: 'var(--accent)', margin: '0 0 12px', fontWeight: 600 }}>{t('lite.backup.reminder')}</p>
+        <p role="note" style={{ color: 'var(--accent)', margin: '8px 0', fontWeight: 600 }}>{t('lite.backup.reminder')}</p>
       )}
 
-      <div className="flex flex-wrap items-center gap-2" style={{ marginBottom: '10px' }}>
-        <button type="button" className="btn btn-primary" onClick={exportNow} disabled={checking || restoring}>{t('lite.backup.export')}</button>
-        <button ref={importButton} type="button" className="btn" onClick={() => fileInput.current.click()} disabled={restoring}>{t('lite.backup.import')}</button>
-        <input ref={fileInput} type="file" aria-label={t('lite.backup.fileLabel')} accept="application/json,.json" style={VISUALLY_HIDDEN} onChange={importFile} disabled={restoring} />
-        <span style={{ color: 'var(--ink-3)', fontSize: '13px' }}>
-          {lastExported
-            ? t('lite.backup.lastExported', { date: new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium' }).format(lastExported) })
-            : t('lite.backup.neverExported')}
-        </span>
-      </div>
-
-      {checking && (
-        <div style={{ marginBlock: '16px' }}>
-          <p role="status">{t('lite.backup.checking')}</p>
-          <button type="button" className="btn" onClick={cancelImport}>{t('ui.cancel')}</button>
-        </div>
+      {storage && !storage.persisted && (
+        <p style={{ color: 'var(--ink-3)', fontSize: '13px', margin: '8px 0' }}>{storageText}</p>
       )}
-
-      {preview && (
-        <section aria-labelledby="lite-backup-preview-title" style={{ marginBlock: '24px', borderTop: '1px solid var(--rule)', paddingTop: '16px', overflowWrap: 'anywhere' }} aria-busy={restoring}>
-          <h3 ref={previewHeading} id="lite-backup-preview-title" className="section-title" tabIndex={-1}>{t('lite.backup.previewTitle')}</h3>
-          <p style={{ color: 'var(--ink-2)', marginBlock: '8px' }}>{file.name}</p>
-          <p style={{ maxWidth: '70ch', marginBottom: '16px' }}>{t('lite.backup.previewHelp')}</p>
-          <p style={{ fontWeight: 600 }}>{t('lite.backup.previewCounts', { additions: preview.additions, replacements: preview.replacements })}</p>
-          {Object.entries(preview.stores).filter(([, records]) => records.length > 0).map(([store, records]) => (
-            <details key={store} style={{ borderBottom: '1px solid var(--rule)', paddingBlock: '10px' }}>
-              <summary style={{ cursor: 'pointer', paddingBlock: '4px' }}>
-                {t('lite.backup.storeSummary', {
-                  type: t(`lite.backup.stores.${store}`),
-                  additions: records.filter((record) => record.action === 'add').length,
-                  replacements: records.filter((record) => record.action === 'replace').length,
-                })}
-              </summary>
-              <ul style={{ marginBlock: '12px', paddingInlineStart: '24px' }}>
-                {records.map((record) => (
-                  <li key={record.id} style={{ marginBottom: '12px' }}>
-                    <strong>{t(`lite.backup.record.${record.action}`, { name: record.name })}</strong>
-                    <div style={{ color: 'var(--ink-2)' }}>{record.id}</div>
-                    {record.action === 'replace' && <div>{t('lite.backup.currentRecord', { name: record.currentName })}</div>}
-                  </li>
-                ))}
-              </ul>
-            </details>
-          ))}
-          {preview.additions + preview.replacements === 0 && <p>{t('lite.backup.empty')}</p>}
-          {preview.replacements > 0 && (
-            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', paddingBlock: '16px', maxWidth: '70ch' }}>
-              <input type="checkbox" checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} disabled={restoring} style={{ marginTop: '4px', flexShrink: 0 }} />
-              <span>{t('lite.backup.confirmReplace', { count: preview.replacements })}</span>
-            </label>
-          )}
-          <div className="flex flex-wrap gap-2" style={{ marginTop: '16px' }}>
-            <button type="button" className="btn" onClick={cancelImport} disabled={restoring}>{t('ui.cancel')}</button>
-            <button type="button" className={preview.replacements ? 'btn btn-danger' : 'btn btn-primary'} onClick={restore}
-              disabled={restoring || preview.additions + preview.replacements === 0 || (preview.replacements > 0 && !confirmed)}>
-              {t(restoring ? 'lite.backup.restoring' : preview.replacements ? 'lite.backup.restoreReplace' : 'lite.backup.restore')}
-            </button>
-          </div>
-          {restoring && <p role="status">{t('lite.backup.restoring')}</p>}
-        </section>
+      {persistRefused && (
+        <p role="status" style={{ color: 'var(--ink-2)', margin: '8px 0' }}>{t('lite.backup.persistDenied')}</p>
       )}
-
       {feedback && (
-        <p role="status" style={{ margin: '0 0 10px', color: feedback.error ? 'var(--danger, #b3261e)' : 'var(--ink-2)' }}>{feedback.text}</p>
-      )}
-      {file && !preview && !checking && !restoring && (
-        <div className="flex flex-wrap gap-2" style={{ marginBottom: '16px' }}>
-          <button type="button" className="btn" onClick={() => prepareFile(file)}>{t('lite.backup.previewAgain')}</button>
-          <button type="button" className="btn" onClick={cancelImport}>{t('ui.cancel')}</button>
-        </div>
+        <p role="status" style={{ margin: '8px 0', color: feedback.error ? 'var(--danger, #b3261e)' : 'var(--ink-2)' }}>{feedback.text}</p>
       )}
 
-      {storageText && (
-        <p style={{ color: 'var(--ink-3)', fontSize: '13px', margin: 0 }}>
-          {storageText}
-          {storage.usageBytes != null && ` ${t('lite.backup.storageUsed', { used: (storage.usageBytes / 1_000_000).toFixed(1) })}`}
-          {storage.supported && !storage.persisted && (
-            <>
-              {' '}
-              <button type="button" className="btn btn-sm" onClick={keepMyData}>{t('lite.backup.persist')}</button>
-            </>
-          )}
-          {persistRefused && <> {t('lite.backup.persistDenied')}</>}
-        </p>
-      )}
+      <div id="lite-backup-content" hidden={!expanded} style={{ paddingTop: '12px' }}>
+        <p style={{ color: 'var(--ink-2)', margin: '0 0 12px', maxWidth: '70ch' }}>{t('lite.backup.intro')}</p>
+        <div className="flex flex-wrap items-center gap-2" style={{ marginBottom: '10px' }}>
+          <button type="button" className="btn btn-primary" onClick={exportNow} disabled={checking || restoring}>{t('lite.backup.export')}</button>
+          <button ref={importButton} type="button" className="btn" onClick={() => fileInput.current.click()} disabled={restoring}>{t('lite.backup.import')}</button>
+          <input ref={fileInput} type="file" aria-label={t('lite.backup.fileLabel')} accept="application/json,.json" style={VISUALLY_HIDDEN} onChange={importFile} disabled={restoring} />
+          <span style={{ color: 'var(--ink-3)', fontSize: '13px' }}>
+            {lastExported
+              ? t('lite.backup.lastExported', { date: new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium' }).format(lastExported) })
+              : t('lite.backup.neverExported')}
+          </span>
+        </div>
+
+        {checking && (
+          <div style={{ marginBlock: '16px' }}>
+            <p role="status">{t('lite.backup.checking')}</p>
+            <button type="button" className="btn" onClick={cancelImport}>{t('ui.cancel')}</button>
+          </div>
+        )}
+
+        {preview && (
+          <section aria-labelledby="lite-backup-preview-title" style={{ marginBlock: '24px', borderTop: '1px solid var(--rule)', paddingTop: '16px', overflowWrap: 'anywhere' }} aria-busy={restoring}>
+            <h3 ref={previewHeading} id="lite-backup-preview-title" className="section-title" tabIndex={-1}>{t('lite.backup.previewTitle')}</h3>
+            <p style={{ color: 'var(--ink-2)', marginBlock: '8px' }}>{file.name}</p>
+            <p style={{ maxWidth: '70ch', marginBottom: '16px' }}>{t('lite.backup.previewHelp')}</p>
+            <p style={{ fontWeight: 600 }}>{t('lite.backup.previewCounts', { additions: preview.additions, replacements: preview.replacements })}</p>
+            {Object.entries(preview.stores).filter(([, records]) => records.length > 0).map(([store, records]) => (
+              <details key={store} style={{ borderBottom: '1px solid var(--rule)', paddingBlock: '10px' }}>
+                <summary style={{ cursor: 'pointer', paddingBlock: '4px' }}>
+                  {t('lite.backup.storeSummary', {
+                    type: t(`lite.backup.stores.${store}`),
+                    additions: records.filter((record) => record.action === 'add').length,
+                    replacements: records.filter((record) => record.action === 'replace').length,
+                  })}
+                </summary>
+                <ul style={{ marginBlock: '12px', paddingInlineStart: '24px' }}>
+                  {records.map((record) => (
+                    <li key={record.id} style={{ marginBottom: '12px' }}>
+                      <strong>{t(`lite.backup.record.${record.action}`, { name: record.name })}</strong>
+                      <div style={{ color: 'var(--ink-2)' }}>{record.id}</div>
+                      {record.action === 'replace' && <div>{t('lite.backup.currentRecord', { name: record.currentName })}</div>}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            ))}
+            {preview.additions + preview.replacements === 0 && <p>{t('lite.backup.empty')}</p>}
+            {preview.replacements > 0 && (
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', paddingBlock: '16px', maxWidth: '70ch' }}>
+                <input type="checkbox" checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} disabled={restoring} style={{ marginTop: '4px', flexShrink: 0 }} />
+                <span>{t('lite.backup.confirmReplace', { count: preview.replacements })}</span>
+              </label>
+            )}
+            <div className="flex flex-wrap gap-2" style={{ marginTop: '16px' }}>
+              <button type="button" className="btn" onClick={cancelImport} disabled={restoring}>{t('ui.cancel')}</button>
+              <button type="button" className={preview.replacements ? 'btn btn-danger' : 'btn btn-primary'} onClick={restore}
+                disabled={restoring || preview.additions + preview.replacements === 0 || (preview.replacements > 0 && !confirmed)}>
+                {t(restoring ? 'lite.backup.restoring' : preview.replacements ? 'lite.backup.restoreReplace' : 'lite.backup.restore')}
+              </button>
+            </div>
+            {restoring && <p role="status">{t('lite.backup.restoring')}</p>}
+          </section>
+        )}
+
+        {file && !preview && !checking && !restoring && (
+          <div className="flex flex-wrap gap-2" style={{ marginBottom: '16px' }}>
+            <button type="button" className="btn" onClick={() => prepareFile(file)}>{t('lite.backup.previewAgain')}</button>
+            <button type="button" className="btn" onClick={cancelImport}>{t('ui.cancel')}</button>
+          </div>
+        )}
+
+        {storageText && (
+          <p style={{ color: 'var(--ink-3)', fontSize: '13px', margin: 0 }}>
+            {storage.persisted && storageText}
+            {storage.usageBytes != null && ` ${t('lite.backup.storageUsed', { used: (storage.usageBytes / 1_000_000).toFixed(1) })}`}
+            {storage.supported && !storage.persisted && (
+              <>
+                {' '}
+                <button type="button" className="btn btn-sm" onClick={keepMyData}>{t('lite.backup.persist')}</button>
+              </>
+            )}
+          </p>
+        )}
+      </div>
     </section>
   );
 };

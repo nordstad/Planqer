@@ -38,10 +38,70 @@ beforeEach(() => {
 });
 afterEach(() => click.mockRestore());
 
-const renderPanel = async () => {
+const renderPanel = async (expanded = true) => {
   render(<BackupPanel />);
   await screen.findByText(/Storage:/);
+  if (expanded) await userEvent.click(screen.getByRole('button', { name: 'Backup', exact: true }));
 };
+
+describe('disclosure', () => {
+  it('starts collapsed with reminders and storage risk visible but maintenance controls hidden', async () => {
+    await renderPanel(false);
+    const toggle = screen.getByRole('button', { name: 'Backup', exact: true });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(document.getElementById(toggle.getAttribute('aria-controls'))).not.toBeVisible();
+    expect(screen.getByRole('note')).toBeVisible();
+    expect(screen.getByText(/may clear this data/i)).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Export backup' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Import backup' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Ask the browser/ })).not.toBeInTheDocument();
+    expect(backupExport).not.toHaveBeenCalled();
+    expect(backupPreview).not.toHaveBeenCalled();
+    expect(backupImport).not.toHaveBeenCalled();
+    toggle.focus();
+    await userEvent.tab();
+    expect(document.activeElement).toBe(document.body);
+  });
+
+  it('opens and closes by keyboard without putting hidden controls in the tab order', async () => {
+    await renderPanel(false);
+    const toggle = screen.getByRole('button', { name: 'Backup', exact: true });
+    toggle.focus();
+    await userEvent.keyboard('{Enter}');
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    await userEvent.tab();
+    expect(screen.getByRole('button', { name: 'Export backup' })).toHaveFocus();
+    toggle.focus();
+    await userEvent.keyboard(' ');
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(toggle).toHaveFocus();
+    expect(screen.getByRole('note')).toBeVisible();
+  });
+
+  it('keeps failures and persistence refusal visible after collapse', async () => {
+    requestPersistence.mockResolvedValue(false);
+    backupExport.mockRejectedValueOnce(new Error('disk'));
+    await renderPanel();
+    await userEvent.click(screen.getByRole('button', { name: /Ask the browser/ }));
+    await screen.findByText(/did not agree/i);
+    await userEvent.click(screen.getByRole('button', { name: 'Export backup' }));
+    await screen.findByText('Could not create the backup.');
+    await userEvent.click(screen.getByRole('button', { name: 'Backup', exact: true }));
+    expect(screen.getByText('Could not create the backup.')).toBeVisible();
+    expect(screen.getByText(/did not agree/i)).toBeVisible();
+    expect(screen.getByRole('note')).toBeVisible();
+  });
+
+  it('keeps unknown storage risk visible while collapsing protected-storage detail', async () => {
+    getStorageStatus.mockResolvedValue({ supported: false, persisted: false });
+    const view = render(<BackupPanel />);
+    expect(await screen.findByText(/cannot tell whether/i)).toBeVisible();
+    view.unmount();
+    getStorageStatus.mockResolvedValue({ supported: true, persisted: true });
+    await renderPanel(false);
+    expect(screen.getByText(/agreed to keep this data/i)).not.toBeVisible();
+  });
+});
 
 it('reminds someone with saved work and no backup', async () => {
   await renderPanel();
@@ -194,9 +254,54 @@ describe('import', () => {
     expect(backupImport).toHaveBeenCalledTimes(1);
     expect(screen.getByRole('button', { name: 'Import backup', exact: true })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Cancel', exact: true })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Backup', exact: true })).toBeDisabled();
     expect(screen.queryByText(/Restored 1/)).not.toBeInTheDocument();
     await act(async () => { finish({ projects: 1 }); });
     expect(await screen.findByText('Restored 1 plans and 0 projects.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Backup', exact: true })).toBeEnabled();
+  });
+
+  it.each(['success', 'failure'])('cancels a pending preview on collapse and ignores its late %s', async (outcome) => {
+    let finish;
+    let fail;
+    backupPreview.mockReturnValueOnce(new Promise((resolve, reject) => { finish = resolve; fail = reject; }));
+    await renderPanel();
+    await choose('{}');
+    await screen.findByText('Checking backup…');
+    const toggle = screen.getByRole('button', { name: 'Backup', exact: true });
+    await userEvent.click(toggle);
+    expect(toggle).toHaveFocus();
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await act(async () => {
+      if (outcome === 'failure') fail(new Error('abandoned preview'));
+      else finish({ additions: 1, replacements: 0, stores: {} });
+    });
+    await userEvent.click(toggle);
+    expect(screen.queryByRole('heading', { name: 'Review backup restore' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Could not import the backup.')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Preview again' })).not.toBeInTheDocument();
+    expect(backupImport).not.toHaveBeenCalled();
+  });
+
+  it('retires replacement approval on collapse and requires a new file review on reopen', async () => {
+    backupPreview.mockResolvedValue({
+      additions: 0, replacements: 1,
+      stores: { groups: [{ id: 'g1', name: 'New', currentName: 'Old', action: 'replace' }] },
+    });
+    await renderPanel();
+    await choose('{}');
+    await screen.findByRole('heading', { name: 'Review backup restore' });
+    await userEvent.click(screen.getByRole('checkbox'));
+    const toggle = screen.getByRole('button', { name: 'Backup', exact: true });
+    await userEvent.click(toggle);
+    expect(toggle).toHaveFocus();
+    await userEvent.click(toggle);
+    expect(screen.queryByRole('heading', { name: 'Review backup restore' })).not.toBeInTheDocument();
+    await choose('{}');
+    await screen.findByRole('heading', { name: 'Review backup restore' });
+    expect(screen.getByRole('checkbox')).not.toBeChecked();
+    expect(screen.getByRole('button', { name: 'Replace and restore' })).toBeDisabled();
+    expect(backupImport).not.toHaveBeenCalled();
   });
 
   it.each(['success', 'failure'])('ignores a superseded file preview completing with %s', async (outcome) => {
@@ -223,6 +328,7 @@ describe('import', () => {
     backupPreview.mockReturnValueOnce(new Promise((done) => { resolve = done; }));
     const view = render(<BackupPanel />);
     await screen.findByText(/Storage:/);
+    await userEvent.click(screen.getByRole('button', { name: 'Backup', exact: true }));
     await choose('{}');
     await screen.findByText('Checking backup…');
     view.unmount();

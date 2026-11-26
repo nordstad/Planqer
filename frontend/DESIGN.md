@@ -748,8 +748,17 @@ of affected IDs plus referenced retained groups. The write transaction rechecks
 those records before enqueueing any writes, including absent IDs that might have
 become replacements. A relevant mismatch aborts without writes and requires a
 fresh preview and new approval. Unrelated record changes do not invalidate it.
-This does not introduce a new backup-panel placement or refresh mounted project/
-Defaults/catalogue views after restore; those remain separate work.
+Backup maintenance stays below the dashboard's project/Defaults content behind a
+collapsed-by-default **Backup** button disclosure, not a competing full-width
+card. Export history, transfer controls, storage details, and persistence requests
+are disclosed inline. Backup reminders, unprotected/unknown storage warnings,
+persistence refusals, and action feedback stay visible even while collapsed.
+The native button exposes expanded state and its controlled content; hidden
+controls are not keyboard stops. Collapsing cancels an uncommitted review and
+retires its approval, with focus on Backup. Disable collapse during a restore
+write; normal cancellation/completion still returns focus to Import.
+This does not refresh mounted project/Defaults/catalogue views after restore;
+that remains separate work.
 
 Defaults are editable and saveable only after a successful read for the current
 user. A pending read shows the existing loader; a failed read shows the load error

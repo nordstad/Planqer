@@ -32,7 +32,8 @@ const database = async (page, operation, stores = {}) => page.evaluate(async ({ 
 
 const start = async (page) => {
   await page.goto('/#/dashboard');
-  await expect(page.getByRole('heading', { name: 'Back up your projects' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Backup', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Backup', exact: true }).click();
   await expect(page.getByText(/^Storage:/)).toBeVisible({ timeout: 120000 });
   // Initial locale persistence is an ordinary startup write, not an import.
   // Finish it before seeding synthetic work or measuring no-write guarantees.
@@ -42,6 +43,80 @@ const start = async (page) => {
 
 const choose = (page, backup = fixture, name = 'backup.json') => page.getByLabel('Backup file', { exact: true })
   .setInputFiles({ name, mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(backup)) });
+
+test('Backup stays secondary with empty and many projects, and fresh or overdue exports', async ({ page }) => {
+  await start(page);
+  const panel = page.getByRole('region', { name: 'Backup', exact: true });
+  const toggle = panel.getByRole('button', { name: 'Backup', exact: true });
+  await toggle.click();
+  await expect(panel.getByRole('note')).toHaveCount(0);
+  const groups = Array.from({ length: 12 }, (_, index) => ({
+    ...fixture.stores.groups[0], id: `synthetic-${index}`, name: `Workshop project ${index + 1}`,
+  }));
+  await database(page, 'write', { groups });
+  await page.evaluate(() => localStorage.setItem('partsible.lite.lastExported', new Date().toISOString()));
+  await page.reload();
+  await expect(page.locator('.proj-card')).toHaveCount(12);
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(panel.getByRole('note')).toHaveCount(0);
+  expect(await panel.evaluate((element) => [...document.querySelectorAll('.proj-card')]
+    .every((project) => project.getBoundingClientRect().bottom <= element.getBoundingClientRect().top))).toBe(true);
+  await toggle.click();
+  await expect(panel.getByText(/^Last exported:/)).toBeVisible();
+  await page.evaluate(() => localStorage.setItem('partsible.lite.lastExported',
+    new Date(Date.now() - 31 * 86400000).toISOString()));
+  await page.reload();
+  await expect(panel.getByRole('note')).toBeVisible();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  expect((await database(page, 'read')).groups).toEqual(expect.arrayContaining(groups));
+});
+
+test('Backup disclosure preserves warnings, cancels approval, and works on Projects and Defaults', async ({ page, browserName }) => {
+  await start(page);
+  await database(page, 'write', fixture.stores);
+  await page.reload();
+  const toggle = page.getByRole('button', { name: 'Backup', exact: true });
+  const panel = page.getByRole('region', { name: 'Backup', exact: true });
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(panel.getByRole('note')).toBeVisible();
+  await expect(panel.getByText(/^Storage:/)).toBeVisible();
+  await expect.poll(async () => (await database(page, 'read')).settings[0]?.preferred_language)
+    .toBe('en-GB');
+  const before = await database(page, 'read');
+  // Safari on macOS uses Option-Tab to include buttons in keyboard navigation.
+  const tab = browserName === 'webkit' ? 'Alt+Tab' : 'Tab';
+  await toggle.focus();
+  await page.keyboard.press(tab);
+  expect(await page.locator('#lite-backup-content').evaluate((element) => element.contains(document.activeElement))).toBe(false);
+  await toggle.focus();
+  await page.keyboard.press('Enter');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await page.keyboard.press(tab);
+  await expect(page.getByRole('button', { name: 'Export backup' })).toBeFocused();
+  await choose(page);
+  const review = page.getByRole('region', { name: 'Review backup restore' });
+  await expect(review).toBeVisible({ timeout: 120000 });
+  await expect(review.getByRole('heading')).toBeFocused();
+  await review.getByRole('checkbox').check();
+  await toggle.focus();
+  await page.keyboard.press('Space');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(toggle).toBeFocused();
+  await expect(panel.getByRole('note')).toBeVisible();
+  await toggle.click();
+  await expect(review).toHaveCount(0);
+  await choose(page);
+  await expect(review).toBeVisible();
+  await expect(review.getByRole('checkbox')).not.toBeChecked();
+  await expect(review.getByRole('button', { name: 'Replace and restore' })).toBeDisabled();
+  await toggle.click();
+  expect(await database(page, 'read')).toEqual(before);
+  await page.getByRole('button', { name: 'Defaults', exact: true }).click();
+  await expect(toggle).toBeVisible();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await toggle.click();
+  await expect(page.getByRole('button', { name: 'Import backup' })).toBeVisible();
+});
 
 test('all-store replacement requires review and approval; cancel writes nothing; success preserves unrelated work', async ({ page }) => {
   await start(page);
@@ -177,6 +252,26 @@ for (const [language, locale] of [['en-GB', en], ['sv-SE', sv], ['nb-NO', nb]]) 
       await expect.poll(async () => (await database(page, 'read')).settings[0]?.preferred_language).toBe(language);
       const group = { ...fixture.stores.groups[0], name: 'Existing project' };
       await database(page, 'write', { groups: [group] });
+      await page.reload();
+      const panel = page.getByRole('region', { name: copy.title, exact: true });
+      const toggle = panel.getByRole('button', { name: copy.title, exact: true });
+      await expect(panel.getByRole('note')).toBeVisible();
+      for (const width of [1440, 1280, 1024, 768, 390, 320]) {
+        await page.setViewportSize({ width, height: 1000 });
+        await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+        await expect(panel.getByRole('button', { name: copy.export })).toHaveCount(0);
+        expect(await panel.evaluate((element) => element.scrollWidth <= element.clientWidth + 1), `Collapsed backup fits ${width}px`).toBe(true);
+        expect((await panel.boundingBox()).height, `Collapsed backup remains compact at ${width}px`).toBeLessThan(width >= 768 ? 150 : 260);
+        await panel.screenshot({ path: testInfo.outputPath(`backup-collapsed-${width}.png`) });
+      }
+      await toggle.click();
+      for (const width of [1440, 1280, 1024, 768, 390, 320]) {
+        await page.setViewportSize({ width, height: 1000 });
+        expect(await panel.evaluate((element) => element.scrollWidth <= element.clientWidth + 1), `Expanded backup fits ${width}px`).toBe(true);
+        await expect(panel.getByRole('button', { name: copy.export })).toBeVisible();
+        await expect(panel.getByRole('button', { name: copy.import })).toBeVisible();
+        await panel.screenshot({ path: testInfo.outputPath(`backup-expanded-${width}.png`) });
+      }
       const incoming = { ...fixture, stores: { groups: [{ ...group, name: 'Long project name Å æ Ø '.repeat(7) }] } };
       await page.getByLabel(copy.fileLabel, { exact: true }).setInputFiles({
         name: `${'long-backup-file-'.repeat(12)}.json`,
