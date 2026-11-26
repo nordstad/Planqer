@@ -68,6 +68,7 @@ const locale = {
     spareMargin: 'Default spare margin, %',
     spareMarginHelp: 'Added to each purchased board or sheet size. Zero disables spare items.',
     loadError: 'Failed to load settings: {{message}}',
+    retryLoad: 'Retry loading settings',
     saveError: 'Failed to save settings: {{message}}',
     catalogueCountry: 'Product catalogue',
     catalogueCountryHelp: "Which country's standard timber and sheet sizes Partsible suggests. Automatic follows your language.",

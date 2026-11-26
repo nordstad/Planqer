@@ -67,6 +67,7 @@ const locale = {
     language: 'Standardspråk',
     spareMargin: 'Standard tilleggsmargin, %', spareMarginHelp: 'Legges til for hver kjøpte lengde eller plate. Null slår av ekstra materialer.',
     loadError: 'Kunne ikke laste inn innstillingene: {{message}}',
+    retryLoad: 'Prøv å laste inn innstillingene på nytt',
     saveError: 'Kunne ikke lagre innstillingene: {{message}}',
     catalogueCountry: 'Produktkatalog',
     catalogueCountryHelp: 'Hvilket lands standardmål for trelast og plater Partsible foreslår. Automatisk følger språket ditt.',

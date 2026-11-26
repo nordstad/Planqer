@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getUserSettings, updateUserSettings } from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -8,31 +8,35 @@ import CatalogueCountrySelect from './CatalogueCountrySelect';
 import { setCatalogueChoice } from '../utils/catalogueChoice';
 
 const UserSettings = () => {
-  const { t } = useTranslation();
   const { user } = useAuth();
+  return <SettingsForUser key={user?.id ?? 'signed-out'} userId={user?.id} />;
+};
+
+const SettingsForUser = ({ userId }) => {
+  const { t } = useTranslation();
   const { language: activeLanguage, changeLanguage } = useLanguage();
-  const [settings, setSettings] = useState({
-    default_board_lengths: [3000, 3600, 5000],
-    default_saw_blade_width: 3.0,
-    default_currency: 'SEK',
-    default_vat_rate: 25,
-    default_prices_include_vat: true,
-    preferred_language: activeLanguage,
-    spare_margin_percent: 10,
-    catalogue_country: 'auto',
-  });
-  const [boardLengthsInput, setBoardLengthsInput] = useState('3000, 3600, 5000');
+  const [settings, setSettings] = useState(null);
+  const [boardLengthsInput, setBoardLengthsInput] = useState('');
   const [loading, setLoading] = useState(true);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [savedNotice, setSavedNotice] = useState('');
+  const active = useRef(false);
+  const savePending = useRef(false);
+  const noticeTimer = useRef(null);
 
   useEffect(() => {
-    if (!user) return;
+    if (userId == null) return;
+    let current = true;
+    active.current = true;
     (async () => {
       try {
         setLoading(true);
+        setError('');
         const loadedSettings = await getUserSettings();
+        if (!current) return;
+        const boardLengths = loadedSettings.default_board_lengths.join(', ');
         setSettings({
           ...loadedSettings,
           default_vat_rate: loadedSettings.default_vat_rate ?? 25,
@@ -41,14 +45,19 @@ const UserSettings = () => {
           spare_margin_percent: loadedSettings.spare_margin_percent ?? 10,
           catalogue_country: loadedSettings.catalogue_country ?? 'auto',
         });
-        setBoardLengthsInput(loadedSettings.default_board_lengths.join(', '));
+        setBoardLengthsInput(boardLengths);
       } catch (err) {
-        setError(t('settings.loadError', { message: err.message }));
+        if (current) setError(t('settings.loadError', { message: err.message }));
       } finally {
-        setLoading(false);
+        if (current) setLoading(false);
       }
     })();
-  }, [user]);
+    return () => {
+      current = false;
+      active.current = false;
+      clearTimeout(noticeTimer.current);
+    };
+  }, [userId, loadAttempt]);
 
   const handleBoardLengthsChange = (value) => {
     setBoardLengthsInput(value);
@@ -56,6 +65,9 @@ const UserSettings = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
+    if (!active.current || !settings || loading || savePending.current) return;
+    savePending.current = true;
+    clearTimeout(noticeTimer.current);
     setSaving(true);
     setError('');
     setSavedNotice('');
@@ -66,14 +78,19 @@ const UserSettings = () => {
         .map((length) => parseFloat(length.trim()))
         .filter((length) => !isNaN(length));
       await updateUserSettings({ ...settings, default_board_lengths: boardLengths });
+      if (!active.current) return;
       await changeLanguage(settings.preferred_language, { persistAccount: false });
+      if (!active.current) return;
       setCatalogueChoice(settings.catalogue_country === 'auto' ? null : settings.catalogue_country);
       setSavedNotice(t('common.settingsSaved'));
-      setTimeout(() => setSavedNotice(''), 3000);
+      noticeTimer.current = setTimeout(() => setSavedNotice(''), 3000);
     } catch (err) {
-      setError(t('settings.saveError', { message: err.message }));
+      if (active.current) setError(t('settings.saveError', { message: err.message }));
     } finally {
-      setSaving(false);
+      if (active.current) {
+        savePending.current = false;
+        setSaving(false);
+      }
     }
   };
 
@@ -92,7 +109,11 @@ const UserSettings = () => {
       {error && <div className="alert-danger" role="alert" style={{ marginBottom: '14px' }}>{error}</div>}
       {savedNotice && <div className="alert-note" role="status" style={{ marginBottom: '14px' }}>{savedNotice}</div>}
 
-      <form onSubmit={handleSave}>
+      {!settings ? (
+        <button type="button" className="btn" onClick={() => setLoadAttempt((attempt) => attempt + 1)}>
+          {t('settings.retryLoad')}
+        </button>
+      ) : <form onSubmit={handleSave}>
         <div className="space-y-2" style={{ marginBottom: '14px' }}>
           <label className="form-label" htmlFor="board-lengths">{t('settings.boardLengths')}</label>
           <input
@@ -187,7 +208,7 @@ const UserSettings = () => {
         <button type="submit" className="btn-order" disabled={saving}>
           {saving ? t('common.saving') : t('common.saveSettings')}
         </button>
-      </form>
+      </form>}
     </div>
   );
 };

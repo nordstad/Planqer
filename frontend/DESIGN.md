@@ -716,6 +716,16 @@ one place in the system where `01 / 02 / 03` is earned rather than decoration.
 
 ### Blocked Actions and Recovery
 
+Defaults are editable and saveable only after a successful read for the current
+user. A pending read shows the existing loader; a failed read shows the load error
+and a localized Retry action, not an editable fallback form. Retry never writes
+preferences. Failed saves retain the loaded draft for correction or retry.
+Changing user retires the previous draft/actions; obsolete load/save completions
+cannot change current eligibility, feedback, language, or catalogue choice.
+Save also rejects direct submissions while settings are unknown or a save is
+pending. This protects response eligibility, not already-sent request cancellation;
+there is no implicit reset-to-defaults behavior.
+
 The admin catalogue's resolved country owns its rows, vocabulary, edit/add drafts,
 suggestion panels, and delete/revert confirmations. Changing that country retires
 those together and shows the existing loader, while keeping the country selector

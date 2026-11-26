@@ -67,6 +67,7 @@ const locale = {
     language: 'Standardspråk',
     spareMargin: 'Standardmarginal, %', spareMarginHelp: 'Läggs till för varje köpt bräda eller skiva. Noll stänger av extra material.',
     loadError: 'Det gick inte att läsa inställningarna: {{message}}',
+    retryLoad: 'Försök läsa in inställningarna igen',
     saveError: 'Det gick inte att spara inställningarna: {{message}}',
     catalogueCountry: 'Produktkatalog',
     catalogueCountryHelp: 'Vilket lands standardmått för virke och skivor Partsible föreslår. Automatiskt följer ditt språk.',
