@@ -716,6 +716,25 @@ one place in the system where `01 / 02 / 03` is earned rather than decoration.
 
 ### Blocked Actions and Recovery
 
+Language, day/night edition, and Lite-notice dismissal are optional browser
+preferences. Denied storage getters, reads, or writes must not blank the app.
+Language falls back to a supported browser language, then English; switching
+still updates the active language and document language. Only a saved boolean
+`true` enables the night edition; malformed values use the day edition. When
+storage is unreadable, keep the current document's theme across navigation.
+Lite-notice dismissal still works in the current view if it cannot be remembered.
+These fallbacks do not imply that saved work is available, persistent, or
+backed up.
+
+Self-hosted sign-in storage is not an optional preference: an unreadable token
+must not be treated as a missing token or trigger token deletion. Finish loading
+with an explicit storage-specific alert and a reload recovery action; do not
+offer sign-in/setup or expose protected routes while identity is unknown.
+This alert has its own translated heading, not the generated "Note" prefix.
+Public content and language/theme controls remain available. A failed logout
+must not claim success if token removal failed. This does not change credential
+storage policy, IndexedDB behavior, or introduce an ephemeral work-store fallback.
+
 Lite backup import reports success only after all imported record writes commit
 in one transaction across the affected stores. A failed or aborted import must
 leave both existing records and unrelated work unchanged; successful individual

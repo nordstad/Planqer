@@ -7,7 +7,7 @@ import Loader from './Loader';
 
 const ProtectedRoute = ({ children, fallbackMessage = 'access.default' }) => {
   const { t } = useTranslation();
-  const { isAuthenticated, loading, needsSetup, setupCheckError } = useAuth();
+  const { isAuthenticated, loading, needsSetup, setupCheckError, authStorageError } = useAuth();
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
   if (loading) {
@@ -19,6 +19,8 @@ const ProtectedRoute = ({ children, fallbackMessage = 'access.default' }) => {
       </CatalogPage>
     );
   }
+
+  if (authStorageError) return <CatalogPage />;
 
   if (setupCheckError) {
     return (

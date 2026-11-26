@@ -27,6 +27,7 @@ beforeEach(() => {
   analytics.analyticsState.mockImplementation(() => state);
   analytics.setAnalyticsEnabled.mockImplementation((enabled) => { state = enabled ? 'on' : 'off'; });
 });
+afterEach(() => vi.restoreAllMocks());
 
 describe('lite information', () => {
   it('does not interrupt the app with a dialog or an About Lite action', () => {
@@ -37,6 +38,17 @@ describe('lite information', () => {
 });
 
 describe('banner', () => {
+  it.each(['read', 'write', 'accessor'])('keeps the notice dismissible when session storage %s is denied', async (denial) => {
+    const fail = () => { throw new DOMException('Denied', 'SecurityError'); };
+    if (denial === 'accessor') vi.spyOn(window, 'sessionStorage', 'get').mockImplementation(fail);
+    else vi.spyOn(Storage.prototype, denial === 'read' ? 'getItem' : 'setItem').mockImplementation(fail);
+    renderShell();
+    expect(screen.getByRole('region', { name: 'Lite notice' })).toBeVisible();
+    await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+    expect(screen.queryByRole('region', { name: 'Lite notice' })).not.toBeInTheDocument();
+    expect(screen.getByText('the app')).toBeVisible();
+  });
+
   it('says this is Partsible Lite and links to the self-hosted version', () => {
     renderShell();
     const banner = screen.getByRole('region', { name: 'Lite notice' });

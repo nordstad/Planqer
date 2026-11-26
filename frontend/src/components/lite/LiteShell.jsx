@@ -11,11 +11,11 @@ const SOURCE_URL = 'https://github.com/nordstad/partsible';
 
 // Storage can be blocked (private modes, strict settings); Lite must still
 // work, it just forgets what it was told.
-const read = (storage, key) => {
-  try { return storage.getItem(key); } catch { return null; }
+const read = (key) => {
+  try { return sessionStorage.getItem(key); } catch { return null; }
 };
-const write = (storage, key) => {
-  try { storage.setItem(key, '1'); } catch { /* ignored on purpose */ }
+const write = (key) => {
+  try { sessionStorage.setItem(key, '1'); } catch { /* ignored on purpose */ }
 };
 
 const TOOL_PATHS = {
@@ -55,7 +55,7 @@ const Banner = ({ onDismiss }) => {
 /* Everything Lite adds around the app: the notice and the footer below it. */
 const LiteShell = ({ children }) => {
   const { t } = useTranslation();
-  const [bannerOpen, setBannerOpen] = useState(() => !read(sessionStorage, BANNER_DISMISSED_KEY));
+  const [bannerOpen, setBannerOpen] = useState(() => !read(BANNER_DISMISSED_KEY));
   const [analytics, setAnalytics] = useState(analyticsState);
 
   useEffect(() => { startAnalytics(); }, []);
@@ -73,7 +73,7 @@ const LiteShell = ({ children }) => {
   };
 
   const dismissBanner = () => {
-    write(sessionStorage, BANNER_DISMISSED_KEY);
+    write(BANNER_DISMISSED_KEY);
     setBannerOpen(false);
   };
 

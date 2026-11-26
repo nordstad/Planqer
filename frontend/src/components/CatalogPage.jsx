@@ -44,7 +44,7 @@ const CatalogPage = ({ children, bodyClassName = '' }) => {
   const { changeLanguage, language } = useLanguage();
   const { pathname } = useLocation();
   const isCurrent = (path) => pathname === path;
-  const { user, isAuthenticated, logout, needsSetup, singleUser, setupCheckError } = useAuth();
+  const { user, isAuthenticated, logout, needsSetup, singleUser, setupCheckError, authStorageError } = useAuth();
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const lite = isStaticMode();
 
@@ -77,7 +77,9 @@ const CatalogPage = ({ children, bodyClassName = '' }) => {
             ))}
           </div>
           <div className="app-nav-right">
-            {lite || singleUser ? (
+            {authStorageError ? (
+              <span className="app-nav-link">{t('common.authStorageUnavailable')}</span>
+            ) : lite || singleUser ? (
               <Link to="/dashboard" className={`app-nav-link ${isCurrent('/dashboard') ? 'is-current' : ''}`}>
                 {t('common.myProjects')}
               </Link>
@@ -110,9 +112,16 @@ const CatalogPage = ({ children, bodyClassName = '' }) => {
         </div>
       </nav>
       <div className={`cat-body ${bodyClassName}`}>
+        {authStorageError && (
+          <section className="alert-danger auth-storage-alert" role="alert" aria-labelledby="auth-storage-heading" style={{ marginBottom: '24px', maxWidth: '70ch' }}>
+            <h2 id="auth-storage-heading" className="section-title" style={{ marginBottom: '10px' }}>{t('common.authStorageUnavailable')}</h2>
+            <p style={{ marginBottom: '16px' }}>{t('common.authStorageDescription')}</p>
+            <button type="button" className="btn" onClick={() => window.location.reload()}>{t('common.authStorageRetry')}</button>
+          </section>
+        )}
         {children}
       </div>
-      {!lite && !setupCheckError && (
+      {!lite && !setupCheckError && !authStorageError && (
         <AuthModal
           isOpen={authModalOpen}
           onClose={() => setAuthModalOpen(false)}

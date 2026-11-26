@@ -80,7 +80,13 @@ const extractErrorMessage = (error) => {
 
 const AUTH_TOKEN_KEY = 'auth_token';
 
-export const getAuthToken = () => localStorage.getItem(AUTH_TOKEN_KEY);
+export const getAuthToken = () => {
+  try {
+    return localStorage.getItem(AUTH_TOKEN_KEY);
+  } catch {
+    throw Object.assign(new Error('Browser sign-in storage is unavailable.'), { name: 'AuthStorageError' });
+  }
+};
 const setAuthToken = (token) => localStorage.setItem(AUTH_TOKEN_KEY, token);
 const clearAuthToken = () => localStorage.removeItem(AUTH_TOKEN_KEY);
 
@@ -160,6 +166,7 @@ export const getSetupStatus = async () => {
     const response = await http.get(`${API_URL}/api/auth/setup-status`);
     return response.data;
   } catch (error) {
+    if (error?.name === 'AuthStorageError') throw error;
     throw new Error(extractErrorMessage(error));
   }
 };
@@ -169,6 +176,7 @@ export const getCurrentUser = async () => {
     const response = await http.get(`${API_URL}/api/auth/me`);
     return response.data;
   } catch (error) {
+    if (error?.name === 'AuthStorageError') throw error;
     throw new Error(extractErrorMessage(error));
   }
 };

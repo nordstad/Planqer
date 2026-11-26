@@ -2,6 +2,9 @@ import axios from 'axios';
 import {
   createCatalogueEntry,
   getAdminCatalogue,
+  getAuthToken,
+  getCurrentUser,
+  getSetupStatus,
   hideCatalogueEntry,
   normalizeSheetParts,
   optimizeCutting,
@@ -80,6 +83,21 @@ it('aggregates duplicate board part lengths without losing quantity', () => {
     { length: '120.5', quantity: '2' },
     { length: '120.5', quantity: '3' },
   ])).toEqual({ '120.5': 5 });
+});
+
+it('distinguishes unreadable sign-in storage from a missing auth token', () => {
+  const spy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+    throw new DOMException('Denied', 'SecurityError');
+  });
+  try {
+    expect(getAuthToken).toThrow(expect.objectContaining({ name: 'AuthStorageError' }));
+  } finally { spy.mockRestore(); }
+});
+
+it.each([getCurrentUser, getSetupStatus])('preserves an auth-storage failure through startup lookup', async (lookup) => {
+  const error = Object.assign(new Error('Storage unavailable'), { name: 'AuthStorageError' });
+  axios.get.mockRejectedValueOnce(error);
+  await expect(lookup()).rejects.toBe(error);
 });
 
 it.each(['1.5', '2parts', '', ' ', 'Infinity', 'NaN', '0', '-1', '10001', '1e5', '9007199254740993', null, true])(

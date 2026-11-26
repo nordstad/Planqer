@@ -7,7 +7,7 @@ import Loader from './Loader';
 
 const AdminRoute = ({ children }) => {
   const { t } = useTranslation();
-  const { user, isAuthenticated, loading, needsSetup, setupCheckError } = useAuth();
+  const { user, isAuthenticated, loading, needsSetup, setupCheckError, authStorageError } = useAuth();
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
   if (loading) {
@@ -19,6 +19,8 @@ const AdminRoute = ({ children }) => {
       </CatalogPage>
     );
   }
+
+  if (authStorageError) return <CatalogPage />;
 
   if (setupCheckError) {
     return (

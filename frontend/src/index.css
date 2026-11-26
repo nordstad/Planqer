@@ -1008,6 +1008,8 @@
     background: var(--accent-bg); border: 1px solid var(--rule-hair);
     padding: 11px 14px; font-size: 13.5px; color: var(--ink-2); border-radius: 10px;
   }
+  .auth-storage-alert { font-weight: 400; }
+  .auth-storage-alert::before { content: none; }
   .text-danger { color: var(--revision); }
   .text-muted { color: var(--ink-3); }
   .text-success { color: var(--shop); }
