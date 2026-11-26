@@ -5,11 +5,11 @@ import { MemoryRouter } from 'react-router-dom';
 const auth = vi.hoisted(() => ({ user: null }));
 vi.mock('../contexts/AuthContext', () => ({ useAuth: () => auth }));
 vi.mock('./CatalogPage', () => ({ default: ({ children }) => <div>{children}</div> }));
-vi.mock('../utils/api', async (importOriginal) => ({ ...(await importOriginal()), createProjectGroup: vi.fn(), getProjectGroups: vi.fn(), createWallpaperPlan: vi.fn(), saveWallpaperProject: vi.fn(), getWallpaperProjects: vi.fn(), getUserSettings: vi.fn().mockResolvedValue({}) }));
+vi.mock('../utils/api', async (importOriginal) => ({ ...(await importOriginal()), createProjectGroup: vi.fn(), getProjectGroups: vi.fn(), createWallpaperPlan: vi.fn(), saveWallpaperProject: vi.fn(), updateWallpaperProject: vi.fn(), saveWallpaper: vi.fn(), getWallpaperProjects: vi.fn(), getUserSettings: vi.fn().mockResolvedValue({}) }));
 
 const { default: WallpaperOptimizer } = await import('./WallpaperOptimizer');
 const { default: i18n } = await import('../i18n');
-const { createProjectGroup, createWallpaperPlan, getProjectGroups, getUserSettings, getWallpaperProjects, saveWallpaperProject } = await import('../utils/api');
+const { createProjectGroup, createWallpaperPlan, getProjectGroups, getUserSettings, getWallpaperProjects, saveWallpaperProject, saveWallpaper } = await import('../utils/api');
 
 const openCorners = () => screen.getAllByRole('button', { name: /^Change corner/ }).forEach((button) => fireEvent.click(button));
 
@@ -227,6 +227,221 @@ const planFixture = {
   pieces: [{ id: 'piece-1', strip_number: 1, wall_index: 0, y_start: 2100, y_end: 2400, phase: 0, notches: [], segments: [{ wall_index: 0, x_start: 0, x_end: 530, notches: [] }] }],
   rolls: [{ number: 1, cuts: [], offcut_length: 0 }],
 };
+
+describe('WallpaperOptimizer input/result identity', () => {
+  const deferred = () => {
+    let resolve;
+    let reject;
+    const promise = new Promise((yes, no) => { resolve = yes; reject = no; });
+    return { promise, resolve, reject };
+  };
+  const currentPlan = { ...planFixture, rolls_needed: 8, rolls_to_buy: 9 };
+  const assertLocked = () => [2, 3, 4].forEach((index) => expect(document.querySelectorAll('.plan-step-btn')[index]).toBeDisabled());
+  const completePlan = async (prepare) => {
+    await openRoomStep();
+    prepare?.();
+    fireEvent.click(screen.getByRole('button', { name: /Create plan/ }));
+    await screen.findByRole('heading', { name: 'Your wallpaper plan' });
+  };
+  const saveCurrent = async () => {
+    fireEvent.click(screen.getByRole('button', { name: /^Prepare cut sheets/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Save plan/ }));
+    fireEvent.change(await screen.findByLabelText('Plan name'), { target: { value: 'Current project' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Save plan/ }));
+    await waitFor(() => expect(saveWallpaperProject).toHaveBeenCalledTimes(1));
+    return saveWallpaperProject.mock.calls[0][0];
+  };
+  const addSecondWall = () => fireEvent.click(screen.getByRole('button', { name: 'Add wall', exact: true }));
+  const prepareOpening = () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Add opening or obstacle', exact: true }));
+    fillOpening({ 'From left edge (mm)': '0', 'From floor (mm)': '0', 'Width (mm)': '100', 'Height (mm)': '100' });
+  };
+  const preparePattern = () => {
+    fireEvent.click(document.querySelectorAll('.plan-step-btn')[0]);
+    fireEvent.click(screen.getByRole('checkbox', { name: i18n.t('wallpaperUi.hasRepeat') }));
+    fireEvent.change(screen.getByLabelText('Repeat (mm)'), { target: { value: '640' } });
+    fireEvent.click(screen.getByRole('button', { name: /Measure the room →/ }));
+  };
+  beforeEach(() => {
+    auth.user = { id: 'synthetic-user', email: 'test@example.invalid' };
+    getProjectGroups.mockResolvedValue([{ id: 'synthetic-group', name: 'Synthetic project' }]);
+    getUserSettings.mockResolvedValue({});
+    createWallpaperPlan.mockReset().mockResolvedValue(planFixture);
+    saveWallpaperProject.mockReset().mockResolvedValue({ id: 'synthetic-plan' });
+    saveWallpaper.mockReset().mockResolvedValue({});
+  });
+  afterEach(() => { auth.user = null; });
+
+  it('locks Plan, Review, and Save when completed-plan measurements change', async () => {
+    await openRoomStep();
+    fireEvent.click(screen.getByRole('button', { name: /Create plan/ }));
+    await screen.findByRole('heading', { name: 'Your wallpaper plan' });
+    fireEvent.click(screen.getByRole('button', { name: 'Edit measurements' }));
+    fireEvent.change(screen.getByLabelText('Wall width (mm)'), { target: { value: '4000' } });
+    const steps = document.querySelectorAll('.plan-step-btn');
+    [2, 3, 4].forEach((index) => expect(steps[index]).toBeDisabled());
+    expect(screen.queryByRole('button', { name: /^Prepare cut sheets/ })).not.toBeInTheDocument();
+    expect(saveWallpaperProject).not.toHaveBeenCalled();
+  });
+
+  it('ignores a pending plan after its wall inputs change', async () => {
+    let resolve;
+    createWallpaperPlan.mockReturnValueOnce(new Promise((yes) => { resolve = yes; }));
+    await openRoomStep();
+    fireEvent.click(screen.getByRole('button', { name: /Create plan/ }));
+    fireEvent.change(screen.getByLabelText('Wall width (mm)'), { target: { value: '4000' } });
+    await act(async () => { resolve(planFixture); });
+    expect(screen.queryByRole('heading', { name: 'Your wallpaper plan' })).not.toBeInTheDocument();
+    [2, 3, 4].forEach((index) => expect(document.querySelectorAll('.plan-step-btn')[index]).toBeDisabled());
+  });
+
+  it.each([
+    ['name', '#wallpaper-name', 'Other paper'],
+    ['manufacturer', '#wallpaper-manufacturer', 'Other maker'],
+    ['roll width', '#wallpaper-roll-width', '600'],
+    ['roll length', '#wallpaper-roll-length', '11000'],
+    ['spare margin', '#wallpaper-spare-margin', '15'],
+    ['repeat', '#wallpaper-repeat', '1280'],
+    ['start style', '#wallpaper-start-style', 'even'],
+    ['price', null, '250'],
+  ])('retires a completed plan after changing wallpaper %s', async (name, selector, value) => {
+    await completePlan(preparePattern);
+    fireEvent.click(document.querySelectorAll('.plan-step-btn')[0]);
+    const input = name === 'price' ? screen.getByLabelText(/^Price per roll/) : document.querySelector(selector);
+    fireEvent.change(input, { target: { value } });
+    assertLocked();
+    expect(saveWallpaperProject).not.toHaveBeenCalled();
+  });
+
+  it.each(['pattern enabled', 'pattern match'])('retires a completed plan after changing %s', async (field) => {
+    await completePlan(preparePattern);
+    fireEvent.click(document.querySelectorAll('.plan-step-btn')[0]);
+    if (field === 'pattern enabled') fireEvent.click(screen.getByRole('checkbox', { name: i18n.t('wallpaperUi.hasRepeat') }));
+    else fireEvent.change(screen.getByLabelText(i18n.t('wallpaperUi.match')), { target: { value: 'half_drop' } });
+    assertLocked();
+  });
+
+  it.each([
+    ['wall height', null, () => fireEvent.change(screen.getByLabelText('Wall height (mm)'), { target: { value: '2600' } })],
+    ['wall name', null, () => fireEvent.change(screen.getByLabelText('Wall name'), { target: { value: 'Other wall' } })],
+    ['wall shape', null, () => fireEvent.click(screen.getByRole('radio', { name: 'Sloped', exact: true }))],
+    ['skip wall', null, () => fireEvent.click(screen.getByLabelText(/No wallpaper on this wall/))],
+    ['add wall', null, addSecondWall],
+    ['remove wall', addSecondWall, () => fireEvent.click(screen.getByRole('button', { name: /Remove Wall B/i }))],
+    ['corner type', addSecondWall, () => { openCorners(); fireEvent.change(screen.getByLabelText('Corner type'), { target: { value: 'outside' } }); }],
+    ['hanging decision', addSecondWall, () => { openCorners(); fireEvent.change(screen.getByLabelText('Hanging decision'), { target: { value: 'start_new' } }); }],
+    ['corner overlap', addSecondWall, () => fireEvent.change(screen.getByLabelText('Corner overlap (mm)'), { target: { value: '25' } })],
+    ['closed room', () => { addSecondWall(); addSecondWall(); }, () => fireEvent.click(screen.getByLabelText(/Walls form a closed room/))],
+    ['add opening', null, () => fireEvent.click(screen.getByRole('button', { name: 'Add opening or obstacle', exact: true }))],
+    ['edit opening', prepareOpening, () => fireEvent.change(screen.getByLabelText('Width (mm)'), { target: { value: '200' } })],
+    ['remove opening', prepareOpening, () => fireEvent.click(screen.getByRole('button', { name: 'Remove', exact: true }))],
+    ['sloped edge', () => fireEvent.click(screen.getByRole('radio', { name: 'Sloped', exact: true })), () => fireEvent.change(screen.getByLabelText('Lower left (mm)'), { target: { value: '50' } })],
+  ])('retires a completed plan after changing %s', async (_name, prepare, change) => {
+    await completePlan(prepare);
+    fireEvent.click(screen.getByRole('button', { name: 'Edit measurements' }));
+    change();
+    assertLocked();
+  });
+
+  for (const order of ['old-first', 'new-first']) {
+    it.each(['success', 'failure'])(`ignores an obsolete %s with ${order} completion and saves current inputs`, async (outcome) => {
+      const old = deferred();
+      const current = deferred();
+      createWallpaperPlan.mockReset().mockReturnValueOnce(old.promise).mockReturnValueOnce(current.promise);
+      await openRoomStep();
+      fireEvent.click(screen.getByRole('button', { name: /Create plan/ }));
+      fireEvent.change(screen.getByLabelText('Wall width (mm)'), { target: { value: '4000' } });
+      expect(screen.getByRole('button', { name: /Create plan/ })).toBeEnabled();
+      fireEvent.click(screen.getByRole('button', { name: /Create plan/ }));
+      const finishOld = async () => act(async () => {
+        if (outcome === 'success') old.resolve(planFixture);
+        else old.reject(new Error('Obsolete failure'));
+      });
+      if (order === 'old-first') {
+        await finishOld();
+        expect(screen.getByRole('button', { name: /Create plan/ })).toBeDisabled();
+        expect(screen.getByRole('status')).toHaveTextContent('Calculating');
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        await act(async () => { current.resolve(currentPlan); });
+      } else {
+        await act(async () => { current.resolve(currentPlan); });
+        await screen.findByRole('heading', { name: 'Your wallpaper plan' });
+        await finishOld();
+      }
+      expect(screen.getByTestId('spare-rolls')).toHaveTextContent('8 needed');
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      const body = await saveCurrent();
+      expect(body.room_data.walls[0].width_top).toBe(4000);
+      expect(body.plan_result.rolls_to_buy).toBe(9);
+      expect(body.options_data.start).toBeNull();
+    });
+  }
+
+  it.each(['success', 'failure'])('ignores an obsolete alternative-start %s after measurements change', async (outcome) => {
+    await completePlan();
+    const old = deferred();
+    createWallpaperPlan.mockReturnValueOnce(old.promise).mockResolvedValueOnce(currentPlan);
+    fireEvent.click(screen.getByRole('button', { name: 'Use', exact: true }));
+    expect(screen.getByRole('button', { name: /^Prepare cut sheets/ })).toBeDisabled();
+    expect(document.querySelectorAll('.plan-step-btn')[3]).toBeDisabled();
+    expect(document.querySelectorAll('.plan-step-btn')[4]).toBeDisabled();
+    expect(screen.queryByText(i18n.t('wallpaperUi.correctRoomMeasurements'))).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Edit measurements' }));
+    fireEvent.change(screen.getByLabelText('Wall width (mm)'), { target: { value: '4000' } });
+    fireEvent.click(screen.getByRole('button', { name: /Create plan/ }));
+    await screen.findByRole('heading', { name: 'Your wallpaper plan' });
+    await act(async () => {
+      if (outcome === 'success') old.resolve(planFixture);
+      else old.reject(new Error('Obsolete start failure'));
+    });
+    expect(screen.getByTestId('spare-rolls')).toHaveTextContent('8 needed');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    const body = await saveCurrent();
+    expect(body.room_data.walls[0].width_top).toBe(4000);
+    expect(body.plan_result.rolls_to_buy).toBe(9);
+    expect(body.options_data.start).toBeNull();
+  });
+
+  it('allows retry after a current calculation failure and saves the recalculated result', async () => {
+    createWallpaperPlan.mockRejectedValueOnce(new Error('Current calculation failed')).mockResolvedValueOnce(currentPlan);
+    await openRoomStep();
+    fireEvent.change(screen.getByLabelText('Wall width (mm)'), { target: { value: '4000' } });
+    fireEvent.click(screen.getByRole('button', { name: /Create plan/ }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Current calculation failed');
+    assertLocked();
+    expect(screen.getByRole('button', { name: /Create plan/ })).toBeEnabled();
+    fireEvent.click(screen.getByRole('button', { name: /Create plan/ }));
+    await screen.findByRole('heading', { name: 'Your wallpaper plan' });
+    const body = await saveCurrent();
+    expect(body.room_data.walls[0].width_top).toBe(4000);
+    expect(body.plan_result.rolls_to_buy).toBe(9);
+  });
+
+  it('keeps the last valid plan after a current alternative-start failure and allows retry', async () => {
+    await completePlan();
+    createWallpaperPlan.mockRejectedValueOnce(new Error('Current start failed')).mockResolvedValueOnce(currentPlan);
+    fireEvent.click(screen.getByRole('button', { name: 'Use', exact: true }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Current start failed');
+    expect(screen.getByTestId('spare-rolls')).toHaveTextContent('5 needed');
+    expect(screen.getByRole('button', { name: /^Prepare cut sheets/ })).toBeEnabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Use', exact: true }));
+    await waitFor(() => expect(screen.getByTestId('spare-rolls')).toHaveTextContent('8 needed'));
+    const body = await saveCurrent();
+    expect(body.options_data.start).toEqual({ wall_index: 0, first_strip_width: 331 });
+  });
+
+  it.each([10, 20])('only retires a completed plan when late default margin %s changes its inputs', async (margin) => {
+    const settings = deferred();
+    getUserSettings.mockReturnValueOnce(settings.promise);
+    await completePlan();
+    await act(async () => { settings.resolve({ spare_margin_percent: margin }); });
+    if (margin === 10) expect(screen.getByRole('heading', { name: 'Your wallpaper plan' })).toBeInTheDocument();
+    else {
+      assertLocked();
+      expect(screen.getByRole('heading', { name: 'Measure the room' })).toBeInTheDocument();
+    }
+  });
+});
 
 describe('WallpaperOptimizer start style', () => {
   const sentStyle = async (choose) => {

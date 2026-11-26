@@ -364,6 +364,13 @@ Only the current request may publish a result or error, advance to Layout/Keep,
 or end the current loading state. An obsolete response must not unlock Keep or
 pair old candidate geometry with newly entered measurements when saving.
 
+Wallpaper uses the same revision rule for both Create plan and alternative-start
+calculations. Editing wall, roll, pattern, corner, or allowance inputs retires
+completed and pending plans and locks Plan/Review/Save until recalculated.
+Review/Save also stay locked while an alternative start is pending. A failed
+current alternative leaves the last valid plan available for retry; an obsolete
+response cannot publish a result/error or end a newer request's loading state.
+
 **The One Nav Rule.** `.app-nav` — a single top bar with plain links, present
 on every route via `CatalogPage` — is the only navigation in the product.
 There is no second index, no trim-edge rail, no per-page duplicate of the
