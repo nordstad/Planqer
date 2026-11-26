@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import PlanSummary from './plan/PlanSummary';
 import { restoreBoardParts } from '../utils/boardParts';
+import { formatMillimetres } from '../utils/measurements';
 
-const mm = (value) => `${Math.round(value)} mm`;
+const mm = (value) => `${formatMillimetres(value)} mm`;
 
 const boardCounts = (result) => (result.board_lengths_used || []).reduce((counts, length) => ({ ...counts, [length]: (counts[length] || 0) + 1 }), {});
 

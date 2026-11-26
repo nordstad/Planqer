@@ -3,9 +3,10 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { boardSummaryRows } from '../components/BoardPlanDocument';
 import { restoreBoardParts } from './boardParts';
 import { printProjectPlans } from './printProject';
+import { formatMillimetres } from './measurements';
 
 const h = createElement;
-const mm = (value) => `${Math.round(value)} mm`;
+const mm = (value) => `${formatMillimetres(value)} mm`;
 
 const BoardPlanPrint = ({ project, t, language }) => {
   const result = project.optimization_result;
