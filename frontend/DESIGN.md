@@ -556,6 +556,12 @@ add a description only if it fits without obscuring the measurement. If a
 piece is too small for its length, a standalone diagram must retain a readable
 fallback schedule: removing redundant text must never remove a required cut.
 
+Live sheet results preserve returned decimal dimensions in Exact placements and
+diagram descriptions, using the existing board-results measurement format.
+Placement coordinates use the same precision and a semicolon between x and y
+so decimal commas cannot be mistaken for coordinate separators. This rule does
+not imply that saved sheet documents or Print have completed their precision pass.
+
 `components/plan/PlanPageShell` owns the saved-plan loading states, back link,
 title, and Print / Modify actions. `PlanSummary` renders the common labelled
 summary list. On phones, its facts form one bordered list with labels on the

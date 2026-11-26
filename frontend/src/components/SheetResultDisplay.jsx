@@ -12,9 +12,9 @@ import { useTranslation } from 'react-i18next';
 import Disclosure from './Disclosure';
 import { ArrowLeft, ArrowRight, Download } from './icons';
 
-const mm = (n) => (Number.isFinite(n) ? Math.round(n).toLocaleString('sv-SE') : '—');
+const mm = (n) => (Number.isFinite(n) ? n.toLocaleString('sv-SE', { maximumFractionDigits: 20 }) : '—');
 
-const area = (a) => (a >= 1000000 ? `${(a / 1000000).toFixed(2)} m²` : `${mm(a)} mm²`);
+const area = (a) => (a >= 1000000 ? `${(a / 1000000).toFixed(2)} m²` : `${mm(Math.round(a))} mm²`);
 
 const SheetResultDisplay = ({ result, projectName }) => {
   const { t } = useTranslation();
@@ -132,7 +132,7 @@ const SheetResultDisplay = ({ result, projectName }) => {
                     <td>{part.part_id}</td>
                     <td>{sheetIndex + 1}</td>
                     <td>{mm(part.width)} × {mm(part.height)}</td>
-                    <td>{Math.round(part.x)}, {Math.round(part.y)}</td>
+                    <td>{mm(part.x)}; {mm(part.y)}</td>
                     <td>{part.rotated ? '90°' : '—'}</td>
                     <td>{area(part.width * part.height)}</td>
                   </tr>
