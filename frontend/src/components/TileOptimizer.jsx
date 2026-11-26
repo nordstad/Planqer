@@ -170,6 +170,7 @@ const TileOptimizer = () => {
   /* loading one back */
   const [userProjects, setUserProjects] = useState([]);
   const [loadModalOpen, setLoadModalOpen] = useState(false);
+  const inputRevision = useRef(0);
 
   const debounced = {
     surfaceWidth: useDebounce(surfaceWidth, 300),
@@ -211,6 +212,8 @@ const TileOptimizer = () => {
 
   /* ── a layout belongs to its inputs ────────────────────────────────────── */
   const retireLayout = () => {
+    inputRevision.current += 1;
+    setLoading(false);
     setResult(null);
     setSelectedIndex(0);
     setApiError('');
@@ -361,6 +364,7 @@ const TileOptimizer = () => {
     setLoading(true);
     setResult(null);
     setSaved(null);
+    const requestRevision = ++inputRevision.current;
     try {
       const response = await optimizeTileLayout({
         surfaceWidth, surfaceHeight, cutouts,
@@ -370,13 +374,16 @@ const TileOptimizer = () => {
         minEdgeCut, reuseOffcuts, wastePercent, candidateCount,
         projectName,
       });
+      if (requestRevision !== inputRevision.current) return;
       setResult(response);
       setSelectedIndex(response.recommended_index);
       setStep(STEP_LAYOUT);
     } catch (error) {
+      if (requestRevision !== inputRevision.current) return;
       setApiError(error.message || t('auditUi.unknownError'));
+    } finally {
+      if (requestRevision === inputRevision.current) setLoading(false);
     }
-    setLoading(false);
   };
 
   /* ── keeping a layout ──────────────────────────────────────────────────── */

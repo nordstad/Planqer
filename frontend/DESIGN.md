@@ -358,6 +358,12 @@ retires the plan and re-locks the steps after it, rather than leaving a diagram
 on screen that no longer matches the parts. A plan the user can read but not
 trust is worse than no plan.
 
+Tile calculations follow the board/sheet revision-guard pattern: editing inputs
+retires both completed and in-flight layouts and permits a fresh calculation.
+Only the current request may publish a result or error, advance to Layout/Keep,
+or end the current loading state. An obsolete response must not unlock Keep or
+pair old candidate geometry with newly entered measurements when saving.
+
 **The One Nav Rule.** `.app-nav` — a single top bar with plain links, present
 on every route via `CatalogPage` — is the only navigation in the product.
 There is no second index, no trim-edge rail, no per-page duplicate of the
