@@ -3,8 +3,9 @@
 // it is tested against memoryDb.js and runs on IndexedDB.
 //
 // Import merges: records in the file are written over records with the same id,
-// and everything else in the browser stays. A restore can therefore never
-// delete work. The whole file is checked before anything is written.
+// and everything else in the browser stays. All import writes commit together
+// or roll back together. Envelope/store/id checks run before writing; deeper
+// record validation and conflict confirmation are separate concerns.
 //
 // A backup from a self-hosted server (`partsible backup`) is a SQLite archive and
 // is not importable here.
@@ -71,8 +72,8 @@ export async function importBackup(db, content) {
 
   const counts = {};
   for (const [store, records] of Object.entries(backup.stores)) {
-    for (const record of records) await db.put(store, record);
     counts[store] = records.length;
   }
+  await db.putMany(backup.stores);
   return counts;
 }

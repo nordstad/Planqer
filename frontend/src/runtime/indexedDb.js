@@ -1,5 +1,5 @@
 // The browser's database for Lite: IndexedDB, with the same small
-// interface as memoryDb.js (list, get, put, delete by store and id).
+// interface as memoryDb.js (list, get, put, delete, and atomic putMany).
 //
 // localStorage cannot hold this: saved diagrams are SVG and exceed its 5 MB.
 //
@@ -63,10 +63,32 @@ export function openDatabase({
       const run = (store, mode, action) =>
         settle(action(database.transaction(store, mode).objectStore(store)));
 
+      const putMany = (recordsByStore) => {
+        const entries = Object.entries(recordsByStore).filter(([, records]) => records.length > 0);
+        if (entries.length === 0) return Promise.resolve();
+        return new Promise((resolve, reject) => {
+          const transaction = database.transaction(entries.map(([store]) => store), "readwrite");
+          let failure;
+          transaction.oncomplete = () => resolve();
+          // Reject only after rollback, not on an individual request's error.
+          transaction.onabort = () => reject(failure ?? transaction.error ?? new DOMException("Write transaction aborted", "AbortError"));
+          try {
+            for (const [store, records] of entries) {
+              const objects = transaction.objectStore(store);
+              for (const record of records) objects.put(record);
+            }
+          } catch (error) {
+            failure = error;
+            transaction.abort();
+          }
+        });
+      };
+
       resolve({
         list: (store) => run(store, "readonly", (objects) => objects.getAll()),
         get: (store, id) => run(store, "readonly", (objects) => objects.get(id)),
         put: (store, record) => run(store, "readwrite", (objects) => objects.put(record)),
+        putMany,
         delete: (store, id) => run(store, "readwrite", (objects) => objects.delete(id)),
         close: () => database.close(),
       });

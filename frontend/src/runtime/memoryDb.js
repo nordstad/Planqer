@@ -20,6 +20,15 @@ export function createMemoryDb() {
     async put(store, record) {
       table(store).set(record.id, structuredClone(record));
     },
+    async putMany(recordsByStore) {
+      // Clone the whole batch before publishing any change, as IndexedDB does.
+      const staged = Object.entries(recordsByStore).map(([store, records]) => [
+        store, records.map((record) => structuredClone(record)),
+      ]);
+      for (const [store, records] of staged) {
+        for (const record of records) table(store).set(record.id, record);
+      }
+    },
     async delete(store, id) {
       table(store).delete(id);
     },

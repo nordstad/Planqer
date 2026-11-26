@@ -84,3 +84,99 @@ it("reads a file given as text", async () => {
   await importBackup(target, file);
   expect(await target.list("groups")).toHaveLength(1);
 });
+
+it("leaves every store unchanged when a later write cannot be cloned", async () => {
+  const db = await filled();
+  const before = await everything(db);
+  await expect(importBackup(db, {
+    app: "partsible-lite", format: BACKUP_FORMAT,
+    stores: {
+      groups: [{ id: "g1", name: "Replacement" }, { id: "new", name: "New group" }],
+      projects: [{ id: "bad", uncloneable: () => {} }],
+    },
+  })).rejects.toMatchObject({ name: "DataCloneError" });
+  expect(await everything(db)).toEqual(before);
+});
+
+it("returns import counts only after the atomic batch commits", async () => {
+  let commit;
+  let reported = false;
+  const db = {
+    put: vi.fn(),
+    putMany: vi.fn(() => new Promise((resolve) => { commit = resolve; })),
+  };
+  const stores = { groups: [{ id: "g1" }], projects: [{ id: "p1" }] };
+  const importing = importBackup(db, { app: "partsible-lite", format: BACKUP_FORMAT, stores })
+    .then((counts) => { reported = true; return counts; });
+  expect(db.putMany).toHaveBeenCalledWith(stores);
+  expect(db.put).not.toHaveBeenCalled();
+  await Promise.resolve();
+  expect(reported).toBe(false);
+  commit();
+  await expect(importing).resolves.toEqual({ groups: 1, projects: 1 });
+});
+
+it("propagates batch failure rather than reporting import counts or falling back to per-record writes", async () => {
+  const failure = new DOMException("Injected abort", "AbortError");
+  const db = { put: vi.fn(), putMany: vi.fn().mockRejectedValue(failure) };
+  await expect(importBackup(db, {
+    app: "partsible-lite", format: BACKUP_FORMAT, stores: { groups: [{ id: "g1" }] },
+  })).rejects.toBe(failure);
+  expect(db.put).not.toHaveBeenCalled();
+});
+
+it("does not start a batch when the existing backup validation fails", async () => {
+  const db = { putMany: vi.fn() };
+  await expect(importBackup(db, {
+    app: "partsible-lite", format: BACKUP_FORMAT, stores: { groups: [{ name: "No id" }] },
+  })).rejects.toMatchObject({ name: "BackupError", code: "invalid" });
+  expect(db.putMany).not.toHaveBeenCalled();
+});
+
+it.each([{}, Object.fromEntries(STORES.map((store) => [store, []]))])(
+  "accepts an empty import without changing existing data: %j",
+  async (stores) => {
+    const db = await filled();
+    const before = await everything(db);
+    const counts = await importBackup(db, { app: "partsible-lite", format: BACKUP_FORMAT, stores });
+    expect(counts).toEqual(Object.fromEntries(Object.keys(stores).map((store) => [store, 0])));
+    expect(await everything(db)).toEqual(before);
+  },
+);
+
+for (const failAt of [0, 6, 13]) {
+  it(`preserves all memory stores when batch cloning fails at record ${failAt + 1}`, async () => {
+    const db = createMemoryDb();
+    const stores = {};
+    let index = 0;
+    for (const store of STORES) {
+      await db.put(store, { id: "replace", name: `Original ${store}` });
+      await db.put(store, { id: "keep", name: `Unrelated ${store}` });
+      stores[store] = ["replace", "insert"].map((id) => ({
+        id, name: `Incoming ${store}`,
+        ...(index++ === failAt ? { uncloneable: () => {} } : {}),
+      }));
+    }
+    const before = await everything(db);
+    await expect(importBackup(db, {
+      app: "partsible-lite", format: BACKUP_FORMAT, stores,
+    })).rejects.toMatchObject({ name: "DataCloneError" });
+    expect(await everything(db)).toEqual(before);
+  });
+}
+
+it("atomically imports all memory stores with copies of the original payloads", async () => {
+  const db = createMemoryDb();
+  const stores = {};
+  for (const store of STORES) {
+    await db.put(store, { id: "keep", name: `Unrelated ${store}` });
+    stores[store] = [{ id: "new", metadata: { values: [1, 2], label: store } }];
+  }
+  const counts = await importBackup(db, { app: "partsible-lite", format: BACKUP_FORMAT, stores });
+  expect(counts).toEqual(Object.fromEntries(STORES.map((store) => [store, 1])));
+  for (const store of STORES) {
+    stores[store][0].metadata.values.push(3);
+    expect(await db.get(store, "new")).toEqual({ id: "new", metadata: { values: [1, 2], label: store } });
+    expect(await db.get(store, "keep")).toEqual({ id: "keep", name: `Unrelated ${store}` });
+  }
+});

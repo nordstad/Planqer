@@ -716,6 +716,12 @@ one place in the system where `01 / 02 / 03` is earned rather than decoration.
 
 ### Blocked Actions and Recovery
 
+Lite backup import reports success only after all imported record writes commit
+in one transaction across the affected stores. A failed or aborted import must
+leave both existing records and unrelated work unchanged; successful individual
+write requests are not evidence of a committed restore. This atomic-write rule
+does not replace record validation or explicit conflict/replacement confirmation.
+
 Defaults are editable and saveable only after a successful read for the current
 user. A pending read shows the existing loader; a failed read shows the load error
 and a localized Retry action, not an editable fallback form. Retry never writes
