@@ -9,6 +9,111 @@ const tileProject = (name, thickness, quantity = 27, price = 10) => ({
   ...(price ? { pricing: { price_per_unit: price, currency: 'SEK', prices_include_vat: true, vat_rate: 25 } } : {}),
 });
 
+const wallpaperProject = (name, code, quantity = 3, price = 200) => ({
+  name, projectType: 'wallpaper',
+  wallpaper_data: {
+    name: 'Willow', manufacturer: 'Acme', product_code: code,
+    roll_width: 530, roll_length: 10050,
+    ...(price ? { price_per_roll: price, currency: 'SEK' } : {}),
+  },
+  plan_result: { rolls_to_buy: quantity },
+});
+
+it.each([300, null])('keeps known wallpaper codes and their prices separate (%s)', (price) => {
+  const rows = materialRowsForPurchase([
+    wallpaperProject('Hall A', 'A001'),
+    wallpaperProject('Hall B', 'B002', 5, price),
+  ], 50);
+  expect(rows).toHaveLength(2);
+  expect(rows[0]).toMatchObject({ material: 'Willow · Acme · A001', quantityToBuy: 3, pricePerUnit: 200 });
+  expect(rows[1]).toMatchObject({ material: 'Willow · Acme · B002', quantityToBuy: 5 });
+  expect(rows[1].pricePerUnit).toBe(price || undefined);
+  expect(rows.every((row) => !row._priceConflict)).toBe(true);
+});
+
+it('still aggregates identical wallpaper codes without a second reserve allowance', () => {
+  const rows = materialRowsForPurchase([
+    wallpaperProject('Hall', 'A001'),
+    wallpaperProject('Landing', 'A001', 1),
+  ], 50);
+  expect(rows).toHaveLength(1);
+  expect(rows[0]).toMatchObject({
+    material: 'Willow · Acme · A001', quantityToBuy: 4,
+    pricePerUnit: 200, plans: ['Hall', 'Landing'],
+  });
+  expect(summarizeMaterialPricing(rows)).toMatchObject({ complete: true, total: 800 });
+});
+
+it.each([undefined, null, ''])('keeps missing wallpaper code %j distinct from a known code', (code) => {
+  const rows = materialRowsForPurchase([
+    wallpaperProject('Legacy', code),
+    wallpaperProject('Known', 'A001'),
+  ]);
+  expect(rows).toHaveLength(2);
+  expect(rows[0].material).toBe('Willow · Acme');
+  expect(rows[1].material).toBe('Willow · Acme · A001');
+});
+
+it('retains legacy aggregation when no wallpaper product code is known', () => {
+  const rows = materialRowsForPurchase([
+    wallpaperProject('Missing', undefined),
+    wallpaperProject('Null', null),
+    wallpaperProject('Empty', ''),
+  ]);
+  expect(rows).toHaveLength(1);
+  expect(rows[0]).toMatchObject({ material: 'Willow · Acme', quantityToBuy: 9 });
+});
+
+it('retains manufacturer and roll dimensions in wallpaper identity even with matching codes', () => {
+  const first = wallpaperProject('A', 'A001');
+  const rows = materialRowsForPurchase([
+    first,
+    { ...wallpaperProject('B', 'A001'), wallpaper_data: { ...first.wallpaper_data, manufacturer: 'Other maker' } },
+    { ...wallpaperProject('C', 'A001'), wallpaper_data: { ...first.wallpaper_data, roll_width: 600 } },
+  ]);
+  expect(rows).toHaveLength(3);
+  expect(rows[1].material).toBe('Willow · Other maker · A001');
+});
+
+it('limits wallpaper price conflicts to matching known product codes', () => {
+  const rows = materialRowsForPurchase([
+    wallpaperProject('Hall', 'A001'),
+    wallpaperProject('Landing', 'A001', 1, 250),
+    wallpaperProject('Kitchen', 'B002', 5, 300),
+  ]);
+  expect(rows).toHaveLength(2);
+  expect(rows[0]._priceConflict).toBe(true);
+  expect(rows[0].pricePerUnit).toBeUndefined();
+  expect(rows[1]).toMatchObject({ pricePerUnit: 300, quantityToBuy: 5 });
+});
+
+it('preserves wallpaper identity, provenance, quantities, and prices in CSV and Print', () => {
+  const projects = [
+    wallpaperProject('Hall A', 'A001'),
+    wallpaperProject('Hall B', 'B002', 5, 300),
+    wallpaperProject('Landing A', 'A001', 1),
+  ];
+  const lines = buildMaterialCsv(projects, t, 50).split('\r\n');
+  expect(lines).toHaveLength(3);
+  expect(lines[1]).toContain('"Hall A, Landing A","Willow · Acme · A001","530 × 10 050","4","4","200.00 SEK","800.00 SEK"');
+  expect(lines[2]).toContain('"Hall B","Willow · Acme · B002","530 × 10 050","5","5","300.00 SEK","1500.00 SEK"');
+  const doc = new DOMParser().parseFromString(buildMaterialListHtml(projects, t, 50), 'text/html');
+  const rows = [...doc.querySelectorAll('tbody tr')];
+  expect(rows).toHaveLength(2);
+  expect([...rows[0].cells].slice(0, 5).map((cell) => cell.textContent)).toEqual(['Hall A, Landing A', 'Willow · Acme · A001', '530 × 10\u00a0050 mm', '4', '4']);
+  expect([...rows[1].cells].slice(0, 5).map((cell) => cell.textContent)).toEqual(['Hall B', 'Willow · Acme · B002', '530 × 10\u00a0050 mm', '5', '5']);
+});
+
+it('escapes wallpaper codes safely without altering their displayed value', () => {
+  const code = '<A&"001>';
+  const projects = [wallpaperProject('Hall', code)];
+  const doc = new DOMParser().parseFromString(buildMaterialListHtml(projects, t), 'text/html');
+  expect(doc.querySelectorAll('tbody tr')).toHaveLength(1);
+  expect(doc.querySelector('tbody tr').cells[1].textContent).toBe(`Willow · Acme · ${code}`);
+  expect(doc.querySelector('tbody tr').cells[1].children).toHaveLength(0);
+  expect(buildMaterialCsv(projects, t)).toContain('"Willow · Acme · <A&""001>"');
+});
+
 it.each([20, null])('keeps 10 mm and 20 mm tile purchases and their prices separate (%s)', (price) => {
   const rows = materialRowsForPurchase([
     tileProject('Thin tiles', 10),
@@ -199,7 +304,7 @@ it('lists, prices, and merges wallpaper rolls without adding another spare margi
     { name: 'Kitchen', projectType: 'wallpaper', wallpaper_data: wallpaper, plan_result: { rolls_to_buy: 3 } },
   ]);
 
-  expect(rows[0]).toMatchObject({ material: 'Willow', quantity: 2, pricePerUnit: 375 });
+  expect(rows[0]).toMatchObject({ material: 'Willow · Acme', quantity: 2, pricePerUnit: 375 });
   expect(rows[0].size).toContain('530 × 10');
   const [purchase] = materialRowsForPurchase([
     { name: 'Hall', projectType: 'wallpaper', wallpaper_data: wallpaper, plan_result: { rolls_to_buy: 2 } },

@@ -121,14 +121,14 @@ const wallpaperRows = (project) => {
   if (!Number.isFinite(quantity) || !wallpaper) return [];
   return [withMergeData({
     plan: project.name,
-    material: wallpaper.name || 'wallpaper',
+    material: [wallpaper.name || 'wallpaper', wallpaper.manufacturer, wallpaper.product_code].filter(Boolean).join(' · '),
     size: `${mm(wallpaper.roll_width)} × ${mm(wallpaper.roll_length)} mm`,
     quantity,
     ...(Number(wallpaper.price_per_roll) > 0 && wallpaper.currency
       ? { pricePerUnit: Number(wallpaper.price_per_roll), currency: wallpaper.currency, pricesIncludeVat: wallpaper.prices_include_vat ?? true, vatRate: wallpaper.vat_rate ?? 25 }
       : {}),
   }, {
-    product: { material: wallpaper.name || 'wallpaper', manufacturer: wallpaper.manufacturer || '' },
+    product: { material: wallpaper.name || 'wallpaper', manufacturer: wallpaper.manufacturer || '', code: wallpaper.product_code || null },
     kind: 'wallpaper',
     dimensions: [wallpaper.roll_width, wallpaper.roll_length],
     stock: null,

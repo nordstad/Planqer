@@ -670,6 +670,13 @@ still aggregate under the existing pricing rules and retain the planner's
 purchase quantity without applying the project spare allowance a second time.
 The screen, CSV, and generated shopping Print use the same purchase rows.
 
+Wallpaper purchases include each known product code in structured identity,
+alongside the existing name, manufacturer, and roll dimensions. Shopping labels
+show the name, manufacturer, and code when present so distinct purchases remain
+identifiable on screen, in CSV, and in generated Print. Missing codes must not
+inherit known ones; identical coded products retain existing pricing and
+reserve behavior. Codes are preserved as stored, not inferred or case-folded.
+
 ### The Step Rail
 
 `.plan-steps` — the wayfinding inside an optimizer page. One segment per step

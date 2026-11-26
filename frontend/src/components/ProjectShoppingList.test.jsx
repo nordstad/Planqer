@@ -57,6 +57,30 @@ it('separates tile thicknesses while combining identical tiles and retaining pri
   expect(screen.getByText(/Estimated project material cost: 840.00 SEK/)).toBeInTheDocument();
 });
 
+it('shows distinct wallpaper codes and makers with independently priced quantities', () => {
+  renderList([
+    ['Hall A', 'A001', 3, 200],
+    ['Hall B', 'B002', 5, 300],
+    ['Landing A', 'A001', 1, 200],
+  ].map(([name, code, quantity, price]) => ({
+    name, projectType: 'wallpaper',
+    wallpaper_data: {
+      name: 'Willow', manufacturer: 'Acme', product_code: code,
+      roll_width: 530, roll_length: 10050, price_per_roll: price, currency: 'SEK',
+    },
+    plan_result: { rolls_to_buy: quantity },
+  })));
+  const rows = screen.getAllByRole('row').slice(1);
+  expect(rows).toHaveLength(2);
+  expect(rows[0].cells[0]).toHaveTextContent('Willow · Acme · A001');
+  expect(rows[0].cells[2]).toHaveTextContent('4');
+  expect(rows[0].cells[4]).toHaveTextContent('800.00 SEK');
+  expect(rows[1].cells[0]).toHaveTextContent('Willow · Acme · B002');
+  expect(rows[1].cells[2]).toHaveTextContent('5');
+  expect(rows[1].cells[4]).toHaveTextContent('1500.00 SEK');
+  expect(screen.getByText(/Estimated project material cost: 2300.00 SEK/)).toBeInTheDocument();
+});
+
 it('renders nothing when plans have no purchasable material', () => {
   renderList([{ name: 'Empty plan' }]);
 
