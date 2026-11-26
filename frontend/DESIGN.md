@@ -192,6 +192,29 @@ from one stylesheet.
   numbered list is now just a plain index (`01`, `02`…), never a fake
   document citation
 
+## Design and UX Principles
+
+These principles guide changes across every page, not just the homepage or one
+planner. Product context lives in `PRODUCT.md`.
+
+- **Consistency across pages:** Reuse the same visual and interaction language
+  for equivalent tasks: navigation, actions, fields, validation, loading,
+  dialogs, and result summaries. Consistency does not require identical layouts
+  for different tasks.
+- **Task-first UX:** Make the next action, current state, and error recovery
+  clear. Prioritize laptop and desktop workflows, followed by tablets. Mobile
+  must look good and work, but must not dictate the main workflow.
+- **Keep it simple (KISS):** Remove unnecessary controls, repeated information,
+  and decoration. Do not remove measurements, constraints, or guidance needed
+  to prevent mistakes merely to make a screen look cleaner.
+- **Reuse before inventing:** Use existing tokens and shared components when
+  the pattern matches. Fix shared behavior centrally instead of copying it
+  into each page. Do not create speculative abstractions for one-off needs.
+- **Explicit exceptions:** A page-specific departure needs a task-based reason
+  documented here. Distinguish intentional differences from unfinished
+  migrations; neither an implementation accident nor a scanner finding alone
+  establishes a design rule.
+
 ## Colors
 
 A warm, restrained press: cream-to-white neutrals, ink type, one amber accent,
