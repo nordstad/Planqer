@@ -11,8 +11,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Disclosure from './Disclosure';
 import { ArrowLeft, ArrowRight, Download } from './icons';
-
-const mm = (n) => (Number.isFinite(n) ? n.toLocaleString('sv-SE', { maximumFractionDigits: 20 }) : '—');
+import { formatMillimetres as mm } from '../utils/measurements';
 
 const area = (a) => (a >= 1000000 ? `${(a / 1000000).toFixed(2)} m²` : `${mm(Math.round(a))} mm²`);
 
