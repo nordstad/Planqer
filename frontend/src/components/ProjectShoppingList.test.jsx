@@ -35,6 +35,28 @@ it('combines matching stock across plans', () => {
   expect(screen.getAllByRole('row')).toHaveLength(2);
 });
 
+it('separates tile thicknesses while combining identical tiles and retaining prices', () => {
+  renderList([
+    ['Thin A', 10, 27, 10],
+    ['Thick', 20, 27, 20],
+    ['Thin B', 10, 3, 10],
+  ].map(([name, thickness, quantity, price]) => ({
+    name, projectType: 'tile',
+    tile_data: { material_type: 'Ceramic', width: 300, height: 600, thickness },
+    layout_result: { tiles_to_purchase_with_waste: quantity },
+    pricing: { price_per_unit: price, currency: 'SEK', prices_include_vat: true, vat_rate: 25 },
+  })));
+  const rows = screen.getAllByRole('row').slice(1);
+  expect(rows).toHaveLength(2);
+  expect(rows[0]).toHaveTextContent('10 × 300 × 600');
+  expect(rows[0].cells[2]).toHaveTextContent('30');
+  expect(rows[0].cells[4]).toHaveTextContent('300.00 SEK');
+  expect(rows[1]).toHaveTextContent('20 × 300 × 600');
+  expect(rows[1].cells[2]).toHaveTextContent('27');
+  expect(rows[1].cells[4]).toHaveTextContent('540.00 SEK');
+  expect(screen.getByText(/Estimated project material cost: 840.00 SEK/)).toBeInTheDocument();
+});
+
 it('renders nothing when plans have no purchasable material', () => {
   renderList([{ name: 'Empty plan' }]);
 

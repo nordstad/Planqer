@@ -663,6 +663,13 @@ internal required count is not shown. Unpriced rows are deliberately quiet;
 the subtotal and note explain
 when the visible cost is incomplete.
 
+Tile purchase aggregation includes known thickness as well as material, width,
+and height; use stored measurements, never rounded labels, as identity. Unknown
+thickness must not inherit a known thickness by merging. Identical tile rows
+still aggregate under the existing pricing rules and retain the planner's
+purchase quantity without applying the project spare allowance a second time.
+The screen, CSV, and generated shopping Print use the same purchase rows.
+
 ### The Step Rail
 
 `.plan-steps` — the wayfinding inside an optimizer page. One segment per step

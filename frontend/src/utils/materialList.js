@@ -110,7 +110,7 @@ const tileRows = (project) => {
   }, {
     product: { material: project.tile_data?.material_type || 'tile' },
     kind: 'tile',
-    dimensions: [project.tile_data?.width, project.tile_data?.height],
+    dimensions: [project.tile_data?.thickness ?? null, width, height],
     stock: null,
   })];
 };

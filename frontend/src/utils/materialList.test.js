@@ -2,6 +2,95 @@ import { applySpareMargin, buildMaterialCsv, buildMaterialListHtml, isPlanPriced
 
 const t = (key) => ({ 'ui.materialPine': 'pine' }[key] || key);
 
+const tileProject = (name, thickness, quantity = 27, price = 10) => ({
+  name, projectType: 'tile',
+  tile_data: { material_type: 'Ceramic', width: 300, height: 600, thickness },
+  layout_result: { tiles_to_purchase_with_waste: quantity },
+  ...(price ? { pricing: { price_per_unit: price, currency: 'SEK', prices_include_vat: true, vat_rate: 25 } } : {}),
+});
+
+it.each([20, null])('keeps 10 mm and 20 mm tile purchases and their prices separate (%s)', (price) => {
+  const rows = materialRowsForPurchase([
+    tileProject('Thin tiles', 10),
+    tileProject('Thick tiles', 20, 27, price),
+  ], 50);
+  expect(rows).toHaveLength(2);
+  expect(rows[0]).toMatchObject({ size: '10 × 300 × 600 mm', neededQuantity: 27, quantityToBuy: 27, pricePerUnit: 10 });
+  expect(rows[1]).toMatchObject({ size: '20 × 300 × 600 mm', neededQuantity: 27, quantityToBuy: 27 });
+  expect(rows[1].pricePerUnit).toBe(price || undefined);
+  expect(rows.every((row) => !row._priceConflict)).toBe(true);
+});
+
+it('still merges identical tiles without adding a second reserve allowance', () => {
+  const rows = materialRowsForPurchase([
+    tileProject('Bathroom', 10),
+    tileProject('Kitchen', 10, 3),
+  ], 50);
+  expect(rows).toHaveLength(1);
+  expect(rows[0]).toMatchObject({
+    size: '10 × 300 × 600 mm', quantity: 30, neededQuantity: 30,
+    quantityToBuy: 30, pricePerUnit: 10, plans: ['Bathroom', 'Kitchen'],
+  });
+  expect(summarizeMaterialPricing(rows)).toMatchObject({ complete: true, total: 300 });
+});
+
+it.each([undefined, null])('does not assume missing tile thickness %s matches a known thickness', (thickness) => {
+  const rows = materialRowsForPurchase([
+    tileProject('Legacy tiles', thickness),
+    tileProject('Known tiles', 10),
+  ]);
+  expect(rows).toHaveLength(2);
+  expect(rows.map((row) => row.size)).toEqual(['300 × 600 mm', '10 × 300 × 600 mm']);
+});
+
+it('retains legacy aggregation when neither tile thickness is known', () => {
+  const rows = materialRowsForPurchase([
+    tileProject('Missing', undefined),
+    tileProject('Null', null, 3),
+  ]);
+  expect(rows).toHaveLength(1);
+  expect(rows[0]).toMatchObject({ size: '300 × 600 mm', quantityToBuy: 30 });
+});
+
+it('does not use rounded thickness labels as tile purchase identity', () => {
+  const rows = materialRowsForPurchase([
+    tileProject('Measured A', 10.1),
+    tileProject('Measured B', 10.2),
+  ]);
+  expect(rows).toHaveLength(2);
+  expect(rows.map((row) => row.quantityToBuy)).toEqual([27, 27]);
+});
+
+it('limits saved-price conflicts to tiles of the same thickness', () => {
+  const rows = materialRowsForPurchase([
+    tileProject('Thin A', 10),
+    tileProject('Thin B', 10, 3, 12),
+    tileProject('Thick', 20, 27, 20),
+  ]);
+  expect(rows).toHaveLength(2);
+  expect(rows[0]._priceConflict).toBe(true);
+  expect(rows[0].pricePerUnit).toBeUndefined();
+  expect(rows[1]).toMatchObject({ pricePerUnit: 20, quantityToBuy: 27 });
+  expect(summarizeMaterialPricing(rows)).toMatchObject({ complete: false, conflictCount: 1, total: 540 });
+});
+
+it('preserves distinct tile purchases consistently in CSV and shopping Print', () => {
+  const projects = [
+    tileProject('Thin A', 10),
+    tileProject('Thick', 20, 27, 20),
+    tileProject('Thin B', 10, 3),
+  ];
+  const lines = buildMaterialCsv(projects, t, 50).split('\r\n');
+  expect(lines).toHaveLength(3);
+  expect(lines[1]).toContain('"Thin A, Thin B","Ceramic","10 × 300 × 600","30","30","10.00 SEK","300.00 SEK"');
+  expect(lines[2]).toContain('"Thick","Ceramic","20 × 300 × 600","27","27","20.00 SEK","540.00 SEK"');
+  const doc = new DOMParser().parseFromString(buildMaterialListHtml(projects, t, 50), 'text/html');
+  const rows = [...doc.querySelectorAll('tbody tr')];
+  expect(rows).toHaveLength(2);
+  expect([...rows[0].cells].slice(0, 5).map((cell) => cell.textContent)).toEqual(['Thin A, Thin B', 'Ceramic', '10 × 300 × 600 mm', '30', '30']);
+  expect([...rows[1].cells].slice(0, 5).map((cell) => cell.textContent)).toEqual(['Thick', 'Ceramic', '20 × 300 × 600 mm', '27', '27']);
+});
+
 it('builds shopping rows for board, sheet, and tile plans', () => {
   const rows = buildMaterialRows([
     {
