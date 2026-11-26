@@ -32,6 +32,7 @@ import {
   MAX_BOARD_LENGTH,
   SAW_KERF_MAX,
   SAW_KERF_MIN,
+  isValidBoardQuantity,
   validateBoards,
   validatePartFields,
   validateParts,
@@ -348,9 +349,9 @@ const CuttingOptimizer = () => {
     const visible = Object.fromEntries(Object.entries(errors).filter(([field]) => part[field] !== ''));
     return Object.keys(visible).length > 0 ? visible : null;
   };
-  const partCount = parts.reduce((n, p) => n + (parseInt(p.quantity, 10) || 0), 0);
+  const partCount = parts.reduce((n, p) => n + (isValidBoardQuantity(p.quantity) ? Number(p.quantity) : 0), 0);
   const demand = parts.reduce(
-    (sum, p) => sum + (parseFloat(p.length) || 0) * (parseFloat(p.quantity) || 0), 0);
+    (sum, p) => sum + (parseFloat(p.length) || 0) * (isValidBoardQuantity(p.quantity) ? Number(p.quantity) : 0), 0);
   const sectionDims = { thickness: parseFloat(boardThickness), width: parseFloat(boardWidth) };
   const material = selectionName(productSel, i18n.language, sectionDims);
   const hasErrors = parts.length === 0 || currentPartErrors.some(Boolean) || inputErrors.boards.some(Boolean) || !!inputErrors.sawKerf

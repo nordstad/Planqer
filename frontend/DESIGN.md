@@ -470,6 +470,15 @@ radius, 42px square).
   claim about the stock. A catalogue product's thickness replaces the default;
   an explicitly cleared thickness still blocks planning. Thickness is saved
   but does not currently change the sheet placement calculation.
+- **Sheet part quantities:** Accept complete whole-number values from 1 to 1000
+  per row. Never truncate fractional or partially numeric input. Invalid counts
+  block planning and serialization for both calculation and saving; totals count
+  only valid rows while the existing row status explains what needs correction.
+- **Board part quantities:** Apply the same complete-value rule with the existing
+  1–10,000 per-row limit. Counts, length demand, and calculation/save payloads
+  must agree; valid whole counts in exponent notation retain their full value.
+  Invalid counts block submission and serialization rather than being truncated
+  or silently omitted.
 - **Required and optional fields:** Every required label carries an ink `*`
   (`.req-mark`, hidden from screen readers, with `aria-required` on the
   control), and the form opens with one "* Required" legend. An optional field

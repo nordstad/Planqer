@@ -80,6 +80,23 @@ beforeEach(() => {
 });
 
 describe('CuttingOptimizer', () => {
+  it('uses complete whole counts in board totals and planning input', async () => {
+    renderOptimizer({ loadExample: false });
+    fireEvent.click(screen.getByRole('button', { name: /Add part/i }));
+    fireEvent.change(screen.getByLabelText('Part length in millimetres, item 1'), { target: { value: '100' } });
+    const quantity = screen.getByLabelText('Quantity, item 1');
+    fireEvent.change(quantity, { target: { value: '1e2' } });
+    fillMaterial();
+    const cells = screen.getByText('Σ').closest('tr').children;
+    expect(cells[2]).toHaveTextContent('100');
+    expect(cells[1]).toHaveTextContent(/10\s*000/);
+    fireEvent.submit(quantity.closest('form'));
+    await waitFor(() => expect(optimizeCutting).toHaveBeenCalledWith(
+      expect.arrayContaining([expect.objectContaining({ quantity: '1e2' })]),
+      expect.any(Array), '3', null,
+    ));
+  });
+
   it('starts with no required parts and offers a realistic workshop example', async () => {
     renderOptimizer({ loadExample: false });
     expect(await screen.findByRole('heading', { name: /Required parts/i })).toBeInTheDocument();

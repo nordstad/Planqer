@@ -30,6 +30,7 @@ vi.mock('axios', () => {
 beforeEach(() => {
   vi.clearAllMocks();
   axios.post.mockResolvedValue({ data: { ok: true } });
+  axios.put.mockResolvedValue({ data: { ok: true } });
 });
 
 it('aggregates duplicate board part lengths without losing quantity', () => {
@@ -37,6 +38,45 @@ it('aggregates duplicate board part lengths without losing quantity', () => {
     { length: '120.5', quantity: '2' },
     { length: '120.5', quantity: '3' },
   ])).toEqual({ '120.5': 5 });
+});
+
+it.each(['1.5', '2parts', '', ' ', 'Infinity', 'NaN', '0', '-1', '10001', '1e5', '9007199254740993', null, true])(
+  'rejects invalid board quantity %j before calculation, create, or update',
+  async (quantity) => {
+    const parts = [
+      { length: '120.5', quantity: '2' },
+      { length: '120.5', quantity },
+    ];
+    expect(() => serializeBoardParts(parts)).toThrow();
+    await expect(optimizeCutting(parts, ['300'], '3')).rejects.toThrow();
+    for (const id of [undefined, 'synthetic-plan']) {
+      await expect(saveProject({ id, name: 'Invalid count', parts, boards: ['300'] })).rejects.toThrow();
+    }
+    expect(axios.post).not.toHaveBeenCalled();
+    expect(axios.put).not.toHaveBeenCalled();
+  },
+);
+
+it.each(['1', '10000', '1e2', '2.0', 100])(
+  'preserves complete valid board quantity %j through calculation and saving',
+  async (quantity) => {
+    const parts = [
+      { name: 'Front', length: '120.5', quantity },
+    ];
+    await optimizeCutting(parts, ['300'], '3');
+    expect(axios.post.mock.calls[0][1].parts).toEqual({ '120.5': Number(quantity) });
+    await saveProject({ name: 'Whole counts', parts, boards: ['300'] });
+    expect(axios.post.mock.calls[1][1].parts_data.map((part) => part.quantity)).toEqual([Number(quantity)]);
+    await saveProject({ id: 'synthetic-plan', name: 'Whole counts', parts, boards: ['300'] });
+    expect(axios.put.mock.calls[0][1].parts_data.map((part) => part.quantity)).toEqual([Number(quantity)]);
+  },
+);
+
+it('aggregates whole board counts written in exponent notation without truncation', () => {
+  expect(serializeBoardParts([
+    { length: '120.5', quantity: '1e2' },
+    { length: '120.5', quantity: '2' },
+  ])).toEqual({ '120.5': 102 });
 });
 
 it('restores named board rows and legacy length maps', () => {
@@ -78,6 +118,25 @@ it('keeps sheet row identity separate from repeated display names', () => {
     { id: 'row-b', name: 'Shelf', width: 30.5, height: 40.25, quantity: 1 },
     { id: 'part_3', name: 'Legacy', width: 50.5, height: 60.25, quantity: 1 },
   ]);
+});
+
+it.each(['1.5', '2parts', '', ' ', 'Infinity', 'NaN', '0', '-1', '1001', '9007199254740993'])(
+  'rejects invalid sheet quantity %j before planning or saving',
+  async (quantity) => {
+    const parts = [{ id: 'row-a', width: '100', height: '200', quantity }];
+    expect(() => normalizeSheetParts(parts)).toThrow();
+    await expect(optimizeSheetCutting(parts, '1200', '2500', '3')).rejects.toThrow();
+    await expect(saveSheetProject({ name: 'Invalid count', parts })).rejects.toThrow();
+    expect(axios.post).not.toHaveBeenCalled();
+  },
+);
+
+it.each(['1', '1000', '1e2', '2.0'])('preserves the complete valid sheet count %j in planning and save payloads', async (quantity) => {
+  const parts = [{ id: 'row-a', width: '100', height: '200', quantity }];
+  await optimizeSheetCutting(parts, '1200', '2500', '3');
+  expect(axios.post.mock.calls[0][1].parts['row-a'].quantity).toBe(Number(quantity));
+  await saveSheetProject({ name: 'Whole count', parts });
+  expect(axios.post.mock.calls[1][1].parts_data[0].quantity).toBe(Number(quantity));
 });
 
 it('uses lossless board serialization for optimization and save', async () => {

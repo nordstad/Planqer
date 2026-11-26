@@ -11,7 +11,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SAW_KERF_MIN, SAW_KERF_MAX } from '../utils/validators';
+import { SAW_KERF_MIN, SAW_KERF_MAX, MAX_SHEET_PART_QUANTITY, isValidSheetQuantity } from '../utils/validators';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import CatalogPage from './CatalogPage';
 import ConfirmDialog from './ConfirmDialog';
@@ -66,7 +66,7 @@ const validateSheetParts = (parts, t) => parts.map((part) => {
   const errors = {};
   const width = parseFloat(part.width);
   const height = parseFloat(part.height);
-  const quantity = parseInt(part.quantity, 10);
+  const quantity = Number(part.quantity);
 
    if (!part.width || isNaN(width) || width < 1) errors.width = t('tileUi.positiveWidth');
   else if (width > 5000) errors.width = t('tileUi.cannotExceed', { label: t('workflow.width'), max: '5000 mm' });
@@ -74,8 +74,11 @@ const validateSheetParts = (parts, t) => parts.map((part) => {
    if (!part.height || isNaN(height) || height < 1) errors.height = t('tileUi.positiveHeight');
   else if (height > 5000) errors.height = t('tileUi.cannotExceed', { label: t('workflow.height'), max: '5000 mm' });
 
-  if (!part.quantity || isNaN(quantity) || quantity <= 0) errors.quantity = t('tileUi.numberRequired', { label: t('workflow.qty') });
-  else if (quantity > 1000) errors.quantity = t('tileUi.cannotExceed', { label: t('workflow.qty'), max: 1000 });
+  if (!isValidSheetQuantity(part.quantity)) {
+    errors.quantity = Number.isInteger(quantity) && quantity > MAX_SHEET_PART_QUANTITY
+      ? t('validation.maxQuantity', { max: MAX_SHEET_PART_QUANTITY })
+      : t('validation.positiveQuantity');
+  }
 
   return Object.keys(errors).length > 0 ? errors : null;
 });
@@ -278,7 +281,7 @@ const SheetOptimizer = () => {
     const visible = Object.fromEntries(Object.entries(errors).filter(([field]) => part[field] !== ''));
     return Object.keys(visible).length > 0 ? visible : null;
   };
-  const partCount = parts.reduce((n, p) => n + (parseInt(p.quantity, 10) || 0), 0);
+  const partCount = parts.reduce((n, p) => n + (isValidSheetQuantity(p.quantity) ? Number(p.quantity) : 0), 0);
   const sheetMissing = [
     isBlank(sheetWidth) && t('workflow.width'),
     isBlank(sheetHeight) && t('workflow.height'),

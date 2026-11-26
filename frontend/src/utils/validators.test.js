@@ -36,6 +36,13 @@ test('identifies which part field is invalid', () => {
   });
 });
 
+test('checks the complete board count against the maximum, including exponent notation', () => {
+  expect(validatePartFields({ length: '100', quantity: '1e5' }, t)).toEqual({
+    quantity: 'validation.maxQuantity:10000',
+  });
+  expect(validatePartFields({ length: '100', quantity: '1e2' }, t)).toBeNull();
+});
+
 test('board and part lengths reach 15 m while the limits still reject beyond it', () => {
   expect(MAX_PART_LENGTH).toBe(15000);
   expect(MAX_BOARD_LENGTH).toBe(15000);

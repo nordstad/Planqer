@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { normalizeBoardParts } from './boardParts';
+import { isValidSheetQuantity, MAX_SHEET_PART_QUANTITY } from './validators';
 import { resolveCatalogueCountry } from './catalogueChoice';
 import { createLocalTransport } from '../runtime/localTransport';
 
@@ -248,7 +249,10 @@ export const normalizeSheetParts = (parts) => {
 
     const width = parseFloat(part.width);
     const height = parseFloat(part.height);
-    const quantity = parseInt(part.quantity, 10);
+    if (!isValidSheetQuantity(part.quantity)) {
+      throw new Error(`Sheet part ${index + 1} quantity must be a whole number between 1 and ${MAX_SHEET_PART_QUANTITY}`);
+    }
+    const quantity = Number(part.quantity);
     if (
       Number.isFinite(width) && width > 0
       && Number.isFinite(height) && height > 0

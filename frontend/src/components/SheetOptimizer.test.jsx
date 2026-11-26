@@ -153,8 +153,31 @@ it('keeps a new part row clean until a field is touched and shows errors below t
   expect(screen.getByLabelText('Name, item 1')).not.toHaveClass('is-required-empty');
 
   fireEvent.change(screen.getByLabelText('Quantity, item 1'), { target: { value: '0' } });
-  const error = await screen.findByText('Qty must be a number');
+  const error = await screen.findByText('Quantity must be a positive whole number');
   expect(error.closest('tr')).toHaveClass('sheet-part-error-row');
+});
+
+it.each(['1.5', '0', '-1', '1001', '', '1e309'])('blocks sheet quantity %j even on form submission', async (value) => {
+  renderSheetOptimizer();
+  const quantity = screen.getByLabelText('Quantity, item 1');
+  fireEvent.change(quantity, { target: { value } });
+  await waitFor(() => expect(screen.getByRole('button', { name: /plan the sheet cuts/i })).toBeDisabled());
+  fireEvent.submit(quantity.closest('form'));
+  expect(optimizeSheetCutting).not.toHaveBeenCalled();
+  expect(quantity).toHaveValue(value === '' || !Number.isFinite(Number(value)) ? null : Number(value));
+  expect(screen.getByText('Σ').closest('tr').children[2]).toHaveTextContent('6');
+});
+
+it.each(['1', '1000', '1e2'])('keeps valid sheet quantity %j in the summary and planning input', async (value) => {
+  renderSheetOptimizer();
+  const quantity = screen.getByLabelText('Quantity, item 1');
+  fireEvent.change(quantity, { target: { value } });
+  expect(screen.getByText('Σ').closest('tr').children[2]).toHaveTextContent(String(Number(value) + 6));
+  fireEvent.submit(quantity.closest('form'));
+  await waitFor(() => expect(optimizeSheetCutting).toHaveBeenCalledWith(
+    expect.arrayContaining([expect.objectContaining({ quantity: value })]),
+    '1200', '2500', '3', '', undefined, true,
+  ));
 });
 
 it('shows the sheet material cost using the configured VAT basis', async () => {

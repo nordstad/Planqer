@@ -1,6 +1,11 @@
-export const normalizeBoardParts = (parts) => parts.reduce((normalized, part) => {
+import { isValidBoardQuantity, MAX_PART_QUANTITY } from './validators';
+
+export const normalizeBoardParts = (parts) => parts.reduce((normalized, part, index) => {
   const length = parseFloat(part.length);
-  const quantity = parseInt(part.quantity, 10);
+  if (!isValidBoardQuantity(part.quantity)) {
+    throw new Error(`Board part ${index + 1} quantity must be a whole number between 1 and ${MAX_PART_QUANTITY}`);
+  }
+  const quantity = Number(part.quantity);
   if (Number.isFinite(length) && Number.isFinite(quantity)) {
     normalized.push({
       name: String(part.name || '').trim(),
