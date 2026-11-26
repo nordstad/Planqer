@@ -32,6 +32,7 @@ from partsible.catalogue.local import (
 from partsible.catalogue.search import search_products
 from partsible.cutlist_services import run_cutlist_3d, run_cutlist_step
 from partsible.errors import PartsibleError
+from partsible.saved_backup import validate_records
 from partsible.saved_diagrams import (
     render_saved_board_diagram,
     render_saved_sheet_layout,
@@ -337,6 +338,7 @@ def _model_cutlist(run: Callable, failure: str) -> Callable[[dict, bytes], dict]
 
 
 OPERATIONS: dict[str, Callable[[dict], dict | list]] = {
+    "backup_records": validate_records,
     "cutting_plan": _cutting_plan,
     "sheet_optimization": _sheet_optimization,
     "tile_layout": _tile_layout,

@@ -1,10 +1,10 @@
 import { defineConfig } from '@playwright/test';
 import base from './playwright.config.js';
 
-// Native IndexedDB transaction semantics, without starting the solver runtime.
+// Native IndexedDB atomicity plus real-worker saved-record validation.
 export default defineConfig({
   ...base,
-  testMatch: 'backup-atomicity.e2e.spec.js',
+  testMatch: /backup-(atomicity|validation)\.e2e\.spec\.js/,
   projects: [
     { name: 'chromium', use: { browserName: 'chromium' } },
     { name: 'firefox', use: { browserName: 'firefox' } },

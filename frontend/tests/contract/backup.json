@@ -1,0 +1,91 @@
+{
+  "app": "partsible-lite",
+  "format": 1,
+  "stores": {
+    "groups": [{
+      "id": "00000000-0000-4000-8000-000000000010",
+      "name": "Kitchen",
+      "created_at": "2026-11-26T10:00:00Z",
+      "updated_at": "2026-11-26T10:00:00Z",
+      "spare_margin_percent": 10
+    }],
+    "projects": [{
+      "id": "board",
+      "name": "Named shelves",
+      "project_group_id": "00000000-0000-4000-8000-000000000010",
+      "created_at": "2026-11-26T10:00:00Z",
+      "updated_at": "2026-11-26T10:00:00Z",
+      "parts_data": [{"name": "Rail", "length": 600, "quantity": 2}],
+      "board_lengths": [2400],
+      "saw_blade_width": 3,
+      "optimization_result": {"cut_list": [[600, 600]], "board_lengths_used": [2400]},
+      "product": {"type": "board", "name": "Spruce", "catalogue_id": "no-longer-in-catalogue"},
+      "board_costs": {
+        "currency": "SEK",
+        "board_costs": {"2400": {"price_per_meter": 10, "price_per_board": 24}}
+      },
+      "cutlist_image": "data:image/svg+xml;base64,PHN2Zy8+",
+      "has_svg_image": true,
+      "metadata": {"source": "Kept exactly"}
+    }],
+    "sheet_projects": [{
+      "id": "sheet",
+      "name": "Cabinet",
+      "created_at": "2026-11-26T10:00:00Z",
+      "updated_at": "2026-11-26T10:00:00Z",
+      "parts_data": [{"name": "Side", "width": 400, "height": 600, "quantity": 2}],
+      "sheet_width": 1220,
+      "sheet_height": 2440,
+      "kerf_width": 3,
+      "optimization_result": {"sheets": []},
+      "pricing": {"price_per_unit": 300, "currency": "SEK"}
+    }],
+    "tile_projects": [{
+      "id": "tile",
+      "name": "Splashback",
+      "created_at": "2026-11-26T10:00:00Z",
+      "updated_at": "2026-11-26T10:00:00Z",
+      "surface_data": {"width": 1800, "height": 600, "cutouts": []},
+      "tile_data": {"width": 300, "height": 300, "material_type": "ceramic", "thickness": 8},
+      "bond_data": {"pattern": "stack", "joint_width": 3},
+      "options_data": {"waste_percent": 10},
+      "layout_result": {"tiles": [], "warnings": []}
+    }],
+    "wallpaper_projects": [{
+      "id": "wallpaper",
+      "name": "Hall",
+      "created_at": "2026-11-26T10:00:00Z",
+      "updated_at": "2026-11-26T10:00:00Z",
+      "wallpaper_data": {
+        "name": "Willow", "manufacturer": "Example",
+        "roll_width": 530, "roll_length": 10050,
+        "currency": "SEK", "vat_rate": 25, "prices_include_vat": true
+      },
+      "room_data": {
+        "walls": [{
+          "name": "North",
+          "width_top": 1800, "width_middle": 1800, "width_bottom": 1800,
+          "height_left": 2400, "height_middle": 2400, "height_right": 2400,
+          "confirmed": true
+        }],
+        "corners": []
+      },
+      "options_data": {"start_style": "recommended", "spare_margin": 10},
+      "plan_result": null,
+      "progress_data": {"notes": "Keep this"}
+    }],
+    "settings": [{
+      "id": "00000000-0000-4000-8000-000000000002",
+      "default_board_lengths": [3000, 3600, 5000],
+      "default_currency": "SEK",
+      "preferred_language": null,
+      "catalogue_country": "auto"
+    }],
+    "catalogue_entries": [{
+      "id": "se-board-example",
+      "product_id": "se-board-example",
+      "hidden": true,
+      "data": null
+    }]
+  }
+}

@@ -755,7 +755,7 @@ Object.assign(locale, {
       importFailed: {
         notBackup: "That file is not a Partsible Lite backup.",
         tooNew: "That backup was made by a newer version of Lite. Reload the page to update, then try again.",
-        invalid: "That backup file is damaged, so nothing was imported.",
+        invalid: "That backup contains invalid or unsupported saved data or missing project links. Nothing was imported. Keep the original file and try another backup.",
         failed: "Could not import the backup.",
       },
     },

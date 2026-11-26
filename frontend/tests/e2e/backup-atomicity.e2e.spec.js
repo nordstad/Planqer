@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
 
 // Exercise the real import and IndexedDB adapter, never the user's database.
+// Sparse synthetic records intentionally stub the Python validation call here:
+// tests/parity/backup.parity.test.js exercises the real record contracts.
 const runImport = async (page, scenario) => {
   await page.route('**/api/**', (route) => route.fulfill({ json: { needs_setup: false } }));
   await page.goto('/');
@@ -64,7 +66,7 @@ const runImport = async (page, scenario) => {
       try {
         counts = await importBackup(db, JSON.stringify({
           app: 'partsible-lite', format: BACKUP_FORMAT, stores: incoming,
-        }));
+        }), async () => ({ status: 200 }));
         events.push('resolved');
       } catch (error) {
         failure = { name: error.name, message: error.message };
@@ -80,7 +82,7 @@ const runImport = async (page, scenario) => {
       const reopened = (await exportBackup(db)).stores;
       const retryCounts = retry ? await importBackup(db, JSON.stringify({
         app: 'partsible-lite', format: BACKUP_FORMAT, stores: incoming,
-      })) : null;
+      }), async () => ({ status: 200 })) : null;
       const retried = retry ? (await exportBackup(db)).stores : null;
       return { before, after, reopened, incoming, counts, failure, writes, successes, completes, aborts, transactions, events, retryCounts, retried };
     } finally {

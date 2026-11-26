@@ -86,7 +86,7 @@ describe('import', () => {
   it.each([
     ['notBackup', /not a Partsible Lite backup/],
     ['tooNew', /newer version/],
-    ['invalid', /damaged/],
+    ['invalid', /invalid or unsupported saved data/],
   ])('explains a %s file in words', async (code, message) => {
     backupImport.mockRejectedValue(Object.assign(new Error('x'), { name: 'BackupError', code }));
     await renderPanel();

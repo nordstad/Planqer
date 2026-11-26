@@ -843,7 +843,7 @@ Object.assign(locale, {
       importFailed: {
         notBackup: "Den filen är inte en säkerhetskopia från Partsible Lite.",
         tooNew: "Säkerhetskopian är gjord med en nyare version av Lite. Ladda om sidan för att uppdatera och försök igen.",
-        invalid: "Säkerhetskopian är skadad, så inget importerades.",
+        invalid: "Säkerhetskopian innehåller ogiltiga sparade data, data som inte stöds eller saknade projektkopplingar. Inget importerades. Behåll originalfilen och försök med en annan säkerhetskopia.",
         failed: "Kunde inte importera säkerhetskopian.",
       },
     },

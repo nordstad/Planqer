@@ -721,6 +721,12 @@ in one transaction across the affected stores. A failed or aborted import must
 leave both existing records and unrelated work unchanged; successful individual
 write requests are not evidence of a committed restore. This atomic-write rule
 does not replace record validation or explicit conflict/replacement confirmation.
+Before writing, imports reject unsupported formats, duplicate IDs within a store,
+invalid saved-record shapes, and missing project-group references in the merged
+library. Validation preserves the original supported metadata rather than
+normalizing it or re-solving plans. Rejection leaves storage unchanged and tells
+the user to keep the original file and try another backup. Matching-ID preview,
+replacement confirmation, and revalidation after relevant changes remain separate.
 
 Defaults are editable and saveable only after a successful read for the current
 user. A pending read shows the existing loader; a failed read shows the load error
