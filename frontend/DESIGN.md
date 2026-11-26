@@ -574,6 +574,13 @@ The review step and saved-plan page render the same document; print follows
 that same order. Editing remains an explicit route back to the planner, never
 an inline alteration of a saved result.
 
+Saved board, sheet, tile, and wallpaper routes expose only the current route's
+document, title, Print, and Modify actions. Changing the plan ID retires the
+previous document immediately and shows the existing loading state; missing
+state is reset for the new request. Obsolete success/failure responses cannot
+replace the current document or its loading/missing state, including A→B→A
+navigation. This guards response eligibility, not network cancellation.
+
 A board plan's document and printout include **Parts to cut** (name, length,
 and quantity) before the cutting diagram. This is distinct from the project
 shopping list: the former is the job's cut specification, while the latter
