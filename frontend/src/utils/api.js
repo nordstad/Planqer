@@ -578,59 +578,58 @@ export const downloadProjectImage = async (projectId, projectType) => {
 const catalogueEntryUrl = (productId, suffix = '') => `${API_URL}/api/admin/catalogue/${encodeURIComponent(productId)}${suffix}`;
 
 /* The catalogue the admin is looking at: the same country the picker shows. */
-const catalogueView = () => {
-  const catalogue = resolveCatalogueCountry();
+const catalogueView = (catalogue = resolveCatalogueCountry()) => {
   return catalogue ? { catalogue } : undefined;
 };
 
-export const getAdminCatalogue = async () => {
+export const getAdminCatalogue = async (country) => {
   try {
-    const response = await http.get(`${API_URL}/api/admin/catalogue`, { params: catalogueView() });
+    const response = await http.get(`${API_URL}/api/admin/catalogue`, { params: catalogueView(country) });
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
   }
 };
 
-export const createCatalogueEntry = async (entry) => {
+export const createCatalogueEntry = async (entry, country) => {
   try {
-    const response = await http.post(`${API_URL}/api/admin/catalogue`, entry, { params: catalogueView() });
+    const response = await http.post(`${API_URL}/api/admin/catalogue`, entry, { params: catalogueView(country) });
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
   }
 };
 
-export const updateCatalogueEntry = async (productId, details) => {
+export const updateCatalogueEntry = async (productId, details, country) => {
   try {
-    const response = await http.put(catalogueEntryUrl(productId), details, { params: catalogueView() });
+    const response = await http.put(catalogueEntryUrl(productId), details, { params: catalogueView(country) });
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
   }
 };
 
-export const hideCatalogueEntry = async (productId) => {
+export const hideCatalogueEntry = async (productId, country) => {
   try {
-    const response = await http.post(catalogueEntryUrl(productId, '/hide'), undefined, { params: catalogueView() });
+    const response = await http.post(catalogueEntryUrl(productId, '/hide'), undefined, { params: catalogueView(country) });
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
   }
 };
 
-export const restoreCatalogueEntry = async (productId) => {
+export const restoreCatalogueEntry = async (productId, country) => {
   try {
-    const response = await http.post(catalogueEntryUrl(productId, '/restore'), undefined, { params: catalogueView() });
+    const response = await http.post(catalogueEntryUrl(productId, '/restore'), undefined, { params: catalogueView(country) });
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
   }
 };
 
-export const resetCatalogueEntry = async (productId) => {
+export const resetCatalogueEntry = async (productId, country) => {
   try {
-    await http.delete(catalogueEntryUrl(productId), { params: catalogueView() });
+    await http.delete(catalogueEntryUrl(productId), { params: catalogueView(country) });
   } catch (error) {
     throw new Error(extractErrorMessage(error));
   }

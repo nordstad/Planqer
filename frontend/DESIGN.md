@@ -716,6 +716,15 @@ one place in the system where `01 / 02 / 03` is earned rather than decoration.
 
 ### Blocked Actions and Recovery
 
+The admin catalogue's resolved country owns its rows, vocabulary, edit/add drafts,
+suggestion panels, and delete/revert confirmations. Changing that country retires
+those together and shows the existing loader, while keeping the country selector
+available. Search and filter choices persist. Rows and mutations become available
+only after the matching list and vocabulary load. Requests and mutations capture
+their country; obsolete load/mutation successes and failures cannot replace
+current data, close a new country's form, or end its pending state. Already-sent
+mutations may finish in their original country; this is not network cancellation.
+
 A disabled primary action must state the requirement that blocks it at the point
 of action and provide a direct route to fix it. In board cutting, no required
 parts shows a status beside the Required parts heading and a “Go to required

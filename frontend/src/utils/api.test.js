@@ -1,12 +1,18 @@
 import axios from 'axios';
 import {
+  createCatalogueEntry,
+  getAdminCatalogue,
+  hideCatalogueEntry,
   normalizeSheetParts,
   optimizeCutting,
   optimizeSheetCutting,
   registerUser,
+  resetCatalogueEntry,
+  restoreCatalogueEntry,
   saveProject,
   saveSheetProject,
   serializeBoardParts,
+  updateCatalogueEntry,
 } from './api';
 import { restoreBoardParts } from './boardParts';
 
@@ -25,6 +31,42 @@ vi.mock('axios', () => {
   return {
     default: mockAxios,
   };
+});
+
+describe('admin catalogue request country', () => {
+  const operations = [
+    { name: 'list', call: getAdminCatalogue, method: 'get', args: [] },
+    { name: 'create', call: createCatalogueEntry, method: 'post', args: [{ type: 'regel' }] },
+    { name: 'update', call: updateCatalogueEntry, method: 'put', args: ['local:regel:48x98', { lengths: [3000] }] },
+    { name: 'hide', call: hideCatalogueEntry, method: 'post', args: ['local:regel:48x98'] },
+    { name: 'restore', call: restoreCatalogueEntry, method: 'post', args: ['local:regel:48x98'] },
+    { name: 'reset', call: resetCatalogueEntry, method: 'delete', args: ['local:regel:48x98'] },
+  ];
+  beforeEach(() => {
+    localStorage.clear();
+    axios.get.mockResolvedValue({ data: [] });
+    axios.delete.mockResolvedValue({});
+  });
+  afterEach(() => localStorage.clear());
+
+  describe.each(operations)('$name', ({ call, method, args }) => {
+    it.each(['SE', 'NO', 'generic', null])('uses captured country %j instead of the current choice', async (country) => {
+      localStorage.setItem('partsible-catalogue-country-v1', country === 'NO' ? 'SE' : 'NO');
+      await call(...args, country);
+      expect(axios[method].mock.calls.at(-1).at(-1)).toEqual({
+        params: country ? { catalogue: country } : undefined,
+      });
+    });
+
+    it('keeps selection-derived behavior when the country argument is omitted', async () => {
+      localStorage.setItem('partsible-catalogue-country-v1', 'SE');
+      await call(...args);
+      expect(axios[method].mock.calls.at(-1).at(-1)).toEqual({ params: { catalogue: 'SE' } });
+      localStorage.setItem('partsible-catalogue-country-v1', 'NO');
+      await call(...args);
+      expect(axios[method].mock.calls.at(-1).at(-1)).toEqual({ params: { catalogue: 'NO' } });
+    });
+  });
 });
 
 beforeEach(() => {
