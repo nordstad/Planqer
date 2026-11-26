@@ -16,25 +16,29 @@ const items = [
 ];
 
 describe('parsing what an admin types', () => {
-  it('reads number lists, ignoring junk', () => {
-    expect(parseNumberList('2400, 3000;3600  abc -5 0')).toEqual([2400, 3000, 3600]);
+  it('reads complete whole-mm lists without dropping or rounding invalid values', () => {
+    expect(parseNumberList('2400, 3000;3600')).toEqual([2400, 3000, 3600]);
+    for (const value of ['2400, junk', '2400abc', '2400.5', '-5', '0']) {
+      expect(() => parseNumberList(value)).toThrow();
+    }
   });
   it('reads text lists', () => {
     expect(parseTextList('C14, C24\nC30;')).toEqual(['C14', 'C24', 'C30']);
   });
   it('reads sheet formats written with x or ×', () => {
-    expect(parseFormats('1220x2440, 1200 × 2500, 1.5x2')).toEqual([
-      { width: 1220, height: 2440 }, { width: 1200, height: 2500 }, { width: 1.5, height: 2 },
+    expect(parseFormats('1220x2440, 1200 × 2500')).toEqual([
+      { width: 1220, height: 2440 }, { width: 1200, height: 2500 },
     ]);
-    expect(parseFormats('nonsense')).toEqual([]);
+    expect(() => parseFormats('nonsense')).toThrow();
+    expect(() => parseFormats('1220x2440, 1.5x2')).toThrow();
   });
 });
 
 describe('form payloads', () => {
   it('builds a new board entry', () => {
-    const form = { ...emptyForm('board'), type: 'regel', thickness: '48', width: '98,5', lengths: '2400 3000', maxLength: '6000', grades: 'C24', sources: 'https://a.se', note: ' hi ' };
+    const form = { ...emptyForm('board'), type: 'regel', thickness: '48', width: '98', lengths: '2400 3000', maxLength: '6000', grades: 'C24', sources: 'https://a.se', note: ' hi ' };
     expect(newEntryPayload(form)).toEqual({
-      type: 'regel', thickness: 48, width: 98.5, lengths: [2400, 3000], max_length: 6000, formats: [],
+      type: 'regel', thickness: 48, width: 98, lengths: [2400, 3000], max_length: 6000, formats: [],
       species: [], treatments: [], grades: ['C24'], profiles: [], sources: ['https://a.se'], note: 'hi',
     });
   });

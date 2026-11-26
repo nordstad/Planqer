@@ -141,6 +141,9 @@ test('all-store replacement requires review and approval; cancel writes nothing;
   await review.getByRole('checkbox').check();
   await review.getByRole('button', { name: 'Replace and restore' }).click();
   await expect(page.getByText('Restored 4 plans and 1 projects.')).toBeVisible();
+  await expect(page.locator('.proj-card')).toHaveCount(2);
+  await expect(page.locator('.proj-card').filter({ hasText: fixture.stores.groups[0].name })).toBeVisible();
+  await expect(page.locator('.proj-card').filter({ hasText: 'Unrelated work' })).toBeVisible();
   const after = await database(page, 'read');
   for (const [store, records] of Object.entries(fixture.stores)) {
     for (const record of records) expect(after[store]).toContainEqual(record);

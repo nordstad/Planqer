@@ -11,7 +11,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SAW_KERF_MIN, SAW_KERF_MAX, MAX_SHEET_PART_QUANTITY, isValidSheetQuantity } from '../utils/validators';
+import { SAW_KERF_MIN, MAX_SHEET_PART_QUANTITY, isValidSheetQuantity } from '../utils/validators';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import CatalogPage from './CatalogPage';
 import ConfirmDialog from './ConfirmDialog';
@@ -23,7 +23,8 @@ import Disclosure from './Disclosure';
 import FormField, { SectionCard, SectionStatus } from './FormField';
 import SavePlanCard from './SavePlanCard';
 import MovePlanMenu from './MovePlanMenu';
-import { useProjectChoice } from '../hooks/useProjectChoice';
+import { useProjectChoice, rememberProjectChoice } from '../hooks/useProjectChoice';
+import { millimetresError } from '../utils/measurementInput';
 import ProductPicker from './ProductPicker';
 import { materialLabel } from '../utils/materialLabel';
 import {
@@ -69,10 +70,10 @@ const validateSheetParts = (parts, t) => parts.map((part) => {
   const quantity = Number(part.quantity);
 
    if (!part.width || isNaN(width) || width < 1) errors.width = t('tileUi.positiveWidth');
-  else if (width > 5000) errors.width = t('tileUi.cannotExceed', { label: t('workflow.width'), max: '5000 mm' });
+   else if (millimetresError(part.width, 1, 5000, t)) errors.width = millimetresError(part.width, 1, 5000, t);
 
    if (!part.height || isNaN(height) || height < 1) errors.height = t('tileUi.positiveHeight');
-  else if (height > 5000) errors.height = t('tileUi.cannotExceed', { label: t('workflow.height'), max: '5000 mm' });
+   else if (millimetresError(part.height, 1, 5000, t)) errors.height = millimetresError(part.height, 1, 5000, t);
 
   if (!isValidSheetQuantity(part.quantity)) {
     errors.quantity = Number.isInteger(quantity) && quantity > MAX_SHEET_PART_QUANTITY
@@ -145,25 +146,14 @@ const SheetOptimizer = () => {
   }, [user]);
 
   useEffect(() => {
-    const width = parseFloat(debouncedSheetWidth);
-    const height = parseFloat(debouncedSheetHeight);
-    const kerf = parseFloat(debouncedKerfWidth);
-
      // An empty field is reported as missing on its card, not as an error.
-     setInputErrors({
-       sheetWidth: isBlank(debouncedSheetWidth) ? "" : isNaN(width) || width < 100
-         ? t('tileUi.positiveWidth')
-         : width > 10000 ? t('tileUi.cannotExceed', { label: t('workflow.width'), max: '10 000 mm' }) : "",
-       sheetHeight: isBlank(debouncedSheetHeight) ? "" : isNaN(height) || height < 100
-         ? t('tileUi.positiveHeight')
-         : height > 10000 ? t('tileUi.cannotExceed', { label: t('workflow.height'), max: '10 000 mm' }) : "",
-       kerfWidth: isBlank(debouncedKerfWidth) ? "" : isNaN(kerf) || kerf < SAW_KERF_MIN
-          ? t('modelUi.kerfZero')
-          : kerf > 50 ? t('modelUi.kerfWide') : "",
-        sheetThickness: sheetFieldsTouched && !isBlank(sheetThickness) && (isNaN(parseFloat(sheetThickness)) || parseFloat(sheetThickness) <= 0)
-          ? t('auditUi.sheetThicknessRequired') : "",
+       setInputErrors({
+         sheetWidth: isBlank(debouncedSheetWidth) ? '' : millimetresError(debouncedSheetWidth, 100, 10000, t),
+         sheetHeight: isBlank(debouncedSheetHeight) ? '' : millimetresError(debouncedSheetHeight, 100, 10000, t),
+         kerfWidth: isBlank(debouncedKerfWidth) ? '' : millimetresError(debouncedKerfWidth, 1, 50, t),
+         sheetThickness: isBlank(sheetThickness) ? '' : millimetresError(sheetThickness, 1, Number.MAX_SAFE_INTEGER, t),
       });
-    }, [debouncedSheetWidth, debouncedSheetHeight, debouncedKerfWidth, sheetFieldsTouched, sheetThickness, t]);
+    }, [debouncedSheetWidth, debouncedSheetHeight, debouncedKerfWidth, sheetWidth, sheetHeight, kerfWidth, sheetFieldsTouched, sheetThickness, t]);
 
   // This page requires sign-in, so project groups and saved plans are always available
   useEffect(() => {
@@ -177,9 +167,9 @@ const SheetOptimizer = () => {
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
     if (urlParams.get('import') !== '3d') return;
-    const importData = localStorage.getItem('partsible-3d-sheet-import');
-    if (!importData) return;
     try {
+      const importData = localStorage.getItem('partsible-3d-sheet-import');
+      if (!importData) throw new Error('Missing cutlist');
       const data = JSON.parse(importData);
       if (data.parts && data.source === 'model-cutlist-sheet') {
         setParts(data.parts.map((part, index) => ({
@@ -195,8 +185,8 @@ const SheetOptimizer = () => {
         localStorage.removeItem('partsible-3d-sheet-import');
         navigate(location.pathname, { replace: true });
       }
-    } catch (err) {
-      console.error('Failed to import 3D sheet cutlist data:', err);
+    } catch {
+      setApiError(t('measurementUi.handoffReadFailed'));
     }
   }, [location.pathname, location.search, navigate]);
 
@@ -301,7 +291,9 @@ const SheetOptimizer = () => {
     if (!section) return;
     section.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
     const fields = [...section.querySelectorAll('input:not([type=checkbox]):not([type=radio]), select')];
-    (fields.find((field) => !field.value) || fields[0])?.focus({ preventScroll: true });
+    (fields.find((field) => field.getAttribute('aria-invalid') === 'true')
+      || fields.find((field) => field.getAttribute('aria-required') === 'true' && !field.value)
+      || fields[0])?.focus({ preventScroll: true });
   }, 0);
   const toParts = { name: t('formUi.goTo', { name: t('workflow.partsToCut') }), go: () => goToSection('sheet-parts') };
   const toSheet = { name: t('formUi.goTo', { name: t('ui.sheet') }), go: () => goToSection('sheet-stock') };
@@ -318,14 +310,11 @@ const SheetOptimizer = () => {
     e.preventDefault();
     setApiError("");
      const currentParts = validateSheetParts(parts, t);
-     const currentWidth = parseFloat(sheetWidth);
-     const currentHeight = parseFloat(sheetHeight);
-     const currentKerf = parseFloat(kerfWidth);
      const currentErrors = {
-       sheetWidth: !sheetWidth || isNaN(currentWidth) || currentWidth < 100 || currentWidth > 10000 ? t('tileUi.positiveWidth') : '',
-       sheetHeight: !sheetHeight || isNaN(currentHeight) || currentHeight < 100 || currentHeight > 10000 ? t('tileUi.positiveHeight') : '',
-       kerfWidth: !kerfWidth || isNaN(currentKerf) || currentKerf < SAW_KERF_MIN || currentKerf > SAW_KERF_MAX ? t('modelUi.kerfZero') : '',
-       sheetThickness: inputErrors.sheetThickness,
+        sheetWidth: millimetresError(sheetWidth, 100, 10000, t),
+        sheetHeight: millimetresError(sheetHeight, 100, 10000, t),
+        kerfWidth: millimetresError(kerfWidth, 1, 50, t),
+        sheetThickness: millimetresError(sheetThickness, 1, Number.MAX_SAFE_INTEGER, t),
      };
      setInputErrors(currentErrors);
      if (currentParts.some(Boolean) || currentErrors.sheetWidth || currentErrors.sheetHeight || currentErrors.kerfWidth || currentErrors.sheetThickness) return;
@@ -403,7 +392,7 @@ const SheetOptimizer = () => {
     try {
       const moved = await movePlanToProject({ ...saved, projectType: 'sheet' }, group.id);
       setSaved(moved);
-      localStorage.setItem('partsible.lastProjectGroup', group.id);
+      rememberProjectChoice(group.id);
       return true;
     } catch (error) {
       setApiError(t('projectUi.moveFailed', { message: error.message }));
@@ -568,7 +557,7 @@ const SheetOptimizer = () => {
                     type="number"
                     step="0.1"
                     min={SAW_KERF_MIN}
-                    max={SAW_KERF_MAX}
+                    max="50"
                     value={kerfWidth}
                     onChange={(e) => setSheetField(setKerfWidth)(e.target.value)}
                     className={`form-input dimension-input ${inputErrors.kerfWidth ? 'form-input-error' : ''}`}

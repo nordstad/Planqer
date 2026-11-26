@@ -23,7 +23,7 @@ describe('SheetPlanPage', () => {
   });
 
   it('shows not found when loading fails', async () => {
-    getSheetProject.mockRejectedValue(new Error('missing'));
+    getSheetProject.mockRejectedValue(Object.assign(new Error('missing'), { status: 404 }));
     renderPage();
     expect(await screen.findByText('This plan no longer exists.')).toBeInTheDocument();
   });

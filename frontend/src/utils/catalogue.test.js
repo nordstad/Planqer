@@ -60,6 +60,13 @@ beforeEach(() => {
 });
 
 describe('loading', () => {
+  it('uses the fresh catalogue even when the optional cache cannot be written', async () => {
+    getCatalogue.mockResolvedValue({ data: catalogue, etag: '"fresh"' });
+    const denial = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('Quota', 'QuotaExceededError');
+    });
+    try { expect(await loadCatalogue('SE')).toBe(catalogue); } finally { denial.mockRestore(); }
+  });
   it('fetches once and stores the copy with its ETag', async () => {
     getCatalogue.mockResolvedValue({ data: catalogue, etag: '"abc"' });
 

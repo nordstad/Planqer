@@ -212,7 +212,8 @@ describe('AdminCatalogue country identity', () => {
     const state = countrySetup();
     await act(async () => state.lists[0].reject(new Error('Current load failed')));
     expect(screen.getByRole('alert')).toHaveTextContent('Current load failed');
-    expect(screen.getByRole('button', { name: 'Add product' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'Add product' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeEnabled();
     changeCountry('NO');
     expectCountryPending();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();

@@ -164,7 +164,9 @@ MODELS = {
 def checked(model, value):
     # Strict JSON validation accepts serialized UUIDs/dates/tuples but does not
     # coerce strings to numbers. The original JSON, not these values, is stored.
-    return TypeAdapter(model).validate_json(json.dumps(value), strict=True)
+    return TypeAdapter(model).validate_json(
+        json.dumps(value), strict=True, context={"stored_record": True}
+    )
 
 
 def result_fields(model, value):

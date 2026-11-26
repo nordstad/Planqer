@@ -156,6 +156,30 @@ beforeEach(() => {
 });
 
 describe('cutlists step', () => {
+  it.each(['write', 'accessor'])('retains the model and offers retry when handoff storage fails (%s)', async (failure) => {
+    await readBench();
+    const previous = window.location.href;
+    const fail = () => { throw new DOMException('Denied', 'SecurityError'); };
+    const denial = failure === 'accessor' ? vi.spyOn(window, 'localStorage', 'get').mockImplementation(fail)
+      : vi.spyOn(Storage.prototype, 'setItem').mockImplementation(fail);
+    try {
+      fireEvent.click(screen.getAllByRole('button', { name: 'Plan alone' })[0]);
+      expect(screen.getByRole('alert')).toHaveTextContent(/Your model is still here/);
+      expect(screen.getByRole('heading', { name: 'Cutlists found' })).toBeInTheDocument();
+      expect(window.location.href).toBe(previous);
+      expect(screen.getAllByRole('button', { name: 'Plan alone' })[0]).toBeEnabled();
+    } finally { denial.mockRestore(); }
+  });
+
+  it.each(['stl', 'step', 'stp'])('rejects an oversized %s before previewing or uploading', async (extension) => {
+    const { container } = await renderFlow();
+    const file = new File(['synthetic'], `large.${extension}`);
+    Object.defineProperty(file, 'size', { value: 50 * 1024 * 1024 + 1 });
+    fireEvent.change(container.querySelector('input[type="file"]'), { target: { files: [file] } });
+    expect(screen.getByRole('alert')).toHaveTextContent(/no larger than 50 MB/);
+    expect(screen.getByRole('button', { name: 'Read the model' })).toBeDisabled();
+    expect(process3DCutlist).not.toHaveBeenCalled();
+  });
   it('identifies parts omitted because they could not be measured', async () => {
     process3DCutlist.mockResolvedValue({ ...benchModel, warnings: [{ name: 'Component 2', reason: 'too_small' }] });
 

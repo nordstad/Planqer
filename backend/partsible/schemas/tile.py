@@ -1,5 +1,6 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
+from partsible.measurement_inputs import MeasurementRequest
 from partsible.validation import sanitize_project_name, validate_numeric_input
 
 _VALID_BOND_PATTERNS = (
@@ -78,10 +79,10 @@ class TileBondSpec(BaseModel):
         return v
 
 
-class TileLayoutRequest(BaseModel):
+class TileLayoutRequest(MeasurementRequest):
     surface_width: float
     surface_height: float
-    cutouts: list[TileCutoutSpec] = []
+    cutouts: list[TileCutoutSpec] = Field(default_factory=list)
     tile: TileSpec
     joint: TileJointSpec = TileJointSpec()
     bond: TileBondSpec = TileBondSpec()

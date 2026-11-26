@@ -46,6 +46,12 @@ groups, and admin endpoints require authentication.
 
 ## Optimization
 
+Planning requests use **whole millimetres**, including dimensions, kerf, joints,
+gaps, offsets, and allowances. Fractional measurements are rejected with a
+validation error, not silently rounded. Prices, percentages, and ratios keep
+their existing precision. Solver geometry/results can contain fractions, and
+existing saved records and backup imports retain their historical measurements.
+
 | Endpoint | Purpose |
 | --- | --- |
 | `POST /api/cutting-plans` | 1D board cutting. Rate limited: 10/minute. |
@@ -128,8 +134,8 @@ backend.
 `GET /catalogue/?country=` returns the product types, the detail vocabularies
 and the entries for `SE`, `NO` or `generic`. Without `country` (or with one it
 doesn't know) it uses the instance default, `PARTSIBLE_CATALOGUE_COUNTRY`, and is
-generic, with no entries, when that is unset. Saved board and sheet plans accept an
-optional `product` snapshot on create and update; it is stored and returned
+generic, with no entries, when that is unset. Saved board and sheet plans accept
+an optional `product` snapshot on create and update; it is stored and returned
 as given, and `material_type` stays a readable label for older clients.
 
 `GET /catalogue/products?q=&kind=&id=&limit=&lang=&country=` searches the same

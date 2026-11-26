@@ -1,3 +1,5 @@
+import { isWholeMillimetres, millimetresError } from './measurementInput';
+
 // These limits mirror the numeric contracts in backend/partsible/validation.py
 // and backend/partsible/schemas/*.py. All dimensions are millimetres. Board and
 // part lengths reach 15 m (long glulam); sheet sides stay at 10 m.
@@ -15,20 +17,22 @@ const isValidQuantity = (value, max) => (
 );
 export const isValidBoardQuantity = (value) => isValidQuantity(value, MAX_PART_QUANTITY);
 export const isValidSheetQuantity = (value) => isValidQuantity(value, MAX_SHEET_PART_QUANTITY);
-export const SAW_KERF_MIN = 0.1;
+export const SAW_KERF_MIN = 1;
 export const SAW_KERF_MAX = 100;
 
 const message = (t, key, vars) => (t ? t(key, vars) : key);
 
 export const validatePartFields = (part, t) => {
   const errors = {};
-  const length = parseFloat(part.length);
+  const length = Number(part.length);
   const quantity = Number(part.quantity);
 
   if (isNaN(length) || length < MIN_PART_LENGTH) {
     errors.length = message(t, 'validation.positiveLength');
   } else if (length > MAX_PART_LENGTH) {
     errors.length = message(t, 'validation.maxLength', { max: MAX_PART_LENGTH });
+  } else if (!isWholeMillimetres(part.length)) {
+    errors.length = millimetresError(part.length, MIN_PART_LENGTH, MAX_PART_LENGTH, t);
   }
   if (!isValidBoardQuantity(part.quantity)) {
     errors.quantity = Number.isInteger(quantity) && quantity > MAX_PART_QUANTITY
@@ -45,7 +49,7 @@ export const validateParts = (parts, t) => parts.map((part) => {
 
 export const validateBoards = (boards, t) => {
   return boards.map(board => {
-    const length = parseFloat(board);
+    const length = Number(board);
     
     if (isNaN(length) || length < MIN_BOARD_LENGTH) {
       return message(t, 'validation.positiveLength');
@@ -53,6 +57,7 @@ export const validateBoards = (boards, t) => {
     if (length > MAX_BOARD_LENGTH) {
       return message(t, 'validation.maxLength', { max: MAX_BOARD_LENGTH });
     }
+    if (!isWholeMillimetres(board)) return millimetresError(board, MIN_BOARD_LENGTH, MAX_BOARD_LENGTH, t);
     return null;
   });
 };
@@ -64,6 +69,7 @@ export const validatePartLength = (length, maxLength = MAX_PART_LENGTH, t) => {
   if (length > maxLength) {
     return message(t, 'validation.maxLength', { max: maxLength });
   }
+  if (!isWholeMillimetres(length)) return millimetresError(length, MIN_PART_LENGTH, maxLength, t);
   return null;
 };
 
@@ -74,5 +80,6 @@ export const validateBoardLength = (length, maxLength = MAX_BOARD_LENGTH, t) => 
   if (length > maxLength) {
     return message(t, 'validation.maxLength', { max: maxLength });
   }
+  if (!isWholeMillimetres(length)) return millimetresError(length, MIN_BOARD_LENGTH, maxLength, t);
   return null;
 };

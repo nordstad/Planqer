@@ -21,6 +21,7 @@ const FormField = ({ label, unit: unitOverride, required = false, optional = fal
   // Optional fields get their own look (dashed edge, no recessed fill) on top of the "(optional)" label.
   const input = cloneElement(control, {
     id,
+    ...(unit === 'mm' && control.props.type === 'number' ? { step: '1' } : {}),
     ...(required ? { 'aria-required': true } : {}),
     ...(optional ? { className: `${control.props.className || ''} is-optional`.trim() } : {}),
   });

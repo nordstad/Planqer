@@ -1,6 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { materialRowsForPurchase, summarizeMaterialPricing } from '../utils/materialList';
-import { materialLabel } from '../utils/materialLabel';
+import { materialRowsForPurchase, purchaseMaterialLabel, summarizeMaterialPricing } from '../utils/materialList';
 
 const ProjectShoppingList = ({ projects, spareMargin = 10 }) => {
   const { t } = useTranslation();
@@ -29,7 +28,7 @@ const ProjectShoppingList = ({ projects, spareMargin = 10 }) => {
             <tbody>
               {values.map((row, index) => (
                 <tr key={`${row.material}-${row.size}-${row.pricePerUnit ?? ''}-${row.currency ?? ''}-${index}`}>
-                  <td className="shopping-stock">{materialLabel(row.material, t)}</td>
+                  <td className="shopping-stock">{purchaseMaterialLabel(row, t)}</td>
                   <td>{row.size.replace(' mm', '')}</td>
                   <td className="shopping-buy"><strong>{row.quantityToBuy}</strong></td>
                   {pricing.hasPrices && <>

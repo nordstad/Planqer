@@ -1,4 +1,31 @@
 const locale = {
+  passwordUi: {
+    policy: 'Använd minst 8 tecken med en stor bokstav A–Z, en liten bokstav a–z, en siffra och ett specialtecken. Högst 72 UTF-8-byte.',
+    resetFor: 'Nytt lösenord för {{email}}',
+  },
+  purchaseUi: {
+    repeat: 'Rapport {{value}} mm', offset: 'Förskjutning {{value}} mm',
+    batch: 'Batch {{value}}', straight: 'Rak mönsterpassning', half_drop: 'Halvförskjuten mönsterpassning',
+  },
+  recoveryUi: {
+    retry: 'Försök igen',
+    loadFailed: 'Planen kunde inte läsas in. Den kan fortfarande vara sparad. Försök igen.',
+    access: 'Planen kunde inte öppnas. Kontrollera att du är inloggad på rätt konto och försök igen.',
+    unknownRoute: 'Sidan kunde inte hittas.',
+    routeFailed: 'Sidan kunde inte öppnas. Ladda om för att försöka igen eller gå till startsidan. Osparade ändringar kan gå förlorade vid omladdning.',
+    home: 'Till startsidan',
+    reload: 'Ladda om',
+    workUnknown: 'Sparat arbete kunde inte kontrolleras. Det betyder inte att biblioteket är tomt.',
+  },
+  measurementUi: {
+    uploadTooLarge: 'Välj en STL-, STEP- eller STP-fil på högst 50 MB (52 428 800 byte).',
+    retryFailed: 'Rätta inställningarna eller försök igen med Planera kaplistor. Redan sparade kaplistor upprepas inte.',
+    whole: 'Ange ett helt antal millimeter, minst {{min}}. Decimaler stöds inte.',
+    range: 'Ange hela millimeter från {{min}} till {{max}}. Decimaler stöds inte.',
+    modelRounding: 'Modellens mått avrundas till närmaste hela millimeter före gruppering och planering.',
+    handoffFailed: 'Kaplistan kunde inte överföras eftersom webbläsarlagring inte är tillgänglig. Modellen finns kvar; tillåt lagring och försök med Planera separat igen.',
+    handoffReadFailed: 'Modellens kaplista kunde inte läsas. Tillåt webbläsarlagring och ladda om för att försöka igen, eller återgå till modellen och försök med Planera separat igen.',
+  },
   common: {
     language: 'Språk',
     saveSettings: 'Spara inställningar',

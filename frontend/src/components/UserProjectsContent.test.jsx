@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import UserProjectsContent from './UserProjectsContent';
 import { LanguageProvider } from '../contexts/LanguageContext';
@@ -15,6 +15,7 @@ import {
   downloadProjectImage,
   renameProjectGroup,
   movePlanToProject,
+  updateProject,
 } from '../utils/api';
 import { printProjectPlans } from '../utils/printProject';
 
@@ -161,6 +162,42 @@ it('confirms deletion of a plan on the project detail route', async () => {
   fireEvent.click(within(dialog).getByRole('button', { name: 'Delete', exact: true }));
 
   await waitFor(() => expect(deleteProject).toHaveBeenCalledWith(plan.id));
+});
+
+it('keeps the plan rename draft after failure and blocks duplicate pending commits', async () => {
+  let fail;
+  updateProject.mockReset().mockImplementationOnce(() => new Promise((_, reject) => { fail = reject; }));
+  renderDetail();
+  fireEvent.click(await screen.findByRole('button', { name: 'Rename Cut list' }));
+  const input = screen.getByLabelText('Plan name');
+  fireEvent.change(input, { target: { value: 'Draft rails' } });
+  fireEvent.keyDown(input, { key: 'Enter' });
+  fireEvent.blur(input);
+  expect(updateProject).toHaveBeenCalledTimes(1);
+  await act(async () => fail(new Error('Synthetic failure')));
+  expect(input).toHaveValue('Draft rails');
+  expect(screen.getByRole('alert')).toHaveTextContent('Synthetic failure');
+  updateProject.mockResolvedValueOnce({});
+  fireEvent.keyDown(input, { key: 'Enter' });
+  await screen.findByRole('heading', { name: 'Draft rails' });
+  expect(updateProject).toHaveBeenCalledTimes(2);
+});
+
+it('does not show a failed collection as a missing project and retries without reloading', async () => {
+  getUserProjects.mockRejectedValueOnce(new Error('Synthetic collection failure'));
+  renderDetail();
+  expect(await screen.findByRole('alert')).toHaveTextContent('Synthetic collection failure');
+  expect(screen.queryByText('That project no longer exists.')).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+  expect(await screen.findByRole('heading', { name: 'Lab' })).toBeInTheDocument();
+});
+
+it('refreshes mounted project names after a committed local restore notification', async () => {
+  renderDetail();
+  await screen.findByRole('heading', { name: 'Lab' });
+  getProjectGroups.mockResolvedValueOnce([{ ...group, name: 'Restored workshop' }]);
+  act(() => window.dispatchEvent(new Event('partsible:local-data-restored')));
+  expect(await screen.findByRole('heading', { name: 'Restored workshop' })).toBeInTheDocument();
 });
 
 it('moves a plan to another project from its accessible menu', async () => {

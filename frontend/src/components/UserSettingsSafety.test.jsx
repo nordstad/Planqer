@@ -12,7 +12,7 @@ vi.mock('../utils/api', () => ({ getUserSettings: vi.fn(), updateUserSettings: v
 vi.mock('../utils/catalogueChoice', async (original) => ({ ...(await original()), setCatalogueChoice: vi.fn() }));
 
 const defaults = {
-  default_board_lengths: [4200, 5400], default_saw_blade_width: 2.5,
+  default_board_lengths: [4200, 5400], default_saw_blade_width: 4,
   default_currency: 'EUR', default_vat_rate: 20, default_prices_include_vat: false,
   preferred_language: 'en-GB', spare_margin_percent: 5, catalogue_country: 'NO',
 };
@@ -44,7 +44,7 @@ const expectLocked = () => {
 };
 const expectDefaults = (lengths = '4200, 5400') => {
   expect(screen.getByLabelText('Default board lengths, mm')).toHaveValue(lengths);
-  expect(screen.getByLabelText('Default cut width (kerf), mm')).toHaveValue(2.5);
+  expect(screen.getByLabelText('Default cut width (kerf), mm')).toHaveValue(4);
   expect(screen.getByLabelText('Default currency')).toHaveValue('EUR');
   expect(screen.getByLabelText('VAT rate, %')).toHaveValue(20);
   expect(screen.getByLabelText('Prices include VAT')).not.toBeChecked();

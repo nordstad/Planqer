@@ -69,9 +69,9 @@ const setup = (config) => {
   </MemoryRouter>);
   return { ...view, requests, user: userEvent.setup() };
 };
-const finish = async (request, config, { failure = false, id = request.id } = {}) => {
+const finish = async (request, config, { failure = false, status = 404, id = request.id } = {}) => {
   await act(async () => {
-    if (failure) request.reject(new Error('Synthetic missing plan'));
+    if (failure) request.reject(Object.assign(new Error('Synthetic failure'), { status }));
     else request.resolve(project(config, id));
   });
 };
@@ -92,6 +92,19 @@ const expectCurrent = (id) => {
 beforeEach(() => vi.clearAllMocks());
 
 describe.each(cases)('$name saved route identity', (config) => {
+  it.each([401, 403, 500, null])('does not claim deletion after status %s and retries in place', async (status) => {
+    const { requests, user } = setup(config);
+    await finish(requests[0], config, { failure: true, status });
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      status === 401 || status === 403 ? /could not be accessed/ : /may still be saved/,
+    );
+    expect(screen.queryByText('This plan no longer exists.')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Modify' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Try again' }));
+    expectLoading();
+    await finish(requests[1], config);
+    expectCurrent('A');
+  });
   it('retires the completed document and actions while another route loads', async () => {
     const { requests, user } = setup(config);
     await finish(requests[0], config);

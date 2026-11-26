@@ -1,4 +1,31 @@
 const locale = {
+  passwordUi: {
+    policy: 'Bruk minst 8 tegn med en stor bokstav A–Z, en liten bokstav a–z, et siffer og et spesialtegn. Høyst 72 UTF-8-byte.',
+    resetFor: 'Nytt passord for {{email}}',
+  },
+  purchaseUi: {
+    repeat: 'Rapport {{value}} mm', offset: 'Forskyvning {{value}} mm',
+    batch: 'Parti {{value}}', straight: 'Rett mønstertilpasning', half_drop: 'Halvforskjøvet mønstertilpasning',
+  },
+  recoveryUi: {
+    retry: 'Prøv igjen',
+    loadFailed: 'Planen kunne ikke lastes inn. Den kan fortsatt være lagret. Prøv igjen.',
+    access: 'Planen kunne ikke åpnes. Kontroller at du er logget inn på riktig konto, og prøv igjen.',
+    unknownRoute: 'Siden ble ikke funnet.',
+    routeFailed: 'Siden kunne ikke åpnes. Last inn på nytt for å prøve igjen, eller gå til startsiden. Ulagrede endringer kan gå tapt ved ny innlasting.',
+    home: 'Til startsiden',
+    reload: 'Last inn på nytt',
+    workUnknown: 'Lagret arbeid kunne ikke kontrolleres. Det betyr ikke at biblioteket er tomt.',
+  },
+  measurementUi: {
+    uploadTooLarge: 'Velg en STL-, STEP- eller STP-fil på høyst 50 MB (52 428 800 byte).',
+    retryFailed: 'Rett innstillingene eller prøv igjen med Planlegg kappelister. Allerede lagrede kappelister gjentas ikke.',
+    whole: 'Angi et helt antall millimeter, minst {{min}}. Desimaler støttes ikke.',
+    range: 'Angi hele millimeter fra {{min}} til {{max}}. Desimaler støttes ikke.',
+    modelRounding: 'Modellens mål avrundes til nærmeste hele millimeter før gruppering og planlegging.',
+    handoffFailed: 'Kappelisten kunne ikke overføres fordi nettleserlagring ikke er tilgjengelig. Modellen er fortsatt her; tillat lagring og prøv Planlegg separat igjen.',
+    handoffReadFailed: 'Modellens kappeliste kunne ikke leses. Tillat nettleserlagring og last inn på nytt for å prøve igjen, eller gå tilbake til modellen og prøv Planlegg separat igjen.',
+  },
   common: {
     language: 'Språk',
     saveSettings: 'Lagre innstillinger',

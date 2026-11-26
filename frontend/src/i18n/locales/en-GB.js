@@ -1,4 +1,31 @@
 const locale = {
+  passwordUi: {
+    policy: 'Use at least 8 characters with an uppercase A–Z letter, a lowercase a–z letter, a digit, and a special character. Maximum 72 UTF-8 bytes.',
+    resetFor: 'New password for {{email}}',
+  },
+  purchaseUi: {
+    repeat: 'Repeat {{value}} mm', offset: 'Offset {{value}} mm',
+    batch: 'Batch {{value}}', straight: 'Straight match', half_drop: 'Half-drop match',
+  },
+  recoveryUi: {
+    retry: 'Try again',
+    loadFailed: 'Could not load this plan. It may still be saved. Try again.',
+    access: 'This plan could not be accessed. Check that you are signed in to the right account, then try again.',
+    unknownRoute: 'This page could not be found.',
+    routeFailed: 'This page could not be opened. Reload to try again, or go home. Unsaved changes may be lost when reloading.',
+    home: 'Go home',
+    reload: 'Reload',
+    workUnknown: 'Saved work could not be checked. This does not mean your library is empty.',
+  },
+  measurementUi: {
+    uploadTooLarge: 'Choose an STL, STEP, or STP file no larger than 50 MB (52,428,800 bytes).',
+    retryFailed: 'Correct the settings or retry with Plan cutlists. Successfully saved cutlists will not be repeated.',
+    whole: 'Enter a whole number of millimetres, at least {{min}}. Decimals are not supported.',
+    range: 'Enter whole millimetres from {{min}} to {{max}}. Decimals are not supported.',
+    modelRounding: 'Model measurements are rounded to the nearest whole millimetre before grouping and planning.',
+    handoffFailed: 'Could not transfer the cutlist because browser storage is unavailable. Your model is still here; allow storage and try Plan alone again.',
+    handoffReadFailed: 'Could not read the model cutlist. Allow browser storage and reload to retry, or return to the model and try Plan alone again.',
+  },
   common: {
     language: 'Language',
     saveSettings: 'Save settings',

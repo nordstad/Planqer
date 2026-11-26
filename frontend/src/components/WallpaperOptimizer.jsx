@@ -5,7 +5,7 @@ import CatalogPage from './CatalogPage';
 import PlanSteps from './PlanSteps';
 import ProjectPicker from './ProjectPicker';
 import MovePlanMenu from './MovePlanMenu';
-import { useProjectChoice } from '../hooks/useProjectChoice';
+import { useProjectChoice, rememberProjectChoice } from '../hooks/useProjectChoice';
 import WallOutlineEditor from './WallOutlineEditor';
 import { ArrowLeft, Tick } from './icons';
 import FormField, { SectionCard, SectionStatus, splitUnit } from './FormField';
@@ -21,6 +21,7 @@ import { createWallpaperPlan, getProjectGroups, getUserSettings, getWallpaperPro
 import { useAuth } from '../contexts/AuthContext';
 import { useAccountContext } from '../contexts/useAccountContext';
 import { isStaticMode } from '../utils/mode';
+import { millimetresError } from '../utils/measurementInput';
 import { isOnWall, letterOf, pieceLabels, segmentsOf, stripLabel } from '../utils/wallpaperPlan';
 
 const numeric = (value) => Number(value) || 0;
@@ -450,6 +451,11 @@ const WallpaperOptimizer = () => {
     }
   };
   const makePlan = async () => {
+    const invalidMeasurements = issues.find((issue) => issue.hasErrors || issue.missing.length || issue.cutoutsMissing?.some((fields) => fields.length));
+    if (detailsMeasurementError || invalidMeasurements) {
+      setError(detailsMeasurementError || t('measurementUi.range', { min: 0, max: 100000 }));
+      return;
+    }
     const overlapError = overlapIssue(cornerOverlap, t);
     if (overlapError) {
       setError(overlapError);
@@ -476,11 +482,16 @@ const WallpaperOptimizer = () => {
     await requestPlan();
   };
   const chooseStart = async (candidate) => {
-    const start = { wall_index: candidate.wall_index, first_strip_width: candidate.first_strip_widths[0] };
+    const start = { wall_index: candidate.wall_index, first_strip_width: Math.round(candidate.first_strip_widths[0]) };
     await requestPlan(start);
   };
   const continueToRoom = () => {
     setError('');
+    if (detailsMeasurementError) {
+      setError(detailsMeasurementError);
+      setDetailsTried(true);
+      return;
+    }
     if (detailsMissing.length) {
       setDetailsTried(true);
       return;
@@ -492,6 +503,10 @@ const WallpaperOptimizer = () => {
   const formatMoney = (value) => `${value.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${pricing.currency}`;
   const save = async () => {
     if (!plan || planBlocked) return;
+    if (detailsMeasurementError || issues.some((issue) => issue.hasErrors)) {
+      setError(detailsMeasurementError || t('measurementUi.range', { min: 0, max: 100000 }));
+      return;
+    }
     if (!projectName.trim()) { setError(t('auditUi.nameRequired')); return; }
     try {
       setError('');
@@ -509,7 +524,7 @@ const WallpaperOptimizer = () => {
       const moved = await movePlanToProject({ ...saved, projectType: 'wallpaper' }, group.id);
       setSaved(moved);
       setProjectGroupId(group.id);
-      localStorage.setItem('partsible.lastProjectGroup', group.id);
+      rememberProjectChoice(group.id);
       return true;
     } catch (err) {
       setError(t('projectUi.moveFailed', { message: err.message }));
@@ -547,6 +562,11 @@ const WallpaperOptimizer = () => {
   ].filter(([, value]) => isBlank(value));
   const patternMissing = patterned && isBlank(wallpaper.repeat) ? [['wallpaper-repeat', '', unitless('wallpaperUi.repeatMm')]] : [];
   const detailsMissing = [...rollMissing, ...patternMissing];
+  const detailsMeasurementError = [
+    millimetresError(wallpaper.roll_width, 1, 100000, t),
+    millimetresError(wallpaper.roll_length, 1, 100000, t),
+    patterned ? millimetresError(wallpaper.repeat, 1, 100000, t) : '',
+  ].find(Boolean);
   const flagged = (id) => detailsTried && detailsMissing.some(([fieldId]) => fieldId === id);
   const detailsInput = (id, extra = '') => ({ id, className: `form-input ${extra} ${flagged(id) ? 'form-input-error' : ''}`.replace(/\s+/g, ' ').trim(), 'aria-invalid': flagged(id) || undefined });
 

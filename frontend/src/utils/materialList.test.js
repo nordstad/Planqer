@@ -1,4 +1,4 @@
-import { applySpareMargin, buildMaterialCsv, buildMaterialListHtml, isPlanPriced, buildMaterialRows, materialRowsForPurchase, mergeMaterialRows, summarizeMaterialPricing } from './materialList';
+import { applySpareMargin, buildMaterialCsv, buildMaterialListHtml, isPlanPriced, buildMaterialRows, materialRowsForPurchase, mergeMaterialRows, purchaseMaterialLabel, summarizeMaterialPricing } from './materialList';
 
 const t = (key) => ({ 'ui.materialPine': 'pine' }[key] || key);
 
@@ -17,6 +17,29 @@ const wallpaperProject = (name, code, quantity = 3, price = 200) => ({
     ...(price ? { price_per_roll: price, currency: 'SEK' } : {}),
   },
   plan_result: { rolls_to_buy: quantity },
+});
+
+it.each(['repeat', 'match', 'batch_reference', 'roll_offset'])('keeps differing and unknown wallpaper %s separate without extra reserve', (field) => {
+  const base = wallpaperProject('Hall', 'A001');
+  const value = field === 'match' ? 'straight' : field === 'batch_reference' ? '<Batch A>' : 640;
+  const other = field === 'match' ? 'half_drop' : field === 'batch_reference' ? 'Batch B' : 320;
+  const projects = [
+    base,
+    { ...base, name: 'Known', wallpaper_data: { ...base.wallpaper_data, [field]: value } },
+    { ...base, name: 'Different', wallpaper_data: { ...base.wallpaper_data, [field]: other } },
+    { ...base, name: 'Same', wallpaper_data: { ...base.wallpaper_data, [field]: value } },
+  ];
+  const rows = materialRowsForPurchase(projects, 50);
+  expect(rows).toHaveLength(3);
+  expect(rows.map((row) => row.quantityToBuy)).toEqual([3, 6, 3]);
+  const translate = (key, options) => options?.value == null ? key : `${key}: ${options.value}`;
+  const labels = rows.map((row) => purchaseMaterialLabel(row, translate));
+  expect(new Set(labels).size).toBe(3);
+  const csv = buildMaterialCsv(projects, translate);
+  const doc = new DOMParser().parseFromString(buildMaterialListHtml(projects, translate), 'text/html');
+  expect([...doc.querySelectorAll('tbody tr')].map((row) => row.cells[1].textContent)).toEqual(labels);
+  for (const label of labels) expect(csv).toContain(label);
+  expect(doc.querySelectorAll('batch')).toHaveLength(0);
 });
 
 it.each([300, null])('keeps known wallpaper codes and their prices separate (%s)', (price) => {

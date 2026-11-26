@@ -25,6 +25,7 @@ export const AuthProvider = ({ children }) => {
   const [singleUser, setSingleUser] = useState(false);
   const [setupCheckError, setSetupCheckError] = useState(false);
   const [authStorageError, setAuthStorageError] = useState(false);
+  const [bootstrapAttempt, setBootstrapAttempt] = useState(0);
 
   useEffect(() => {
     if (!user) return;
@@ -48,6 +49,8 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     if (lite) return;
+    setLoading(true);
+    setSetupCheckError(false);
     const checkAuth = async () => {
       let token;
       try {
@@ -96,7 +99,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     checkAuth();
-  }, []);
+  }, [bootstrapAttempt]);
 
   const login = (userData) => {
     setUser(userData);
@@ -123,6 +126,7 @@ export const AuthProvider = ({ children }) => {
     singleUser,
     setupCheckError,
     authStorageError,
+    retrySetup: () => setBootstrapAttempt((current) => current + 1),
     isAuthenticated: !!user,
     login,
     logout,

@@ -11,6 +11,7 @@ import {
 } from './catalogue';
 import { canonicalMaterial, matchMaterial } from './materialMatch';
 import { validateBoards, SAW_KERF_MIN, SAW_KERF_MAX } from './validators';
+import { millimetresError } from './measurementInput';
 
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
 export const naturalCompare = (a, b) => collator.compare(String(a), String(b));
@@ -230,24 +231,16 @@ export const applySettingsToAll = (configs, groups, sourceId) => {
   return next;
 };
 
-const inRange = (value, min, max) => {
-  const n = parseFloat(value);
-  return Number.isFinite(n) && n >= min && n <= max;
-};
-
 export const validateGroupConfig = (group, config, t) => {
   const kerfMax = group.kind === 'board' ? SAW_KERF_MAX : 50;
-  const kerf = !config.kerf || parseFloat(config.kerf) < SAW_KERF_MIN
-    ? t('modelUi.kerfZero')
-    : parseFloat(config.kerf) > kerfMax ? t('modelUi.kerfWide') : '';
+  const kerf = millimetresError(config.kerf, SAW_KERF_MIN, kerfMax, t);
   if (group.kind === 'board') {
     const boards = validateBoards(config.boards.map((b) => b.length), t);
     return { boards, kerf, hasErrors: boards.some(Boolean) || !!kerf };
   }
-  const width = inRange(config.sheetWidth, 100, 10000) ? '' : t('modelUi.sheetWidthPositive');
-  const height = inRange(config.sheetHeight, 100, 10000) ? '' : t('modelUi.sheetHeightPositive');
-  const sheetKerf = inRange(config.kerf, SAW_KERF_MIN, 50) ? '' : t('modelUi.kerfZero');
-  return { width, height, kerf: sheetKerf, hasErrors: !!(width || height || sheetKerf) };
+  const width = millimetresError(config.sheetWidth, 100, 10000, t);
+  const height = millimetresError(config.sheetHeight, 100, 10000, t);
+  return { width, height, kerf, hasErrors: !!(width || height || kerf) };
 };
 
 /* What "Plan alone" hands to the board and sheet pages. The whole selection

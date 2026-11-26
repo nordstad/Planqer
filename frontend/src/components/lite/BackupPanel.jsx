@@ -32,7 +32,7 @@ const BackupPanel = () => {
   const previewedContent = useRef(null);
   const committing = useRef(false);
   const restoreFinished = useRef(false);
-  const [hasWork, setHasWork] = useState(false);
+  const [hasWork, setHasWork] = useState();
   const [lastExported, setLastExported] = useState(readLastExported);
   const [storage, setStorage] = useState(null);
   const [persistRefused, setPersistRefused] = useState(false);
@@ -45,7 +45,7 @@ const BackupPanel = () => {
   const [expanded, setExpanded] = useState(false);
 
   const refresh = useCallback(async () => {
-    setHasWork(await hasSavedWork().catch(() => false));
+    setHasWork(await hasSavedWork().catch(() => null));
     setStorage(await getStorageStatus());
   }, []);
 
@@ -197,11 +197,12 @@ const BackupPanel = () => {
       {storage && !storage.persisted && (
         <p style={{ color: 'var(--ink-3)', fontSize: '13px', margin: '8px 0' }}>{storageText}</p>
       )}
+      {hasWork === null && <p role="status">{t('recoveryUi.workUnknown')}</p>}
       {persistRefused && (
         <p role="status" style={{ color: 'var(--ink-2)', margin: '8px 0' }}>{t('lite.backup.persistDenied')}</p>
       )}
       {feedback && (
-        <p role="status" style={{ margin: '8px 0', color: feedback.error ? 'var(--danger, #b3261e)' : 'var(--ink-2)' }}>{feedback.text}</p>
+        <p role="status" style={{ margin: '8px 0', color: feedback.error ? 'var(--revision)' : 'var(--ink-2)' }}>{feedback.text}</p>
       )}
 
       <div id="lite-backup-content" hidden={!expanded} style={{ paddingTop: '12px' }}>
@@ -209,7 +210,7 @@ const BackupPanel = () => {
         <div className="flex flex-wrap items-center gap-2" style={{ marginBottom: '10px' }}>
           <button type="button" className="btn btn-primary" onClick={exportNow} disabled={checking || restoring}>{t('lite.backup.export')}</button>
           <button ref={importButton} type="button" className="btn" onClick={() => fileInput.current.click()} disabled={restoring}>{t('lite.backup.import')}</button>
-          <input ref={fileInput} type="file" aria-label={t('lite.backup.fileLabel')} accept="application/json,.json" style={VISUALLY_HIDDEN} onChange={importFile} disabled={restoring} />
+          <input ref={fileInput} type="file" tabIndex={-1} aria-label={t('lite.backup.fileLabel')} accept="application/json,.json" style={VISUALLY_HIDDEN} onChange={importFile} disabled={restoring} />
           <span style={{ color: 'var(--ink-3)', fontSize: '13px' }}>
             {lastExported
               ? t('lite.backup.lastExported', { date: new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium' }).format(lastExported) })

@@ -4,10 +4,10 @@ import sv from '../../src/i18n/locales/sv-SE.js';
 import nb from '../../src/i18n/locales/nb-NO.js';
 
 const input = {
-  parts: { part_1: { width: 800.5, height: 400.25, quantity: 3 } },
-  sheet_width: 1200.5,
-  sheet_height: 2500.25,
-  kerf_width: 2.125,
+  parts: { part_1: { width: 800, height: 400, quantity: 3 } },
+  sheet_width: 1200,
+  sheet_height: 2500,
+  kerf_width: 3,
   material_type: 'plywood',
   allow_rotation: true,
 };
@@ -17,6 +17,11 @@ let solved;
 test.beforeAll(async ({ request }) => {
   // This calculation endpoint stores nothing. All other browser API calls below
   // are intercepted, so existing settings/accounts/saved plans are never used.
+  const rejected = await request.post(
+    `${process.env.PLAYWRIGHT_API_URL || 'http://localhost:8002'}/api/sheet-optimization`,
+    { data: { ...input, kerf_width: 2.5 } },
+  );
+  expect(rejected.status()).toBe(422);
   const response = await request.post(
     `${process.env.PLAYWRIGHT_API_URL || 'http://localhost:8002'}/api/sheet-optimization`,
     { data: input },
@@ -26,15 +31,14 @@ test.beforeAll(async ({ request }) => {
   const parts = solved.sheets.flatMap((sheet) => sheet.parts);
   expect(parts).toHaveLength(3);
   expect(parts.every((part) => (
-    (part.width === 800.5 && part.height === 400.25)
-    || (part.width === 400.25 && part.height === 800.5)
+    (part.width === 800 && part.height === 400)
+    || (part.width === 400 && part.height === 800)
   ))).toBe(true);
-  expect(parts.some((part) => !Number.isInteger(part.x) || !Number.isInteger(part.y))).toBe(true);
 });
 
 for (const [language, locale] of [['en-GB', en], ['sv-SE', sv], ['nb-NO', nb]]) {
   for (const dark of [false, true]) {
-    test(`live sheet measurement precision: ${language}, ${dark ? 'dark' : 'light'}`, async ({ page }) => {
+    test(`whole-mm sheet input and accurate output: ${language}, ${dark ? 'dark' : 'light'}`, async ({ page }) => {
       let calculations = 0;
       const unexpectedWrites = [];
       await page.route('**/api/**', async (route) => {
@@ -71,6 +75,15 @@ for (const [language, locale] of [['en-GB', en], ['sv-SE', sv], ['nb-NO', nb]]) 
       await page.locator('#sheet-width').fill('1200.5');
       await page.locator('#sheet-height').fill('2500.25');
       await page.locator('#sheet-kerf').fill('2.125');
+      await expect(page.locator('button.btn-order[type=submit]')).toBeDisabled();
+      await page.locator('form').evaluate((form) => form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+      expect(calculations).toBe(0);
+      await page.getByLabel(locale.ui.partLengthAria.replace('{{item}}', '1'), { exact: true }).fill('800');
+      await page.getByLabel(locale.ui.sheetHeightAria, { exact: true }).fill('400');
+      await page.locator('#sheet-width').fill('1200');
+      await page.locator('#sheet-height').fill('2500');
+      await page.locator('#sheet-kerf').fill('3');
+      await expect(page.locator('button.btn-order[type=submit]')).toBeEnabled();
       await page.locator('button.btn-order[type=submit]').click();
       const placements = page.getByRole('button', { name: new RegExp(locale.workflow.exactPlacements) });
       await expect(placements).toBeVisible();

@@ -123,7 +123,9 @@ const CatalogueEntryForm = ({ catalogue, initial, creating, busy, error, onSubmi
 
       {(problem || error) && (
         <div className="alert-danger" role="alert">
-          {problem ? t(`catalogueAdmin.problem.${problem}`) : error}
+          {problem ? ['thickness', 'width', 'lengths', 'maxLength', 'formats'].includes(problem)
+            ? t('measurementUi.whole', { min: 1 })
+            : t(`catalogueAdmin.problem.${problem}`) : error}
         </div>
       )}
       <div style={{ display: 'flex', gap: '8px' }}>

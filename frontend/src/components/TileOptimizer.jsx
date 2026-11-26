@@ -28,7 +28,8 @@ import Disclosure from './Disclosure';
 import FormField, { SectionCard, SectionStatus } from './FormField';
 import SavePlanCard from './SavePlanCard';
 import MovePlanMenu from './MovePlanMenu';
-import { useProjectChoice } from '../hooks/useProjectChoice';
+import { useProjectChoice, rememberProjectChoice } from '../hooks/useProjectChoice';
+import { millimetresError, isWholeMillimetres } from '../utils/measurementInput';
 import Loader from './Loader';
 import InfoTip from './InfoTip';
 import PlanSteps from './PlanSteps';
@@ -51,11 +52,12 @@ const DEFAULT_TILE_THICKNESS = '10';
 const isBlank = (value) => value == null || String(value).trim() === '';
 
 // An empty field is missing (named on its card), not an error.
-const numberError = (value, { min, max, label, allowZero = false, t }) => {
-  const n = parseFloat(value);
+const numberError = (value, { min, max, label, whole = true, t }) => {
+  const n = Number(value);
   if (isBlank(value)) return '';
-  if (isNaN(n)) return t('tileUi.numberRequired', { label });
-  if (allowZero ? n < min : n <= min) return t('tileUi.greaterThan', { label, min });
+  if (whole) return millimetresError(value, min, max, t);
+  if (!Number.isFinite(n)) return t('tileUi.numberRequired', { label });
+  if (n < min) return t('tileUi.greaterThan', { label, min });
   if (n > max) return t('tileUi.cannotExceed', { label, max });
   return '';
 };
@@ -73,6 +75,11 @@ const validateCutouts = (cutouts, surfaceWidth, surfaceHeight, t) => cutouts.map
   if (cutout.y === '' || isNaN(y) || y < 0) errors.y = t('tileUi.yMinimum');
   if (!cutout.width || isNaN(width) || width <= 0) errors.width = t('tileUi.positiveWidth');
   if (!cutout.height || isNaN(height) || height <= 0) errors.height = t('tileUi.positiveHeight');
+  for (const field of ['x', 'y', 'width', 'height']) {
+    if (!errors[field] && !isWholeMillimetres(cutout[field])) {
+      errors[field] = millimetresError(cutout[field], field === 'x' || field === 'y' ? 0 : 1, 20000, t);
+    }
+  }
 
   if (!errors.x && !errors.width && !isNaN(sw) && x + width > sw) errors.width = t('tileUi.rightEdge');
   if (!errors.y && !errors.height && !isNaN(sh) && y + height > sh) errors.height = t('tileUi.topEdge');
@@ -91,7 +98,7 @@ const validateTileInputs = (values, t) => ({
   minEdgeCut: values.minEdgeCut === ''
     ? ''
     : numberError(values.minEdgeCut, { min: 0, max: 3000, label: t('tileUi.sliverThreshold'), allowZero: true, t }),
-  wastePercent: numberError(values.wastePercent, { min: 0, max: 100, label: t('tileUi.breakageAllowance'), allowZero: true, t }),
+  wastePercent: numberError(values.wastePercent, { min: 0, max: 100, label: t('tileUi.breakageAllowance'), whole: false, t }),
   candidateCount: (() => {
     const n = Number(values.candidateCount);
     if (isBlank(values.candidateCount)) return '';
@@ -201,6 +208,7 @@ const TileOptimizer = () => {
   }, [
     debounced.cutouts, debounced.surfaceWidth, debounced.surfaceHeight, debounced.tileWidth, debounced.tileHeight,
     debounced.jointWidth, debounced.perimeterGap, debounced.minEdgeCut, debounced.wastePercent, debounced.candidateCount,
+    surfaceWidth, surfaceHeight, tileWidth, tileHeight, jointWidth, perimeterGap, minEdgeCut, wastePercent, candidateCount,
   ]);
 
   useEffect(() => {
@@ -307,7 +315,7 @@ const TileOptimizer = () => {
   const cutoutPristine = (cutout) => ['x', 'y', 'width', 'height'].every((field) => isBlank(cutout[field]));
   const cutoutsWrong = cutouts.some((cutout, index) => inputErrors.cutouts[index] && !cutoutPristine(cutout));
   const cutoutsEmpty = cutouts.some(cutoutPristine);
-  const thicknessWrong = !isBlank(tileThickness) && !(parseFloat(tileThickness) > 0);
+  const thicknessWrong = !isBlank(tileThickness) && (!isWholeMillimetres(tileThickness) || Number(tileThickness) < 1);
   const tileWrong = !!(inputErrors.tileWidth || inputErrors.tileHeight) || thicknessWrong;
   const jointWrong = !!(inputErrors.jointWidth || inputErrors.perimeterGap);
   const guardWrong = !!(inputErrors.minEdgeCut || inputErrors.wastePercent || inputErrors.candidateCount);
@@ -436,7 +444,7 @@ const TileOptimizer = () => {
     try {
       const moved = await movePlanToProject({ ...saved, projectType: 'tile' }, group.id);
       setSaved(moved);
-      localStorage.setItem('partsible.lastProjectGroup', group.id);
+      rememberProjectChoice(group.id);
       return true;
     } catch (error) {
       setApiError(t('projectUi.moveFailed', { message: error.message }));

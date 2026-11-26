@@ -10,16 +10,16 @@ import {
 
 const t = (key, vars) => `${key}:${vars?.max ?? ''}`;
 
-test('accepts API boundary and decimal values for board parts', () => {
+test('accepts whole-mm boundary values and rejects fractional board parts', () => {
   expect(validateParts([
     { length: String(MIN_PART_LENGTH), quantity: '1' },
     { length: String(MAX_PART_LENGTH), quantity: String(MAX_PART_QUANTITY) },
     { length: '12.5', quantity: '2' },
-  ], t)).toEqual([null, null, null]);
+  ], t)).toEqual([null, null, 'measurementUi.range:15000']);
 });
 
-test('accepts API boundary and decimal values for stock boards', () => {
-  expect(validateBoards(['1', String(MAX_BOARD_LENGTH), '12.5'], t)).toEqual([null, null, null]);
+test('accepts whole-mm boundary values and rejects fractional stock boards', () => {
+  expect(validateBoards(['1', String(MAX_BOARD_LENGTH), '12.5'], t)).toEqual([null, null, 'measurementUi.range:15000']);
 });
 
 test('rejects zero, fractional quantities, and values over API limits', () => {

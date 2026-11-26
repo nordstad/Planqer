@@ -203,9 +203,9 @@ def test_api_invalid_quantities():
 def test_api_valid_sanitized_request():
     """Test that valid requests still work after sanitization."""
     payload = {
-        "parts": {"100.5": 5, "200": 3},
+        "parts": {"100": 5, "200": 3},
         "available_board_lengths": [300, 400],
-        "saw_blade_width": 3.2,
+        "saw_blade_width": 3,
         "project_name": "My Test Project (v1.0)",
     }
     response = client.post("/api/cutting-plans", json=payload)

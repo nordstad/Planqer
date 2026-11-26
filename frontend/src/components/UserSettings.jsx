@@ -6,10 +6,13 @@ import { useLanguage } from '../contexts/LanguageContext';
 import Loader from './Loader';
 import CatalogueCountrySelect from './CatalogueCountrySelect';
 import { setCatalogueChoice } from '../utils/catalogueChoice';
+import { readMillimetres } from '../utils/measurementInput';
+import { useLocalDataRevision } from '../hooks/useLocalDataRevision';
 
 const UserSettings = () => {
   const { user } = useAuth();
-  return <SettingsForUser key={user?.id ?? 'signed-out'} userId={user?.id} />;
+  const restored = useLocalDataRevision();
+  return <SettingsForUser key={`${user?.id ?? 'signed-out'}:${restored}`} userId={user?.id} />;
 };
 
 const SettingsForUser = ({ userId }) => {
@@ -75,9 +78,9 @@ const SettingsForUser = ({ userId }) => {
     try {
       const boardLengths = boardLengthsInput
         .split(',')
-        .map((length) => parseFloat(length.trim()))
-        .filter((length) => !isNaN(length));
-      await updateUserSettings({ ...settings, default_board_lengths: boardLengths });
+        .map((length) => readMillimetres(length.trim(), 1, 15000));
+      const kerf = readMillimetres(settings.default_saw_blade_width, 1, 100);
+      await updateUserSettings({ ...settings, default_board_lengths: boardLengths, default_saw_blade_width: kerf });
       if (!active.current) return;
       await changeLanguage(settings.preferred_language, { persistAccount: false });
       if (!active.current) return;
@@ -133,11 +136,11 @@ const SettingsForUser = ({ userId }) => {
           <input
             id="kerf"
             type="number"
-            step="0.1"
-            min="0"
+            step="1"
+            min="1"
             className="form-input dimension-input"
             value={settings.default_saw_blade_width}
-            onChange={(e) => setSettings((prev) => ({ ...prev, default_saw_blade_width: parseFloat(e.target.value) || 0 }))}
+            onChange={(e) => setSettings((prev) => ({ ...prev, default_saw_blade_width: e.target.value }))}
             disabled={saving}
           />
         </div>

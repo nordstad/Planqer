@@ -4,7 +4,7 @@ import sv from '../../src/i18n/locales/sv-SE.js';
 import nb from '../../src/i18n/locales/nb-NO.js';
 
 const defaults = (language) => ({
-  default_board_lengths: [4200, 5400], default_saw_blade_width: 2.5,
+  default_board_lengths: [4200, 5400], default_saw_blade_width: 4,
   default_currency: 'EUR', default_vat_rate: 20, default_prices_include_vat: false,
   preferred_language: language, spare_margin_percent: 5, catalogue_country: 'SE',
 });
@@ -82,7 +82,7 @@ const pending = async (page, locale) => {
 };
 const expectDefaults = async (page, language, lengths = '4200, 5400') => {
   await expect(page.locator('#board-lengths')).toHaveValue(lengths);
-  await expect(page.locator('#kerf')).toHaveValue('2.5');
+  await expect(page.locator('#kerf')).toHaveValue('4');
   await expect(page.locator('#currency')).toHaveValue('EUR');
   await expect(page.locator('#vat-rate')).toHaveValue('20');
   await expect(page.locator('form input[type=checkbox]')).not.toBeChecked();

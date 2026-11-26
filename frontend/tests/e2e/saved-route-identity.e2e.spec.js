@@ -156,10 +156,11 @@ for (const config of modules) {
           });
         }
       }
-      test(`saved missing-route recovery: ${label}`, async ({ page }) => {
+      test(`saved failed-route recovery: ${label}`, async ({ page }) => {
         const state = await setup(page, config, language, locale, dark);
         await state.release(0, true);
-        await expect(page.getByText(locale.projectUi.planNotFound, { exact: true })).toBeVisible();
+        await expect(page.getByText(locale.recoveryUi.loadFailed, { exact: true })).toBeVisible();
+        await expect(page.getByText(locale.projectUi.planNotFound, { exact: true })).toHaveCount(0);
         await state.navigate('B');
         await loading(page, config, locale);
         await state.release(1);

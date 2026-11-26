@@ -2,6 +2,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from partsible.measurement_inputs import MeasurementRequest
 from partsible.validation import validate_numeric_input
 
 _MAX_DIMENSION_MM = 100_000.0
@@ -212,7 +213,7 @@ class StartPosition(WallpaperSchema):
         )
 
 
-class WallpaperPlanRequest(WallpaperSchema):
+class WallpaperPlanRequest(WallpaperSchema, MeasurementRequest):
     wallpaper: WallpaperSpec
     room: Room
     allowances: Allowances = Field(default_factory=Allowances)

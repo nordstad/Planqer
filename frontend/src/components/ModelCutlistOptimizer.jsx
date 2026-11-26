@@ -57,6 +57,7 @@ import { loadCatalogue, buildSnapshot } from '../utils/catalogue';
 import { colourForModelGroup, colourForModelPart, partKey } from '../utils/modelPreview';
 import { VISUALLY_HIDDEN } from '../utils/visuallyHidden';
 import { modelFileAccept } from '../utils/modelFileAccept';
+import { rememberProjectChoice } from '../hooks/useProjectChoice';
 
 const ModelPreview = lazy(() => import('./ModelPreview'));
 const ModelPartsPreview = lazy(() => import('./ModelPartsPreview'));
@@ -78,6 +79,7 @@ const formatFileSize = (bytes) => {
 const extensionOf = (filename) => filename.toLowerCase().match(/\.[a-z0-9]+$/)?.[0] || '';
 const baseName = (filename) => filename.replace(/\.[a-z0-9]+$/i, '');
 const ACCEPTED = ['.stl', '.step', '.stp'];
+const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
 const isStl = (candidate) => extensionOf(candidate.name) === '.stl';
 
 const spaced = (n) => Math.round(n).toLocaleString('sv-SE');
@@ -208,6 +210,7 @@ const ModelCutlistOptimizer = () => {
     setConfigs({});
     setStatuses({});
     setStatusMessages({});
+    setSavedPlans([]);
     setApiError('');
     setAppliedNote('');
   };
@@ -216,6 +219,12 @@ const ModelCutlistOptimizer = () => {
     if (!candidate) return;
     if (!ACCEPTED.includes(extensionOf(candidate.name))) {
        setError(t('ui.modelFileRequired'));
+      return;
+    }
+    if (candidate.size > MAX_UPLOAD_BYTES) {
+      setFile(null);
+      retireAll();
+      setError(t('measurementUi.uploadTooLarge'));
       return;
     }
     setFile(candidate);
@@ -309,8 +318,12 @@ const ModelCutlistOptimizer = () => {
 
   const planGroupAlone = (group) => {
     const { key, path, data } = standaloneHandoff(group, configs[group.id], planNameOf(group), t('ui.sheet'));
-    localStorage.setItem(key, JSON.stringify(data));
-    window.location.href = path;
+    try {
+      localStorage.setItem(key, JSON.stringify(data));
+      window.location.href = path;
+    } catch {
+      setApiError(t('measurementUi.handoffFailed'));
+    }
   };
 
   const totalComponents = groups.reduce((n, g) => n + g.quantity, 0);
@@ -391,7 +404,6 @@ const ModelCutlistOptimizer = () => {
     setApiError('');
     if (selectedGroups.some((g) => errorsOf(g, configs).hasErrors)) return;
     setSaving(true);
-    setSavedPlans([]);
     let projectGroupId;
     try {
       projectGroupId = await resolveProject();
@@ -415,7 +427,7 @@ const ModelCutlistOptimizer = () => {
       const moved = await Promise.all(savedPlans.map((plan) => movePlanToProject(plan, group.id)));
       setSavedPlans(moved.map((plan, index) => ({ ...plan, projectType: savedPlans[index].projectType })));
       setSelectedGroupId(group.id);
-      localStorage.setItem('partsible.lastProjectGroup', group.id);
+      rememberProjectChoice(group.id);
       return true;
     } catch (err) {
       setApiError(t('projectUi.moveFailed', { message: err.message }));
@@ -581,6 +593,8 @@ const ModelCutlistOptimizer = () => {
               </p>
             </div>
             </div>
+            <p className="synthetic">{t('measurementUi.modelRounding')}</p>
+            {apiError && <div className="alert-danger" role="alert">{apiError}</div>}
             {warnings.length > 0 && <p role="alert" className="synthetic">{t('modelUi.skippedParts', { count: warnings.length, names: warnings.map((warning) => warning.name).join(', ') })}</p>}
 
           <Suspense fallback={<p className="synthetic" role="status">{t('modelUi.partsPreviewLoading')}</p>}>
@@ -802,7 +816,7 @@ const ModelCutlistOptimizer = () => {
                           <td style={{ width: '140px' }}>
                             {status === 'done' && <span style={{ color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', gap: '5px' }}><Tick size={14} /> {t('legacy.saved')}</span>}
                             {status === 'running' && <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Loader /> {t('legacy.planning')}</span>}
-                            {status === 'error' && <span style={{ color: 'var(--revision)', display: 'inline-flex', alignItems: 'center', gap: '5px' }}><Strike size={12} /> {t('legacy.failed')}</span>}
+                            {status === 'error' && <div role="alert"><span style={{ color: 'var(--revision)', display: 'inline-flex', alignItems: 'center', gap: '5px' }}><Strike size={12} /> {t('legacy.failed')}</span><p>{statusMessages[group.id]}</p><p>{t('measurementUi.retryFailed')}</p></div>}
                             {!status && <span className="text-muted">{t('legacy.waiting')}</span>}
                           </td>
                         </tr>
@@ -856,7 +870,7 @@ const ModelCutlistOptimizer = () => {
 const SignInRequired = ({ message }) => {
   const { t } = useTranslation();
   const [authModalOpen, setAuthModalOpen] = useState(false);
-  const { needsSetup, setupCheckError } = useAuth();
+  const { needsSetup, setupCheckError, retrySetup } = useAuth();
 
   if (setupCheckError) {
     return (
@@ -865,6 +879,7 @@ const SignInRequired = ({ message }) => {
         <p style={{ color: 'var(--ink-2)' }}>
           {t('common.apiUnavailableDescription')}
         </p>
+        <button type="button" className="btn" onClick={retrySetup}>{t('recoveryUi.retry')}</button>
       </div>
     );
   }

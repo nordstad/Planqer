@@ -1,7 +1,8 @@
 import { isValidBoardQuantity, MAX_PART_QUANTITY } from './validators';
+import { readMillimetres } from './measurementInput';
 
 export const normalizeBoardParts = (parts) => parts.reduce((normalized, part, index) => {
-  const length = parseFloat(part.length);
+  const length = readMillimetres(part.length, 1, 15000);
   if (!isValidBoardQuantity(part.quantity)) {
     throw new Error(`Board part ${index + 1} quantity must be a whole number between 1 and ${MAX_PART_QUANTITY}`);
   }

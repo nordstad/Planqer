@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { AuthProvider, useAuth } from './AuthContext';
 
 vi.mock('../utils/api', () => ({
@@ -14,8 +14,8 @@ vi.mock('./LanguageContext', () => ({
 }));
 
 const Probe = () => {
-  const { isAuthenticated, loading, needsSetup, singleUser } = useAuth();
-  return <p>{JSON.stringify({ isAuthenticated, loading, needsSetup, singleUser })}</p>;
+  const { isAuthenticated, loading, needsSetup, singleUser, setupCheckError, retrySetup } = useAuth();
+  return <><p>{JSON.stringify({ isAuthenticated, loading, needsSetup, singleUser })}</p>{setupCheckError && <button onClick={retrySetup}>Retry</button>}</>;
 };
 
 it('signs in as the instance owner without a token when the backend is single-user', async () => {
@@ -38,4 +38,15 @@ it('keeps the login flow when the backend is multi-user', async () => {
 
   expect(await screen.findByText(/"loading":false/)).toHaveTextContent('"isAuthenticated":false');
   expect(api.getCurrentUser).not.toHaveBeenCalled();
+});
+
+it('rechecks bootstrap after an outage without a full browser reload', async () => {
+  const api = await import('../utils/api');
+  api.getSetupStatus.mockRejectedValueOnce(new Error('Synthetic outage'));
+  api.getSetupStatus.mockResolvedValue({ needs_setup: false, single_user: true });
+  api.getCurrentUser.mockResolvedValue({ id: 'synthetic-owner' });
+  render(<AuthProvider><Probe /></AuthProvider>);
+  fireEvent.click(await screen.findByRole('button', { name: 'Retry' }));
+  expect(await screen.findByText(/"isAuthenticated":true/)).toHaveTextContent('"loading":false');
+  expect(screen.queryByRole('button', { name: 'Retry' })).not.toBeInTheDocument();
 });

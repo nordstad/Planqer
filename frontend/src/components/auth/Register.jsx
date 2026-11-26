@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { registerUser, loginUser, getCurrentUser } from '../../utils/api';
 import { useAuth } from '../../contexts/AuthContext';
+import { validNewPassword } from '../../utils/passwordPolicy';
 
 const Register = ({ onClose, onSwitchToLogin, isFirstRun = false }) => {
   const { t } = useTranslation();
@@ -25,8 +26,8 @@ const Register = ({ onClose, onSwitchToLogin, isFirstRun = false }) => {
        setError(t('auth.passwordMismatch'));
       return;
     }
-    if (password.length < 6) {
-       setError(t('auth.passwordLength'));
+    if (!validNewPassword(password)) {
+       setError(t('passwordUi.policy'));
       return;
     }
 
@@ -92,10 +93,12 @@ const Register = ({ onClose, onSwitchToLogin, isFirstRun = false }) => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}
-                minLength={6}
+                minLength={8}
+                autoComplete="new-password"
+                aria-describedby="register-password-policy"
                 required
               />
-               <p className="synthetic">{t('auth.passwordHint')}</p>
+               <p id="register-password-policy" className="synthetic">{t('passwordUi.policy')}</p>
             </div>
 
             <div className="space-y-2" style={{ marginBottom: '16px' }}>

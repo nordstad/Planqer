@@ -48,7 +48,8 @@ import Disclosure from './Disclosure';
 import FormField, { SectionCard, SectionStatus, splitUnit } from './FormField';
 import SavePlanCard from './SavePlanCard';
 import MovePlanMenu from './MovePlanMenu';
-import { useProjectChoice } from '../hooks/useProjectChoice';
+import { useProjectChoice, rememberProjectChoice } from '../hooks/useProjectChoice';
+import { millimetresError, isWholeMillimetres } from '../utils/measurementInput';
 import Loader from './Loader';
 import InfoTip from './InfoTip';
 import PlanSteps from './PlanSteps';
@@ -139,16 +140,11 @@ const CuttingOptimizer = () => {
   const debouncedSawKerf = useDebounce(sawKerf, 300);
 
   useEffect(() => {
-    const kerfValue = parseFloat(debouncedSawKerf);
     setInputErrors({
       boards: validateBoards(debouncedBoards, t),
-      sawKerf: !debouncedSawKerf || kerfValue < SAW_KERF_MIN
-        ? t('modelUi.kerfZero')
-        : kerfValue > SAW_KERF_MAX
-          ? t('auditUi.kerfWide')
-          : "",
+      sawKerf: !debouncedSawKerf ? '' : millimetresError(debouncedSawKerf, SAW_KERF_MIN, SAW_KERF_MAX, t),
     });
-  }, [debouncedBoards, debouncedSawKerf]);
+  }, [debouncedBoards, debouncedSawKerf, sawKerf]);
 
   // This page requires sign-in, so project groups and saved plans are always available.
   // Loaded defaults are also applied once so the user settings act as the real starting state.
@@ -181,9 +177,9 @@ const CuttingOptimizer = () => {
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
     if (urlParams.get('import') !== '3d') return;
-    const importData = localStorage.getItem('partsible-3d-import');
-    if (!importData) return;
     try {
+      const importData = localStorage.getItem('partsible-3d-import');
+      if (!importData) throw new Error('Missing cutlist');
       const data = JSON.parse(importData);
       if (data.parts && data.source === 'model-cutlist') {
         setParts(Object.entries(data.parts).map(([length, quantity]) => ({
@@ -198,8 +194,8 @@ const CuttingOptimizer = () => {
         localStorage.removeItem('partsible-3d-import');
         navigate(location.pathname, { replace: true });
       }
-    } catch (err) {
-      console.error('Failed to import 3D cutlist data:', err);
+    } catch {
+      setApiError(t('measurementUi.handoffReadFailed'));
     }
   }, [location.pathname, location.search, navigate]);
 
@@ -355,7 +351,9 @@ const CuttingOptimizer = () => {
   const sectionDims = { thickness: parseFloat(boardThickness), width: parseFloat(boardWidth) };
   const material = selectionName(productSel, i18n.language, sectionDims);
   const hasErrors = parts.length === 0 || currentPartErrors.some(Boolean) || inputErrors.boards.some(Boolean) || !!inputErrors.sawKerf
-    || !parseFloat(boardThickness) || !parseFloat(boardWidth);
+    || !sawKerf
+    || !isWholeMillimetres(boardThickness) || Number(boardThickness) < 1
+    || !isWholeMillimetres(boardWidth) || Number(boardWidth) < 1;
   const validBoards = boards.filter(b => b && !isNaN(parseFloat(b)));
   const uniqueValidBoards = [...new Set(validBoards.map((board) => parseFloat(board)))];
   const pricedBoardCount = uniqueValidBoards.filter((board) => boardCosts[board]?.price_per_meter > 0).length;
@@ -372,7 +370,10 @@ const CuttingOptimizer = () => {
   const materialMissing = [
     !parseFloat(boardThickness) && unitless('workflow.thicknessMm'),
     !parseFloat(boardWidth) && unitless('workflow.widthMm'),
+    !sawKerf && unitless('workflow.sawBlade'),
   ].filter(Boolean);
+  const profileError = [boardThickness, boardWidth].some((value) => value !== '' && (!isWholeMillimetres(value) || Number(value) < 1))
+    ? t('measurementUi.whole', { min: 1 }) : '';
   const partRowsWrong = parts.some((part, index) => visiblePartError(part, index));
   const partRowsBlank = currentPartErrors.some((errors, index) => errors && Object.keys(errors).some((field) => parts[index][field] === ''));
   const stockWrong = inputErrors.boards.some(Boolean);
@@ -381,7 +382,9 @@ const CuttingOptimizer = () => {
     if (!section) return;
     section.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
     const fields = [...section.querySelectorAll('input:not([type=checkbox]):not([type=radio]), select')];
-    (fields.find((field) => !field.value) || fields[0])?.focus({ preventScroll: true });
+    (fields.find((field) => field.getAttribute('aria-invalid') === 'true')
+      || fields.find((field) => field.getAttribute('aria-required') === 'true' && !field.value)
+      || fields[0])?.focus({ preventScroll: true });
   }, 0);
   const toParts = { name: t('workflow.goToRequiredParts'), go: goToRequiredParts };
   const toMaterial = { name: t('formUi.goTo', { name: t('workflow.materialProfile') }), go: () => goToSection('board-material') };
@@ -389,6 +392,7 @@ const CuttingOptimizer = () => {
     : partRowsWrong ? { text: t('ui.fixLines'), ...toParts }
     : partRowsBlank ? { text: t('boardUi.fillPartRows'), ...toParts }
     : inputErrors.sawKerf ? { text: inputErrors.sawKerf, ...toMaterial }
+    : profileError ? { text: profileError, ...toMaterial }
     : materialMissing.length ? { text: t('boardUi.fillToPlan', { fields: materialMissing.join(', ') }), ...toMaterial }
     : stockWrong ? { text: t('ui.fixLines'), name: t('formUi.goTo', { name: t('workflow.stockAvailable') }), go: () => goToSection('board-stock') }
     : null;
@@ -523,12 +527,12 @@ const CuttingOptimizer = () => {
     const currentParts = validateParts(parts, t);
     const currentErrors = {
       boards: validateBoards(boards, t),
-      sawKerf: !sawKerf || parseFloat(sawKerf) < SAW_KERF_MIN
-        ? t('workflow.kerfHint')
-        : parseFloat(sawKerf) > SAW_KERF_MAX ? t('auditUi.kerfWide') : '',
+      sawKerf: millimetresError(sawKerf, SAW_KERF_MIN, SAW_KERF_MAX, t),
     };
     setInputErrors(currentErrors);
-    if (currentParts.some(Boolean) || currentErrors.boards.some(Boolean) || currentErrors.sawKerf) return;
+    if (currentParts.some(Boolean) || currentErrors.boards.some(Boolean) || currentErrors.sawKerf
+      || !isWholeMillimetres(boardThickness) || Number(boardThickness) < 1
+      || !isWholeMillimetres(boardWidth) || Number(boardWidth) < 1) return;
     runPlan(pricingComplete);
   };
 
@@ -602,7 +606,7 @@ const CuttingOptimizer = () => {
     try {
       const moved = await movePlanToProject({ ...saved, projectType: 'board' }, group.id);
       setSaved(moved);
-      localStorage.setItem('partsible.lastProjectGroup', group.id);
+      rememberProjectChoice(group.id);
       return true;
     } catch (error) {
       setApiError(t('projectUi.moveFailed', { message: error.message }));
@@ -727,7 +731,7 @@ const CuttingOptimizer = () => {
           <SectionCard
             id="board-material"
             title={t('workflow.materialProfile')}
-            status={inputErrors.sawKerf ? <SectionStatus error={t('formUi.checkValues')} /> : <SectionStatus missing={materialMissing} />}
+            status={inputErrors.sawKerf || profileError ? <SectionStatus error={t('formUi.checkValues')} /> : <SectionStatus missing={materialMissing} />}
           >
             <div style={{ marginBottom: '18px' }}>
               <span className="form-label" style={{ display: 'block' }}>{t('productUi.product')}{' '}<span className="opt-mark">{t('formUi.optionalMark')}</span></span>
@@ -770,6 +774,7 @@ const CuttingOptimizer = () => {
                 {inputErrors.sawKerf && <p id="saw-kerf-error" className="text-danger text-[12.5px] font-semibold" style={{ marginTop: '6px' }}>{inputErrors.sawKerf}</p>}
               </div>
             </div>
+            {profileError && <p className="text-danger" role="alert">{profileError}</p>}
           </SectionCard>
 
           {/* Stock stays in plain sight. It was folded away on the first pass on

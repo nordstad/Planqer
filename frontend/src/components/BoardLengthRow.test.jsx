@@ -42,7 +42,7 @@ describe('BoardLengthRow', () => {
     expect(screen.getByText('Too short')).toBeInTheDocument();
   });
 
-  it('allows fractional board lengths', () => {
+  it('uses whole-mm steps while leaving an existing fractional value unchanged', () => {
     render(
       <table>
         <tbody>
@@ -60,6 +60,6 @@ describe('BoardLengthRow', () => {
     );
 
     expect(screen.getByLabelText(/Board length in millimetres, row 1/i)).toHaveValue(300.5);
-    expect(screen.getByLabelText(/Board length in millimetres, row 1/i)).toHaveAttribute('step', 'any');
+    expect(screen.getByLabelText(/Board length in millimetres, row 1/i)).toHaveAttribute('step', '1');
   });
 });

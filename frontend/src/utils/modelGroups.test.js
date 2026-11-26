@@ -221,8 +221,8 @@ describe('validation', () => {
     const result = validateGroupConfig(board(), bad, t);
     expect(result.hasErrors).toBe(true);
     expect(result.boards[0]).toBe('positive length');
-    expect(result.kerf).toBe('kerf zero');
-    expect(validateGroupConfig(sheet(), { ...initialConfig(sheet()), sheetWidth: '5' }, t).width).toBe('width');
+    expect(result.kerf).toBe('measurementUi.range');
+    expect(validateGroupConfig(sheet(), { ...initialConfig(sheet()), sheetWidth: '5' }, t).width).toBe('measurementUi.range');
   });
 });
 

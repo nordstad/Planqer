@@ -7,7 +7,7 @@ import Loader from './Loader';
 
 const AdminRoute = ({ children }) => {
   const { t } = useTranslation();
-  const { user, isAuthenticated, loading, needsSetup, setupCheckError, authStorageError } = useAuth();
+  const { user, isAuthenticated, loading, needsSetup, setupCheckError, authStorageError, retrySetup } = useAuth();
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
   if (loading) {
@@ -30,6 +30,7 @@ const AdminRoute = ({ children }) => {
           <p style={{ color: 'var(--ink-2)' }}>
             {t('common.apiUnavailableDescription')}
           </p>
+          <button type="button" className="btn" onClick={retrySetup}>{t('recoveryUi.retry')}</button>
         </div>
       </CatalogPage>
     );

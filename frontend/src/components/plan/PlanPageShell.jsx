@@ -1,9 +1,9 @@
 import { Link, useNavigate } from 'react-router-dom';
 import CatalogPage from '../CatalogPage';
 
-const PlanPageShell = ({ project, missing, loading, t, print, editPath, children }) => {
-  if (missing) return <CatalogPage><main className="cat-body"><p>{t('projectUi.planNotFound')}</p><Link to="/dashboard" className="btn-text">← {t('projectUi.dashboard')}</Link></main></CatalogPage>;
-  if (loading) return <CatalogPage><main className="cat-body"><p>{t('ui.loadingPreview')}</p></main></CatalogPage>;
+const PlanPageShell = ({ project, missing, error, retry, loading, t, print, editPath, children }) => {
+  if (missing || error) return <CatalogPage><main className="cat-body"><p role="alert">{t(missing ? 'projectUi.planNotFound' : [401, 403].includes(error?.status) ? 'recoveryUi.access' : 'recoveryUi.loadFailed')}</p>{!missing && <button type="button" className="btn" onClick={retry}>{t('recoveryUi.retry')}</button>} <Link to="/dashboard" className="btn-text">← {t('legacy.dashboard')}</Link></main></CatalogPage>;
+  if (loading) return <CatalogPage><main className="cat-body" aria-busy="true"><p role="status">{t('ui.loadingPreview')}</p></main></CatalogPage>;
   return <PlanPage project={project} t={t} print={print} editPath={editPath}>{children}</PlanPage>;
 };
 

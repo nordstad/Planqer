@@ -13,6 +13,7 @@ import CatalogueSuggest from './CatalogueSuggest';
 import Loader from './Loader';
 import CatalogueCountrySelect from './CatalogueCountrySelect';
 import { useCatalogueChoice } from '../hooks/useCatalogueChoice';
+import { useLocalDataRevision } from '../hooks/useLocalDataRevision';
 import { liteContext } from '../utils/mode';
 import {
   createCatalogueEntry, getAdminCatalogue, hideCatalogueEntry, resetCatalogueEntry,
@@ -29,10 +30,11 @@ const PANEL_CELL = { textAlign: 'left', fontSize: '14px', fontWeight: 400, lette
 
 const AdminCatalogue = () => {
   const selection = useCatalogueChoice();
+  const restored = useLocalDataRevision();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('all');
   // A country owns its rows, drafts, confirmations, and pending work.
-  return <CatalogueView key={selection.country ?? 'default'} {...selection} query={query} setQuery={setQuery} filter={filter} setFilter={setFilter} />;
+  return <CatalogueView key={`${selection.country ?? 'default'}:${restored}`} {...selection} query={query} setQuery={setQuery} filter={filter} setFilter={setFilter} />;
 };
 
 const CatalogueView = ({ choice, country, setChoice, query, setQuery, filter, setFilter }) => {
@@ -106,6 +108,9 @@ const CatalogueView = ({ choice, country, setChoice, query, setQuery, filter, se
 
   if (!items && !error) {
     return <div>{countrySelector}<div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}><Loader /></div></div>;
+  }
+  if (!items && error) {
+    return <div>{countrySelector}<p className="alert-danger" role="alert">{error}</p><button type="button" className="btn" onClick={refresh}>{t('recoveryUi.retry')}</button></div>;
   }
 
   const countryName = catalogue?.country_name || t('catalogueAdmin.genericCountry');

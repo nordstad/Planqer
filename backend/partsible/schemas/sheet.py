@@ -1,5 +1,6 @@
 from pydantic import BaseModel, field_validator, model_validator
 
+from partsible.measurement_inputs import MeasurementRequest
 from partsible.sheet_optimization import SheetOptimizationAlgorithm
 from partsible.validation import (
     sanitize_project_name,
@@ -26,7 +27,7 @@ class SheetPartSpec(BaseModel):
         return v
 
 
-class SheetOptimizationRequest(BaseModel):
+class SheetOptimizationRequest(MeasurementRequest):
     parts: dict[str, SheetPartSpec]
     sheet_width: float
     sheet_height: float

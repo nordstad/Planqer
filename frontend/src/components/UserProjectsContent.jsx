@@ -15,7 +15,7 @@
   everything else instead of being a footnote called "Ungrouped".
 */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -30,6 +30,8 @@ import { printProjectPlans } from '../utils/printProject';
 import { buildMaterialListHtml, buildMaterialCsv, isPlanPriced } from '../utils/materialList';
 import { materialLabel, cleanMaterial } from '../utils/materialLabel';
 import { restoreBoardParts } from '../utils/boardParts';
+import { rememberProjectChoice } from '../hooks/useProjectChoice';
+import { useLocalDataRevision } from '../hooks/useLocalDataRevision';
 import { buildCutListHtml } from '../utils/tileCutList';
 import { buildWallpaperPlanHtml } from '../utils/wallpaperPlanPrint';
 import { buildSheetPlanHtml } from '../utils/sheetPlanPrint';
@@ -145,12 +147,18 @@ const UserProjectsContent = ({ groupId }) => {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [loadFailed, setLoadFailed] = useState(false);
+  const loadRevision = useRef(0);
+  const restored = useLocalDataRevision();
   const [busyId, setBusyId] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [editingName, setEditingName] = useState('');
   const [editingGroup, setEditingGroup] = useState(false);
   const [editingGroupName, setEditingGroupName] = useState('');
   const [editingSpareMargin, setEditingSpareMargin] = useState(10);
+  const [editingBusy, setEditingBusy] = useState(false);
+  const editPending = useRef(null);
+  const editTarget = useRef(null);
   const [pendingDelete, setPendingDelete] = useState(null);
   const [paperSize, setPaperSize] = useState('a4');
   const [printing, setPrinting] = useState(false);
@@ -161,7 +169,8 @@ const UserProjectsContent = ({ groupId }) => {
 
   useEffect(() => {
     if (user) loadProjects();
-  }, [user]);
+    return () => { loadRevision.current += 1; };
+  }, [user, restored]);
 
   useEffect(() => {
     setSelectedPlanIds(new Set());
@@ -169,9 +178,16 @@ const UserProjectsContent = ({ groupId }) => {
   }, [groupId]);
 
   const loadProjects = async () => {
+    const owner = ++loadRevision.current;
+    editPending.current = null;
+    editTarget.current = null;
+    setEditingBusy(false);
+    setEditingId(null);
+    setEditingGroup(false);
     try {
       setLoading(true);
       setError('');
+      setLoadFailed(false);
 
       const [boardProjects, sheetProjects, tileProjects, wallpaperProjects, projectGroups, settings] = await Promise.all([
         getUserProjects(),
@@ -181,6 +197,7 @@ const UserProjectsContent = ({ groupId }) => {
         getProjectGroups(),
         getUserSettings().catch(() => null),
       ]);
+      if (owner !== loadRevision.current) return;
       setUserSpareMargin(settings?.spare_margin_percent ?? 10);
 
       const combined = [
@@ -193,13 +210,15 @@ const UserProjectsContent = ({ groupId }) => {
       setAllProjects(combined);
       setGroups(projectGroups);
     } catch (err) {
+      if (owner !== loadRevision.current) return;
       if (err.message.includes('Could not validate credentials') || err.message.includes('Unauthorized')) {
         logout();
         return;
       }
       setError(t('projectUi.loadFailed', { message: err.message }));
+      setLoadFailed(true);
     } finally {
-      setLoading(false);
+      if (owner === loadRevision.current) setLoading(false);
     }
   };
 
@@ -348,7 +367,7 @@ const UserProjectsContent = ({ groupId }) => {
       setAllProjects((previous) => previous.map((item) => (item.id === project.id && item.projectType === project.projectType
         ? { ...item, ...moved, projectType: project.projectType }
         : item)));
-      localStorage.setItem('partsible.lastProjectGroup', group.id);
+      rememberProjectChoice(group.id);
       return true;
     } catch (err) {
       setError(t('projectUi.moveFailed', { message: err.message }));
@@ -371,22 +390,32 @@ const UserProjectsContent = ({ groupId }) => {
   };
 
   const startEdit = (project) => {
+    if (editPending.current) return;
+    editTarget.current = project.id;
     setEditingId(project.id);
     setEditingName(project.name);
   };
 
   const cancelEdit = () => {
+    if (editPending.current) return;
+    editTarget.current = null;
     setEditingId(null);
     setEditingName('');
   };
 
   const saveEdit = async (project) => {
+    if (editPending.current || editTarget.current !== project.id) return;
     const name = editingName.trim();
     if (!name || name === project.name) {
       cancelEdit();
       return;
     }
 
+    const operation = Symbol();
+    const revision = loadRevision.current;
+    editPending.current = operation;
+    setEditingBusy(true);
+    setError('');
     try {
       if (project.projectType === 'sheet') {
         await updateSheetProject(project.id, { name });
@@ -397,26 +426,35 @@ const UserProjectsContent = ({ groupId }) => {
       } else {
         await updateProject(project.id, { name });
       }
-      setAllProjects((prev) => prev.map((p) => (p.id === project.id ? { ...p, name } : p)));
-    } catch (err) {
-      setError(t('projectUi.renamePlanFailed', { message: err.message }));
-    } finally {
+      if (editPending.current !== operation || revision !== loadRevision.current) return;
+      setAllProjects((prev) => prev.map((p) => (p.id === project.id && p.projectType === project.projectType ? { ...p, name } : p)));
+      editPending.current = null;
       cancelEdit();
+    } catch (err) {
+      if (editPending.current === operation && revision === loadRevision.current) setError(t('projectUi.renamePlanFailed', { message: err.message }));
+    } finally {
+      if (editPending.current === operation) editPending.current = null;
+      if (revision === loadRevision.current) setEditingBusy(false);
     }
   };
 
   const startEditGroup = (group) => {
+    if (editPending.current) return;
+    editTarget.current = group.id;
     setEditingGroup(true);
     setEditingGroupName(group.name);
     setEditingSpareMargin(group.spare_margin_percent ?? userSpareMargin);
   };
 
   const cancelEditGroup = () => {
+    if (editPending.current) return;
+    editTarget.current = null;
     setEditingGroup(false);
     setEditingGroupName('');
   };
 
   const saveEditGroup = async (group) => {
+    if (editPending.current || editTarget.current !== group.id) return;
     const name = editingGroupName.trim();
     const spareMargin = Math.min(100, Math.max(0, Number(editingSpareMargin) || 0));
     const marginChanged = spareMargin !== (group.spare_margin_percent ?? userSpareMargin);
@@ -425,14 +463,23 @@ const UserProjectsContent = ({ groupId }) => {
       return;
     }
 
+    const operation = Symbol();
+    const revision = loadRevision.current;
+    editPending.current = operation;
+    setEditingBusy(true);
+    setError('');
     try {
       const payload = marginChanged ? { name, spare_margin_percent: spareMargin } : { name };
       await renameProjectGroup(group.id, payload);
+      if (editPending.current !== operation || revision !== loadRevision.current) return;
       setGroups((prev) => prev.map((g) => (g.id === group.id ? { ...g, ...payload } : g)));
-    } catch (err) {
-      setError(t('projectUi.renameProjectFailed', { message: err.message }));
-    } finally {
+      editPending.current = null;
       cancelEditGroup();
+    } catch (err) {
+      if (editPending.current === operation && revision === loadRevision.current) setError(t('projectUi.renameProjectFailed', { message: err.message }));
+    } finally {
+      if (editPending.current === operation) editPending.current = null;
+      if (revision === loadRevision.current) setEditingBusy(false);
     }
   };
 
@@ -463,6 +510,8 @@ const UserProjectsContent = ({ groupId }) => {
     <input
       type="text"
       className="form-input name-edit"
+      readOnly={editingBusy}
+      aria-busy={editingBusy}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       onBlur={onCommit}
@@ -594,6 +643,9 @@ const UserProjectsContent = ({ groupId }) => {
   const errorNotice = error && (
     <div className="alert-danger" role="alert" style={{ marginBottom: '18px' }}>{error}</div>
   );
+  if (loadFailed) {
+    return <div>{errorNotice}<button type="button" className="btn" onClick={loadProjects}>{t('projects.refresh')}</button></div>;
+  }
 
   /* ── inside one project ─────────────────────────────────────────────── */
 
@@ -628,22 +680,24 @@ const UserProjectsContent = ({ groupId }) => {
           {group && editingGroup ? (
             <form
               className="project-group-edit"
+              aria-busy={editingBusy}
               onSubmit={(event) => { event.preventDefault(); saveEditGroup(group); }}
               onKeyDown={(event) => { if (event.key === 'Escape') cancelEditGroup(); }}
             >
               <input
                 type="text"
                 className="form-input name-edit"
+                readOnly={editingBusy}
                 value={editingGroupName}
                 onChange={(event) => setEditingGroupName(event.target.value)}
                 aria-label={t('projectUi.projectName')}
                 autoFocus
               />
               <label className="synthetic" htmlFor="project-spare-margin">{t('settings.spareMargin')}</label>
-              <input id="project-spare-margin" type="number" min="0" max="100" step="1" className="form-input dimension-input" value={editingSpareMargin}
+              <input id="project-spare-margin" type="number" min="0" max="100" step="1" readOnly={editingBusy} className="form-input dimension-input" value={editingSpareMargin}
                 onChange={(event) => setEditingSpareMargin(event.target.value)} />
-              <button type="submit" className="btn btn-sm btn-primary">{t('common.saveSettings')}</button>
-              <button type="button" className="btn btn-sm" onClick={cancelEditGroup}>{t('ui.cancel')}</button>
+              <button type="submit" className="btn btn-sm btn-primary" disabled={editingBusy}>{editingBusy ? t('common.saving') : t('common.saveSettings')}</button>
+              <button type="button" className="btn btn-sm" disabled={editingBusy} onClick={cancelEditGroup}>{t('ui.cancel')}</button>
             </form>
           ) : (
             <h2 className="proj-head-name">

@@ -9,8 +9,8 @@ import PlanPageShell from './plan/PlanPageShell';
 const SheetPlanPage = () => {
   const { t, i18n } = useTranslation();
   const { planId } = useParams();
-  const { project, missing } = useSavedPlan(planId, getSheetProject);
-  return <PlanPageShell project={project} missing={missing} loading={!project} t={t} editPath={project && `/sheet-cutting?edit=${encodeURIComponent(project.id)}`} print={project?.optimization_result ? () => printSheetPlan(project, t, i18n.language) : null}>{project?.optimization_result ? <SheetPlanDocument project={project} /> : project && <p>{t('wallpaperUi.noPlanYet')}</p>}</PlanPageShell>;
+  const { project, ...state } = useSavedPlan(planId, getSheetProject);
+  return <PlanPageShell project={project} {...state} loading={!project} t={t} editPath={project && `/sheet-cutting?edit=${encodeURIComponent(project.id)}`} print={project?.optimization_result ? () => printSheetPlan(project, t, i18n.language) : null}>{project?.optimization_result ? <SheetPlanDocument project={project} /> : project && <p>{t('wallpaperUi.noPlanYet')}</p>}</PlanPageShell>;
 };
 
 export default SheetPlanPage;

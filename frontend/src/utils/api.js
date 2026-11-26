@@ -2,6 +2,7 @@ import axios from 'axios';
 import { normalizeBoardParts } from './boardParts';
 import { isValidSheetQuantity, MAX_SHEET_PART_QUANTITY } from './validators';
 import { resolveCatalogueCountry } from './catalogueChoice';
+import { readMillimetres } from './measurementInput';
 import { createLocalTransport } from '../runtime/localTransport';
 
 /*
@@ -73,6 +74,9 @@ const extractErrorMessage = (error) => {
   }
   return error.message || '';
 };
+const savedLoadError = (error) => Object.assign(new Error(extractErrorMessage(error)), {
+  status: error.response?.status,
+});
 
 /* ── local account auth ───────────────────────────────────────────────
    A local account lives on this self-hosted instance, never a cloud
@@ -157,7 +161,9 @@ export const getLatestRelease = async () => {
 
   const response = await http.get('https://api.github.com/repos/nordstad/partsible/releases/latest');
   const tag = response.data.tag_name;
-  localStorage.setItem(LATEST_RELEASE_CACHE_KEY, JSON.stringify({ tag, fetchedAt: Date.now() }));
+  try {
+    localStorage.setItem(LATEST_RELEASE_CACHE_KEY, JSON.stringify({ tag, fetchedAt: Date.now() }));
+  } catch { /* Release information remains usable without its optional cache. */ }
   return tag;
 };
 
@@ -217,7 +223,7 @@ export const getProject = async (id) => {
     const response = await http.get(`${API_URL}/api/projects/${encodeURIComponent(id)}`);
     return response.data;
   } catch (error) {
-    throw new Error(extractErrorMessage(error));
+    throw savedLoadError(error);
   }
 };
 
@@ -238,8 +244,7 @@ export const serializeBoardPartLabels = (parts) => normalizeBoardParts(parts).re
 export const serializeBoardLengths = (boards) => [
   ...new Set(
     boards
-      .map((board) => parseFloat(board))
-      .filter((length) => Number.isFinite(length)),
+      .map((board) => readMillimetres(board, 1, 15000)),
   ),
 ];
 
@@ -255,8 +260,8 @@ export const normalizeSheetParts = (parts) => {
     }
     usedIds.add(id);
 
-    const width = parseFloat(part.width);
-    const height = parseFloat(part.height);
+    const width = readMillimetres(part.width, 1, 5000);
+    const height = readMillimetres(part.height, 1, 5000);
     if (!isValidSheetQuantity(part.quantity)) {
       throw new Error(`Sheet part ${index + 1} quantity must be a whole number between 1 and ${MAX_SHEET_PART_QUANTITY}`);
     }
@@ -295,11 +300,11 @@ export const saveProject = async ({ id, name, projectGroupId, parts, boards, saw
       project_group_id: projectGroupId || null,
       parts_data: normalizeBoardParts(parts),
       board_lengths: serializeBoardLengths(boards),
-      saw_blade_width: parseFloat(sawKerf),
+      saw_blade_width: readMillimetres(sawKerf, 1, 100),
       material_type: materialType,
       product: product || null,
-      board_thickness: parseFloat(boardThickness),
-      board_width: parseFloat(boardWidth),
+      board_thickness: readMillimetres(boardThickness),
+      board_width: readMillimetres(boardWidth),
       // Null when the plan was never priced, so an unpriced plan doesn't store
       // an empty pricing panel that looks like a deliberate zero.
       board_costs: boardCosts || null,
@@ -366,7 +371,7 @@ export const getSheetProject = async (id) => {
     const response = await http.get(`${API_URL}/api/sheet-projects/${encodeURIComponent(id)}`);
     return response.data;
   } catch (error) {
-    throw new Error(extractErrorMessage(error));
+    throw savedLoadError(error);
   }
 };
 
@@ -378,10 +383,10 @@ export const saveSheetProject = async ({
       name,
       project_group_id: projectGroupId || null,
       parts_data: normalizeSheetParts(parts),
-      sheet_width: parseFloat(sheetWidth),
-      sheet_height: parseFloat(sheetHeight),
-      sheet_thickness: parseFloat(sheetThickness),
-      kerf_width: parseFloat(kerfWidth),
+      sheet_width: readMillimetres(sheetWidth, 100, 10000),
+      sheet_height: readMillimetres(sheetHeight, 100, 10000),
+      sheet_thickness: readMillimetres(sheetThickness),
+      kerf_width: readMillimetres(kerfWidth, 1, 50),
       material_type: materialType,
       product: product || null,
       algorithm: algorithm || null,
@@ -432,7 +437,7 @@ export const getTileProject = async (id) => {
     const response = await http.get(`${API_URL}/api/tile-projects/${encodeURIComponent(id)}`);
     return response.data;
   } catch (error) {
-    throw new Error(extractErrorMessage(error));
+    throw savedLoadError(error);
   }
 };
 
@@ -449,31 +454,31 @@ export const saveTileProject = async ({
       name,
       project_group_id: projectGroupId || null,
       surface_data: {
-        width: parseFloat(surfaceWidth),
-        height: parseFloat(surfaceHeight),
+        width: readMillimetres(surfaceWidth, 100, 20000),
+        height: readMillimetres(surfaceHeight, 100, 20000),
         cutouts: cutouts
           .filter((c) => c.x !== '' && c.y !== '' && c.width !== '' && c.height !== '')
           .map((c) => ({
-            x: parseFloat(c.x), y: parseFloat(c.y),
-            width: parseFloat(c.width), height: parseFloat(c.height),
+            x: readMillimetres(c.x, 0, 20000), y: readMillimetres(c.y, 0, 20000),
+            width: readMillimetres(c.width, 1, 20000), height: readMillimetres(c.height, 1, 20000),
             label: c.label || null,
           })),
       },
       tile_data: {
-        width: parseFloat(tile.width),
-        height: parseFloat(tile.height),
+        width: readMillimetres(tile.width, 10, 3000),
+        height: readMillimetres(tile.height, 10, 3000),
         allow_rotation: !!tile.allowRotation,
         material_type: tile.materialType,
-        thickness: parseFloat(tile.thickness),
+        thickness: readMillimetres(tile.thickness, 1),
       },
       bond_data: {
         pattern: bond.pattern,
         offset_fraction: parseFloat(bond.offsetFraction),
-        joint_width: parseFloat(joint.jointWidth),
-        perimeter_gap: parseFloat(joint.perimeterGap),
+        joint_width: readMillimetres(joint.jointWidth, 0, 50),
+        perimeter_gap: readMillimetres(joint.perimeterGap, 0, 200),
       },
       options_data: {
-        min_edge_cut: minEdgeCut === '' || minEdgeCut === undefined ? null : parseFloat(minEdgeCut),
+        min_edge_cut: minEdgeCut === '' || minEdgeCut === undefined ? null : readMillimetres(minEdgeCut, 0, 3000),
         reuse_offcuts: reuseOffcuts !== false,
         waste_percent: parseFloat(wastePercent),
         candidate_count: parseInt(candidateCount, 10),
@@ -717,7 +722,7 @@ export const resetUserPassword = async (userId, password) => {
 export const optimizeCutting = async (parts, boards, sawKerf, costData = null) => {
   const partsPayload = serializeBoardParts(parts);
   const boardLengths = serializeBoardLengths(boards);
-  const kerfValue = parseFloat(sawKerf);
+  const kerfValue = readMillimetres(sawKerf, 1, 100);
 
   const payload = {
     parts: partsPayload,
@@ -756,9 +761,9 @@ export const optimizeCutting = async (parts, boards, sawKerf, costData = null) =
 export const optimizeSheetCutting = async (parts, sheetWidth, sheetHeight, kerfWidth, materialType, algorithm, allowRotation) => {
   const payload = {
     parts: serializeSheetParts(parts),
-    sheet_width: parseFloat(sheetWidth),
-    sheet_height: parseFloat(sheetHeight),
-    kerf_width: parseFloat(kerfWidth),
+    sheet_width: readMillimetres(sheetWidth, 100, 10000),
+    sheet_height: readMillimetres(sheetHeight, 100, 10000),
+    kerf_width: readMillimetres(kerfWidth, 1, 50),
     material_type: materialType || 'plywood',
     algorithm: algorithm || undefined,
     allow_rotation: allowRotation !== false
@@ -790,31 +795,31 @@ export const optimizeTileLayout = async ({
   minEdgeCut, reuseOffcuts, wastePercent, candidateCount, projectName,
 }) => {
   const payload = {
-    surface_width: parseFloat(surfaceWidth),
-    surface_height: parseFloat(surfaceHeight),
+    surface_width: readMillimetres(surfaceWidth, 100, 20000),
+    surface_height: readMillimetres(surfaceHeight, 100, 20000),
     cutouts: cutouts
       .filter((c) => c.x !== '' && c.y !== '' && c.width !== '' && c.height !== '')
       .map((c) => ({
-        x: parseFloat(c.x),
-        y: parseFloat(c.y),
-        width: parseFloat(c.width),
-        height: parseFloat(c.height),
+        x: readMillimetres(c.x, 0, 20000),
+        y: readMillimetres(c.y, 0, 20000),
+        width: readMillimetres(c.width, 1, 20000),
+        height: readMillimetres(c.height, 1, 20000),
         label: c.label || null,
       })),
     tile: {
-      width: parseFloat(tile.width),
-      height: parseFloat(tile.height),
+      width: readMillimetres(tile.width, 10, 3000),
+      height: readMillimetres(tile.height, 10, 3000),
       allow_rotation: !!tile.allowRotation,
     },
     joint: {
-      joint_width: parseFloat(joint.jointWidth),
-      perimeter_gap: parseFloat(joint.perimeterGap),
+      joint_width: readMillimetres(joint.jointWidth, 0, 50),
+      perimeter_gap: readMillimetres(joint.perimeterGap, 0, 200),
     },
     bond: {
       pattern: bond.pattern,
       offset_fraction: parseFloat(bond.offsetFraction),
     },
-    min_edge_cut: minEdgeCut === '' || minEdgeCut === undefined ? null : parseFloat(minEdgeCut),
+    min_edge_cut: minEdgeCut === '' || minEdgeCut === undefined ? null : readMillimetres(minEdgeCut, 0, 3000),
     reuse_offcuts: reuseOffcuts !== false,
     waste_percent: parseFloat(wastePercent),
     candidate_count: parseInt(candidateCount, 10),

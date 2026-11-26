@@ -197,6 +197,21 @@ from one stylesheet.
 These principles guide changes across every page, not just the homepage or one
 planner. Product context lives in `PRODUCT.md`.
 
+**Measurement policy (2026-11-27):** New measurement inputs use whole millimetres,
+including kerf, joints, gaps, opening positions, stock profiles, and allowances.
+Reject fractional, malformed, and out-of-range input rather than truncating it
+or accepting a numeric prefix. Keep the existing supported bounds; the smallest
+positive whole-mm kerf is 1 mm. Prices, percentages, ratios, and angles are not
+millimetre measurements and retain their own contracts.
+
+The model flow explicitly explains that measured geometry is rounded to the
+nearest millimetre before grouping and planning. This supersedes the earlier
+proposal to preserve fractional model inputs. Computed geometry is not rounded
+internally: doing that could change placement and fit. Existing saved records,
+stored diagrams, and backups are not migrated or silently rounded. Their
+historical fractional instructions remain accurately readable; modifying them
+requires correcting unsupported inputs before recalculation or a new save.
+
 - **Consistency across pages:** Reuse the same visual and interaction language
   for equivalent tasks: navigation, actions, fields, validation, loading,
   dialogs, and result summaries. Consistency does not require identical layouts
@@ -696,6 +711,10 @@ show the name, manufacturer, and code when present so distinct purchases remain
 identifiable on screen, in CSV, and in generated Print. Missing codes must not
 inherit known ones; identical coded products retain existing pricing and
 reserve behavior. Codes are preserved as stored, not inferred or case-folded.
+Known repeat, match, roll offset, and batch reference also participate in purchase
+identity and are visible in the shared screen/CSV/Print label. Missing metadata
+does not inherit known values by merging. Identical metadata still aggregates
+without a second reserve allowance.
 
 ### The Step Rail
 
@@ -734,6 +753,25 @@ This alert has its own translated heading, not the generated "Note" prefix.
 Public content and language/theme controls remain available. A failed logout
 must not claim success if token removal failed. This does not change credential
 storage policy, IndexedDB behavior, or introduce an ephemeral work-store fallback.
+
+Optional catalogue/release caches and last-project preferences must not turn a
+successful fetch, save, or move into an apparent failure when their write fails.
+Model handoff is different: a failed transfer write keeps the source model and
+offers an explicit retry instruction without navigating. A failed destination
+read leaves a visible recovery message rather than crashing the planner.
+
+Saved-plan failures distinguish confirmed not-found from inaccessible or
+temporarily unavailable data and offer an in-place retry. Unknown collections
+must not render a known-empty library. Failed renames/settings edits retain the
+draft, block duplicate pending commits, and permit retry or cancellation.
+Unknown routes and failed route rendering retain navigation and honest
+reload/home recovery; reloading may discard unsaved input.
+
+Registration and password reset explain the server's actual policy: at least
+eight Unicode characters, ASCII uppercase/lowercase, a digit and a special
+character, with a maximum of 72 UTF-8 bytes. Reset uses a password field with
+retry/cancel, never a plain-text browser prompt. Login is not subjected to
+new-password validation.
 
 Lite backup import reports success only after all imported record writes commit
 in one transaction across the affected stores. A failed or aborted import must
@@ -776,8 +814,11 @@ The native button exposes expanded state and its controlled content; hidden
 controls are not keyboard stops. Collapsing cancels an uncommitted review and
 retires its approval, with focus on Backup. Disable collapse during a restore
 write; normal cancellation/completion still returns focus to Import.
-This does not refresh mounted project/Defaults/catalogue views after restore;
-that remains separate work.
+After a successful restore commit, invalidate catalogue caches and notify mounted
+project/Defaults/catalogue views to reload their stored data. Failure/rollback
+does not emit a success notification. Keep the backup disclosure mounted so its
+feedback and focus recovery survive. This is same-document refresh, not a promise
+of automatic cross-tab synchronization or crash durability.
 
 Defaults are editable and saveable only after a successful read for the current
 user. A pending read shows the existing loader; a failed read shows the load error
