@@ -188,6 +188,30 @@ describe('cutlists step', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('These parts could not be measured and are not in this list: Component 2.');
   });
 
+  it.each([
+    ['zero_thickness', /no measurable thickness/i],
+    ['too_few_points', /not enough geometry to measure a solid/i],
+    ['unrecognized_internal_detail', /check the solid geometry and re-export/i],
+  ])('explains the skipped-part reason %s without exposing raw diagnostic codes', async (reason, explanation) => {
+    process3DCutlist.mockResolvedValue({ ...benchModel, warnings: [{ name: 'Skipped component', reason }] });
+    await readBench();
+    const warning = screen.getByRole('alert');
+    expect(warning).toHaveTextContent('Skipped component');
+    expect(warning).toHaveTextContent(explanation);
+    expect(warning).not.toHaveTextContent(reason);
+  });
+
+  it('keeps skipped-geometry explanations available when no usable cutlists were found', async () => {
+    process3DCutlist.mockResolvedValue({ boards: [], sheets: [], warnings: [{ name: 'Flat face', reason: 'zero_thickness' }] });
+    const { container } = await renderFlow();
+    fireEvent.change(container.querySelector('input[type="file"]'), { target: { files: [new File(['solid'], 'flat.stl')] } });
+    fireEvent.click(screen.getByRole('button', { name: /read the model/i }));
+    expect(await screen.findByText(/No board or sheet parts found/)).toBeInTheDocument();
+    expect(screen.getByText(/no measurable thickness/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Remove file/i }));
+    expect(screen.queryByText(/no measurable thickness/i)).not.toBeInTheDocument();
+  });
+
   it('shows neutral labels and never the word unknown', async () => {
     await readBench();
     // The automatic name is a real, editable value, not a placeholder that looks like one.

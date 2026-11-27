@@ -21,9 +21,10 @@ const plan = (rolls = 6) => ({
   rolls: [{ number: 1, cuts: [], offcut_length: 0 }],
 });
 
-const setup = async (page, language, locale, dark) => {
+const setup = async (page, language, locale, dark, holdSaves = false) => {
   const pending = [];
   const saves = [];
+  const saveReplies = [];
   const unexpectedWrites = [];
   await page.route('**/api/**', async (route) => {
     const request = route.request();
@@ -37,6 +38,7 @@ const setup = async (page, language, locale, dark) => {
     if (request.method() === 'POST' && path === '/api/wallpaper-projects') {
       const payload = request.postDataJSON();
       saves.push(payload);
+      if (holdSaves) return route.fulfill(await new Promise((resolve) => saveReplies.push(resolve)));
       return route.fulfill({ json: { id: 'synthetic-saved', name: payload.name, project_group_id: 'synthetic-group' } });
     }
     if (request.method() === 'POST' && path === '/api/wallpapers') {
@@ -76,7 +78,7 @@ const setup = async (page, language, locale, dark) => {
   await page.locator('#wallpaper-name').fill('Willow');
   await page.locator('#wallpaper-manufacturer').fill('Example');
   await page.getByRole('button', { name: `${locale.wallpaperUi.measureRoom} →`, exact: true }).click();
-  return { pending, saves, unexpectedWrites, release };
+  return { pending, saves, saveReplies, unexpectedWrites, release };
 };
 
 const createButton = (page, locale) => page.getByRole('button', { name: `${locale.wallpaperUi.createPlan} →`, exact: true });
@@ -99,6 +101,38 @@ const saveCurrent = async (page, locale, state) => {
 
 for (const [language, locale] of [['en-GB', en], ['sv-SE', sv], ['nb-NO', nb]]) {
   for (const dark of [false, true]) {
+    test(`wallpaper pending save and retained failure/retry: ${language}, ${dark ? 'dark' : 'light'}`, async ({ page }) => {
+      const state = await setup(page, language, locale, dark, true);
+      await createButton(page, locale).click();
+      await expect.poll(() => state.pending.length).toBe(1);
+      await state.release(0, { json: plan() });
+      await page.getByRole('button', { name: `${locale.wallpaperUi.prepareCutSheets} →`, exact: true }).click();
+      await page.getByRole('button', { name: `${locale.workflow.savePlan} →`, exact: true }).click();
+      await page.locator('#wallpaper-plan-name').fill('Retained wallpaper draft');
+      await page.getByRole('button', { name: locale.workflow.savePlan, exact: true }).click();
+      await expect.poll(() => state.saveReplies.length).toBe(1);
+      await expect(page.getByRole('status')).toHaveText(locale.workflow.saving);
+      await expect(page.locator('#wallpaper-plan-name')).toBeDisabled();
+      await expect(page.locator('#plan-project')).toBeDisabled();
+      for (const button of await page.locator('.plan-step-btn').all()) await expect(button).toBeDisabled();
+      const pendingSave = page.getByRole('button', { name: locale.workflow.saving, exact: true });
+      await expect(pendingSave).toBeDisabled();
+      await pendingSave.evaluate((button) => { button.click(); button.click(); });
+      expect(state.saves).toHaveLength(1);
+      state.saveReplies[0]({ status: 503, json: { detail: 'Synthetic save failure' } });
+      await expect(page.getByRole('alert')).toContainText('Synthetic save failure');
+      await expect(page.getByRole('status')).toHaveCount(0);
+      await expect(page.locator('#wallpaper-plan-name')).toHaveValue('Retained wallpaper draft');
+      await expect(page.locator('#plan-project')).toBeEnabled();
+      await page.getByRole('button', { name: locale.workflow.savePlan, exact: true }).click();
+      await expect.poll(() => state.saveReplies.length).toBe(2);
+      state.saveReplies[1]({ json: { id: 'synthetic-saved', project_group_id: 'synthetic-group' } });
+      await expect(page.getByRole('heading', { name: locale.workflow.planSaved, exact: true })).toBeVisible();
+      await expect(page.getByRole('status')).toHaveCount(0);
+      expect(state.saves[1]).toEqual(state.saves[0]);
+      expect(state.unexpectedWrites).toEqual([]);
+    });
+
     test(`completed wallpaper retirement: ${language}, ${dark ? 'dark' : 'light'}`, async ({ page }) => {
       const state = await setup(page, language, locale, dark);
       await createButton(page, locale).click();

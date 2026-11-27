@@ -768,6 +768,16 @@ Unknown routes and failed route rendering retain navigation and honest
 reload/home recovery; reloading may discard unsaved input.
 Recovery resets on navigation after a failure without remounting healthy pages:
 consuming an edit/import query or following a fragment must preserve loaded work.
+Wallpaper saves announce their pending state and lock the save fields and step
+navigation until completion. Failures retain the draft for retry. Leaving the
+planner retires completion handling and prevents an unsent plan write after
+project creation; it cannot cancel a write already sent. A secondary wallpaper-
+library failure must not imply that the completed plan save failed.
+Skipped model geometry retains its part name and a localized explanation for
+known reasons, with a safe correction hint for unrecognized reasons. Keep these
+diagnostics available even when no usable cutlists remain; replacing or removing
+the source file clears them. A geometry warning alone does not prove that an
+assembly container was intended as a physical part.
 
 Registration and password reset explain the server's actual policy: at least
 eight Unicode characters, ASCII uppercase/lowercase, a digit and a special

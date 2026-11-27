@@ -14,8 +14,10 @@ import {
   restoreCatalogueEntry,
   saveProject,
   saveSheetProject,
+  saveWallpaperProject,
   serializeBoardParts,
   updateCatalogueEntry,
+  updateWallpaperProject,
 } from './api';
 import { restoreBoardParts } from './boardParts';
 
@@ -76,6 +78,23 @@ beforeEach(() => {
   vi.clearAllMocks();
   axios.post.mockResolvedValue({ data: { ok: true } });
   axios.put.mockResolvedValue({ data: { ok: true } });
+});
+
+describe.each([
+  ['create', 'post', (body) => saveWallpaperProject(body)],
+  ['update', 'put', (body) => updateWallpaperProject('wallpaper-id', body)],
+])('wallpaper %s failures', (_name, method, save) => {
+  it('preserves the server explanation instead of the generic HTTP error', async () => {
+    axios[method].mockRejectedValueOnce({
+      message: 'Request failed with status code 503',
+      response: { data: { detail: 'Synthetic save failure' } },
+    });
+    await expect(save({ name: 'Retained draft' })).rejects.toThrow('Synthetic save failure');
+  });
+  it('preserves a network failure when no response exists', async () => {
+    axios[method].mockRejectedValueOnce(new Error('Network Error'));
+    await expect(save({ name: 'Retained draft' })).rejects.toThrow('Network Error');
+  });
 });
 
 it('aggregates duplicate board part lengths without losing quantity', () => {

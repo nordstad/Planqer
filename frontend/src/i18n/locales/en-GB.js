@@ -259,6 +259,9 @@ const locale = {
     boards: 'Boards', sheets: 'Sheets', namesMaterial: 'Names, material', quantity: 'Quantity', longSolids: 'Long, narrow solids — cross-section and length', thinSolids: 'Thin, wide solids — thickness, length and width', readStepStl: 'Read from STEP; STL carries geometry only', countedParts: 'Counted from repeated parts and assemblies', fileSize: '{{format}} file size', unitsDeclared: "Millimetres — the file's own declared unit is used if it has one", stockAvailable: 'Stock available', boardCutlists: 'For the board cutlists below', sheetFrom: "The sheet you're cutting from", sheetCutlists: 'For the sheet cutlists below', stock: 'Stock', metres: 'Metres', sawBlade: 'Cut width (kerf)', width: 'Width', height: 'Height', kerf: 'Kerf', material: 'Material', saved: 'Saved', planning: 'Planning', failed: 'Failed', waiting: 'Waiting', signInRequired: 'Sign in required', signInAdmin: 'Sign in to reach the admin panel.', adminRequired: 'Admin access required', apiUnavailable: "Can't reach the API", setup: 'Set up Partsible', saveAs: 'Save as', createPlan: 'Create a new plan', updatePlan: 'Update existing plan', savedPlans: 'YOUR SAVED PLANS', actions: 'Actions', status: 'Status', strategy: 'Strategy', waste: 'Waste', materialUsed: 'Material used', withBreakage: 'With breakage allowance', tightest: 'Narrowest cut piece', noProject: 'Not in a project. Open it any time from your dashboard.', dashboard: 'your dashboard'
   },
   modelUi: {
+    skippedZeroThickness: 'No measurable thickness. Export this part as a solid rather than a face or sketch.',
+    skippedTooFewPoints: 'Not enough geometry to measure a solid. Construction geometry or an assembly container may not be a cut part; check that all intended solids were exported.',
+    skippedGeometry: 'This item could not be measured. Check the solid geometry and re-export the model.',
     planCutlist_one: 'Plan {{count}} cutlist',
     planCutlist_other: 'Plan {{count}} cutlists',
     planCutlists_one: 'Plan {{count}} cutlist',
@@ -424,6 +427,7 @@ Object.assign(locale, {
   },
   sheetPlan: { material: 'Material', thickness: 'Thickness', size: 'Sheet size', sheets: 'Sheets to buy', parts: 'Parts' },
   wallpaperUi: {
+    savedWallpaperFailed: 'Your plan was saved, but the wallpaper could not be added to your saved wallpapers.',
     wallName: "Wall {{letter}}",
     shapeRectangle: "Rectangle",
     shapeSloped: "Sloped",

@@ -202,6 +202,7 @@ const ModelCutlistOptimizer = () => {
 
   /* ── the model ─────────────────────────────────────────────────────── */
   const retireAll = () => {
+    setWarnings([]);
     setGroups([]);
     setSelectedIds(new Set());
     setExpandedIds(new Set());
@@ -261,6 +262,7 @@ const ModelCutlistOptimizer = () => {
     }
     setReading(true);
     setError(null);
+    setWarnings([]);
     try {
       const isStep = ['.step', '.stp'].includes(extensionOf(file.name));
        const data = isStep ? await processStepCutlist(file) : await process3DCutlist(file);
@@ -468,6 +470,13 @@ const ModelCutlistOptimizer = () => {
       {error && step === STEP_MODEL && (
         <div className="alert-danger" style={{ marginBottom: '20px' }} role="alert">{error}</div>
       )}
+      {warnings.length > 0 && step <= STEP_CUTLISTS && <div role="alert" className="synthetic">
+        <p>{t('modelUi.skippedParts', { count: warnings.length, names: warnings.map((warning) => warning.name).join(', ') })}</p>
+        <ul>{warnings.map((warning, index) => <li key={index}>
+          {warning.name}: {t(warning.reason === 'zero_thickness' ? 'modelUi.skippedZeroThickness'
+            : warning.reason === 'too_few_points' ? 'modelUi.skippedTooFewPoints' : 'modelUi.skippedGeometry')}
+        </li>)}</ul>
+      </div>}
 
       {/* ── 01 · the model ─────────────────────────────────────────────── */}
       {step === STEP_MODEL && (
@@ -595,7 +604,6 @@ const ModelCutlistOptimizer = () => {
             </div>
             <p className="synthetic">{t('measurementUi.modelRounding')}</p>
             {apiError && <div className="alert-danger" role="alert">{apiError}</div>}
-            {warnings.length > 0 && <p role="alert" className="synthetic">{t('modelUi.skippedParts', { count: warnings.length, names: warnings.map((warning) => warning.name).join(', ') })}</p>}
 
           <Suspense fallback={<p className="synthetic" role="status">{t('modelUi.partsPreviewLoading')}</p>}>
             <ModelPartsPreview

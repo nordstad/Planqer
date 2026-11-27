@@ -856,8 +856,14 @@ export const getWallpapers = async () => (await http.get(`${API_URL}/api/wallpap
 export const saveWallpaper = async (payload) => (await http.post(`${API_URL}/api/wallpapers/`, payload)).data;
 export const getWallpaperProjects = async () => (await http.get(`${API_URL}/api/wallpaper-projects/`)).data;
 export const getWallpaperProject = async (id) => (await http.get(`${API_URL}/api/wallpaper-projects/${encodeURIComponent(id)}`)).data;
-export const saveWallpaperProject = async (payload) => (await http.post(`${API_URL}/api/wallpaper-projects/`, payload)).data;
-export const updateWallpaperProject = async (id, payload) => (await http.put(`${API_URL}/api/wallpaper-projects/${id}`, payload)).data;
+export const saveWallpaperProject = async (payload) => {
+  try { return (await http.post(`${API_URL}/api/wallpaper-projects/`, payload)).data; }
+  catch (error) { throw new Error(extractErrorMessage(error)); }
+};
+export const updateWallpaperProject = async (id, payload) => {
+  try { return (await http.put(`${API_URL}/api/wallpaper-projects/${id}`, payload)).data; }
+  catch (error) { throw new Error(extractErrorMessage(error)); }
+};
 export const deleteWallpaperProject = async (id) => (await http.delete(`${API_URL}/api/wallpaper-projects/${id}`)).data;
 
 const PROJECT_ENDPOINTS = { board: 'projects', sheet: 'sheet-projects', tile: 'tile-projects', wallpaper: 'wallpaper-projects' };

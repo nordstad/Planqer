@@ -291,9 +291,20 @@ const WallpaperOptimizer = () => {
   const [plan, setPlan] = useState(null);
   const [calculating, setCalculating] = useState(false);
   const inputRevision = useRef(0);
+  const calculationRequest = useRef(null);
   const [error, setError] = useState('');
   const [projectName, setProjectName] = useState(() => t('wallpaperUi.defaultProjectName'));
   const [saved, setSaved] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const saveRequest = useRef(null);
+  const owner = user?.id ?? user?.email ?? null;
+  const currentOwner = useRef(owner);
+  currentOwner.current = owner;
+  useEffect(() => {
+    saveRequest.current = null;
+    setSaving(false);
+    return () => { saveRequest.current = null; };
+  }, [owner]);
   const [projectGroups, setProjectGroups] = useState([]);
   const { groupId: projectGroupId, setGroupId: setProjectGroupId, newName: newProjectName, setNewName: setNewProjectName, resolve: resolveProject } = useProjectChoice({
     groups: projectGroups,
@@ -317,6 +328,8 @@ const WallpaperOptimizer = () => {
   const loadedFromProject = useRef(false);
   const retirePlan = () => {
     inputRevision.current += 1;
+    saveRequest.current = null;
+    setSaving(false);
     setPlan(null);
     setSaved(null);
     setStartChoice(null);
@@ -433,7 +446,9 @@ const WallpaperOptimizer = () => {
     start_style: startStyle,
   }), [wallpaper, walls, corners, patterned, closed, cornerOverlap, spareMargin, startStyle]);
   const requestPlan = async (start = null) => {
+    if (calculationRequest.current === inputRevision.current) return;
     const requestRevision = ++inputRevision.current;
+    calculationRequest.current = requestRevision;
     setCalculating(true);
     setSaved(null);
     setError('');
@@ -447,7 +462,10 @@ const WallpaperOptimizer = () => {
       if (requestRevision !== inputRevision.current) return;
       setError(translateWallpaperMessage(err.message, t));
     } finally {
-      if (requestRevision === inputRevision.current) setCalculating(false);
+      if (requestRevision === inputRevision.current) {
+        calculationRequest.current = null;
+        setCalculating(false);
+      }
     }
   };
   const makePlan = async () => {
@@ -502,20 +520,38 @@ const WallpaperOptimizer = () => {
   const rollPrice = payload.wallpaper.price_per_roll != null && Number.isFinite(payload.wallpaper.price_per_roll) ? payload.wallpaper.price_per_roll : null;
   const formatMoney = (value) => `${value.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${pricing.currency}`;
   const save = async () => {
-    if (!plan || planBlocked) return;
+    if (!plan || planBlocked || saveRequest.current) return;
     if (detailsMeasurementError || issues.some((issue) => issue.hasErrors)) {
       setError(detailsMeasurementError || t('measurementUi.range', { min: 0, max: 100000 }));
       return;
     }
     if (!projectName.trim()) { setError(t('auditUi.nameRequired')); return; }
+    const request = { revision: inputRevision.current, owner };
+    saveRequest.current = request;
+    setSaving(true);
+    const isCurrent = () => saveRequest.current === request
+      && request.revision === inputRevision.current && request.owner === currentOwner.current;
     try {
       setError('');
-       const body = { name: projectName.trim(), project_group_id: await resolveProject(), wallpaper_data: { ...payload.wallpaper, currency: pricing.currency, vat_rate: pricing.vatRate, prices_include_vat: pricing.pricesIncludeVat }, room_data: payload.room, options_data: { corner_overlap: cornerOverlap, spare_margin: spareMargin, start: startChoice, start_style: startStyle }, plan_result: plan, ordered_rolls: plan.rolls_to_buy };
+      const projectGroup = await resolveProject();
+      if (!isCurrent()) return;
+      const body = { name: projectName.trim(), project_group_id: projectGroup, wallpaper_data: { ...payload.wallpaper, currency: pricing.currency, vat_rate: pricing.vatRate, prices_include_vat: pricing.pricesIncludeVat }, room_data: payload.room, options_data: { corner_overlap: cornerOverlap, spare_margin: spareMargin, start: startChoice, start_style: startStyle }, plan_result: plan, ordered_rolls: plan.rolls_to_buy };
       const existingId = saved?.id ?? editingId;
       const result = existingId ? await updateWallpaperProject(existingId, body) : await saveWallpaperProject(body);
+      if (!isCurrent()) return;
       setSaved(result);
-      if (user && !isStaticMode()) await saveWallpaper({ name: wallpaper.name, data: payload.wallpaper });
-    } catch (err) { setError(translateWallpaperMessage(err.message, t)); }
+      if (user && !isStaticMode()) {
+        try { await saveWallpaper({ name: wallpaper.name, data: payload.wallpaper }); }
+        catch { if (isCurrent()) setError(t('wallpaperUi.savedWallpaperFailed')); }
+      }
+    } catch (err) {
+      if (isCurrent()) setError(translateWallpaperMessage(err.message, t));
+    } finally {
+      if (saveRequest.current === request) {
+        saveRequest.current = null;
+        setSaving(false);
+      }
+    }
   };
   const planInvalid = !!plan && !!plan.closure && !plan.closure.valid;
   const planBlocked = calculating || planInvalid;
@@ -639,8 +675,9 @@ const WallpaperOptimizer = () => {
   };
   return <CatalogPage>
     <style>{`@media (max-width: 767px) { .wallpaper-measured-sheet, .wallpaper-piece-sheet { box-sizing: border-box; max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; } .wallpaper-measured-sheet { margin-inline: -16px; padding-inline: 16px; } .wallpaper-measured-sheet > svg { min-width: 620px; } .wallpaper-piece-sheet { min-width: 0; } .wallpaper-piece-sheet > svg { display: block; min-width: 500px; } } @media print { .plan-steps, nav, .step-head > button, .step-foot, .btn { display: none !important; } .step-view { max-width: none !important; } .wallpaper-wall-drawing { break-inside: avoid; page-break-inside: avoid; } }`}</style>
-    <PlanSteps steps={steps} current={step} onSelect={setStep} />
+    <PlanSteps steps={saving ? steps.map((item) => ({ ...item, reachable: false })) : steps} current={step} onSelect={setStep} />
     {calculating && <p role="status" className="synthetic">{t('workflow.solving')}</p>}
+    {saving && <p role="status" className="synthetic">{t('workflow.saving')}</p>}
     {error && <div className="alert-danger" role="alert">{error}</div>}
     {step === 0 && <section className="step-view is-form">
       <div className="step-head"><div>
@@ -797,7 +834,9 @@ const WallpaperOptimizer = () => {
       <WallpaperPlanDocument plan={plan} walls={walls} corners={corners} closed={closed} wallpaper={payload.wallpaper} savedAt={null} />
       <div className="step-foot"><button className="btn-text" onClick={() => setStep(2)}><ArrowLeft /> {t('workflow.backToPlan')}</button><button className="btn-order step-foot-act" onClick={() => setStep(4)}>{`${t('workflow.savePlan')} →`}</button></div>
     </section>}
-    {step === 4 && plan && (saved ? <section className="step-view"><div className="step-head"><div><h1 className="step-h1">{t('workflow.planSaved')}</h1><p className="step-lede">{t('wallpaperUi.savedLede')}</p></div></div><div className="saved-mark"><Tick size={16} /><div><b>{t('workflow.savedAs', { name: projectName })}</b><p>{projectGroupId ? t('wallpaperUi.filedUnder', { name: projectGroups.find((group) => String(group.id) === String(projectGroupId))?.name || t('wallpaperUi.selectedProject') }) : `${t('ui.notInProject')}.`}</p><MovePlanMenu groups={projectGroups} currentGroupId={saved.project_group_id} onMove={moveSavedPlan} /><p className="synthetic">{t('ui.addMorePlans')} <Link to="/">{t('ui.startAnotherPlan')}</Link></p></div></div><div className="step-foot"><button className="btn-text" onClick={() => setStep(3)}><ArrowLeft /> {t('wallpaperUi.backToCutSheets')}</button><button className="btn-order step-foot-act" onClick={() => navigate('/dashboard')}>{t('wallpaperUi.openDashboard')}</button></div></section> : <section className="step-view is-form"><div className="step-head"><div><h1 className="step-h1">{t('workflow.saveThisPlan')}</h1><p className="step-lede">{t('wallpaperUi.saveLede')}</p>{rollPrice != null && <p className="synthetic" data-testid="save-estimated-cost">{t('wallpaperUi.saveEstimatedCost', { cost: formatMoney(plan.rolls_to_buy * rollPrice), rolls: plan.rolls_to_buy, price: formatMoney(rollPrice) })}</p>}</div></div><SectionCard id="wallpaper-save" title={t('workflow.planDetails')} status={<SectionStatus missing={projectName.trim() ? [] : [t('workflow.planName')]} />}><div style={{ marginBottom: '20px' }}><FormField label={t('workflow.planName')} required><input id="wallpaper-plan-name" className="form-input" value={projectName} onChange={(event) => setProjectName(event.target.value)} /></FormField></div><ProjectPicker groups={projectGroups} value={projectGroupId} onChange={setProjectGroupId} newName={newProjectName} onNewNameChange={setNewProjectName} onSubmit={save} /></SectionCard><div className="step-foot"><button className="btn-text" onClick={() => setStep(3)}><ArrowLeft /> {t('wallpaperUi.backToCutSheets')}</button><button className="btn-order step-foot-act" onClick={save}>{t('workflow.savePlan')}</button></div></section>)}
+    {step === 4 && plan && <fieldset disabled={saving} className="contents" aria-busy={saving}>
+      {saved ? <section className="step-view"><div className="step-head"><div><h1 className="step-h1">{t('workflow.planSaved')}</h1><p className="step-lede">{t('wallpaperUi.savedLede')}</p></div></div><div className="saved-mark"><Tick size={16} /><div><b>{t('workflow.savedAs', { name: projectName })}</b><p>{projectGroupId ? t('wallpaperUi.filedUnder', { name: projectGroups.find((group) => String(group.id) === String(projectGroupId))?.name || t('wallpaperUi.selectedProject') }) : `${t('ui.notInProject')}.`}</p><MovePlanMenu groups={projectGroups} currentGroupId={saved.project_group_id} onMove={moveSavedPlan} /><p className="synthetic">{t('ui.addMorePlans')} <Link to="/">{t('ui.startAnotherPlan')}</Link></p></div></div><div className="step-foot"><button className="btn-text" onClick={() => setStep(3)}><ArrowLeft /> {t('wallpaperUi.backToCutSheets')}</button><button className="btn-order step-foot-act" onClick={() => navigate('/dashboard')}>{t('wallpaperUi.openDashboard')}</button></div></section> : <section className="step-view is-form"><div className="step-head"><div><h1 className="step-h1">{t('workflow.saveThisPlan')}</h1><p className="step-lede">{t('wallpaperUi.saveLede')}</p>{rollPrice != null && <p className="synthetic" data-testid="save-estimated-cost">{t('wallpaperUi.saveEstimatedCost', { cost: formatMoney(plan.rolls_to_buy * rollPrice), rolls: plan.rolls_to_buy, price: formatMoney(rollPrice) })}</p>}</div></div><SectionCard id="wallpaper-save" title={t('workflow.planDetails')} status={<SectionStatus missing={projectName.trim() ? [] : [t('workflow.planName')]} />}><div style={{ marginBottom: '20px' }}><FormField label={t('workflow.planName')} required><input id="wallpaper-plan-name" className="form-input" value={projectName} onChange={(event) => setProjectName(event.target.value)} /></FormField></div><ProjectPicker groups={projectGroups} value={projectGroupId} onChange={setProjectGroupId} newName={newProjectName} onNewNameChange={setNewProjectName} onSubmit={save} /></SectionCard><div className="step-foot"><button className="btn-text" onClick={() => setStep(3)}><ArrowLeft /> {t('wallpaperUi.backToCutSheets')}</button><button className="btn-order step-foot-act" onClick={save}>{t(saving ? 'workflow.saving' : 'workflow.savePlan')}</button></div></section>}
+    </fieldset>}
   </CatalogPage>;
 };
 

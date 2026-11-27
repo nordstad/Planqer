@@ -16,11 +16,12 @@ const openCorners = () => screen.getAllByRole('button', { name: /^Change corner/
 const fillOpening = (values) => Object.entries(values).forEach(([label, value]) => fireEvent.change(screen.getByLabelText(label), { target: { value } }));
 
 const openRoomStep = async () => {
-  render(<MemoryRouter><WallpaperOptimizer /></MemoryRouter>);
+  const view = render(<MemoryRouter><WallpaperOptimizer /></MemoryRouter>);
   fireEvent.change(screen.getByLabelText(/^Wallpaper name|^Name/i), { target: { value: 'Willow' } });
   fireEvent.change(screen.getByLabelText(/Manufacturer/i), { target: { value: 'Example' } });
   fireEvent.click(screen.getByRole('button', { name: /Measure the room →/ }));
   await screen.findByRole('heading', { name: 'Measure the room' });
+  return view;
 };
 
 describe('WallpaperOptimizer room step', () => {
@@ -238,10 +239,11 @@ describe('WallpaperOptimizer input/result identity', () => {
   const currentPlan = { ...planFixture, rolls_needed: 8, rolls_to_buy: 9 };
   const assertLocked = () => [2, 3, 4].forEach((index) => expect(document.querySelectorAll('.plan-step-btn')[index]).toBeDisabled());
   const completePlan = async (prepare) => {
-    await openRoomStep();
+    const view = await openRoomStep();
     prepare?.();
     fireEvent.click(screen.getByRole('button', { name: /Create plan/ }));
     await screen.findByRole('heading', { name: 'Your wallpaper plan' });
+    return view;
   };
   const saveCurrent = async () => {
     fireEvent.click(screen.getByRole('button', { name: /^Prepare cut sheets/ }));
@@ -267,6 +269,7 @@ describe('WallpaperOptimizer input/result identity', () => {
     getProjectGroups.mockResolvedValue([{ id: 'synthetic-group', name: 'Synthetic project' }]);
     getUserSettings.mockResolvedValue({});
     createWallpaperPlan.mockReset().mockResolvedValue(planFixture);
+    createProjectGroup.mockReset();
     saveWallpaperProject.mockReset().mockResolvedValue({ id: 'synthetic-plan' });
     saveWallpaper.mockReset().mockResolvedValue({});
   });
@@ -440,6 +443,115 @@ describe('WallpaperOptimizer input/result identity', () => {
       assertLocked();
       expect(screen.getByRole('heading', { name: 'Measure the room' })).toBeInTheDocument();
     }
+  });
+
+  it('announces a save and locks its fields, steps and repeated activation until completion', async () => {
+    const pending = deferred();
+    saveWallpaperProject.mockReturnValueOnce(pending.promise);
+    await completePlan();
+    await saveCurrent();
+    expect(screen.getByRole('status')).toHaveTextContent(i18n.t('workflow.saving'));
+    expect(screen.getByLabelText('Plan name')).toBeDisabled();
+    expect(screen.getByLabelText('Project')).toBeDisabled();
+    document.querySelectorAll('.plan-step-btn').forEach((button) => expect(button).toBeDisabled());
+    fireEvent.click(screen.getByRole('button', { name: /^Saving/ }));
+    expect(saveWallpaperProject).toHaveBeenCalledTimes(1);
+    await act(async () => { pending.resolve({ id: 'saved-once' }); });
+    expect(screen.getByRole('heading', { name: 'Plan saved' })).toBeInTheDocument();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
+  it('announces an alternative calculation and does not enqueue repeated starts', async () => {
+    await completePlan();
+    const pending = deferred();
+    createWallpaperPlan.mockReturnValue(pending.promise);
+    fireEvent.click(screen.getByRole('button', { name: 'Use', exact: true }));
+    fireEvent.click(screen.getByRole('button', { name: 'Use', exact: true }));
+    expect(screen.getByRole('status')).toHaveTextContent(i18n.t('workflow.solving'));
+    expect(createWallpaperPlan).toHaveBeenCalledTimes(2);
+    await act(async () => { pending.resolve(currentPlan); });
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
+  it('retains a failed save draft and unlocks retry', async () => {
+    const pending = deferred();
+    saveWallpaperProject.mockReturnValueOnce(pending.promise);
+    await completePlan();
+    await saveCurrent();
+    await act(async () => { pending.reject(new Error('Synthetic save failure')); });
+    expect(screen.getByRole('alert')).toHaveTextContent('Synthetic save failure');
+    expect(screen.getByLabelText('Plan name')).toHaveValue('Current project');
+    expect(screen.getByLabelText('Plan name')).toBeEnabled();
+    expect(screen.getByRole('button', { name: /^Save plan/ })).toBeEnabled();
+    fireEvent.click(screen.getByRole('button', { name: /^Save plan/ }));
+    await screen.findByRole('heading', { name: 'Plan saved' });
+    expect(saveWallpaperProject).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not start a plan write after leaving while a new project is being created', async () => {
+    const pending = deferred();
+    getProjectGroups.mockResolvedValueOnce([]);
+    createProjectGroup.mockReturnValueOnce(pending.promise);
+    const view = await completePlan();
+    fireEvent.click(screen.getByRole('button', { name: /^Prepare cut sheets/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Save plan/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Save plan/ }));
+    await waitFor(() => expect(createProjectGroup).toHaveBeenCalled());
+    // Unmounting models navigation away through the global navigation.
+    view.unmount();
+    await act(async () => { pending.resolve({ id: 'late-group', name: 'Late project' }); });
+    expect(saveWallpaperProject).not.toHaveBeenCalled();
+  });
+
+  it.each(['success', 'failure'])('ignores a save %s after leaving the planner', async (outcome) => {
+    const pending = deferred();
+    saveWallpaperProject.mockReturnValueOnce(pending.promise);
+    const view = await completePlan();
+    await saveCurrent();
+    view.unmount();
+    await act(async () => {
+      if (outcome === 'success') pending.resolve({ id: 'late-plan' });
+      else pending.reject(new Error('Obsolete save failure'));
+    });
+    expect(saveWallpaper).not.toHaveBeenCalled();
+  });
+
+  it.each(['success', 'failure'])('an obsolete save %s cannot finish a newer save after input retirement', async (outcome) => {
+    const settings = deferred();
+    const oldSave = deferred();
+    const newSave = deferred();
+    getUserSettings.mockReturnValueOnce(settings.promise);
+    saveWallpaperProject.mockReturnValueOnce(oldSave.promise).mockReturnValueOnce(newSave.promise);
+    await completePlan();
+    await saveCurrent();
+    await act(async () => { settings.resolve({ spare_margin_percent: 20 }); });
+    expect(screen.getByRole('heading', { name: 'Measure the room' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Create plan/ }));
+    await screen.findByRole('heading', { name: 'Your wallpaper plan' });
+    fireEvent.click(screen.getByRole('button', { name: /^Prepare cut sheets/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Save plan/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Save plan/ }));
+    await waitFor(() => expect(saveWallpaperProject).toHaveBeenCalledTimes(2));
+    await act(async () => {
+      if (outcome === 'success') oldSave.resolve({ id: 'obsolete-plan' });
+      else oldSave.reject(new Error('Obsolete save failure'));
+    });
+    expect(screen.getByRole('status')).toHaveTextContent(i18n.t('workflow.saving'));
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(saveWallpaper).not.toHaveBeenCalled();
+    await act(async () => { newSave.resolve({ id: 'current-plan' }); });
+    expect(screen.getByRole('heading', { name: 'Plan saved' })).toBeInTheDocument();
+    expect(saveWallpaper).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports a secondary wallpaper-library failure without denying the completed plan save', async () => {
+    saveWallpaper.mockRejectedValueOnce(new Error('Synthetic wallpaper-library failure'));
+    await completePlan();
+    await saveCurrent();
+    expect(await screen.findByRole('heading', { name: 'Plan saved' })).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent(i18n.t('wallpaperUi.savedWallpaperFailed'));
+    expect(screen.getByRole('alert')).not.toHaveTextContent('Synthetic wallpaper-library failure');
+    expect(saveWallpaperProject).toHaveBeenCalledTimes(1);
   });
 });
 
