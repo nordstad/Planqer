@@ -17,6 +17,18 @@ const PlanSteps = ({ steps, current, onSelect }) => {
   const rail = useRef(null);
   const previous = useRef(current);
   useLayoutEffect(() => {
+    const element = rail.current;
+    const parent = element.parentElement;
+    const update = () => parent.style.setProperty('--plan-steps-height', `${element.getBoundingClientRect().height}px`);
+    update();
+    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(update) : null;
+    observer?.observe(element);
+    return () => {
+      observer?.disconnect();
+      parent.style.removeProperty('--plan-steps-height');
+    };
+  }, []);
+  useLayoutEffect(() => {
     if (previous.current !== current) {
       focusDestination(rail.current?.parentElement.querySelector('.step-view h1'));
       previous.current = current;

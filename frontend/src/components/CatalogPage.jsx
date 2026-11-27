@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigationType } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '../hooks/useDarkMode';
@@ -47,6 +47,7 @@ const CatalogPage = ({ children, bodyClassName = '', title }) => {
   const { pathname, hash } = useLocation();
   const navigationType = useNavigationType();
   const main = useRef(null);
+  const nav = useRef(null);
   const isCurrent = (path) => pathname === path;
   const { user, isAuthenticated, logout, needsSetup, singleUser, setupCheckError, authStorageError } = useAuth();
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -61,9 +62,19 @@ const CatalogPage = ({ children, bodyClassName = '', title }) => {
   useEffect(() => {
     document.title = `${title || t(routeKey)} — Partsible`;
   }, [title, routeKey, t]);
+  useLayoutEffect(() => {
+    const element = nav.current;
+    const update = () => element.parentElement.style.setProperty('--app-nav-height', `${element.getBoundingClientRect().height}px`);
+    update();
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(update);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
   useEffect(() => {
     if (hash && document.getElementById(hash.slice(1))) return;
-    focusDestination(main.current?.querySelector('h1') || main.current, { scroll: navigationType !== 'POP', behavior: 'instant' });
+    focusDestination(main.current?.querySelector('h1') || main.current, { scroll: false });
+    if (navigationType !== 'POP') window.scrollTo({ top: 0, behavior: 'instant' });
     // Query consumption and repricing are not route transitions.
   }, [pathname]);
 
@@ -81,7 +92,7 @@ const CatalogPage = ({ children, bodyClassName = '', title }) => {
         event.preventDefault();
         focusDestination(main.current);
       }}>{t('accessibilityUi.skipContent')}</a>
-      <nav className="app-nav">
+      <nav ref={nav} className="app-nav">
         <div className="app-nav-row">
           <Link to="/" className="app-wordmark">
             <img src={`${import.meta.env.BASE_URL}${isDark ? 'partsible-symbol-dark.svg' : 'partsible-symbol-flat.svg'}`} alt="" className="h-5 w-5" />

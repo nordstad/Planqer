@@ -26,15 +26,18 @@ it('owns one main, skips navigation, and does not steal focus for query consumpt
   expect(screen.getByRole('heading', { level: 1 })).toHaveFocus();
   expect(document.title).toBe('Board cutting — Partsible');
   const scroll = vi.fn();
+  const scrollPage = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
   screen.getByRole('heading', { level: 1 }).scrollIntoView = scroll;
   await user.click(screen.getByText('Edit query'));
   expect(screen.getByText('Edit query')).toHaveFocus();
   await user.click(screen.getByText('Help route'));
   expect(screen.getByRole('heading', { level: 1 })).toHaveFocus();
   expect(document.title).toBe('Help — Partsible');
-  expect(scroll).toHaveBeenLastCalledWith({ block: 'start', behavior: 'instant' });
+  expect(scroll).not.toHaveBeenCalled();
+  expect(scrollPage).toHaveBeenLastCalledWith({ top: 0, behavior: 'instant' });
   await user.click(screen.getByText('Skip to main content'));
   expect(screen.getByRole('main')).toHaveFocus();
+  scrollPage.mockRestore();
 });
 
 it('updates shell titles for locale and explicit loading/document identity', async () => {

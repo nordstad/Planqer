@@ -380,6 +380,12 @@ cutlists, not a widened upload field. Below that breakpoint the same DOM returns
 to one column. Inputs stay compact, not stretched to fill space.
 Optional board pricing/strategy uses `Disclosure`; stock and kerf never collapse.
 
+The global menu is always sticky at the viewport top. The step rail starts in
+normal document flow and sticks beneath the menu only when scrolling reaches
+it. Its offset follows the menu's measured height, including wrapped mobile
+navigation and locale changes; never pin both surfaces at `top: 0`. Focus and
+anchor destinations account for both sticky surfaces so headings remain visible.
+
 Sloped-wall controls are HTML `FormField`s outside the drawing's SVG transform.
 They flank the outline in roomy containers and reflow below it at 560px and
 below. The same five controls follow row-major DOM/focus order in both layouts.
@@ -992,8 +998,11 @@ headings, including project rename mode. Route titles are localized and identify
 the current tool or supplied saved/loading/error state, never an obsolete plan.
 
 Genuine pathname transitions focus the destination heading (or main while no
-heading is available); route entry scrolls immediately rather than moving the
-destination under the next pointer activation. POP navigation does not force
+heading is available) without scrolling it into view. New routes scroll
+immediately to the page top, keeping the global menu and step rail in their
+initial positions rather than moving them under the next pointer activation.
+Non-interactive destination headings do not draw a focus box; keyboard focus
+indicators remain on links, buttons and fields. POP navigation does not force
 scroll. Query consumption
 must preserve working context. Help hashes focus their section heading and expose
 `aria-current="location"`. `PlanSteps` reveals/focuses the new heading only when

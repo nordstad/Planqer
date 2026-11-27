@@ -76,6 +76,47 @@ for (const [language, locale] of [['en-GB', en], ['sv-SE', sv], ['nb-NO', nb]]) 
   }
 }
 
+test('planner navigation starts at the top and keeps the main menu above the sticky step rail', async ({ page }, testInfo) => {
+  const writes = await setup(page, 'en-GB');
+  await page.goto('/tile-layout');
+  await expect(page.locator('h1')).toBeFocused();
+  await expect(page.locator('h1')).toHaveCSS('outline-style', 'none');
+  const menu = page.locator('.app-nav');
+  const steps = page.locator('.plan-steps');
+  await menu.locator('a[href="/cutting"]').focus();
+  await expect(menu.locator('a[href="/cutting"]')).toHaveCSS('outline-style', 'solid');
+  for (const route of ['/cutting', '/sheet-cutting', '/tile-layout']) {
+    await menu.locator(`a[href="${route}"]`).click();
+    await expect(steps).toBeVisible();
+    await expect(page.locator('h1')).toBeFocused();
+    await expect(page.locator('h1')).toHaveCSS('outline-style', 'none');
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+    const initialMenu = await menu.boundingBox();
+    const initialSteps = await steps.boundingBox();
+    expect(initialMenu.y).toBe(0);
+    expect(initialSteps.y).toBeGreaterThan(initialMenu.y + initialMenu.height);
+    for (const width of [1440, 768, 390, 320]) {
+      await page.setViewportSize({ width, height: 700 });
+      await page.evaluate(() => window.scrollTo({ top: 400, behavior: 'instant' }));
+      await expect.poll(async () => (await menu.boundingBox()).y).toBe(0);
+      await expect.poll(async () => {
+        const nav = await menu.boundingBox();
+        const rail = await steps.boundingBox();
+        return Math.abs(rail.y - (nav.y + nav.height));
+      }).toBeLessThanOrEqual(1);
+      if (route === '/cutting' && [1440, 320].includes(width)) {
+        await page.screenshot({ path: testInfo.outputPath(`sticky-navigation-${width}.png`) });
+      }
+    }
+    await page.locator('#language-select').selectOption('nb-NO');
+    await expect.poll(async () => {
+      const nav = await menu.boundingBox();
+      return Math.abs((await steps.boundingBox()).y - nav.height);
+    }).toBeLessThanOrEqual(1);
+  }
+  expect(writes).toEqual([]);
+});
+
 test('board, sheet and tile entry share stacked sections and the same form measure at every width', async ({ page }, testInfo) => {
   const writes = await setup(page, 'en-GB');
   for (const [route, sections] of [
