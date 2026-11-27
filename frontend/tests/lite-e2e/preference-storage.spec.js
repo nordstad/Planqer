@@ -162,7 +162,7 @@ test('Lite: unavailable work storage remains an explicit failure, not a temporar
   await expect(page.getByRole('alert')).toContainText('Synthetic work-storage denial');
   await page.getByRole('button', { name: 'Backup', exact: true }).click();
   await page.getByRole('button', { name: 'Export backup', exact: true }).click();
-  await expect(page.getByRole('status')).toHaveText('Could not create the backup.');
+  await expect(page.getByRole('status').filter({ hasText: 'Could not create the backup.' })).toHaveText('Could not create the backup.');
   await expect(page.getByText('Backup saved to your downloads.')).toHaveCount(0);
 });
 

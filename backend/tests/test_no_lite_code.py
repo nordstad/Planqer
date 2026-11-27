@@ -37,7 +37,7 @@ def test_a_clean_build_passes(guard, tmp_path):
         "partsible-lite",
         "partsible.lite.",
         "catalogue_admin",
-        "catalogue_entries",
+        ".createObjectStore(",
         "cloud.umami.is",
         "umami.track",
         "data-website-id",
@@ -64,7 +64,8 @@ def test_translated_text_about_lite_is_not_lite_code(guard, tmp_path):
     # Locale files ship in every build. "Partsible-demon" is Swedish for Lite
     # and a privacy sentence may name Umami; neither is Lite's code.
     (tmp_path / "locale.js").write_text(
-        'sv:"Du använder Partsible-demon", note:"Statistik hos Umami Cloud"',
+        'sv:"Du använder Partsible-demon", note:"Statistik hos Umami Cloud",'
+        'stores:{catalogue_entries:"Catalogue entries"}',
         encoding="utf-8",
     )
 

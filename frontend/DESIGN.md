@@ -766,6 +766,8 @@ must not render a known-empty library. Failed renames/settings edits retain the
 draft, block duplicate pending commits, and permit retry or cancellation.
 Unknown routes and failed route rendering retain navigation and honest
 reload/home recovery; reloading may discard unsaved input.
+Recovery resets on navigation after a failure without remounting healthy pages:
+consuming an edit/import query or following a fragment must preserve loaded work.
 
 Registration and password reset explain the server's actual policy: at least
 eight Unicode characters, ASCII uppercase/lowercase, a digit and a special

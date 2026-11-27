@@ -13,12 +13,15 @@ export const RouteRecovery = ({ failed = false }) => {
 };
 
 class Boundary extends Component {
-  state = { failed: false };
+  state = { failed: false, routeKey: null };
+  static getDerivedStateFromProps({ routeKey }, state) {
+    return routeKey !== state.routeKey ? { failed: false, routeKey } : null;
+  }
   static getDerivedStateFromError() { return { failed: true }; }
   render() { return this.state.failed ? <RouteRecovery failed /> : this.props.children; }
 }
 
 export const RouteErrorBoundary = ({ children }) => {
   const { pathname, search, hash } = useLocation();
-  return <Boundary key={`${pathname}${search}${hash}`}>{children}</Boundary>;
+  return <Boundary routeKey={`${pathname}${search}${hash}`}>{children}</Boundary>;
 };
