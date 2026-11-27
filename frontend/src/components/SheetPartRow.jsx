@@ -18,7 +18,7 @@ const SheetPartRow = ({ part, index, handlePartChange, removePart, error, canRem
       <td className="sheet-part-size">
         <div className="sheet-part-dimensions">
           <input
-            aria-label={t('ui.partLengthAria', { item: index + 1 })}
+            aria-label={t('accessibilityUi.partWidth', { item: index + 1 })}
             type="number"
             step="1"
             value={part.width}
@@ -31,7 +31,7 @@ const SheetPartRow = ({ part, index, handlePartChange, removePart, error, canRem
           />
           <span style={{ color: 'var(--ink-3)' }}>×</span>
           <input
-            aria-label={t('ui.sheetHeightAria')}
+            aria-label={t('accessibilityUi.partHeight', { item: index + 1 })}
             type="number"
             step="1"
             value={part.height}

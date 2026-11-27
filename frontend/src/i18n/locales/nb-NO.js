@@ -1,4 +1,10 @@
 const locale = {
+  accessibilityUi: {
+    skipContent: 'Hopp til hovedinnholdet',
+    homeTitle: 'Startside',
+    partWidth: 'Delbredde i millimeter, del {{item}}',
+    partHeight: 'Delhøyde i millimeter, del {{item}}',
+  },
   passwordUi: {
     policy: 'Bruk minst 8 tegn med en stor bokstav A–Z, en liten bokstav a–z, et siffer og et spesialtegn. Høyst 72 UTF-8-byte.',
     resetFor: 'Nytt passord for {{email}}',

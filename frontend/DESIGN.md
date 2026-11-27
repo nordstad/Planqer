@@ -886,6 +886,38 @@ guidance stay inline.
 
 ### Navigation
 
+**Accessible interaction contract (2026-11-27).** `CatalogPage` owns exactly one
+`main#main-content` and a visible-on-focus skip link; saved-plan shells must not
+nest another main. Projects, Defaults and administration retain meaningful h1
+headings, including project rename mode. Route titles are localized and identify
+the current tool or supplied saved/loading/error state, never an obsolete plan.
+
+Genuine pathname transitions focus the destination heading (or main while no
+heading is available); route entry scrolls immediately rather than moving the
+destination under the next pointer activation. POP navigation does not force
+scroll. Query consumption
+must preserve working context. Help hashes focus their section heading and expose
+`aria-current="location"`. `PlanSteps` reveals/focuses the new heading only when
+the step changes, not during same-step repricing. Destination scrolling respects
+reduced motion.
+
+`Modal` owns focus entry, forward/backward containment, Escape/backdrop dismissal,
+background isolation and trigger recovery for confirmation, authentication,
+saved-plan loading and diagram/template overlays. Existing sheet styling and
+bounded internal scrolling remain. First-run setup can be cancelled to return to
+the page; cancellation never bypasses protected-route setup requirements.
+An explicit destination such as Show in cut list takes precedence over trigger
+recovery after the overlay has released background isolation.
+
+Board/admin selectors use ordinary selected buttons (`aria-pressed`), not tab
+roles. Plan actions and nested Move destinations are disclosures with normal
+Tab/Enter buttons, expanded/control associations and nearest-trigger Escape
+recovery, not application menus. Keep working sheet buttons and wall radios.
+Model file-input keyboard focus is reflected on its visible label. Meaningful
+warnings use theme-aware semantic colors; enabled catalogue rows are never faded
+through ancestor opacity. Field errors describe only affected controls; related
+opening fields may share one explanation without repeating live alerts.
+
 - **Style:** `.app-nav` — one top bar, wordmark left, plain links center,
   day/night switch right. The current route's link gets a 2px amber
   underline; nothing else marks "current."

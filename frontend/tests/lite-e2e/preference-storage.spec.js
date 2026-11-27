@@ -103,7 +103,7 @@ for (const kind of ['read', 'localAccessor']) {
     await page.evaluate(() => { window.name = 'dr042-allow-storage'; });
     await notice.getByRole('button', { name: en.common.authStorageRetry }).focus();
     await page.keyboard.press('Enter');
-    await expect(page.getByRole('heading', { name: 'My projects', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'My projects', exact: true })).toBeVisible();
     await expect(notice).toHaveCount(0);
     expect(await page.evaluate(() => window.__readSyntheticToken())).toBe(syntheticToken);
     expect(errors).toEqual([]);
@@ -114,7 +114,7 @@ test('Lite: denied optional preferences do not replace or alter retained Indexed
   await mockApi(page, origins.lite);
   await page.addInitScript(denyStorage, { kind: 'localAccessor' });
   await page.goto(`${origins.lite}/#/dashboard`);
-  await expect(page.getByRole('heading', { name: 'My projects', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'My projects', exact: true })).toBeVisible();
   const saved = { id: 'synthetic-retained-group', name: 'Synthetic retained project', created_at: '2026-11-27T00:00:00Z' };
   await page.evaluate(async (record) => {
     const db = await new Promise((resolve, reject) => {

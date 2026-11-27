@@ -5,6 +5,7 @@ import { getAdminStats, getAdminUsers, toggleUserAdmin, toggleUserActive, delete
 import { useAuth } from '../contexts/AuthContext';
 import Loader from './Loader';
 import ConfirmDialog from './ConfirmDialog';
+import { modalTrigger } from './Modal';
 import AdminCatalogue from './AdminCatalogue';
 import { validNewPassword } from '../utils/passwordPolicy';
 
@@ -88,14 +89,13 @@ const AdminDashboard = () => {
   };
 
   const tabs = (
-    <div role="tablist" aria-label={t('common.admin')} style={{ display: 'flex', gap: '18px', borderBottom: '1px solid var(--rule)', marginBottom: '18px' }}>
+    <div role="group" aria-label={t('common.admin')} style={{ display: 'flex', gap: '18px', borderBottom: '1px solid var(--rule)', marginBottom: '18px' }}>
       {['users', 'catalogue'].map((key) => (
         <button
           key={key}
           type="button"
-          role="tab"
           id={`admin-tab-${key}`}
-          aria-selected={tab === key}
+          aria-pressed={tab === key}
           onClick={() => setTab(key)}
           style={{
             background: 'none', border: 0, borderBottom: `2px solid ${tab === key ? 'var(--accent)' : 'transparent'}`,
@@ -113,6 +113,7 @@ const AdminDashboard = () => {
   if (singleUser) {
     return (
       <CatalogPage>
+        <h1 className="step-h1">{t('catalogueAdmin.tab.catalogue')}</h1>
         <AdminCatalogue />
       </CatalogPage>
     );
@@ -122,7 +123,8 @@ const AdminDashboard = () => {
     return (
       <CatalogPage>
         {tabs}
-        <div role="tabpanel" id="admin-panel" aria-labelledby="admin-tab-catalogue"><AdminCatalogue /></div>
+        <h1 className="step-h1">{t('catalogueAdmin.tab.catalogue')}</h1>
+        <div id="admin-panel"><AdminCatalogue /></div>
       </CatalogPage>
     );
   }
@@ -144,6 +146,7 @@ const AdminDashboard = () => {
   return (
     <CatalogPage>
       {tabs}
+      <h1 className="step-h1">{t('catalogueAdmin.tab.users')}</h1>
       {error && <div className="alert-danger" role="alert" style={{ marginBottom: '16px' }}>{error}</div>}
 
       {stats && (
@@ -217,7 +220,7 @@ const AdminDashboard = () => {
                     <button
                       className="btn btn-outline-danger"
                       style={{ padding: '5px 10px', minHeight: 0 }}
-                      onClick={() => handleDelete(u)}
+                      onClick={modalTrigger(() => handleDelete(u))}
                       disabled={busyId === u.id || isSelf}
                       title={isSelf ? t('ui.ownDeleteTitle') : undefined}
                     >

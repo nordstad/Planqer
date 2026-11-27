@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Modal from '../Modal';
 import { useTranslation } from 'react-i18next';
 import { loginUser, getCurrentUser } from '../../utils/api';
 import { useAuth } from '../../contexts/AuthContext';
@@ -34,13 +35,7 @@ const Login = ({ onClose, onSwitchToRegister }) => {
   };
 
   return (
-    <div className="cat-overlay" role="dialog" aria-modal="true" aria-label={t('common.signIn')} onClick={onClose}>
-      <div className="cat-sheet" onClick={(e) => e.stopPropagation()}>
-        <div className="masthead" style={{ marginTop: 0 }}>
-          <span className="masthead-brand" style={{ fontSize: '13px' }}>{t('common.signIn').toUpperCase()}</span>
-          <span className="masthead-section" />
-          <button type="button" className="masthead-flash" onClick={onClose}>{t('common.close')}</button>
-        </div>
+    <Modal aria-label={t('common.signIn')} title={t('common.signIn').toUpperCase()} onClose={onClose}>
         <div style={{ padding: '14px 16px 18px' }}>
           <form onSubmit={handleSubmit}>
             {error && (
@@ -91,8 +86,7 @@ const Login = ({ onClose, onSwitchToRegister }) => {
             </button>
           </p>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 };
 

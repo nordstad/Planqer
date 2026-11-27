@@ -8,6 +8,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import ConfirmDialog from './ConfirmDialog';
+import { modalTrigger } from './Modal';
 import CatalogueEntryForm from './CatalogueEntryForm';
 import CatalogueSuggest from './CatalogueSuggest';
 import Loader from './Loader';
@@ -180,7 +181,7 @@ const CatalogueView = ({ choice, country, setChoice, query, setQuery, filter, se
               const open = panel && panel.mode !== 'add' && panel.item.product.id === product.id ? panel.mode : null;
               return (
                 <Fragment key={product.id}>
-                  <tr style={item.hidden ? { opacity: 0.6 } : undefined}>
+                  <tr>
                     <td style={{ textAlign: 'left', color: 'var(--ink)', fontWeight: 700 }}>
                       {itemName(item, catalogue, i18n.language)}
                       {item.origin === 'local' && shippedSizes.has(sizeKey(product)) && (
@@ -205,7 +206,7 @@ const CatalogueView = ({ choice, country, setChoice, query, setQuery, filter, se
                           <button type="button" className="btn" style={SMALL} disabled={busy} onClick={() => run(() => hideCatalogueEntry(product.id, country))}>{t('catalogueAdmin.hide')}</button>
                         )}
                         {isLocalOrModified(item) && (
-                          <button type="button" className="btn btn-outline-danger" style={SMALL} disabled={busy} onClick={() => setPendingReset(item)}>
+                          <button type="button" className="btn btn-outline-danger" style={SMALL} disabled={busy} onClick={modalTrigger(() => setPendingReset(item))}>
                             {item.origin === 'local' ? t('ui.delete') : t('catalogueAdmin.revert')}
                           </button>
                         )}

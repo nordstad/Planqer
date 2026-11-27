@@ -68,7 +68,7 @@ test("a wallpaper plan is solved in the browser, saved, and can be modified from
   await page.goBack();
   await expect(savedPlan).toBeVisible();
   await savedPlan.getByRole("button", { name: "More actions" }).click();
-  await savedPlan.getByRole("menuitem", { name: "Modify", exact: true }).click();
+  await savedPlan.getByRole("button", { name: "Modify", exact: true }).click();
   await expect(page).toHaveURL(/#\/wallpaper$/);
   await expect(page.getByRole("heading", { name: "Your wallpaper plan" })).toBeVisible();
 
@@ -122,7 +122,7 @@ test("a plan is solved in the browser, saved, and still there after a reload", a
   await expect(page.getByText("Lite smoke plan")).toBeVisible();
   const savedPlan = page.locator(".plan-item").filter({ hasText: "Lite smoke plan" });
   await savedPlan.getByRole("button", { name: "More actions" }).click();
-  await savedPlan.getByRole("menuitem", { name: "Modify", exact: true }).click();
+  await savedPlan.getByRole("button", { name: "Modify", exact: true }).click();
   await expect(page.getByLabel("Name, item 1")).toHaveValue("Front rail");
 
   expect(seen.outside, "nothing may be loaded from another origin").toEqual([]);

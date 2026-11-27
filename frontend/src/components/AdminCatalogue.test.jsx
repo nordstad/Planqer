@@ -415,6 +415,21 @@ describe('AdminCatalogue', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Add product' }));
     fireEvent.click(screen.getByRole('button', { name: 'Add to catalogue' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Choose a product type.');
+    const form = screen.getByRole('form', { name: 'Add product' });
+    const type = within(form).getByLabelText('Product type');
+    const thickness = within(form).getByLabelText('Thickness (mm)');
+    expect(type).toHaveAttribute('aria-invalid', 'true');
+    expect(type).toHaveAccessibleDescription('Choose a product type.');
+    expect(thickness).not.toHaveAttribute('aria-describedby');
+    fireEvent.change(type, { target: { value: 'regel' } });
+    expect(type).not.toHaveAttribute('aria-invalid');
+    fireEvent.change(thickness, { target: { value: '45abc' } });
+    fireEvent.click(within(form).getByRole('button', { name: 'Add to catalogue' }));
+    expect(thickness).toHaveAttribute('aria-invalid', 'true');
+    expect(thickness).toHaveAccessibleDescription(/whole number of millimetres/);
+    expect(type).not.toHaveAttribute('aria-describedby');
+    fireEvent.change(thickness, { target: { value: '45' } });
+    expect(thickness).not.toHaveAttribute('aria-describedby');
     expect(api.createCatalogueEntry).not.toHaveBeenCalled();
   });
 

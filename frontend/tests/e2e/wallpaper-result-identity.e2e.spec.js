@@ -82,6 +82,34 @@ const setup = async (page, language, locale, dark, holdSaves = false) => {
 };
 
 const createButton = (page, locale) => page.getByRole('button', { name: `${locale.wallpaperUi.createPlan} →`, exact: true });
+
+for (const dark of [false, true]) test(`closure and corner warnings retain theme contrast: dark=${dark}`, async ({ page }) => {
+  const state = await setup(page, 'en-GB', en, dark);
+  await createButton(page, en).click();
+  await expect.poll(() => state.pending.length).toBe(1);
+  await state.release(0, { json: {
+    ...plan(),
+    closure: { valid: false, message: 'Synthetic closure warning' },
+    corner_quality: { smallest: 10, minimum: 100, short_corners: [{ strip: 1, from_wall: 'A', to_wall: 'B', width: 10, action: 'Synthetic correction' }] },
+  } });
+  const alerts = page.locator('.step-view [role=alert]');
+  await expect(alerts).toHaveCount(2);
+  const ratios = await alerts.evaluateAll((elements) => {
+    const rgb = (value) => value.match(/[\d.]+/g).slice(0, 3).map(Number);
+    const luminance = (channels) => channels.map((n) => n / 255).map((n) => n <= 0.04045 ? n / 12.92 : ((n + 0.055) / 1.055) ** 2.4)
+      .reduce((sum, n, i) => sum + n * [0.2126, 0.7152, 0.0722][i], 0);
+    return elements.map((element) => {
+      let background = element;
+      while (getComputedStyle(background).backgroundColor === 'rgba(0, 0, 0, 0)') background = background.parentElement;
+      const a = luminance(rgb(getComputedStyle(element).color));
+      const b = luminance(rgb(getComputedStyle(background).backgroundColor));
+      return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+    });
+  });
+  for (const ratio of ratios) expect(ratio).toBeGreaterThanOrEqual(4.5);
+  expect(state.unexpectedWrites).toEqual([]);
+});
+
 const assertLocked = async (page) => {
   for (const index of [2, 3, 4]) await expect(page.locator('.plan-step-btn').nth(index)).toBeDisabled();
 };

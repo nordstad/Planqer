@@ -67,29 +67,32 @@ const usableHeightAt = (wall, x) => {
 const CUTOUT_FIELDS = ['x', 'y', 'width', 'height'];
 export const cutoutMissing = (cutout) => CUTOUT_FIELDS.filter((field) => isBlank(cutout[field]));
 
-export const cutoutIssue = (wall, cutout, t = defaultT) => {
+export const cutoutFieldIssues = (wall, cutout, t = defaultT) => {
+  const issue = (fields, message) => Object.fromEntries(fields.map((field) => [field, message]));
   // A field not filled in yet is missing, not wrong.
-  if (cutoutMissing(cutout).length) return null;
+  if (cutoutMissing(cutout).length) return {};
   for (const field of CUTOUT_FIELDS) {
-    if (!isWholeMillimetres(cutout[field])) return millimetresError(cutout[field], 0, MAX_MM, t);
+    if (!isWholeMillimetres(cutout[field])) return issue([field], millimetresError(cutout[field], 0, MAX_MM, t));
   }
   const x = num(cutout.x);
   const y = num(cutout.y);
   const width = num(cutout.width);
   const height = num(cutout.height);
-  if (width <= 0 || height <= 0) return t('wallpaperUi.errCutoutZero');
-  if (x < 0 || y < 0) return t('wallpaperUi.errCutoutNegative');
+  if (width <= 0 || height <= 0) return issue(['width', 'height'].filter((field) => num(cutout[field]) <= 0), t('wallpaperUi.errCutoutZero'));
+  if (x < 0 || y < 0) return issue(['x', 'y'].filter((field) => num(cutout[field]) < 0), t('wallpaperUi.errCutoutNegative'));
   const wallW = wallWidth(wall);
-  if (x + width > wallW) return t('wallpaperUi.errCutoutWide', { over: fmt(x + width - wallW), width: fmt(wallW) });
+  if (x + width > wallW) return issue(['x', 'width'], t('wallpaperUi.errCutoutWide', { over: fmt(x + width - wallW), width: fmt(wallW) }));
   const left = usableHeightAt(wall, x);
   const right = usableHeightAt(wall, x + width);
   const available = Math.min(left, right);
   if (y + height > available) {
     const side = right <= left ? t('wallpaperUi.sideRight') : t('wallpaperUi.sideLeft');
-    return t('wallpaperUi.errCutoutTall', { over: fmt(y + height - available), side, available: fmt(available) });
+    return issue(['y', 'height'], t('wallpaperUi.errCutoutTall', { over: fmt(y + height - available), side, available: fmt(available) }));
   }
-  return null;
+  return {};
 };
+
+export const cutoutIssue = (wall, cutout, t = defaultT) => Object.values(cutoutFieldIssues(wall, cutout, t))[0] || null;
 
 export const MAX_CORNER_OVERLAP_MM = 50;
 

@@ -78,6 +78,30 @@ const setup = async (page, language, locale, dark) => {
   return { lists, vocabularies, mutations, release, releaseLoad, waitLoad, unexpectedWrites, errors };
 };
 const row = (page, country, width = 95) => page.getByRole('row').filter({ hasText: `${country} Timber 45 × ${width} mm` });
+
+for (const dark of [false, true]) test(`hidden catalogue state remains legible with enabled actions: dark=${dark}`, async ({ page }) => {
+  const state = await setup(page, 'en-GB', en, dark);
+  await state.releaseLoad(0);
+  const hidden = row(page, 'SE', 70);
+  await expect(hidden.getByRole('button', { name: en.catalogueAdmin.restore, exact: true })).toBeEnabled();
+  const ratio = await hidden.locator('.status-badge-hidden').evaluate((element) => {
+    const rgb = (value) => value.match(/[\d.]+/g).slice(0, 3).map(Number);
+    const luminance = (channels) => channels.map((n) => n / 255).map((n) => n <= 0.04045 ? n / 12.92 : ((n + 0.055) / 1.055) ** 2.4)
+      .reduce((sum, n, i) => sum + n * [0.2126, 0.7152, 0.0722][i], 0);
+    for (let node = element; node; node = node.parentElement) {
+      if (Number(getComputedStyle(node).opacity) !== 1) throw new Error('Meaningful state is faded by ancestor opacity');
+    }
+    let background = element;
+    while (getComputedStyle(background).backgroundColor === 'rgba(0, 0, 0, 0)') background = background.parentElement;
+    const a = luminance(rgb(getComputedStyle(element).color));
+    const b = luminance(rgb(getComputedStyle(background).backgroundColor));
+    return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+  });
+  expect(ratio).toBeGreaterThanOrEqual(4.5);
+  expect(state.mutations).toEqual([]);
+  expect(state.unexpectedWrites).toEqual([]);
+});
+
 const switchCountry = async (page, state, country, count) => {
   await page.locator('#admin-catalogue-country').selectOption(country);
   await state.waitLoad(count);

@@ -69,8 +69,8 @@ for (const [language, locale] of [['en-GB', en], ['sv-SE', sv], ['nb-NO', nb]]) 
       await expect(page.locator('#language-select')).toHaveValue(language);
       if (dark) await page.getByRole('button', { name: locale.common.nightEdition }).click();
       await page.getByRole('button', { name: locale.workflow.addPart, exact: true }).click();
-      await page.getByLabel(locale.ui.partLengthAria.replace('{{item}}', '1'), { exact: true }).fill('800.5');
-      await page.getByLabel(locale.ui.sheetHeightAria, { exact: true }).fill('400.25');
+      await page.getByLabel(locale.accessibilityUi.partWidth.replace('{{item}}', '1'), { exact: true }).fill('800.5');
+      await page.getByLabel(locale.accessibilityUi.partHeight.replace('{{item}}', '1'), { exact: true }).fill('400.25');
       await page.getByLabel(locale.ui.quantityAria.replace('{{item}}', '1'), { exact: true }).fill('3');
       await page.locator('#sheet-width').fill('1200.5');
       await page.locator('#sheet-height').fill('2500.25');
@@ -78,8 +78,8 @@ for (const [language, locale] of [['en-GB', en], ['sv-SE', sv], ['nb-NO', nb]]) 
       await expect(page.locator('button.btn-order[type=submit]')).toBeDisabled();
       await page.locator('form').evaluate((form) => form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
       expect(calculations).toBe(0);
-      await page.getByLabel(locale.ui.partLengthAria.replace('{{item}}', '1'), { exact: true }).fill('800');
-      await page.getByLabel(locale.ui.sheetHeightAria, { exact: true }).fill('400');
+      await page.getByLabel(locale.accessibilityUi.partWidth.replace('{{item}}', '1'), { exact: true }).fill('800');
+      await page.getByLabel(locale.accessibilityUi.partHeight.replace('{{item}}', '1'), { exact: true }).fill('400');
       await page.locator('#sheet-width').fill('1200');
       await page.locator('#sheet-height').fill('2500');
       await page.locator('#sheet-kerf').fill('3');

@@ -42,6 +42,7 @@ import { useAccountContext } from '../contexts/useAccountContext';
 import Loader from './Loader';
 import PlanThumb from './PlanThumb';
 import ConfirmDialog from './ConfirmDialog';
+import { modalTrigger } from './Modal';
 import TileCutListTable from './TileCutListTable';
 import ProjectShoppingList from './ProjectShoppingList';
 import MovePlanMenu from './MovePlanMenu';
@@ -620,7 +621,7 @@ const UserProjectsContent = ({ groupId }) => {
             >
               {t('projectUi.printOne')}
             </button>
-            <PlanMoreMenu><button role="menuitem" className="btn-text" onClick={() => handleModify(project)}>{t('projectUi.modify')}</button><button role="menuitem" className="btn-text" onClick={() => handleDownload(project, 'svg')} disabled={busyId === project.id || !hasDiagram}>{t('projectUi.downloadSvg')}</button><button role="menuitem" className="btn-text" onClick={() => handleDownload(project, 'png')} disabled={busyId === project.id || !hasDiagram}>{t('projectUi.downloadPng')}</button><MovePlanMenu groups={groups} currentGroupId={project.project_group_id} onMove={(group) => movePlan(project, group)} busy={busyId === project.id} /><button role="menuitem" className="btn-text is-quiet" onClick={() => handleDelete(project)} disabled={busyId === project.id}>{t('ui.delete')}</button></PlanMoreMenu>
+            <PlanMoreMenu><button className="btn-text" onClick={() => handleModify(project)}>{t('projectUi.modify')}</button><button className="btn-text" onClick={() => handleDownload(project, 'svg')} disabled={busyId === project.id || !hasDiagram}>{t('projectUi.downloadSvg')}</button><button className="btn-text" onClick={() => handleDownload(project, 'png')} disabled={busyId === project.id || !hasDiagram}>{t('projectUi.downloadPng')}</button><MovePlanMenu groups={groups} currentGroupId={project.project_group_id} onMove={(group) => movePlan(project, group)} busy={busyId === project.id} /><button className="btn-text is-quiet" onClick={modalTrigger(() => handleDelete(project))} disabled={busyId === project.id}>{t('ui.delete')}</button></PlanMoreMenu>
           </div>
         </article>
         {projectView === 'diagrams' && project.projectType === 'tile' && project.layout_result && (
@@ -677,6 +678,7 @@ const UserProjectsContent = ({ groupId }) => {
         {errorNotice}
 
         <header className="proj-head">
+          {group && editingGroup && <h1 className="proj-head-name">{title}</h1>}
           {group && editingGroup ? (
             <form
               className="project-group-edit"
@@ -700,7 +702,7 @@ const UserProjectsContent = ({ groupId }) => {
               <button type="button" className="btn btn-sm" disabled={editingBusy} onClick={cancelEditGroup}>{t('ui.cancel')}</button>
             </form>
           ) : (
-            <h2 className="proj-head-name">
+            <h1 className="proj-head-name">
               {title}
               {group && (
                 <button
@@ -713,7 +715,7 @@ const UserProjectsContent = ({ groupId }) => {
                   <Pencil size={15} />
                 </button>
               )}
-            </h2>
+            </h1>
           )}
 
           <p className="proj-head-meta">
@@ -783,7 +785,7 @@ const UserProjectsContent = ({ groupId }) => {
               {group && (
                 <button
                   className="btn btn-outline-danger"
-                  onClick={() => handleDeleteGroup(group, plans.length)}
+                  onClick={modalTrigger(() => handleDeleteGroup(group, plans.length))}
                   disabled={busyId === group.id}
                 >
                   {t('projectUi.deleteProject')}

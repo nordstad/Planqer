@@ -9,11 +9,21 @@
 */
 
 import { useTranslation } from 'react-i18next';
+import { useLayoutEffect, useRef } from 'react';
+import { focusDestination } from '../utils/focusDestination';
 
 const PlanSteps = ({ steps, current, onSelect }) => {
   const { t } = useTranslation();
+  const rail = useRef(null);
+  const previous = useRef(current);
+  useLayoutEffect(() => {
+    if (previous.current !== current) {
+      focusDestination(rail.current?.parentElement.querySelector('.step-view h1'));
+      previous.current = current;
+    }
+  }, [current]);
   return (
-  <ol className="plan-steps" aria-label={t('ui.planProgress')}>
+  <ol ref={rail} className="plan-steps" aria-label={t('ui.planProgress')}>
     {steps.map((step, index) => {
       const number = String(index + 1).padStart(2, '0');
       const isCurrent = index === current;

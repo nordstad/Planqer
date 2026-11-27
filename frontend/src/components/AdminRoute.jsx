@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import AuthModal from './auth/AuthModal';
 import CatalogPage from './CatalogPage';
 import Loader from './Loader';
+import { modalTrigger } from './Modal';
 
 const AdminRoute = ({ children }) => {
   const { t } = useTranslation();
@@ -44,7 +45,7 @@ const AdminRoute = ({ children }) => {
           <p style={{ color: 'var(--ink-2)', marginBottom: '18px' }}>
             {t('common.setupDescription')}
           </p>
-          <button type="button" className="btn-order" onClick={() => setAuthModalOpen(true)}>
+          <button type="button" className="btn-order" onClick={modalTrigger(() => setAuthModalOpen(true))}>
             {t('common.getStarted')}
           </button>
         </div>
@@ -59,7 +60,7 @@ const AdminRoute = ({ children }) => {
         <div className="card" style={{ maxWidth: '420px', margin: '80px auto', textAlign: 'center' }}>
           <h2 className="section-title" style={{ marginBottom: '10px' }}>{t('common.signInRequired')}</h2>
           <p style={{ color: 'var(--ink-2)', marginBottom: '18px' }}>{t('legacy.signInAdmin')}</p>
-          <button type="button" className="btn-order" onClick={() => setAuthModalOpen(true)}>
+          <button type="button" className="btn-order" onClick={modalTrigger(() => setAuthModalOpen(true))}>
             {t('common.signIn')}
           </button>
         </div>

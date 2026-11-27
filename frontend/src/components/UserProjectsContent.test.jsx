@@ -157,7 +157,7 @@ it('confirms deletion of a plan on the project detail route', async () => {
   renderDetail();
 
   await openMoreActions();
-  fireEvent.click(await screen.findByRole('menuitem', { name: 'Delete', exact: true }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Delete', exact: true }));
   const dialog = await screen.findByRole('alertdialog');
   fireEvent.click(within(dialog).getByRole('button', { name: 'Delete', exact: true }));
 
@@ -207,7 +207,7 @@ it('moves a plan to another project from its accessible menu', async () => {
 
   await openMoreActions();
   fireEvent.click(await screen.findByRole('button', { name: 'Move to…' }));
-  fireEvent.click(screen.getByRole('menuitem', { name: 'Workshop' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Workshop' }));
 
   await waitFor(() => expect(movePlanToProject).toHaveBeenCalledWith(expect.objectContaining({ id: plan.id, projectType: 'board' }), otherGroup.id));
   expect(screen.queryByText(plan.name, { selector: 'h3' })).not.toBeInTheDocument();
@@ -237,7 +237,7 @@ it('routes a saved plan to its optimizer for modification', async () => {
   renderDetail();
 
   await openMoreActions();
-  fireEvent.click(await screen.findByRole('menuitem', { name: 'Modify', exact: true }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Modify', exact: true }));
 
   expect(screen.getByTestId('location')).toHaveTextContent('/cutting?edit=plan-1');
 });
@@ -249,12 +249,12 @@ it('routes saved sheet and tile plans to their optimizers', async () => {
   renderDetail();
 
   await openMoreActions(0);
-  fireEvent.click(await screen.findByRole('menuitem', { name: 'Modify', exact: true }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Modify', exact: true }));
   expect(screen.getByTestId('location')).toHaveTextContent('/sheet-cutting?edit=sheet-plan-1');
 
-  fireEvent.keyDown(document, { key: 'Escape' });
+  fireEvent.keyDown(screen.getAllByRole('button', { name: 'More actions' })[0], { key: 'Escape' });
   await openMoreActions(1);
-  fireEvent.click(await screen.findByRole('menuitem', { name: 'Modify', exact: true }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Modify', exact: true }));
   expect(screen.getByTestId('location')).toHaveTextContent('/tile-layout?edit=tile-plan-1');
 });
 

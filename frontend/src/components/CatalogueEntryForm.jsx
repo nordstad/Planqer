@@ -31,7 +31,10 @@ const CatalogueEntryForm = ({ catalogue, initial, creating, busy, error, onSubmi
   const idBase = useId().replace(/:/g, '');
   const [form, setForm] = useState(initial || emptyForm());
   const [problem, setProblem] = useState(null);
-  const set = (field, value) => setForm((current) => ({ ...current, [field]: value }));
+  const set = (field, value) => {
+    setForm((current) => ({ ...current, [field]: value }));
+    if (problem === field) setProblem(null);
+  };
 
   const types = typesOfKind(catalogue, form.kind).filter((type) => type.key !== FREE_TEXT_TYPE[form.kind]);
   const board = form.kind === 'board';
@@ -50,6 +53,8 @@ const CatalogueEntryForm = ({ catalogue, initial, creating, busy, error, onSubmi
       <input
         id={`${idBase}-${name}`}
         className={`form-input${problem === name ? ' form-input-error' : ''}`}
+        aria-invalid={problem === name || undefined}
+        aria-describedby={problem === name ? `${idBase}-error` : undefined}
         value={form[name]}
         onChange={(e) => set(name, e.target.value)}
         {...props}
@@ -67,7 +72,7 @@ const CatalogueEntryForm = ({ catalogue, initial, creating, busy, error, onSubmi
               id={`${idBase}-kind`}
               className="form-select"
               value={form.kind}
-              onChange={(e) => setForm({ ...emptyForm(e.target.value), note: form.note })}
+              onChange={(e) => { setForm({ ...emptyForm(e.target.value), note: form.note }); setProblem(null); }}
             >
               <option value="board">{t('catalogueAdmin.board')}</option>
               <option value="sheet">{t('catalogueAdmin.sheet')}</option>
@@ -78,6 +83,8 @@ const CatalogueEntryForm = ({ catalogue, initial, creating, busy, error, onSubmi
             <select
               id={`${idBase}-type`}
               className={`form-select${problem === 'type' ? ' form-input-error' : ''}`}
+              aria-invalid={problem === 'type' || undefined}
+              aria-describedby={problem === 'type' ? `${idBase}-error` : undefined}
               value={form.type}
               onChange={(e) => set('type', e.target.value)}
             >
@@ -113,6 +120,8 @@ const CatalogueEntryForm = ({ catalogue, initial, creating, busy, error, onSubmi
         <textarea
           id={`${idBase}-sources`}
           className={`form-input${problem === 'sources' ? ' form-input-error' : ''}`}
+          aria-invalid={problem === 'sources' || undefined}
+          aria-describedby={problem === 'sources' ? `${idBase}-error` : undefined}
           rows={2}
           value={form.sources}
           onChange={(e) => set('sources', e.target.value)}
@@ -122,7 +131,7 @@ const CatalogueEntryForm = ({ catalogue, initial, creating, busy, error, onSubmi
       {field('note', t('productUi.note'), { maxLength: 200 })}
 
       {(problem || error) && (
-        <div className="alert-danger" role="alert">
+        <div id={`${idBase}-error`} className="alert-danger" role="alert">
           {problem ? ['thickness', 'width', 'lengths', 'maxLength', 'formats'].includes(problem)
             ? t('measurementUi.whole', { min: 1 })
             : t(`catalogueAdmin.problem.${problem}`) : error}

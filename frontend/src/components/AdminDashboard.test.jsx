@@ -70,11 +70,11 @@ describe('AdminDashboard', () => {
   it('switches between the users and catalogue tabs', async () => {
     renderDashboard();
     await screen.findByText('someone@example.com');
-    expect(screen.getByRole('tab', { name: 'Users' })).toHaveAttribute('aria-selected', 'true');
-    fireEvent.click(screen.getByRole('tab', { name: 'Catalogue' }));
+    expect(screen.getByRole('button', { name: 'Users' })).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(screen.getByRole('button', { name: 'Catalogue' }));
     expect(await screen.findByLabelText('Search products')).toBeInTheDocument();
     expect(screen.queryByText('someone@example.com')).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('tab', { name: 'Users' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Users' }));
     expect(await screen.findByText('someone@example.com')).toBeInTheDocument();
   });
 

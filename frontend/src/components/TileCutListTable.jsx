@@ -8,6 +8,8 @@
 
 import { buildCutList } from '../utils/tileCutList';
 import { useState } from 'react';
+import Modal, { modalTrigger } from './Modal';
+import { flushSync } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { translateWithFallback } from '../i18n/translate';
 
@@ -117,7 +119,7 @@ const TileCutListTable = ({ candidate, selectedLabel, onCloseSelection, highligh
               </td>
               <td style={{ textAlign: 'left', color: 'var(--ink-2)' }}>
                 {candidate.piece_diagrams?.[group.label] && (
-                  <button type="button" className="btn-text tile-cut-action" onClick={() => setTemplate({ ...group, image: candidate.piece_diagrams[group.label] })}>
+                  <button type="button" className="btn-text tile-cut-action" onClick={modalTrigger(() => setTemplate({ ...group, image: candidate.piece_diagrams[group.label] }))}>
                     {text('ui.viewCut', { label: group.label })}
                   </button>
                 )}
@@ -139,22 +141,16 @@ const TileCutListTable = ({ candidate, selectedLabel, onCloseSelection, highligh
          {hasDiagonalCuts && ` ${text('ui.diagonalDescription')}`}
       </p>
       {activeTemplate && (
-         <div className="cat-overlay" role="dialog" aria-modal="true" aria-label={text('ui.cutTemplateAria', { label: activeTemplate.label })} onClick={closeTemplate}>
-          <div className="cat-sheet" style={{ maxWidth: '720px', maxHeight: '90vh', overflow: 'auto' }} onClick={(event) => event.stopPropagation()}>
-            <div className="masthead" style={{ marginTop: 0 }}>
-                <span className="masthead-brand" style={{ fontSize: '13px' }}>{text('ui.cutTemplate', { label: activeTemplate.label })}</span>
-                <button type="button" className="masthead-flash" onClick={closeTemplate}>{text('common.close')}</button>
-            </div>
+         <Modal aria-label={text('ui.cutTemplateAria', { label: activeTemplate.label })} title={text('ui.cutTemplate', { label: activeTemplate.label })} sheetStyle={{ maxWidth: '720px', maxHeight: '90vh', overflow: 'auto' }} onClose={closeTemplate}>
             <div style={{ padding: '16px 16px 0', color: 'var(--ink-2)', fontSize: '13px', lineHeight: '1.5' }}>
                {pieceMeta(activeTemplate, text)}
-               {onShowInList && <div><button type="button" className="btn-text" onClick={() => { const label = activeTemplate.label; closeTemplate(); onShowInList(label); }}>{text('ui.showInCutList')}</button></div>}
+               {onShowInList && <div><button type="button" className="btn-text" onClick={() => { const label = activeTemplate.label; flushSync(closeTemplate); onShowInList(label); }}>{text('ui.showInCutList')}</button></div>}
             </div>
             <img src={activeTemplate.image} alt={text('ui.cutTemplateAria', { label: activeTemplate.label })} style={{ display: 'block', width: '100%', maxHeight: '65vh', objectFit: 'contain', padding: '16px' }} />
              <div style={{ padding: '0 16px 16px', color: 'var(--ink-2)', fontSize: '13px', lineHeight: '1.5' }}>
                <strong style={{ color: 'var(--ink)' }}>{text('ui.howToCut')}</strong> {text('ui.cutInstructions')}
             </div>
-          </div>
-        </div>
+        </Modal>
       )}
     </section>
   );

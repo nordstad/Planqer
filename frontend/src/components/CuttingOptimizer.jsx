@@ -18,6 +18,7 @@
 */
 
 import { useState, useEffect, useRef } from 'react';
+import Modal, { modalTrigger } from './Modal';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { optimizeCutting, saveProject, getProjectGroups, getUserProjects, getUserSettings, movePlanToProject } from '../utils/api';
@@ -654,7 +655,7 @@ const CuttingOptimizer = () => {
               <p className="step-lede">{t('workflow.requiredPartsIntro')}</p>
               <p className="form-legend"><span className="req-mark" aria-hidden="true" />{t('formUi.requiredLegend')}</p>
             </div>
-            <button type="button" className="btn-text" onClick={() => setLoadModalOpen(true)}>
+            <button type="button" className="btn-text" onClick={modalTrigger(() => setLoadModalOpen(true))}>
               {t('workflow.loadSavedPlan')}
             </button>
           </div>
@@ -1020,7 +1021,7 @@ const CuttingOptimizer = () => {
 
       {/* ── 03 · keep it ──────────────────────────────────────────────────── */}
       {step === STEP_SAVE && plan && (
-        <form className="step-view is-form" onSubmit={handleSave}>
+        <form className="step-view is-form" onSubmit={modalTrigger(handleSave)}>
           <div className="step-head" style={{ marginBottom: '22px' }}>
             <div>
                <h1 className="step-h1">{saved ? t('workflow.planSaved') : t('workflow.saveThisPlan')}</h1>
@@ -1101,15 +1102,7 @@ const CuttingOptimizer = () => {
       />
 
       {loadModalOpen && (
-         <div className="cat-overlay" role="dialog" aria-modal="true" aria-label={t('workflow.loadSavedPlan')}>
-          <div className="cat-sheet">
-            <div className="masthead" style={{ marginTop: 0 }}>
-               <span className="masthead-brand" style={{ fontSize: '13px' }}>{t('ui.savedPlans')}</span>
-              <span className="masthead-section" />
-              <button type="button" className="masthead-flash" onClick={() => setLoadModalOpen(false)}>
-                 {t('ui.close')}
-              </button>
-            </div>
+         <Modal aria-label={t('workflow.loadSavedPlan')} title={t('ui.savedPlans')} onClose={() => setLoadModalOpen(false)}>
             <div style={{ padding: '14px 16px 18px' }}>
               {userProjects.length === 0 ? (
                 <p style={{ color: 'var(--ink-3)', fontSize: '13px' }}>
@@ -1173,8 +1166,7 @@ const CuttingOptimizer = () => {
                  {t('ui.renameDeleteHint')}
               </p>
             </div>
-          </div>
-        </div>
+        </Modal>
       )}
     </CatalogPage>
   );

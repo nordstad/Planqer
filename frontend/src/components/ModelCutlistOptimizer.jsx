@@ -57,6 +57,7 @@ import { loadCatalogue, buildSnapshot } from '../utils/catalogue';
 import { focusSection } from '../utils/focusSection';
 import { colourForModelGroup, colourForModelPart, partKey } from '../utils/modelPreview';
 import { VISUALLY_HIDDEN } from '../utils/visuallyHidden';
+import { modalTrigger } from './Modal';
 import { modelFileAccept } from '../utils/modelFileAccept';
 import { rememberProjectChoice } from '../hooks/useProjectChoice';
 
@@ -531,7 +532,7 @@ const ModelCutlistOptimizer = () => {
                 <p className="synthetic" style={{ margin: '0 auto 16px' }}>
                    {t('modelUi.acceptedModelFiles')}
                 </p>
-                <label className="btn-primary" style={{ cursor: 'pointer', position: 'relative' }}>
+                <label className="btn-primary file-picker" style={{ cursor: 'pointer', position: 'relative' }}>
                   <input
                     type="file"
                     accept={modelFileAccept()}
@@ -904,7 +905,7 @@ const SignInRequired = ({ message }) => {
     <div className="card" style={{ maxWidth: '420px', margin: '40px auto', textAlign: 'center' }}>
       <h2 className="section-title" style={{ marginBottom: '10px' }}>{t('common.signInRequired')}</h2>
       <p style={{ color: 'var(--ink-2)', marginBottom: '18px' }}>{message}</p>
-      <button type="button" className="btn-order" onClick={() => setAuthModalOpen(true)}>{t('common.signIn')}</button>
+      <button type="button" className="btn-order" onClick={modalTrigger(() => setAuthModalOpen(true))}>{t('common.signIn')}</button>
       <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} initialMode={needsSetup ? 'register' : 'login'} isFirstRun={needsSetup} />
     </div>
   );

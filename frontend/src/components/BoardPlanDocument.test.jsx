@@ -27,16 +27,16 @@ describe('BoardPlanDocument', () => {
     expect(container.querySelector('.board-plan-parts').textContent).toContain('800,5 mm');
     expect(container.querySelector('.board-plan-parts').textContent).toContain('400,25 mm');
     expect(container.querySelector('.board-plan-cuts').textContent).toContain('800,5 mm');
-    expect(screen.getByRole('tab', { name: /Board 1.*2\s?400,5 mm/ })).toHaveAttribute('aria-selected', 'true');
-    fireEvent.click(screen.getByRole('tab', { name: /Board 2.*1\s?800,25 mm/ }));
+    expect(screen.getByRole('button', { name: /Board 1.*2\s?400,5 mm/ })).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(screen.getByRole('button', { name: /Board 2.*1\s?800,25 mm/ }));
     expect(container.querySelector('.board-plan-cuts').textContent).toContain('400,25 mm');
     expect(container.querySelector('.board-plan-cuts').textContent).not.toContain('400 mm');
   });
 
   it('shows the plan summary and lets a reader select a board', () => {
     render(<BoardPlanDocument project={project} />);
-    fireEvent.click(screen.getByRole('tab', { name: /Board 2/i }));
-    expect(screen.getByRole('tab', { name: /Board 2/i })).toHaveAttribute('aria-selected', 'true');
+    fireEvent.click(screen.getByRole('button', { name: /Board 2/i }));
+    expect(screen.getByRole('button', { name: /Board 2/i })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('cell', { name: 'Short rail' })).toBeInTheDocument();
     expect(screen.getByText('400 mm')).toBeInTheDocument();
   });

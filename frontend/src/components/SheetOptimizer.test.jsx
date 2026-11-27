@@ -110,9 +110,9 @@ it('steps sheet and part dimensions in whole millimetres', () => {
   renderSheetOptimizer();
 
   const dimensions = [
-    ...screen.getAllByLabelText(/Part length in millimetres/i),
+    ...screen.getAllByLabelText(/Part width in millimetres/i),
     screen.getByLabelText('Width (mm)'),
-    ...screen.getAllByLabelText('Sheet height in millimetres'),
+    ...screen.getAllByLabelText(/Part height in millimetres/i),
     screen.getByLabelText('Height (mm)'),
     document.getElementById('sheet-thickness'),
   ];
@@ -138,8 +138,8 @@ it('keeps a new part row clean until a field is touched and shows errors below t
 
   expect(screen.queryByText('Width must be a positive number')).not.toBeInTheDocument();
   expect(screen.queryByText('Height must be a positive number')).not.toBeInTheDocument();
-  const width = screen.getByLabelText('Part length in millimetres, item 1');
-  const height = screen.getAllByLabelText('Sheet height in millimetres')[0];
+  const width = screen.getByLabelText('Part width in millimetres, item 1');
+  const height = screen.getByLabelText('Part height in millimetres, item 1');
   const quantity = screen.getByLabelText('Quantity, item 1');
   expect(width.closest('form')).toHaveAttribute('novalidate');
   expect(width).not.toHaveAttribute('placeholder');

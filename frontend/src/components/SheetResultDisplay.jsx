@@ -8,6 +8,7 @@
 */
 
 import { useEffect, useState } from 'react';
+import Modal, { modalTrigger } from './Modal';
 import { useTranslation } from 'react-i18next';
 import Disclosure from './Disclosure';
 import { ArrowLeft, ArrowRight, Download } from './icons';
@@ -79,7 +80,7 @@ const SheetResultDisplay = ({ result, projectName }) => {
             type="button"
             className="cut-list-visualization"
             style={{ width: '100%', cursor: 'zoom-in' }}
-            onClick={() => setDiagramOpen(true)}
+            onClick={modalTrigger(() => setDiagramOpen(true))}
             aria-label={t('ui.sheetDiagramAria', {
               number: activeSheetIndex + 1,
               width: mm(selectedSheet.sheet_width),
@@ -143,20 +144,11 @@ const SheetResultDisplay = ({ result, projectName }) => {
       </div>
 
       {diagramOpen && (
-         <div className="cat-overlay" role="dialog" aria-modal="true" aria-label={t('ui.sheetLayoutDiagram')} onClick={() => setDiagramOpen(false)}>
-          <div className="cat-sheet" style={{ maxWidth: '95vw' }} onClick={(e) => e.stopPropagation()}>
-            <div className="masthead" style={{ marginTop: 0 }}>
-               <span className="masthead-brand" style={{ fontSize: '13px' }}>{t('ui.sheetLayout')}</span>
-              <span className="masthead-section" />
-              <button type="button" className="masthead-flash" onClick={() => setDiagramOpen(false)}>
-                 {t('common.close')}
-              </button>
-            </div>
+         <Modal aria-label={t('ui.sheetLayoutDiagram')} title={t('ui.sheetLayout')} sheetStyle={{ maxWidth: '95vw' }} onClose={() => setDiagramOpen(false)}>
             <div style={{ padding: '16px' }}>
                 <img src={selectedDiagram} alt={t('ui.sheetDiagramAlt')} style={{ display: 'block', width: '100%', height: 'auto' }} />
             </div>
-          </div>
-        </div>
+        </Modal>
       )}
     </>
   );

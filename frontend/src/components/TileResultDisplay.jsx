@@ -10,6 +10,7 @@
 */
 
 import { useEffect, useState } from 'react';
+import Modal, { modalTrigger } from './Modal';
 import { useTranslation } from 'react-i18next';
 import { Download } from './icons';
 import TileCutListTable from './TileCutListTable';
@@ -63,7 +64,7 @@ const TileResultDisplay = ({ candidate, projectName, surfaceWidth, surfaceHeight
           <div className="tile-diagram-heading">
             <div><h2 className="section-title">{t('ui.tileDiagramTitle')}</h2><p>{t('ui.tileSurfaceSize', { width: mm(Number(surfaceWidth)), height: mm(Number(surfaceHeight)) })}</p></div>
             <div className="tile-diagram-actions">
-              <button type="button" className="btn" onClick={() => setDiagramOpen(true)}>{t('ui.tileDiagramAria')}</button>
+              <button type="button" className="btn" onClick={modalTrigger(() => setDiagramOpen(true))}>{t('ui.tileDiagramAria')}</button>
               <button type="button" className="btn" onClick={downloadDiagram} disabled={downloading}><Download /> {t('projectUi.downloadPng')}</button>
             </div>
           </div>
@@ -124,20 +125,11 @@ const TileResultDisplay = ({ candidate, projectName, surfaceWidth, surfaceHeight
       </section>
 
       {diagramOpen && (
-         <div className="cat-overlay" role="dialog" aria-modal="true" aria-label={t('ui.tileLayoutDiagram')} onClick={() => setDiagramOpen(false)}>
-          <div className="cat-sheet" style={{ maxWidth: '95vw' }} onClick={(e) => e.stopPropagation()}>
-            <div className="masthead" style={{ marginTop: 0 }}>
-               <span className="masthead-brand" style={{ fontSize: '13px' }}>{t('ui.tileLayout')}</span>
-              <span className="masthead-section" />
-              <button type="button" className="masthead-flash" onClick={() => setDiagramOpen(false)}>
-                 {t('common.close')}
-              </button>
-            </div>
+         <Modal aria-label={t('ui.tileLayoutDiagram')} title={t('ui.tileLayout')} sheetStyle={{ maxWidth: '95vw' }} onClose={() => setDiagramOpen(false)}>
             <div style={{ padding: '16px' }}>
                <img src={candidate.visualization} alt={`${candidate.label} — ${t('ui.tileDiagramAlt')}`} style={{ display: 'block', width: '100%', height: 'auto' }} />
             </div>
-          </div>
-        </div>
+        </Modal>
       )}
     </>
   );

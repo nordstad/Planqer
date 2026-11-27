@@ -987,6 +987,15 @@
     align-items: center; justify-content: center; padding: 18px;
     background: rgba(22,21,15,.5);
   }
+  .skip-link {
+    position: fixed; top: 8px; left: 8px; z-index: 70;
+    padding: 10px 16px; background: var(--card); color: var(--ink);
+    border: 2px solid var(--accent); border-radius: 8px;
+    transform: translateY(-150%);
+  }
+  .skip-link:focus { transform: none; }
+  #main-content, .step-view h1, .help-section h1, .help-section h2 { scroll-margin-top: 24px; }
+  .file-picker:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 4px; }
   .cat-sheet {
     width: 100%; max-width: 640px; max-height: 86vh; overflow: auto;
     background: var(--card); border: 1px solid var(--rule-hair); border-radius: 16px;

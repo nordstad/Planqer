@@ -1,4 +1,10 @@
 const locale = {
+  accessibilityUi: {
+    skipContent: 'Skip to main content',
+    homeTitle: 'Home',
+    partWidth: 'Part width in millimetres, item {{item}}',
+    partHeight: 'Part height in millimetres, item {{item}}',
+  },
   passwordUi: {
     policy: 'Use at least 8 characters with an uppercase A–Z letter, a lowercase a–z letter, a digit, and a special character. Maximum 72 UTF-8 bytes.',
     resetFor: 'New password for {{email}}',

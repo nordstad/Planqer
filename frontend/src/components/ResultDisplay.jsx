@@ -9,6 +9,7 @@
 */
 
 import { useState } from 'react';
+import Modal, { modalTrigger } from './Modal';
 import { useTranslation } from 'react-i18next';
 import { Download } from './icons';
 import { translateWithFallback } from '../i18n/translate';
@@ -60,7 +61,7 @@ const ResultDisplay = ({ result, projectName, materialType, boardThickness, boar
           type="button"
           className="cut-list-visualization"
           style={{ width: '100%', cursor: 'zoom-in' }}
-          onClick={() => setDiagramOpen(true)}
+          onClick={modalTrigger(() => setDiagramOpen(true))}
            aria-label={text('ui.enlargeBoardDiagram')}
         >
            <img src={result.visualization} alt={text('ui.boardDiagramAlt')} id="cutlist-image" />
@@ -103,20 +104,11 @@ const ResultDisplay = ({ result, projectName, materialType, boardThickness, boar
       </section>
 
       {diagramOpen && (
-         <div className="cat-overlay" role="dialog" aria-modal="true" aria-label={text('ui.cuttingPlanDiagram')} onClick={() => setDiagramOpen(false)}>
-          <div className="cat-sheet" style={{ maxWidth: '95vw' }} onClick={(e) => e.stopPropagation()}>
-            <div className="masthead" style={{ marginTop: 0 }}>
-               <span className="masthead-brand" style={{ fontSize: '13px' }}>{text('ui.cuttingPlan')}</span>
-              <span className="masthead-section" />
-              <button type="button" className="masthead-flash" onClick={() => setDiagramOpen(false)}>
-                 {t('common.close')}
-              </button>
-            </div>
+         <Modal aria-label={text('ui.cuttingPlanDiagram')} title={text('ui.cuttingPlan')} sheetStyle={{ maxWidth: '95vw' }} onClose={() => setDiagramOpen(false)}>
             <div style={{ padding: '16px' }}>
                <img src={result.visualization} alt={text('ui.boardDiagramAlt')} style={{ display: 'block', width: '100%', height: 'auto' }} />
             </div>
-          </div>
-        </div>
+        </Modal>
       )}
     </>
   );

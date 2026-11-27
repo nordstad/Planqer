@@ -10,6 +10,7 @@
 */
 
 import { useState, useEffect, useRef } from 'react';
+import Modal, { modalTrigger } from './Modal';
 import { useTranslation } from 'react-i18next';
 import { SAW_KERF_MIN, MAX_SHEET_PART_QUANTITY, isValidSheetQuantity } from '../utils/validators';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -439,7 +440,7 @@ const SheetOptimizer = () => {
               <p className="step-lede">{t('workflow.partsToCutIntro')}</p>
               <p className="form-legend"><span className="req-mark" aria-hidden="true" />{t('formUi.requiredLegend')}</p>
             </div>
-            <button type="button" className="btn-text" onClick={() => setLoadModalOpen(true)}>
+            <button type="button" className="btn-text" onClick={modalTrigger(() => setLoadModalOpen(true))}>
               {t('workflow.loadSavedPlan')}
             </button>
           </div>
@@ -529,14 +530,14 @@ const SheetOptimizer = () => {
               />
             </div>
             <div className="grid gap-x-6 gap-y-4 md:grid-cols-3">
-              <FormField label={t('workflow.width')} unit="mm" required>
-                <input id="sheet-width" type="number" step="1" min="100" value={sheetWidth} onChange={(e) => setSheetField(setSheetWidth)(e.target.value)} className={`form-input dimension-input ${inputErrors.sheetWidth ? 'form-input-error' : ''}`} aria-invalid={!!inputErrors.sheetWidth || undefined} aria-describedby={sheetError ? 'sheet-stock-error' : undefined} />
+              <FormField label={t('workflow.width')} unit="mm" required error={inputErrors.sheetWidth}>
+                <input id="sheet-width" type="number" step="1" min="100" value={sheetWidth} onChange={(e) => setSheetField(setSheetWidth)(e.target.value)} className="form-input dimension-input" />
               </FormField>
-              <FormField label={t('workflow.height')} unit="mm" required>
-                <input id="sheet-height" type="number" step="1" min="100" value={sheetHeight} onChange={(e) => setSheetField(setSheetHeight)(e.target.value)} className={`form-input dimension-input ${inputErrors.sheetHeight ? 'form-input-error' : ''}`} aria-invalid={!!inputErrors.sheetHeight || undefined} aria-describedby={sheetError ? 'sheet-stock-error' : undefined} />
+              <FormField label={t('workflow.height')} unit="mm" required error={inputErrors.sheetHeight}>
+                <input id="sheet-height" type="number" step="1" min="100" value={sheetHeight} onChange={(e) => setSheetField(setSheetHeight)(e.target.value)} className="form-input dimension-input" />
               </FormField>
-              <FormField label={t('workflow.thickness')} unit="mm" required>
-                <input id="sheet-thickness" type="number" min="1" step="1" value={sheetThickness} onChange={(e) => setSheetField(setSheetThickness)(e.target.value)} className={`form-input dimension-input ${inputErrors.sheetThickness ? 'form-input-error' : ''}`} aria-invalid={!!inputErrors.sheetThickness || undefined} aria-describedby={sheetError ? 'sheet-stock-error' : undefined} />
+              <FormField label={t('workflow.thickness')} unit="mm" required error={inputErrors.sheetThickness}>
+                <input id="sheet-thickness" type="number" min="1" step="1" value={sheetThickness} onChange={(e) => setSheetField(setSheetThickness)(e.target.value)} className="form-input dimension-input" />
               </FormField>
             </div>
             <p id="sheet-stock-error" className={sheetError ? 'text-danger text-[12.5px] font-semibold' : 'synthetic'} style={{ marginTop: '10px' }}>
@@ -698,7 +699,7 @@ const SheetOptimizer = () => {
 
       {/* ── 03 · keep it ──────────────────────────────────────────────────── */}
       {step === STEP_SAVE && result && (
-        <form className="step-view is-form" onSubmit={handleSave}>
+        <form className="step-view is-form" onSubmit={modalTrigger(handleSave)}>
           <div className="step-head" style={{ marginBottom: '22px' }}>
             <div>
               <h1 className="step-h1">{saved ? t('workflow.planSaved') : t('workflow.saveThisPlan')}</h1>
@@ -779,15 +780,7 @@ const SheetOptimizer = () => {
       />
 
       {loadModalOpen && (
-         <div className="cat-overlay" role="dialog" aria-modal="true" aria-label={t('workflow.loadSavedPlan')}>
-          <div className="cat-sheet">
-            <div className="masthead" style={{ marginTop: 0 }}>
-               <span className="masthead-brand" style={{ fontSize: '13px' }}>{t('ui.savedPlans')}</span>
-              <span className="masthead-section" />
-              <button type="button" className="masthead-flash" onClick={() => setLoadModalOpen(false)}>
-                 {t('ui.close')}
-              </button>
-            </div>
+         <Modal aria-label={t('workflow.loadSavedPlan')} title={t('ui.savedPlans')} onClose={() => setLoadModalOpen(false)}>
             <div style={{ padding: '14px 16px 18px' }}>
               {userProjects.length === 0 ? (
                 <p style={{ color: 'var(--ink-3)', fontSize: '13px' }}>
@@ -815,8 +808,7 @@ const SheetOptimizer = () => {
                  {t('ui.renameDeleteHint')}
               </p>
             </div>
-          </div>
-        </div>
+        </Modal>
       )}
     </CatalogPage>
   );

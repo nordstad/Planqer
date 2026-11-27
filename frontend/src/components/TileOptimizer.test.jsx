@@ -49,6 +49,21 @@ beforeEach(() => {
   saveTileProject.mockReset().mockResolvedValue({ id: 'synthetic-plan', name: 'Current layout' });
 });
 
+it.each(['tile-surface-width', 'tile-surface-height', 'tile-width', 'tile-height', 'tile-thickness', 'tile-joint-width', 'tile-perimeter'])('associates only the affected tile measurement with its error: %s', async (id) => {
+  render(<MemoryRouter><LanguageProvider><TileOptimizer /></LanguageProvider></MemoryRouter>);
+  const field = document.getElementById(id);
+  const original = field.value;
+  fireEvent.change(field, { target: { value: '1.5' } });
+  await waitFor(() => expect(field).toHaveAttribute('aria-invalid', 'true'));
+  expect(field).toHaveAccessibleDescription(/\S/);
+  const valid = [...document.querySelectorAll('#tile-surface input, #tile-tile input, #tile-joint input')]
+    .filter((input) => input !== field);
+  for (const input of valid) expect(input).not.toHaveAttribute('aria-describedby', field.getAttribute('aria-describedby'));
+  fireEvent.change(field, { target: { value: original } });
+  await waitFor(() => expect(field).not.toHaveAttribute('aria-invalid'));
+  expect(field).not.toHaveAttribute('aria-describedby');
+});
+
 it('exposes edited opening errors while calculation is disabled and targets the faulty field', async () => {
   render(<MemoryRouter><LanguageProvider><TileOptimizer /></LanguageProvider></MemoryRouter>);
   fireEvent.click(await screen.findByRole('button', { name: 'Add opening' }));
@@ -103,7 +118,7 @@ describe('tile input/result identity', () => {
     ['tile height', 'input#tile-height', '650'],
     ['material', 'select#tile-material', 'porcelain'],
     ['thickness', 'input#tile-thickness', '12'],
-    ['joint', 'input#tile-joint', '4'],
+    ['joint', 'input#tile-joint-width', '4'],
     ['perimeter gap', 'input#tile-perimeter', '2'],
     ['bond', 'select#tile-bond', 'stack'],
     ['row offset', 'input#tile-offset', '25'],

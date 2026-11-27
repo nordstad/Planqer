@@ -70,10 +70,10 @@ for (const [language, locale] of [['en-GB', en], ['sv-SE', sv], ['nb-NO', nb]]) 
         await expect(page.locator('.board-plan-parts')).toContainText('800,5 mm');
         await expect(page.locator('.board-plan-parts')).toContainText('400,25 mm');
         await expect(page.locator('.board-plan-cuts')).toContainText('800,5 mm');
-        await expect(page.getByRole('tab').nth(0)).toContainText('2\u00a0400,5 mm');
-        await page.getByRole('tab').nth(1).click();
-        await expect(page.getByRole('tab').nth(1)).toHaveAttribute('aria-selected', 'true');
-        await expect(page.getByRole('tab').nth(1)).toContainText('1\u00a0800,25 mm');
+        await expect(page.locator('.board-plan-picker button').nth(0)).toContainText('2\u00a0400,5 mm');
+        await page.locator('.board-plan-picker button').nth(1).click();
+        await expect(page.locator('.board-plan-picker button').nth(1)).toHaveAttribute('aria-pressed', 'true');
+        await expect(page.locator('.board-plan-picker button').nth(1)).toContainText('1\u00a0800,25 mm');
         await expect(page.locator('.board-plan-cuts')).toContainText('400,25 mm');
         await expect(page.locator('img.board-plan-diagram')).toHaveAttribute('src', diagram);
         await page.getByRole('button', { name: locale.projectUi.printOne, exact: true }).click();

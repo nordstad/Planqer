@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Modal from '../Modal';
 import { useTranslation } from 'react-i18next';
 import { registerUser, loginUser, getCurrentUser } from '../../utils/api';
 import { useAuth } from '../../contexts/AuthContext';
@@ -47,17 +48,7 @@ const Register = ({ onClose, onSwitchToLogin, isFirstRun = false }) => {
   };
 
   return (
-    <div className="cat-overlay" role="dialog" aria-modal="true" aria-label={t('auth.createAccount')} onClick={isFirstRun ? undefined : onClose}>
-      <div className="cat-sheet" onClick={(e) => e.stopPropagation()}>
-        <div className="masthead" style={{ marginTop: 0 }}>
-          <span className="masthead-brand" style={{ fontSize: '13px' }}>
-             {(isFirstRun ? t('auth.setupPartsible') : t('auth.createAccount')).toUpperCase()}
-          </span>
-          <span className="masthead-section" />
-          {!isFirstRun && (
-             <button type="button" className="masthead-flash" onClick={onClose}>{t('common.close')}</button>
-          )}
-        </div>
+    <Modal aria-label={isFirstRun ? t('auth.setupPartsible') : t('auth.createAccount')} title={(isFirstRun ? t('auth.setupPartsible') : t('auth.createAccount')).toUpperCase()} onClose={onClose}>
         <div style={{ padding: '14px 16px 18px' }}>
           <p className="synthetic" style={{ marginBottom: '14px' }}>
             {isFirstRun
@@ -149,8 +140,7 @@ const Register = ({ onClose, onSwitchToLogin, isFirstRun = false }) => {
             </p>
           )}
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 };
 
