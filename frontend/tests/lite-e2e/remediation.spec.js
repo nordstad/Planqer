@@ -41,6 +41,7 @@ test('a collection outage does not claim an empty library and recovers in place'
   await expect(page.getByText('Nothing saved yet', { exact: false })).toHaveCount(0);
   fail = false;
   await page.getByRole('button', { name: 'Refresh', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'My projects' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'My projects', level: 2, exact: true })).toBeVisible();
+  await expect(page.getByText('Nothing saved yet', { exact: false })).toBeVisible();
   await expect(page.getByRole('alert')).toHaveCount(0);
 });
