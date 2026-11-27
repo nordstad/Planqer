@@ -5,6 +5,7 @@ import UserSettings from './UserSettings';
 import { AuthContext } from '../contexts/AuthContext';
 import { getUserSettings, updateUserSettings } from '../utils/api';
 import { setCatalogueChoice } from '../utils/catalogueChoice';
+import { LOCAL_DATA_RESTORED } from '../hooks/useLocalDataRevision';
 
 const language = vi.hoisted(() => ({ language: 'en-GB', changeLanguage: vi.fn() }));
 vi.mock('../contexts/LanguageContext', () => ({ useLanguage: () => language }));
@@ -59,6 +60,19 @@ beforeEach(() => {
 });
 
 describe('Defaults load/save safety', () => {
+  it('reloads a mounted form after restore and ignores a superseded pending load', async () => {
+    const state = setup();
+    await finishLoad(state.loads[0]);
+    fireEvent.change(screen.getByLabelText('Default board lengths, mm'), { target: { value: '6000' } });
+    act(() => window.dispatchEvent(new Event(LOCAL_DATA_RESTORED)));
+    expectLocked();
+    act(() => window.dispatchEvent(new Event(LOCAL_DATA_RESTORED)));
+    await finishLoad(state.loads[2], { data: { ...defaults, default_board_lengths: [7200] } });
+    await finishLoad(state.loads[1]);
+    expectDefaults('7200');
+    expect(updateUserSettings).not.toHaveBeenCalled();
+  });
+
   it('does not expose editable defaults or Save while the initial read is pending', () => {
     setup();
     expectLocked();

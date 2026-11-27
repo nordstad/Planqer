@@ -25,6 +25,7 @@ import SavePlanCard from './SavePlanCard';
 import MovePlanMenu from './MovePlanMenu';
 import { useProjectChoice, rememberProjectChoice } from '../hooks/useProjectChoice';
 import { millimetresError } from '../utils/measurementInput';
+import { focusSection } from '../utils/focusSection';
 import ProductPicker from './ProductPicker';
 import { materialLabel } from '../utils/materialLabel';
 import {
@@ -286,15 +287,7 @@ const SheetOptimizer = () => {
   const partRowsWrong = parts.some((part, index) => visiblePartError(part, index));
   const partRowsBlank = currentPartErrors.some((errors, index) => errors && Object.keys(errors).some((field) => parts[index][field] === ''));
   const sheetWrong = !!(sheetError || inputErrors.kerfWidth);
-  const goToSection = (id) => window.setTimeout(() => {
-    const section = document.getElementById(id);
-    if (!section) return;
-    section.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
-    const fields = [...section.querySelectorAll('input:not([type=checkbox]):not([type=radio]), select')];
-    (fields.find((field) => field.getAttribute('aria-invalid') === 'true')
-      || fields.find((field) => field.getAttribute('aria-required') === 'true' && !field.value)
-      || fields[0])?.focus({ preventScroll: true });
-  }, 0);
+  const goToSection = focusSection;
   const toParts = { name: t('formUi.goTo', { name: t('workflow.partsToCut') }), go: () => goToSection('sheet-parts') };
   const toSheet = { name: t('formUi.goTo', { name: t('ui.sheet') }), go: () => goToSection('sheet-stock') };
   const blocker = parts.length === 0 ? { text: t('workflow.partsRequiredBeforePlanning'), ...toParts }

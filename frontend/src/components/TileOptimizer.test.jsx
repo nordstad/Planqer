@@ -49,6 +49,39 @@ beforeEach(() => {
   saveTileProject.mockReset().mockResolvedValue({ id: 'synthetic-plan', name: 'Current layout' });
 });
 
+it('exposes edited opening errors while calculation is disabled and targets the faulty field', async () => {
+  render(<MemoryRouter><LanguageProvider><TileOptimizer /></LanguageProvider></MemoryRouter>);
+  fireEvent.click(await screen.findByRole('button', { name: 'Add opening' }));
+  const fields = [...document.querySelectorAll('#tile-openings input')];
+  expect(fields.every((field) => !field.hasAttribute('aria-invalid'))).toBe(true);
+  for (const [index, value] of ['100', '0', '5000', '500'].entries()) {
+    fireEvent.change(fields[index], { target: { value } });
+  }
+  await waitFor(() => expect(fields[2]).toHaveAttribute('aria-invalid', 'true'));
+  expect(fields[2]).toHaveAccessibleDescription(i18n.t('tileUi.rightEdge'));
+  expect(fields[0]).not.toHaveAttribute('aria-invalid');
+  expect(screen.getByRole('button', { name: /Calculate layout/i })).toBeDisabled();
+  fireEvent.click(screen.getByRole('button', { name: 'Go to Openings' }));
+  await waitFor(() => expect(fields[2]).toHaveFocus());
+  fireEvent.change(fields[2], { target: { value: '500' } });
+  await waitFor(() => expect(fields[2]).not.toHaveAttribute('aria-invalid'));
+  expect(fields[2]).not.toHaveAttribute('aria-describedby');
+  expect(screen.getByRole('button', { name: /Calculate layout/i })).toBeEnabled();
+  fireEvent.click(document.querySelector('#tile-openings .btn-text.is-quiet'));
+  expect(document.querySelectorAll('#tile-openings input')).toHaveLength(0);
+});
+
+it('explains fractional candidate counts as whole counts rather than positive numbers', async () => {
+  render(<MemoryRouter><LanguageProvider><TileOptimizer /></LanguageProvider></MemoryRouter>);
+  fireEvent.click(await screen.findByRole('button', { name: new RegExp(i18n.t('workflow.sliverGuardBreakage')) }));
+  fireEvent.change(document.querySelector('#tile-candidates'), { target: { value: '1.5' } });
+  expect(await screen.findByText(i18n.t('validation.positiveQuantity'))).toBeVisible();
+  fireEvent.click(screen.getByRole('button', { name: `Go to ${i18n.t('workflow.sliverGuardBreakage')}` }));
+  await waitFor(() => expect(document.querySelector('#tile-candidates')).toHaveFocus());
+  expect(screen.getByRole('button', { name: /Calculate layout/i })).toBeDisabled();
+  expect(optimizeTileLayout).not.toHaveBeenCalled();
+});
+
 describe('tile input/result identity', () => {
   const deferred = () => {
     let resolve;

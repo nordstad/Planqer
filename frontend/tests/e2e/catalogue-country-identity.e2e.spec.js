@@ -98,6 +98,24 @@ const clean = (state) => {
   expect(state.unexpectedWrites).toEqual([]);
   expect(state.errors).toEqual([]);
 };
+
+test('mounted catalogue reloads restored records on the committed-change notification', async ({ page }) => {
+  const state = await setup(page, 'en-GB', en, false);
+  await state.releaseLoad(0);
+  await current(page, 'SE');
+  // Producer commit/rollback behavior is verified separately with real Lite restore.
+  await page.evaluate(() => window.dispatchEvent(new Event('partsible:local-data-restored')));
+  await state.waitLoad(2);
+  await pending(page, en);
+  await Promise.all([
+    state.release(state.lists[1], { json: [{ product: product('SE', 195), origin: 'local', hidden: false }] }),
+    state.release(state.vocabularies[1], { json: vocabulary('SE') }),
+  ]);
+  await expect(row(page, 'SE', 195)).toBeVisible();
+  await expect(row(page, 'SE', 95)).toHaveCount(0);
+  expect(state.mutations).toEqual([]);
+  clean(state);
+});
 const startMutation = async (page, locale, country, operation) => {
   if (operation === 'add') {
     await page.getByRole('button', { name: locale.catalogueAdmin.addTitle, exact: true }).click();

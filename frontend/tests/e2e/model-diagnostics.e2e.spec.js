@@ -91,3 +91,22 @@ test('a partial model batch retains successes and retries only the failed cutlis
   expect(state.saves[0].parts_data).not.toEqual(state.saves[1].parts_data);
   expect(state.unexpectedWrites).toEqual([]);
 });
+
+test('blocked model stock offers a correction link to its invalid field', async ({ page }) => {
+  const state = await setup(page, 'en-GB', en, false);
+  const plan = page.getByRole('button', { name: 'Plan 2 cutlists', exact: true });
+  await plan.click();
+  const stock = page.locator('.model-group-settings').first();
+  const length = stock.getByRole('spinbutton', { name: 'Board length in millimetres, row 1', exact: true });
+  await length.fill('0');
+  await expect(length).toHaveAttribute('aria-invalid', 'true');
+  await expect(plan).toBeDisabled();
+  await page.locator('.step-foot .btn-link').click();
+  await expect(length).toBeFocused();
+  await length.fill('2400');
+  await expect(length).not.toHaveAttribute('aria-invalid');
+  await expect(plan).toBeEnabled();
+  expect(state.solves).toEqual([]);
+  expect(state.saves).toEqual([]);
+  expect(state.unexpectedWrites).toEqual([]);
+});

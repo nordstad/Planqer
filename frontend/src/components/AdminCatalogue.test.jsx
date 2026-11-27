@@ -4,6 +4,7 @@ import AdminCatalogue from './AdminCatalogue';
 import * as api from '../utils/api';
 import { resetCatalogueCache } from '../utils/catalogue';
 import { setCatalogueChoice } from '../utils/catalogueChoice';
+import { LOCAL_DATA_RESTORED } from '../hooks/useLocalDataRevision';
 
 vi.mock('../utils/api', () => ({
   getCatalogue: vi.fn(),
@@ -101,6 +102,19 @@ const expectCountryPending = () => {
 };
 
 describe('AdminCatalogue country identity', () => {
+  it('refreshes mounted catalogue rows and retires old requests after committed restore', async () => {
+    const state = countrySetup();
+    await state.release(0, 'SE');
+    act(() => window.dispatchEvent(new Event(LOCAL_DATA_RESTORED)));
+    expectCountryPending();
+    act(() => window.dispatchEvent(new Event(LOCAL_DATA_RESTORED)));
+    await state.release(2, 'SE', true);
+    await state.release(1, 'NO');
+    expect(screen.getByText('SE Framing timber 48 × 98 mm')).toBeInTheDocument();
+    expect(screen.queryByText(/NO Framing timber/)).not.toBeInTheDocument();
+    expect(api.createCatalogueEntry).not.toHaveBeenCalled();
+  });
+
   for (const first of ['list', 'vocabulary']) {
     it(`does not expose rows or mutations when only ${first} has loaded`, async () => {
       const state = countrySetup();

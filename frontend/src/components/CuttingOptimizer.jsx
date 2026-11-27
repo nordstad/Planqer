@@ -50,6 +50,7 @@ import SavePlanCard from './SavePlanCard';
 import MovePlanMenu from './MovePlanMenu';
 import { useProjectChoice, rememberProjectChoice } from '../hooks/useProjectChoice';
 import { millimetresError, isWholeMillimetres } from '../utils/measurementInput';
+import { focusSection } from '../utils/focusSection';
 import Loader from './Loader';
 import InfoTip from './InfoTip';
 import PlanSteps from './PlanSteps';
@@ -372,20 +373,13 @@ const CuttingOptimizer = () => {
     !parseFloat(boardWidth) && unitless('workflow.widthMm'),
     !sawKerf && unitless('workflow.sawBlade'),
   ].filter(Boolean);
-  const profileError = [boardThickness, boardWidth].some((value) => value !== '' && (!isWholeMillimetres(value) || Number(value) < 1))
-    ? t('measurementUi.whole', { min: 1 }) : '';
+  const profileErrors = [boardThickness, boardWidth].map((value) => value !== '' && (!isWholeMillimetres(value) || Number(value) < 1)
+    ? t('measurementUi.whole', { min: 1 }) : '');
+  const profileError = profileErrors.find(Boolean) || '';
   const partRowsWrong = parts.some((part, index) => visiblePartError(part, index));
   const partRowsBlank = currentPartErrors.some((errors, index) => errors && Object.keys(errors).some((field) => parts[index][field] === ''));
   const stockWrong = inputErrors.boards.some(Boolean);
-  const goToSection = (id) => window.setTimeout(() => {
-    const section = document.getElementById(id);
-    if (!section) return;
-    section.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
-    const fields = [...section.querySelectorAll('input:not([type=checkbox]):not([type=radio]), select')];
-    (fields.find((field) => field.getAttribute('aria-invalid') === 'true')
-      || fields.find((field) => field.getAttribute('aria-required') === 'true' && !field.value)
-      || fields[0])?.focus({ preventScroll: true });
-  }, 0);
+  const goToSection = focusSection;
   const toParts = { name: t('workflow.goToRequiredParts'), go: goToRequiredParts };
   const toMaterial = { name: t('formUi.goTo', { name: t('workflow.materialProfile') }), go: () => goToSection('board-material') };
   const blocker = parts.length === 0 ? { text: t('workflow.partsRequiredBeforePlanning'), ...toParts }
@@ -750,10 +744,10 @@ const CuttingOptimizer = () => {
               />
             </div>
             <div className="grid gap-x-6 gap-y-4 md:grid-cols-2">
-              <FormField label={t('workflow.thicknessMm')} required>
+              <FormField label={t('workflow.thicknessMm')} required error={profileErrors[0]}>
                 <input id="board-thickness" type="number" min="1" step="1" value={boardThickness} onChange={(e) => { retirePlan(); setBoardThickness(e.target.value); }} className="form-input dimension-input" />
               </FormField>
-              <FormField label={t('workflow.widthMm')} required>
+              <FormField label={t('workflow.widthMm')} required error={profileErrors[1]}>
                 <input id="board-width" type="number" min="1" step="1" value={boardWidth} onChange={(e) => { retirePlan(); setBoardWidth(e.target.value); }} className="form-input dimension-input" />
               </FormField>
               <div className="md:col-span-2">
@@ -774,7 +768,6 @@ const CuttingOptimizer = () => {
                 {inputErrors.sawKerf && <p id="saw-kerf-error" className="text-danger text-[12.5px] font-semibold" style={{ marginTop: '6px' }}>{inputErrors.sawKerf}</p>}
               </div>
             </div>
-            {profileError && <p className="text-danger" role="alert">{profileError}</p>}
           </SectionCard>
 
           {/* Stock stays in plain sight. It was folded away on the first pass on

@@ -18,6 +18,7 @@ import SaveToCatalogue from './SaveToCatalogue';
 import { AuthContext } from '../contexts/authState';
 import CatalogueCountrySelect from './CatalogueCountrySelect';
 import { useCatalogueChoice } from '../hooks/useCatalogueChoice';
+import { useLocalDataRevision } from '../hooks/useLocalDataRevision';
 import { CATALOGUE_COUNTRIES, REQUEST_COUNTRY_URL, countryName } from '../utils/catalogueChoice';
 import {
   DETAIL_FIELDS, browseTypes, detailLabel, detailOptions, emptySelection, findType,
@@ -85,6 +86,7 @@ const DETAIL_LABEL_KEYS = {
 
 export const useCatalogue = () => {
   const { country } = useCatalogueChoice();
+  const restored = useLocalDataRevision();
   const [state, setState] = useState({ catalogue: null, failed: false });
   const [version, setVersion] = useState(0);
   useEffect(() => {
@@ -93,7 +95,7 @@ export const useCatalogue = () => {
       .then((catalogue) => live && setState({ catalogue, failed: false }))
       .catch(() => live && setState({ catalogue: null, failed: true }));
     return () => { live = false; };
-  }, [version, country]);
+  }, [version, country, restored]);
   const reload = () => {
     resetCatalogueCache();
     setVersion((v) => v + 1);

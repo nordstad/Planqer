@@ -54,6 +54,7 @@ import {
   applySettingsToAll, validateGroupConfig, standaloneHandoff,
 } from '../utils/modelGroups';
 import { loadCatalogue, buildSnapshot } from '../utils/catalogue';
+import { focusSection } from '../utils/focusSection';
 import { colourForModelGroup, colourForModelPart, partKey } from '../utils/modelPreview';
 import { VISUALLY_HIDDEN } from '../utils/visuallyHidden';
 import { modelFileAccept } from '../utils/modelFileAccept';
@@ -136,7 +137,8 @@ const ModelCutlistOptimizer = () => {
   // Validation follows the debounced values so errors don't flash while typing; a
   // cutlist too new to be in them yet is checked as it stands.
   const errorsOf = (group, source) => validateGroupConfig(group, source[group.id] || configs[group.id], t);
-  const stockHasErrors = selectedGroups.some((g) => errorsOf(g, debouncedConfigs).hasErrors);
+  const blockedGroup = selectedGroups.find((g) => errorsOf(g, debouncedConfigs).hasErrors);
+  const stockHasErrors = !!blockedGroup;
 
   const allDone = selectedGroups.length > 0 && selectedGroups.every((g) => statuses[g.id] === 'done');
   const savedCount = selectedGroups.filter((g) => statuses[g.id] === 'done').length;
@@ -839,6 +841,12 @@ const ModelCutlistOptimizer = () => {
                    <ArrowLeft /> {t('modelUi.backToCutlists')}
                 </button>
                 <div className="step-foot-act">
+                  {!allDone && blockedGroup && <p className="synthetic">
+                    {t('formUi.checkValues')}{' '}
+                    <button type="button" className="btn-link" onClick={() => focusSection(`group-${blockedGroup.id.replace(/[^a-z0-9]+/gi, '-')}`)}>
+                      {t('formUi.goTo', { name: labelOf(blockedGroup) })}
+                    </button>
+                  </p>}
                   {allDone ? (
                     <Link to={savedProjectPath} className="btn-order">
                        {selectedGroupId ? t('modelUi.openProject') : t('ui.openDashboard')} <ArrowRight size={15} />

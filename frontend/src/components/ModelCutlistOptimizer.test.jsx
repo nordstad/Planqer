@@ -138,6 +138,20 @@ const toSaveStep = async () => {
   await screen.findByRole('heading', { name: /plan and save/i });
 };
 
+it('explains blocked batch settings and focuses the invalid field instead of optional product or price', async () => {
+  await toSaveStep();
+  const width = screen.getByRole('spinbutton', { name: /Sheet width.*Sheet 15 mm/i });
+  fireEvent.change(width, { target: { value: '50' } });
+  await waitFor(() => expect(width).toHaveAttribute('aria-invalid', 'true'));
+  expect(width).toHaveAccessibleDescription('Enter whole millimetres from 100 to 10000. Decimals are not supported.');
+  expect(screen.getByRole('button', { name: 'Plan 3 cutlists', exact: true })).toBeDisabled();
+  fireEvent.click(screen.getByRole('button', { name: /^Go to Sheet 15 mm/i }));
+  await waitFor(() => expect(width).toHaveFocus());
+  fireEvent.change(width, { target: { value: '1200' } });
+  await waitFor(() => expect(width).not.toHaveAttribute('aria-invalid'));
+  expect(width).not.toHaveAttribute('aria-describedby');
+});
+
 beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();

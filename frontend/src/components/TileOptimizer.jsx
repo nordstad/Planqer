@@ -30,6 +30,7 @@ import SavePlanCard from './SavePlanCard';
 import MovePlanMenu from './MovePlanMenu';
 import { useProjectChoice, rememberProjectChoice } from '../hooks/useProjectChoice';
 import { millimetresError, isWholeMillimetres } from '../utils/measurementInput';
+import { focusSection } from '../utils/focusSection';
 import Loader from './Loader';
 import InfoTip from './InfoTip';
 import PlanSteps from './PlanSteps';
@@ -102,7 +103,7 @@ const validateTileInputs = (values, t) => ({
   candidateCount: (() => {
     const n = Number(values.candidateCount);
     if (isBlank(values.candidateCount)) return '';
-    if (!Number.isInteger(n) || n < 1) return t('tileUi.greaterThan', { label: t('tileUi.candidateCount'), min: 0 });
+    if (!Number.isInteger(n) || n < 1) return t('validation.positiveQuantity');
     if (n > 20) return t('tileUi.cannotExceed', { label: t('tileUi.candidateCount'), max: 20 });
     return '';
   })(),
@@ -321,13 +322,7 @@ const TileOptimizer = () => {
   const guardWrong = !!(inputErrors.minEdgeCut || inputErrors.wastePercent || inputErrors.candidateCount);
   const hasErrors = surfaceWrong || cutoutsWrong || cutoutsEmpty || tileWrong || jointWrong || guardWrong || !materialType
     || [...surfaceMissing, ...tileMissing, ...jointMissing, ...guardMissing].length > 0;
-  const goToSection = (id) => window.setTimeout(() => {
-    const section = document.getElementById(id);
-    if (!section) return;
-    section.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
-    const fields = [...section.querySelectorAll('input:not([type=checkbox]):not([type=radio]), select')];
-    (fields.find((field) => !field.value) || fields[0])?.focus({ preventScroll: true });
-  }, 0);
+  const goToSection = focusSection;
   const goTo = (id, name) => ({ name: t('formUi.goTo', { name }), go: () => goToSection(id) });
   const goToGuard = { name: t('formUi.goTo', { name: t('workflow.sliverGuardBreakage') }), go: () => { setGuardOpen(true); goToSection('tile-guard'); } };
   const fillToSolve = (fields) => t('tileForm.fillToSolve', { fields: fields.join(', ') });
@@ -536,7 +531,7 @@ const TileOptimizer = () => {
               <div>
               <p className="synthetic" style={{ margin: '0 0 10px' }}>{t('tileUi.openingPositionHint')}</p>
               {cutouts.map((cutout, index) => (
-                <OpeningEditor key={index} cutout={cutout} fromVertical="tileUi.openingFromTop" onChange={(field, value) => handleCutoutChange(index, field, value)} onRemove={() => removeCutout(index)} error={surfaceAttempted && Object.values(inputErrors.cutouts[index] || {})[0]} />
+                <OpeningEditor key={index} cutout={cutout} fromVertical="tileUi.openingFromTop" onChange={(field, value) => handleCutoutChange(index, field, value)} onRemove={() => removeCutout(index)} errors={surfaceAttempted || !cutoutPristine(cutout) ? inputErrors.cutouts[index] || {} : {}} />
               ))}
               </div>
             )}
@@ -656,10 +651,13 @@ const TileOptimizer = () => {
                   value={minEdgeCut}
                   onChange={(e) => setField(setMinEdgeCut)(e.target.value)}
                   className={`form-input ${inputErrors.minEdgeCut ? 'form-input-error' : ''}`}
+                  aria-invalid={!!inputErrors.minEdgeCut || undefined}
+                  aria-describedby={inputErrors.minEdgeCut ? 'tile-min-edge-error' : undefined}
                   style={{ width: '110px' }}
                 />
                  <span style={{ fontSize: '13.5px', color: 'var(--ink-3)', fontWeight: 600 }}>{t('tileUi.thresholdUnit')}</span>
               </div>
+              {inputErrors.minEdgeCut && <p id="tile-min-edge-error" className="text-danger text-[12.5px] font-semibold">{inputErrors.minEdgeCut}</p>}
               <p className="synthetic" style={{ marginTop: '4px' }}>{t('tileForm.emptyMeansOff')}</p>
               <InfoTip label={t('workflow.sliverThreshold')}>{t('tileUi.ruleOfThumb')}</InfoTip>
 
@@ -670,10 +668,14 @@ const TileOptimizer = () => {
                   value={wastePercent}
                   onChange={(e) => setField(setWastePercent)(e.target.value)}
                   className={`form-input ${inputErrors.wastePercent ? 'form-input-error' : ''}`}
+                  aria-required="true"
+                  aria-invalid={!!inputErrors.wastePercent || undefined}
+                  aria-describedby={inputErrors.wastePercent ? 'tile-waste-error' : undefined}
                   style={{ width: '110px' }}
                 />
                  <span style={{ fontSize: '13.5px', color: 'var(--ink-3)', fontWeight: 600 }}>{t('tileUi.extraTiles')}</span>
               </div>
+              {inputErrors.wastePercent && <p id="tile-waste-error" className="text-danger text-[12.5px] font-semibold">{inputErrors.wastePercent}</p>}
 
                <label className="form-label" style={{ marginTop: '18px' }} htmlFor="tile-candidates">{t('tileUi.candidateCount')}</label>
               <div className="flex items-center gap-2">
@@ -682,9 +684,13 @@ const TileOptimizer = () => {
                   value={candidateCount}
                   onChange={(e) => setField(setCandidateCount)(e.target.value)}
                   className={`form-input ${inputErrors.candidateCount ? 'form-input-error' : ''}`}
+                  aria-required="true"
+                  aria-invalid={!!inputErrors.candidateCount || undefined}
+                  aria-describedby={inputErrors.candidateCount ? 'tile-candidates-error' : undefined}
                   style={{ width: '110px' }}
                 />
               </div>
+              {inputErrors.candidateCount && <p id="tile-candidates-error" className="text-danger text-[12.5px] font-semibold">{inputErrors.candidateCount}</p>}
 
               <label className="flex items-start gap-3" style={{ marginTop: '18px', cursor: 'pointer' }}>
                 <input
@@ -700,11 +706,6 @@ const TileOptimizer = () => {
                   </span>
                 </span>
               </label>
-              {(inputErrors.minEdgeCut || inputErrors.wastePercent || inputErrors.candidateCount) && (
-                <p className="text-danger text-[12.5px] font-semibold" style={{ marginTop: '10px' }}>
-                  {inputErrors.minEdgeCut || inputErrors.wastePercent || inputErrors.candidateCount}
-                </p>
-              )}
             </Disclosure>
           </div>
 

@@ -44,6 +44,40 @@ const start = async (page) => {
 const choose = (page, backup = fixture, name = 'backup.json') => page.getByLabel('Backup file', { exact: true })
   .setInputFiles({ name, mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(backup)) });
 
+test('committed restore refreshes mounted Defaults without reload and failed restore retains its draft', async ({ page }) => {
+  await start(page);
+  await page.getByRole('button', { name: 'Defaults', exact: true }).click();
+  const lengths = page.getByLabel('Default board lengths, mm', { exact: true });
+  await expect(lengths).toBeVisible();
+  await lengths.fill('6600');
+  const toggle = page.getByRole('button', { name: 'Backup', exact: true });
+  if (await toggle.getAttribute('aria-expanded') === 'false') await toggle.click();
+  const backup = structuredClone(fixture);
+  backup.stores = { settings: [{
+    ...fixture.stores.settings[0], preferred_language: 'en-GB',
+    default_board_lengths: [7200, 8400], default_saw_blade_width: 4,
+  }] };
+  await choose(page, backup);
+  const review = page.getByRole('region', { name: 'Review backup restore' });
+  await expect(review).toBeVisible({ timeout: 120000 });
+  await review.getByRole('checkbox').check();
+  await review.getByRole('button', { name: 'Replace and restore' }).click();
+  await expect(page.getByText('Restored 0 plans and 0 projects.')).toBeVisible();
+  await expect(lengths).toHaveValue('7200, 8400');
+  await expect(page.getByLabel('Default cut width (kerf), mm')).toHaveValue('4');
+  await expect(page.getByRole('button', { name: 'Import backup', exact: true })).toBeFocused();
+  await lengths.fill('9000');
+  await choose(page, backup);
+  await expect(review).toBeVisible();
+  await review.getByRole('checkbox').check();
+  // Make the reviewed snapshot stale using synthetic storage in this disposable context.
+  await database(page, 'write', { settings: [{ ...backup.stores.settings[0], default_board_lengths: [9600] }] });
+  await review.getByRole('button', { name: 'Replace and restore' }).click();
+  await expect(page.getByText(en.lite.backup.importFailed.stale)).toBeVisible();
+  await expect(lengths).toHaveValue('9000');
+  expect((await database(page, 'read')).settings[0].default_board_lengths).toEqual([9600]);
+});
+
 test('Backup stays secondary with empty and many projects, and fresh or overdue exports', async ({ page }) => {
   await start(page);
   const panel = page.getByRole('region', { name: 'Backup', exact: true });

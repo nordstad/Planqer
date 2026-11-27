@@ -858,6 +858,15 @@ parts” link beside the disabled plan action; the link scrolls to and focuses t
 heading. Do not rely on off-screen validation or a vague “fix highlighted rows”
 message.
 
+Correction links in board, sheet, tile, and model batch settings focus the first
+invalid field in DOM order, then an empty required field, never an unrelated
+empty optional field. Their scroll respects reduced motion. Edited invalid tile
+openings expose field-specific feedback while calculation is disabled; untouched
+empty openings stay neutral. Shared field feedback associates only the faulty
+control with its error and clears that association after correction.
+Committed Lite restores also refresh mounted product-picker suggestions without
+rewriting selected product snapshots or current planner inputs.
+
 ### Folds
 
 `.fold` — an advanced option, closed by default, opened by one full-width row:
