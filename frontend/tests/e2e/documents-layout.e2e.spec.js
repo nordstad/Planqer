@@ -76,12 +76,12 @@ for (const [language, locale] of [['en-GB', en], ['sv-SE', sv], ['nb-NO', nb]]) 
   }
 }
 
-test('planner composition pairs related inputs only at laptop widths', async ({ page }, testInfo) => {
+test('board, sheet and tile entry share stacked sections and the same form measure at every width', async ({ page }, testInfo) => {
   const writes = await setup(page, 'en-GB');
-  for (const [route, first, second] of [
-    ['/cutting', '#board-parts', '#board-material'],
-    ['/sheet-cutting', '#sheet-parts', '#sheet-stock'],
-    ['/tile-layout', '#tile-surface', '#tile-tile'],
+  for (const [route, sections] of [
+    ['/cutting', ['#board-parts', '#board-material', '#board-stock']],
+    ['/sheet-cutting', ['#sheet-parts', '#sheet-stock']],
+    ['/tile-layout', ['#tile-surface', '#tile-openings', '#tile-tile', '#tile-joint']],
   ]) {
     await page.goto(route);
     if (route !== '/tile-layout') {
@@ -90,10 +90,17 @@ test('planner composition pairs related inputs only at laptop widths', async ({ 
     }
     for (const width of [1440, 1024, 768, 390, 320]) {
       await page.setViewportSize({ width, height: 1000 });
-      const left = await page.locator(first).boundingBox();
-      const right = await page.locator(second).boundingBox();
-      if (width >= 1024) expect(right.x).toBeGreaterThan(left.x + left.width);
-      else expect(right.y).toBeGreaterThan(left.y);
+      const form = await page.locator('form.step-view.is-form').boundingBox();
+      expect(form.width).toBeLessThanOrEqual(620);
+      if (width >= 768) expect(form.width).toBe(620);
+      let previous;
+      for (const selector of sections) {
+        const current = await page.locator(selector).boundingBox();
+        expect(current.x).toBeCloseTo(form.x, 0);
+        expect(current.width).toBeCloseTo(form.width, 0);
+        if (previous) expect(current.y).toBeGreaterThanOrEqual(previous.y + previous.height);
+        previous = current;
+      }
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width + 1);
       if ([1440, 320].includes(width)) {
         await page.evaluate(() => window.scrollTo(0, 0));

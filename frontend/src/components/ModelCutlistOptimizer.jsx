@@ -747,7 +747,7 @@ const ModelCutlistOptimizer = () => {
 
       {/* ── 03 · plan and save the batch ─────────────────────────────────── */}
       {step === STEP_SAVE && selectedGroups.length > 0 && (
-        <div className="step-view is-form is-planner-input">
+        <div className="step-view is-form is-model-settings">
           {!isAuthenticated ? (
              <SignInRequired message={t('modelUi.signInCutlist')} />
           ) : (

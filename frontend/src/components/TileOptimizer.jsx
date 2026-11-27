@@ -497,7 +497,7 @@ const TileOptimizer = () => {
 
       {/* ── 01 · what you're covering ─────────────────────────────────────── */}
       {step === STEP_SURFACE && (
-        <form className="step-view is-form is-planner-input" onSubmit={handleLayoutSubmit} noValidate>
+        <form className="step-view is-form" onSubmit={handleLayoutSubmit} noValidate>
           <div className="step-head">
             <div>
               <h1 className="step-h1">{t('common.tileLayout')}</h1>
@@ -509,7 +509,6 @@ const TileOptimizer = () => {
             </button>
           </div>
 
-          <div className="planner-input-grid"><div>
           <SectionCard
             id="tile-surface"
             title={t('workflow.surface')}
@@ -550,7 +549,6 @@ const TileOptimizer = () => {
             </button>
           </SectionCard>
 
-          </div><div>
           <SectionCard
             id="tile-tile"
             title={t('workflow.tile')}
@@ -648,7 +646,6 @@ const TileOptimizer = () => {
             )}
           </SectionCard>
 
-          </div></div>
           <div id="tile-guard" style={{ marginTop: '22px', scrollMarginTop: '110px' }}>
             <Disclosure
               title={t('workflow.sliverGuardBreakage')}

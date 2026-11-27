@@ -369,11 +369,15 @@ the cards below the fold on a phone.
 Planners are **stepped**, not an inputs-and-answer spread: enter requirements,
 read the result, save it. The `.plan-steps` rail renders only the current step.
 Simple upload and save forms retain a 620px measure; diagrams use the full
-1080px content width. At 1000px and above, `.is-planner-input` uses that wider
-measure: board/sheet parts sit beside material and visible stock; tile surface/
-openings sit beside tile/joint settings. Model batch settings use two columns
-of independent cutlists, not a widened upload field. Below that breakpoint the
-same DOM returns to one column. Inputs stay compact, not stretched to fill space.
+1080px content width. Board, sheet and tile entry share the same `.is-form`
+620px measure, with their sections stacked in reading order at every width.
+Do not add per-planner desktop columns: user review rejected the uneven
+two-column composition, which left empty space without removing scrolling.
+Individual related fields may still share a row within a section.
+Model batch settings are a separate comparison task: `.is-model-settings`
+uses the wider measure at 1000px and above, with two columns of independent
+cutlists, not a widened upload field. Below that breakpoint the same DOM returns
+to one column. Inputs stay compact, not stretched to fill space.
 Optional board pricing/strategy uses `Disclosure`; stock and kerf never collapse.
 
 Sloped-wall controls are HTML `FormField`s outside the drawing's SVG transform.

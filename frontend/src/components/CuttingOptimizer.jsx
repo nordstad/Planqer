@@ -645,7 +645,7 @@ const CuttingOptimizer = () => {
 
       {/* ── 01 · what needs cutting ───────────────────────────────────────── */}
       {step === STEP_PARTS && (
-        <form className="step-view is-form is-planner-input" onSubmit={handlePlanSubmit} noValidate>
+        <form className="step-view is-form" onSubmit={handlePlanSubmit} noValidate>
           <div className="step-head">
             <div>
               <h1 className="step-h1">{t('common.boardCutting')}</h1>
@@ -657,7 +657,6 @@ const CuttingOptimizer = () => {
             </button>
           </div>
 
-          <div className="planner-input-grid">
           <SectionCard
             id="board-parts"
             title={t('workflow.requiredParts')}
@@ -721,7 +720,6 @@ const CuttingOptimizer = () => {
             </div>
           </SectionCard>
 
-          <div>
           <SectionCard
             id="board-material"
             title={t('workflow.materialProfile')}
@@ -890,8 +888,6 @@ const CuttingOptimizer = () => {
             </fieldset>
           </Disclosure></div>
 
-          </div>
-          </div>
           <div style={{ marginTop: '22px' }}>
             <Disclosure
                title={t('ui.whatPageReturns')}

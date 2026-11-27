@@ -154,12 +154,9 @@
      drawing and takes the whole page. */
   .step-view { min-width: 0; }
   .step-view.is-form { max-width: 620px; }
-  .planner-input-grid > *, .model-settings-grid > * { min-width: 0; }
-  .planner-input-grid > div { margin-top: 16px; }
+  .model-settings-grid > * { min-width: 0; }
   @media (min-width: 1000px) {
-    .step-view.is-form.is-planner-input { max-width: none; }
-    .planner-input-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 24px; align-items: start; }
-    .planner-input-grid > div, .planner-input-grid > .sec-card + .sec-card { margin-top: 0; }
+    .step-view.is-form.is-model-settings { max-width: none; }
     .model-settings-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: start; }
     .model-settings-grid > .sec-card + .sec-card { margin-top: 0; }
   }

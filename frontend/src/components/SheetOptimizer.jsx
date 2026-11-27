@@ -433,7 +433,7 @@ const SheetOptimizer = () => {
 
       {/* ── 01 · what needs cutting ───────────────────────────────────────── */}
       {step === STEP_PARTS && (
-        <form className="step-view is-form is-planner-input" onSubmit={handleLayoutSubmit} noValidate>
+        <form className="step-view is-form" onSubmit={handleLayoutSubmit} noValidate>
           <div className="step-head">
             <div>
               <h1 className="step-h1">{t('common.sheetCutting')}</h1>
@@ -445,7 +445,6 @@ const SheetOptimizer = () => {
             </button>
           </div>
 
-          <div className="planner-input-grid">
           <SectionCard
             id="sheet-parts"
             title={t('workflow.partsToCut')}
@@ -568,7 +567,6 @@ const SheetOptimizer = () => {
             </div>
           </SectionCard>
 
-          </div>
           <div style={{ marginTop: '26px' }}>
             <Disclosure
               title={t('ui.packingStrategy')}
