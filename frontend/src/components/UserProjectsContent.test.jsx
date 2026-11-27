@@ -289,6 +289,23 @@ it('prints only the selected plans', async () => {
   expect(printProjectPlans.mock.calls.at(-1)[0].plans).toHaveLength(2);
 });
 
+it('lets no-image wallpaper documents be selected and cleared like other printable plans', async () => {
+  getWallpaperProjects.mockResolvedValue([{
+    ...secondPlan, has_svg_image: false, cutlist_image: null,
+    plan_result: { rolls_to_buy: 2 }, wallpaper_data: { name: 'Synthetic wallpaper' },
+  }]);
+  renderDetail();
+  const checkbox = await screen.findByRole('checkbox', { name: 'Select plan "Second cut list"' });
+  expect(checkbox).toBeEnabled();
+  fireEvent.click(screen.getByRole('button', { name: 'Select all' }));
+  expect(checkbox).toBeChecked();
+  fireEvent.click(checkbox);
+  expect(checkbox).not.toBeChecked();
+  expect(screen.getByRole('button', { name: 'Print diagram (1)' })).toBeEnabled();
+  fireEvent.click(screen.getByRole('button', { name: 'Clear selection' }));
+  expect(screen.getByRole('button', { name: 'Print diagrams (0)' })).toBeDisabled();
+});
+
 it('prints the selected shopping list', async () => {
   renderDetail();
 

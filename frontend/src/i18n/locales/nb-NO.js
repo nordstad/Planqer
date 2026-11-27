@@ -1,4 +1,15 @@
 const locale = {
+  documentUi: {
+    projectExportScope: 'Utvalget gjelder bare diagrammer. Å kjøpe og CSV omfatter alle planer her; Skriv ut prosjekt kombinerer alt materiale med valgte diagrammer.',
+    cutSizesLegend_one: '{{count}} kappstørrelse – se kappliste',
+    cutSizesLegend_other: '{{count}} kappstørrelser – se kappliste',
+    boardProfile: 'Bordets tykkelse × bredde',
+    tileSize: 'Flisstørrelse',
+    downloadAllSheets: 'Last ned alle plater',
+    currencyUnknown: '(valuta er ikke registrert)',
+    projectNameFallback: 'La stå tomt for å bruke «{{name}}» som prosjektnavn.',
+    reserveExplanation: 'Å kjøpe inkluderer {{percent}} % reserve for hver samlet bord- eller platestørrelse, avrundet oppover. Fliser og tapet beholder tillegget i de lagrede planene; ingen ekstra reserve legges til her. Utskrift og CSV viser kildeplanene og de samme antallene for Trengs og Å kjøpe.',
+  },
   accessibilityUi: {
     skipContent: 'Hopp til hovedinnholdet',
     homeTitle: 'Startside',

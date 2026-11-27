@@ -443,8 +443,8 @@ export const getTileProject = async (id) => {
 
 /* Keeping a layout is its own step, same as board/sheet: the candidate is
    already-computed (from optimizeTileLayout), and nothing is stored until
-   the user names it here. The diagram is redrawn server-side from
-   surface_data + layout_result, so no image is sent over the wire. */
+   the user names it here. The saved export is redrawn from surface_data and
+   layout_result geometry, with its optional translated diagram-label snapshot. */
 export const saveTileProject = async ({
   id, name, projectGroupId, surfaceWidth, surfaceHeight, cutouts, tile, joint, bond,
   minEdgeCut, reuseOffcuts, wastePercent, candidateCount, candidate, pricing,

@@ -1,7 +1,8 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import '../i18n';
-import WallpaperPlanDocument from './WallpaperPlanDocument';
+import WallpaperPlanDocument, { summaryRows } from './WallpaperPlanDocument';
+import i18n from '../i18n';
 
 const walls = [
   { name: 'Wall A', profile: 'rectangle', width_top: 1000, width_middle: 1000, width_bottom: 1000, height_left: 2400, height_middle: 2400, height_right: 2400 },
@@ -23,11 +24,21 @@ const plan = {
 const wallpaper = { name: 'Willow', manufacturer: 'Morris', roll_width: 530, roll_length: 10050, repeat: 0, price_per_roll: 100, currency: 'SEK' };
 
 describe('WallpaperPlanDocument', () => {
+  it.each(['en-GB', 'sv-SE', 'nb-NO'])('preserves repeat, matching, currency and cents in %s summaries', (language) => {
+    const t = i18n.getFixedT(language);
+    const rows = summaryRows({ ...plan, rolls_to_buy: 4 }, { ...wallpaper, repeat: 640, match: 'half_drop', price_per_roll: 100.30 }, t, null, language);
+    expect(rows[1][1]).toContain('640 mm');
+    expect(rows[1][1]).toContain(t('wallpaperUi.matchHalfDrop'));
+    expect(rows.find(([label]) => label === t('wallpaperUi.summaryCost'))[1]).toBe(`${(401.20).toLocaleString(language, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} SEK`);
+    const historical = summaryRows(plan, { ...wallpaper, currency: undefined }, t, null, language);
+    expect(historical.find(([label]) => label === t('wallpaperUi.summaryCost'))[1]).toContain(t('documentUi.currencyUnknown'));
+  });
+
   it('shows the summary and synchronises the picker with the room overview', () => {
     render(<WallpaperPlanDocument plan={plan} walls={walls} corners={[]} closed={false} wallpaper={wallpaper} savedAt="2026-11-12T10:00:00Z" />);
 
     expect(screen.getByText('3 (2 needed + 1 spare)')).toBeInTheDocument();
-    expect(screen.getByText('300 SEK')).toBeInTheDocument();
+    expect(screen.getByText('300.00 SEK')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('radio', { name: 'Wall B' }));
     expect(screen.getByRole('radio', { name: 'Wall B' })).toHaveAttribute('aria-checked', 'true');
     expect(screen.getByRole('heading', { name: 'Wall B' })).toBeInTheDocument();

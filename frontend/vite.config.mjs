@@ -22,6 +22,18 @@ export default defineConfig(({ mode }) => {
       postcss: {
         plugins: [
           tailwindcss(),
+          {
+            postcssPlugin: "archivo-woff2-only",
+            Declaration: {
+              src(declaration) {
+                // Keep the exact faces/ranges, without shipping duplicate legacy
+                // font files to the supported WOFF2-capable browser engines.
+                if (declaration.parent.name === "font-face" && declaration.value.includes("archivo-") && declaration.value.includes("woff2")) {
+                  declaration.value = declaration.value.split(",").filter((source) => !/format\(['"]woff['"]\)/.test(source)).join(",");
+                }
+              },
+            },
+          },
         ],
       },
     },

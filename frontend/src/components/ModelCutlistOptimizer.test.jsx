@@ -440,6 +440,13 @@ describe('save step', () => {
     await waitFor(() => expect(saveProject).toHaveBeenCalledTimes(2));
     expect(optimizeCutting.mock.calls[0][3]).toBeNull();
     expect(saveProject.mock.calls[0][0]).toMatchObject({ materialType: '', boardCosts: null, name: 'bench · Board 45 × 95 mm' });
+    const sourceParts = [
+      { name: 'board_10', length: '500', quantity: '1' },
+      { name: 'board_2', length: '1800', quantity: '2' },
+      { name: 'board_1', length: '500', quantity: '3' },
+    ];
+    expect(optimizeCutting.mock.calls[0][0]).toEqual(sourceParts);
+    expect(saveProject.mock.calls[0][0].parts).toEqual(sourceParts);
     expect(saveSheetProject.mock.calls[0][0]).toMatchObject({ materialType: '', pricing: null, name: 'bench · Sheet 15 mm' });
   });
 

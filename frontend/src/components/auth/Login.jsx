@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Modal from '../Modal';
+import FormField, { FormLegend } from '../FormField';
 import { useTranslation } from 'react-i18next';
 import { loginUser, getCurrentUser } from '../../utils/api';
 import { useAuth } from '../../contexts/AuthContext';
@@ -38,12 +39,13 @@ const Login = ({ onClose, onSwitchToRegister }) => {
     <Modal aria-label={t('common.signIn')} title={t('common.signIn').toUpperCase()} onClose={onClose}>
         <div style={{ padding: '14px 16px 18px' }}>
           <form onSubmit={handleSubmit}>
+            <FormLegend />
             {error && (
               <div className="alert-danger" style={{ marginBottom: '14px' }} role="alert">{error}</div>
             )}
 
             <div className="space-y-2" style={{ marginBottom: '12px' }}>
-               <label className="form-label" htmlFor="login-email">{t('auth.email')}</label>
+              <FormField label={t('auth.email')} required>
               <input
                 id="login-email"
                 type="email"
@@ -54,10 +56,11 @@ const Login = ({ onClose, onSwitchToRegister }) => {
                 autoFocus
                 required
               />
+              </FormField>
             </div>
 
             <div className="space-y-2" style={{ marginBottom: '16px' }}>
-               <label className="form-label" htmlFor="login-password">{t('auth.password')}</label>
+              <FormField label={t('auth.password')} required>
               <input
                 id="login-password"
                 type="password"
@@ -67,6 +70,7 @@ const Login = ({ onClose, onSwitchToRegister }) => {
                 disabled={loading}
                 required
               />
+              </FormField>
             </div>
 
             <button type="submit" className="btn-order" disabled={loading}>

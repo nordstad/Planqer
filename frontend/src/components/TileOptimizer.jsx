@@ -10,7 +10,8 @@
   tradeoff that fits the job — see .plans/tile-layout.md Decision #3.
 */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { localizeTileImage, tileDiagramLabels } from '../utils/tileLocalization';
 import Modal, { modalTrigger } from './Modal';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -144,7 +145,14 @@ const TileOptimizer = () => {
   const [reuseOffcuts, setReuseOffcuts] = useState(true);
   const [guardOpen, setGuardOpen] = useState(false);
 
-  const [result, setResult] = useState(null);
+  const [rawResult, setResult] = useState(null);
+  const result = useMemo(() => rawResult && ({
+    ...rawResult,
+    candidates: rawResult.candidates.map((candidate) => ({
+      ...candidate, visualization: localizeTileImage(candidate.visualization, t, rawResult.namedDiagram),
+      diagram_labels: tileDiagramLabels(candidate.distinct_cut_sizes, t),
+    })),
+  }), [rawResult, t]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState('');
@@ -379,7 +387,7 @@ const TileOptimizer = () => {
         projectName,
       });
       if (requestRevision !== inputRevision.current) return;
-      setResult(response);
+      setResult({ ...response, namedDiagram: !!projectName.trim() });
       setSelectedIndex(response.recommended_index);
       setStep(STEP_LAYOUT);
     } catch (error) {
@@ -470,9 +478,9 @@ const TileOptimizer = () => {
       locked: t('workflow.solvesFromSurface'),
     },
     {
-      label: t('workflow.keep'),
+      label: t('workflow.save'),
       reachable: !!result,
-      summary: saved ? t('workflow.savedAs', { name: saved.name }) : t('workflow.nameAndKeep'),
+      summary: saved ? t('workflow.savedAs', { name: saved.name }) : t('workflow.planDetails'),
       locked: t('workflow.waitsForLayout'),
     },
   ];
@@ -489,7 +497,7 @@ const TileOptimizer = () => {
 
       {/* ── 01 · what you're covering ─────────────────────────────────────── */}
       {step === STEP_SURFACE && (
-        <form className="step-view is-form" onSubmit={handleLayoutSubmit} noValidate>
+        <form className="step-view is-form is-planner-input" onSubmit={handleLayoutSubmit} noValidate>
           <div className="step-head">
             <div>
               <h1 className="step-h1">{t('common.tileLayout')}</h1>
@@ -501,6 +509,7 @@ const TileOptimizer = () => {
             </button>
           </div>
 
+          <div className="planner-input-grid"><div>
           <SectionCard
             id="tile-surface"
             title={t('workflow.surface')}
@@ -541,6 +550,7 @@ const TileOptimizer = () => {
             </button>
           </SectionCard>
 
+          </div><div>
           <SectionCard
             id="tile-tile"
             title={t('workflow.tile')}
@@ -638,6 +648,7 @@ const TileOptimizer = () => {
             )}
           </SectionCard>
 
+          </div></div>
           <div id="tile-guard" style={{ marginTop: '22px', scrollMarginTop: '110px' }}>
             <Disclosure
               title={t('workflow.sliverGuardBreakage')}
@@ -775,7 +786,7 @@ const TileOptimizer = () => {
             </button>
             <div className="step-foot-act">
               <button type="button" className="btn-order" onClick={() => setStep(STEP_KEEP)}>
-                 {t('workflow.nameIt')} <ArrowRight size={15} />
+                 {t('ui.nameAndSave')} <ArrowRight size={15} />
               </button>
             </div>
           </div>
@@ -787,7 +798,7 @@ const TileOptimizer = () => {
         <form className="step-view is-form" onSubmit={modalTrigger(handleSave)}>
           <div className="step-head" style={{ marginBottom: '22px' }}>
              <div>
-                <h1 className="step-h1">{saved ? t('ui.layoutSaved') : t('ui.saveLayout')}</h1>
+                <h1 className="step-h1">{saved ? t('workflow.planSaved') : t('workflow.saveThisPlan')}</h1>
               <p className="step-lede">
                 {saved
                     ? t('ui.keptPlan', accountContext)

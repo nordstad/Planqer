@@ -98,6 +98,7 @@ const CuttingOptimizer = () => {
   const [inputErrors, setInputErrors] = useState({ boards: [], sawKerf: "" });
 
   const [limitsOpen, setLimitsOpen] = useState(false);
+  const [pricingOpen, setPricingOpen] = useState(false);
   const [costOpen, setCostOpen] = useState(false);
 
   /* the save step */
@@ -184,11 +185,7 @@ const CuttingOptimizer = () => {
       if (!importData) throw new Error('Missing cutlist');
       const data = JSON.parse(importData);
       if (data.parts && data.source === 'model-cutlist') {
-        setParts(Object.entries(data.parts).map(([length, quantity]) => ({
-          name: '',
-          length,
-          quantity: quantity.toString(),
-        })));
+        setParts(restoreBoardParts(data.parts));
         setProjectName(data.projectName || '');
         if (data.product?.type) setProductSel(data.product);
         if (data.boardThickness != null) setBoardThickness(String(data.boardThickness));
@@ -631,7 +628,7 @@ const CuttingOptimizer = () => {
     {
       label: t('workflow.save'),
       reachable: !!plan,
-      summary: saved ? t('workflow.savedAs', { name: saved.name }) : t('workflow.nameAndKeep'),
+      summary: saved ? t('workflow.savedAs', { name: saved.name }) : t('workflow.planDetails'),
       locked: t('workflow.waitsForPlan'),
     },
   ];
@@ -648,7 +645,7 @@ const CuttingOptimizer = () => {
 
       {/* ── 01 · what needs cutting ───────────────────────────────────────── */}
       {step === STEP_PARTS && (
-        <form className="step-view is-form" onSubmit={handlePlanSubmit} noValidate>
+        <form className="step-view is-form is-planner-input" onSubmit={handlePlanSubmit} noValidate>
           <div className="step-head">
             <div>
               <h1 className="step-h1">{t('common.boardCutting')}</h1>
@@ -660,6 +657,7 @@ const CuttingOptimizer = () => {
             </button>
           </div>
 
+          <div className="planner-input-grid">
           <SectionCard
             id="board-parts"
             title={t('workflow.requiredParts')}
@@ -723,6 +721,7 @@ const CuttingOptimizer = () => {
             </div>
           </SectionCard>
 
+          <div>
           <SectionCard
             id="board-material"
             title={t('workflow.materialProfile')}
@@ -829,13 +828,13 @@ const CuttingOptimizer = () => {
             </p>
           </SectionCard>
 
-          <SectionCard
-            id="board-pricing"
+          <div id="board-pricing" style={{ marginTop: '16px' }}><Disclosure
             title={t('ui.pricesAndCost')}
-            optional
-            tip={t('ui.stockPricingOptional')}
-            summary={pricingSummary}
+            hint={pricingSummary}
+            open={pricingOpen}
+            onToggle={() => setPricingOpen((open) => !open)}
           >
+            <p className="synthetic">{t('ui.stockPricingOptional')}</p>
             <label className="flex items-center gap-2" style={{ cursor: 'pointer', fontSize: '13.5px', fontWeight: 600 }}>
               <input
                 type="checkbox"
@@ -889,8 +888,10 @@ const CuttingOptimizer = () => {
               </label>
               {!pricingComplete && <p id="lowest-cost-help" className="synthetic" style={{ margin: '4px 0 0 28px' }}>{t('ui.lowestCostNeedsPrices')}</p>}
             </fieldset>
-          </SectionCard>
+          </Disclosure></div>
 
+          </div>
+          </div>
           <div style={{ marginTop: '22px' }}>
             <Disclosure
                title={t('ui.whatPageReturns')}

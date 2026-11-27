@@ -8,7 +8,8 @@ const diagramShapes = (candidate) => {
   try {
     const url = candidate.visualization;
     if (!url?.startsWith('data:image/svg+xml;base64,') || !candidate.tiles?.length) return null;
-    const svg = new DOMParser().parseFromString(atob(url.split(',')[1]), 'image/svg+xml').documentElement;
+    const source = new TextDecoder().decode(Uint8Array.from(atob(url.split(',')[1]), (char) => char.charCodeAt(0)));
+    const svg = new DOMParser().parseFromString(source, 'image/svg+xml').documentElement;
     let viewBox = svg.getAttribute('viewBox');
     if (svg.localName !== 'svg' || !viewBox) return null;
     const surface = Array.from(svg.children).find((element) =>

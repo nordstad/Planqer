@@ -1,4 +1,15 @@
 const locale = {
+  documentUi: {
+    projectExportScope: 'Urvalet gäller bara diagram. Att köpa och CSV omfattar alla planer här; Skriv ut projekt kombinerar allt material med valda diagram.',
+    cutSizesLegend_one: '{{count}} kapstorlek – se kaplista',
+    cutSizesLegend_other: '{{count}} kapstorlekar – se kaplista',
+    boardProfile: 'Brädans tjocklek × bredd',
+    tileSize: 'Plattstorlek',
+    downloadAllSheets: 'Ladda ner alla skivor',
+    currencyUnknown: '(valuta saknas)',
+    projectNameFallback: 'Lämna tomt för att använda ”{{name}}” som projektnamn.',
+    reserveExplanation: 'Att köpa inkluderar {{percent}} % reserv för varje sammanlagd bräd- eller skivstorlek, avrundat uppåt. Plattor och tapeter behåller tillägget i sina sparade planer; ingen extra reserv läggs till här. Utskrift och CSV visar ursprungsplanerna och samma antal för Behövs och Att köpa.',
+  },
   accessibilityUi: {
     skipContent: 'Hoppa till huvudinnehållet',
     homeTitle: 'Startsida',

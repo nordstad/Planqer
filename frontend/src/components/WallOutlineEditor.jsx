@@ -1,9 +1,9 @@
 import { useTranslation } from 'react-i18next';
+import FormField from './FormField';
 
 const numeric = (value) => Number(value) || 0;
 
-const VIEW = { width: 700, height: 400, x: 150, y: 80, drawWidth: 400, drawHeight: 200 };
-const FIELD = { width: 120, height: 62 };
+const VIEW = { x: 150, y: 80, drawWidth: 400, drawHeight: 200 };
 
 const outlineVertices = (wall) => {
   const width = numeric(wall.width_top);
@@ -17,11 +17,11 @@ const dimensionsFor = (wall, scaleX, scaleY, t) => {
   const lowerLeft = [scaleX(0), scaleY(numeric(wall.lower_left))];
   const lowerRight = [scaleX(width), scaleY(numeric(wall.lower_right))];
   return [
-    { field: 'height_left', label: t('wallpaperUi.dimUpperLeft'), dot: upperLeft, box: [upperLeft[0] - FIELD.width - 14, upperLeft[1] - FIELD.height / 2] },
-    { field: 'lower_left', label: t('wallpaperUi.dimLowerLeft'), dot: lowerLeft, box: [lowerLeft[0] - FIELD.width - 14, lowerLeft[1] - FIELD.height / 2] },
-    { field: 'height_right', label: t('wallpaperUi.dimUpperRight'), dot: upperRight, box: [upperRight[0] + 14, upperRight[1] - FIELD.height / 2] },
-    { field: 'lower_right', label: t('wallpaperUi.dimLowerRight'), dot: lowerRight, box: [lowerRight[0] + 14, lowerRight[1] - FIELD.height / 2] },
-    { field: 'width', label: t('wallpaperUi.dimWallWidth'), dot: null, box: [scaleX(width / 2) - FIELD.width / 2, VIEW.y + VIEW.drawHeight + 38] },
+    { field: 'height_left', label: t('wallpaperUi.dimUpperLeft'), dot: upperLeft },
+    { field: 'height_right', label: t('wallpaperUi.dimUpperRight'), dot: upperRight },
+    { field: 'lower_left', label: t('wallpaperUi.dimLowerLeft'), dot: lowerLeft },
+    { field: 'lower_right', label: t('wallpaperUi.dimLowerRight'), dot: lowerRight },
+    { field: 'width', label: t('wallpaperUi.dimWallWidth'), dot: null },
   ];
 };
 
@@ -38,17 +38,21 @@ const WallOutlineEditor = ({ wall, onChange }) => {
   const change = (field, value) => onChange(field === 'width' ? { width_top: value, width_middle: value, width_bottom: value } : { [field]: value });
   const guideLabel = t('wallpaperUi.outlineGuide');
   return <figure className="wallpaper-measurement-guide" aria-label={t('wallpaperUi.outlineAria')}>
-    <svg viewBox={`0 0 ${VIEW.width} ${VIEW.height}`} role="group" aria-label={guideLabel}>
+    <div className="wall-outline-layout">
+    <div className="wall-outline-drawing">
+    <svg viewBox="120 55 460 255" role="img" aria-label={guideLabel}>
       <path d={path} fill="var(--ground-2)" stroke="var(--ink)" strokeWidth="2" />
-      <g><line x1={VIEW.x - 20} x2={VIEW.x + VIEW.drawWidth + 20} y1={scaleY(0)} y2={scaleY(0)} stroke="var(--ink-3)" strokeDasharray="6 4" /><text x={VIEW.x + VIEW.drawWidth / 2} y={scaleY(0) + 14} textAnchor="middle" className="wallpaper-svg-small">{t('wallpaperUi.levelDatum')}</text></g>
+      <line x1={VIEW.x - 20} x2={VIEW.x + VIEW.drawWidth + 20} y1={scaleY(0)} y2={scaleY(0)} stroke="var(--ink-3)" strokeDasharray="6 4" />
       {dimensions.map((dimension) => <g key={dimension.field}>
         {dimension.dot && <circle cx={dimension.dot[0]} cy={dimension.dot[1]} r="4" fill="var(--accent)" />}
-        {dimension.dot && <line x1={dimension.dot[0]} y1={dimension.dot[1]} x2={dimension.box[0] < dimension.dot[0] ? dimension.box[0] + FIELD.width : dimension.box[0]} y2={dimension.box[1] + FIELD.height / 2} stroke="var(--accent)" strokeDasharray="3 3" />}
-        <foreignObject x={dimension.box[0]} y={dimension.box[1]} width={FIELD.width} height={FIELD.height}>
-          <label className="form-label" style={{ fontSize: '11px', margin: 0 }}>{t('wallpaperUi.dimWithMm', { label: dimension.label })}<input className="form-input" style={{ padding: '2px 6px', width: '100%' }} inputMode="decimal" value={valueOf(dimension.field)} onChange={(event) => change(dimension.field, event.target.value)} aria-label={t('wallpaperUi.dimWithMm', { label: dimension.label })} /></label>
-        </foreignObject>
       </g>)}
     </svg>
+    <span className="synthetic">{t('wallpaperUi.levelDatum')}</span>
+    </div>
+    {dimensions.map(({ field, label }) => <div key={field} style={{ gridArea: field }}>
+      <FormField label={t('wallpaperUi.dimWithMm', { label })} required><input className="form-input" inputMode="numeric" value={valueOf(field)} onChange={(event) => change(field, event.target.value)} /></FormField>
+    </div>)}
+    </div>
     <figcaption>{`${guideLabel} ${t('wallpaperUi.outlineRedraws')}`}</figcaption>
   </figure>;
 };

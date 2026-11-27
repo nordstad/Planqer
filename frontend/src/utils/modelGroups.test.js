@@ -1,6 +1,6 @@
 import {
   naturalCompare, groupBoards, groupSheets, groupLabel, planNameFor, resolveMaterial,
-  initialConfig, boardPricing, boardCostPayloads, sheetPricingPayload, applySettingsToAll,
+  initialConfig, boardPricing, boardCostPayloads, sheetPricingPayload, applySettingsToAll, boardPartsForGroup,
   validateGroupConfig, standaloneHandoff, pricingState, groupDimensions, groupMemoryKey, matchExistingPlans,
 } from './modelGroups';
 import { freeTextSelection, rememberChoice, isEmptySelection, typeSelection } from './catalogue';
@@ -23,6 +23,23 @@ const board = (overrides = {}) => groupBoards([
   { name: 'board_1', width: 95, thickness: 45, length: 1800, quantity: 2, ...overrides },
 ])[0];
 const sheet = () => groupSheets([{ name: 'sheet_2', width: 800, thickness: 15, length: 1800, quantity: 1 }])[0];
+
+it('keeps equal-length source identities and counts through both board handoffs', () => {
+  const group = groupBoards([
+    { name: 'Front rail', width: 95, thickness: 45, length: 1800, quantity: 2 },
+    { name: 'Rear rail', width: 95, thickness: 45, length: 1800, quantity: 3 },
+    { name: 'board_3', width: 95, thickness: 45, length: 800, quantity: 1 },
+  ])[0];
+  expect(group.lengths).toEqual([{ length: 1800, qty: 5 }, { length: 800, qty: 1 }]);
+  const parts = [
+    { name: 'Front rail', length: '1800', quantity: '2' },
+    { name: 'Rear rail', length: '1800', quantity: '3' },
+    { name: 'board_3', length: '800', quantity: '1' },
+  ];
+  expect(boardPartsForGroup(group)).toEqual(parts);
+  expect(standaloneHandoff(group, {}, 'Bench').data.parts).toEqual(parts);
+  expect(group.quantity).toBe(6);
+});
 
 const money = { currency: 'SEK', vatRate: 25, pricesIncludeVat: true };
 
@@ -232,7 +249,7 @@ describe('plan alone hand-off', () => {
     const { key, path, data } = standaloneHandoff(board(), { ...initialConfig(board()), product }, 'bench · Pine');
     expect(key).toBe('partsible-3d-import');
     expect(path).toBe('/cutting?import=3d');
-    expect(data).toMatchObject({ boardThickness: 45, boardWidth: 95, source: 'model-cutlist', parts: { 1800: 2 } });
+    expect(data).toMatchObject({ boardThickness: 45, boardWidth: 95, source: 'model-cutlist', parts: [{ name: 'board_1', length: '1800', quantity: '2' }] });
     expect(data.product).toEqual(product);
   });
 

@@ -247,7 +247,7 @@ describe('WallpaperOptimizer input/result identity', () => {
   };
   const saveCurrent = async () => {
     fireEvent.click(screen.getByRole('button', { name: /^Prepare cut sheets/ }));
-    fireEvent.click(screen.getByRole('button', { name: /^Save plan/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Name and save/ }));
     fireEvent.change(await screen.findByLabelText('Plan name'), { target: { value: 'Current project' } });
     fireEvent.click(screen.getByRole('button', { name: /^Save plan/ }));
     await waitFor(() => expect(saveWallpaperProject).toHaveBeenCalledTimes(1));
@@ -494,7 +494,7 @@ describe('WallpaperOptimizer input/result identity', () => {
     createProjectGroup.mockReturnValueOnce(pending.promise);
     const view = await completePlan();
     fireEvent.click(screen.getByRole('button', { name: /^Prepare cut sheets/ }));
-    fireEvent.click(screen.getByRole('button', { name: /^Save plan/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Name and save/ }));
     fireEvent.click(screen.getByRole('button', { name: /^Save plan/ }));
     await waitFor(() => expect(createProjectGroup).toHaveBeenCalled());
     // Unmounting models navigation away through the global navigation.
@@ -529,7 +529,7 @@ describe('WallpaperOptimizer input/result identity', () => {
     fireEvent.click(screen.getByRole('button', { name: /Create plan/ }));
     await screen.findByRole('heading', { name: 'Your wallpaper plan' });
     fireEvent.click(screen.getByRole('button', { name: /^Prepare cut sheets/ }));
-    fireEvent.click(screen.getByRole('button', { name: /^Save plan/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Name and save/ }));
     fireEvent.click(screen.getByRole('button', { name: /^Save plan/ }));
     await waitFor(() => expect(saveWallpaperProject).toHaveBeenCalledTimes(2));
     await act(async () => {
@@ -718,11 +718,11 @@ describe('WallpaperOptimizer plan step', () => {
     await openPlanStep();
 
     fireEvent.click(screen.getByRole('button', { name: /Prepare cut sheets/ }));
-    fireEvent.click(screen.getByRole('button', { name: /^Save plan/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Name and save/ }));
 
     expect(await screen.findByLabelText('Plan name')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Create project' })).not.toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText('New project name'), { target: { value: 'Living room' } });
+    fireEvent.change(screen.getByRole('textbox', { name: 'New project name (optional)' }), { target: { value: 'Living room' } });
     fireEvent.click(screen.getAllByRole('button', { name: /^Save plan/ }).at(-1));
 
     await waitFor(() => expect(createProjectGroup).toHaveBeenCalledWith('Living room'));
@@ -733,7 +733,7 @@ describe('WallpaperOptimizer plan step', () => {
     await openPlanStep();
 
     fireEvent.click(screen.getByRole('button', { name: /Prepare cut sheets/ }));
-    fireEvent.click(screen.getByRole('button', { name: /^Save plan/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Name and save/ }));
     fireEvent.click(await screen.findByRole('button', { name: 'Back to the review' }));
 
     expect(await screen.findByRole('heading', { name: 'Your cut plan' })).toBeInTheDocument();
@@ -745,7 +745,7 @@ describe('WallpaperOptimizer plan step', () => {
     await openPlanStep();
 
     fireEvent.click(screen.getByRole('button', { name: /Prepare cut sheets/ }));
-    fireEvent.click(screen.getByRole('button', { name: /^Save plan/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Name and save/ }));
 
     fireEvent.change(await screen.findByLabelText('Plan name'), { target: { value: '   ' } });
     fireEvent.click(screen.getAllByRole('button', { name: /^Save plan/ }).at(-1));

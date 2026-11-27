@@ -116,7 +116,7 @@ const assertLocked = async (page) => {
 const saveCurrent = async (page, locale, state) => {
   await expect(page.getByTestId('spare-rolls')).toContainText(locale.wallpaperUi.rollsNeeded.replace('{{rolls}}', '8'));
   await page.getByRole('button', { name: `${locale.wallpaperUi.prepareCutSheets} →`, exact: true }).click();
-  await page.getByRole('button', { name: `${locale.workflow.savePlan} →`, exact: true }).click();
+  await page.getByRole('button', { name: `${locale.ui.nameAndSave} →`, exact: true }).click();
   await page.locator('#wallpaper-plan-name').fill('Current project');
   await page.getByRole('button', { name: locale.workflow.savePlan, exact: true }).click();
   await expect.poll(() => state.saves.length).toBe(1);
@@ -135,7 +135,7 @@ for (const [language, locale] of [['en-GB', en], ['sv-SE', sv], ['nb-NO', nb]]) 
       await expect.poll(() => state.pending.length).toBe(1);
       await state.release(0, { json: plan() });
       await page.getByRole('button', { name: `${locale.wallpaperUi.prepareCutSheets} →`, exact: true }).click();
-      await page.getByRole('button', { name: `${locale.workflow.savePlan} →`, exact: true }).click();
+      await page.getByRole('button', { name: `${locale.ui.nameAndSave} →`, exact: true }).click();
       await page.locator('#wallpaper-plan-name').fill('Retained wallpaper draft');
       await page.getByRole('button', { name: locale.workflow.savePlan, exact: true }).click();
       await expect.poll(() => state.saveReplies.length).toBe(1);

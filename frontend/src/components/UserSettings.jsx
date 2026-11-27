@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import FormField, { FormLegend } from './FormField';
 import { getUserSettings, updateUserSettings } from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -117,8 +118,9 @@ const SettingsForUser = ({ userId }) => {
           {t('settings.retryLoad')}
         </button>
       ) : <form onSubmit={handleSave}>
+        <FormLegend />
         <div className="space-y-2" style={{ marginBottom: '14px' }}>
-          <label className="form-label" htmlFor="board-lengths">{t('settings.boardLengths')}</label>
+          <FormField label={t('settings.boardLengths')} required>
           <input
             id="board-lengths"
             type="text"
@@ -128,11 +130,12 @@ const SettingsForUser = ({ userId }) => {
             placeholder={t('settings.boardLengthsPlaceholder')}
             disabled={saving}
           />
+          </FormField>
           <p className="synthetic">{t('settings.boardLengthsHelp')}</p>
         </div>
 
         <div className="space-y-2" style={{ marginBottom: '14px' }}>
-          <label className="form-label" htmlFor="kerf">{t('settings.sawBladeWidth')}</label>
+          <FormField label={t('settings.sawBladeWidth')} required>
           <input
             id="kerf"
             type="number"
@@ -143,17 +146,19 @@ const SettingsForUser = ({ userId }) => {
             onChange={(e) => setSettings((prev) => ({ ...prev, default_saw_blade_width: e.target.value }))}
             disabled={saving}
           />
+          </FormField>
         </div>
 
         <div className="space-y-2" style={{ marginBottom: '20px' }}>
-          <label className="form-label" htmlFor="spare-margin">{t('settings.spareMargin')}</label>
+          <FormField label={t('settings.spareMargin')} required>
           <input id="spare-margin" type="number" min="0" max="100" step="1" className="form-input dimension-input" value={settings.spare_margin_percent}
             onChange={(e) => setSettings((prev) => ({ ...prev, spare_margin_percent: parseFloat(e.target.value) || 0 }))} disabled={saving} />
+          </FormField>
           <p className="synthetic">{t('settings.spareMarginHelp')}</p>
         </div>
 
         <div className="space-y-2" style={{ marginBottom: '20px' }}>
-          <label className="form-label" htmlFor="currency">{t('settings.currency')}</label>
+          <FormField label={t('settings.currency')} required>
           <select
             id="currency"
             className="form-select"
@@ -167,12 +172,14 @@ const SettingsForUser = ({ userId }) => {
             <option value="EUR">EUR</option>
             <option value="USD">USD</option>
           </select>
+          </FormField>
         </div>
 
         <div className="space-y-2" style={{ marginBottom: '20px' }}>
-          <label className="form-label" htmlFor="vat-rate">{t('settings.vatRate')}</label>
+          <FormField label={t('settings.vatRate')} required>
           <input id="vat-rate" type="number" min="0" max="100" step="0.1" className="form-input dimension-input" value={settings.default_vat_rate}
             onChange={(e) => setSettings((prev) => ({ ...prev, default_vat_rate: parseFloat(e.target.value) || 0 }))} disabled={saving} />
+          </FormField>
           <label className="flex items-center gap-2" style={{ cursor: 'pointer' }}>
             <input type="checkbox" checked={settings.default_prices_include_vat}
               onChange={(e) => setSettings((prev) => ({ ...prev, default_prices_include_vat: e.target.checked }))} disabled={saving} />
@@ -182,7 +189,7 @@ const SettingsForUser = ({ userId }) => {
         </div>
 
         <div className="space-y-2" style={{ marginBottom: '20px' }}>
-          <label className="form-label" htmlFor="settings-language">{t('settings.language')}</label>
+          <FormField label={t('settings.language')} required>
           <select
             id="settings-language"
             className="form-select"
@@ -194,10 +201,11 @@ const SettingsForUser = ({ userId }) => {
             <option value="sv-SE">Svenska</option>
             <option value="nb-NO">Norsk</option>
           </select>
+          </FormField>
         </div>
 
         <div className="space-y-2" style={{ marginBottom: '20px' }}>
-          <label className="form-label" htmlFor="settings-catalogue">{t('settings.catalogueCountry')}</label>
+          <FormField label={t('settings.catalogueCountry')} required>
           <CatalogueCountrySelect
             id="settings-catalogue"
             className="form-select"
@@ -205,6 +213,7 @@ const SettingsForUser = ({ userId }) => {
             onChange={(value) => setSettings((prev) => ({ ...prev, catalogue_country: value }))}
             disabled={saving}
           />
+          </FormField>
           <p className="synthetic">{t('settings.catalogueCountryHelp')}</p>
         </div>
 

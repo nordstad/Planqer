@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import PlanSummary from './plan/PlanSummary';
+import DiagramInspection from './DiagramInspection';
 import { restoreBoardParts } from '../utils/boardParts';
 import { formatMillimetres } from '../utils/measurements';
 
@@ -14,7 +15,7 @@ export const boardSummaryRows = (project, t, language) => {
   const parts = restoreBoardParts(project.parts_data);
   const rows = [
     [t('sheetPlan.material'), project.product?.material || project.material_type],
-    [t('sheetPlan.thickness'), `${mm(project.board_thickness)} × ${mm(project.board_width)}`],
+    [t('documentUi.boardProfile'), `${mm(project.board_thickness)} × ${mm(project.board_width)}`],
     [t('ui.stock'), Object.entries(boardCounts(result)).map(([length, count]) => `${count} × ${mm(Number(length))}`).join(', ') || '—'],
     [t('workflow.parts'), parts.reduce((sum, part) => sum + (Number(part.quantity) || 0), 0)],
     [t('legacy.boards'), boards.length],
@@ -35,7 +36,7 @@ const BoardPlanDocument = ({ project }) => {
   return <div className="board-plan-document">
     <PlanSummary title={t('wallpaperUi.summaryTitle')} rows={boardSummaryRows(project, t, i18n.language)} />
     {parts.length > 0 && <section><div className="section-rule"><h2 className="section-title">{t('workflow.partsToCut')}</h2></div><table className="cat-table board-plan-parts"><thead><tr><th>{t('workflow.name')}</th><th>{t('workflow.lengthMm')}</th><th>{t('workflow.qty')}</th></tr></thead><tbody>{parts.map((part, index) => <tr key={`${part.name}-${part.length}-${index}`}><td>{part.name || '—'}</td><td>{mm(Number(part.length))}</td><td>{part.quantity}</td></tr>)}</tbody></table></section>}
-    {result.visualization && <section><div className="section-rule"><h2 className="section-title">{t('ui.cuttingPlan')}</h2></div><img className="board-plan-diagram" src={result.visualization} alt={t('ui.boardDiagramAlt')} /></section>}
+    {result.visualization && <section><div className="section-rule"><h2 className="section-title">{t('ui.cuttingPlan')}</h2></div><DiagramInspection className="board-plan-diagram" src={result.visualization} alt={t('ui.boardDiagramAlt')} /></section>}
     {boards.length > 0 && <section><div className="section-rule"><h2 className="section-title">{t('workflow.boardByBoard')}</h2></div><div className="board-plan-picker" role="group" aria-label={t('workflow.boardByBoard')}>{boards.map((board, index) => <button key={index} type="button" aria-pressed={index === activeIndex} className={`sheet-plan-thumbnail${index === activeIndex ? ' is-active' : ''}`} onClick={() => setBoardIndex(index)}>{t('workflow.boardNumber', { number: index + 1 })} · {mm(result.board_lengths_used?.[index] || 0)}</button>)}</div><table className="cat-table board-plan-cuts" aria-label={t('workflow.boardNumber', { number: activeIndex + 1 })}><thead><tr><th>{t('workflow.cutOrder')}</th><th>{t('ui.lengthMm')}</th></tr></thead><tbody>{(boards[activeIndex] || []).map((length, index) => <tr key={index}><th>{index + 1}</th><td>{mm(Number(length))}</td></tr>)}</tbody></table></section>}
   </div>;
 };

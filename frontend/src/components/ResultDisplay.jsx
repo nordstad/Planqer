@@ -9,7 +9,7 @@
 */
 
 import { useState } from 'react';
-import Modal, { modalTrigger } from './Modal';
+import DiagramInspection from './DiagramInspection';
 import { useTranslation } from 'react-i18next';
 import { Download } from './icons';
 import { translateWithFallback } from '../i18n/translate';
@@ -23,7 +23,6 @@ const mm = (n) => (Number.isFinite(n)
 const ResultDisplay = ({ result, projectName, materialType, boardThickness, boardWidth }) => {
   const { t } = useTranslation();
   const text = (key, vars) => translateWithFallback(t, key, vars);
-  const [diagramOpen, setDiagramOpen] = useState(false);
   const [downloadError, setDownloadError] = useState('');
   const [downloading, setDownloading] = useState(false);
   const used = result.board_lengths_used;
@@ -57,15 +56,7 @@ const ResultDisplay = ({ result, projectName, materialType, boardThickness, boar
   return (
     <>
       <figure style={{ margin: 0, minWidth: 0 }}>
-        <button
-          type="button"
-          className="cut-list-visualization"
-          style={{ width: '100%', cursor: 'zoom-in' }}
-          onClick={modalTrigger(() => setDiagramOpen(true))}
-           aria-label={text('ui.enlargeBoardDiagram')}
-        >
-           <img src={result.visualization} alt={text('ui.boardDiagramAlt')} id="cutlist-image" />
-        </button>
+        <DiagramInspection src={result.visualization} alt={text('ui.boardDiagramAlt')} imageId="cutlist-image" className="cut-list-visualization" label={text('ui.enlargeBoardDiagram')} dialogLabel={text('ui.cuttingPlanDiagram')} />
         <figcaption className="flex flex-wrap items-center justify-between gap-3" style={{ marginTop: '12px' }}>
           <span className="synthetic">
              {text('ui.diagramCaption', { count: result.cut_list.length })}
@@ -103,13 +94,6 @@ const ResultDisplay = ({ result, projectName, materialType, boardThickness, boar
           </table>
       </section>
 
-      {diagramOpen && (
-         <Modal aria-label={text('ui.cuttingPlanDiagram')} title={text('ui.cuttingPlan')} sheetStyle={{ maxWidth: '95vw' }} onClose={() => setDiagramOpen(false)}>
-            <div style={{ padding: '16px' }}>
-               <img src={result.visualization} alt={text('ui.boardDiagramAlt')} style={{ display: 'block', width: '100%', height: 'auto' }} />
-            </div>
-        </Modal>
-      )}
     </>
   );
 };

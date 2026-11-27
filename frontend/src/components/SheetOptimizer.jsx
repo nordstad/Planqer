@@ -416,7 +416,7 @@ const SheetOptimizer = () => {
     {
       label: t('workflow.save'),
       reachable: !!result,
-      summary: saved ? t('workflow.savedAs', { name: saved.name }) : t('workflow.nameAndKeep'),
+      summary: saved ? t('workflow.savedAs', { name: saved.name }) : t('workflow.planDetails'),
       locked: t('workflow.waitsForLayout'),
     },
   ];
@@ -433,7 +433,7 @@ const SheetOptimizer = () => {
 
       {/* ── 01 · what needs cutting ───────────────────────────────────────── */}
       {step === STEP_PARTS && (
-        <form className="step-view is-form" onSubmit={handleLayoutSubmit} noValidate>
+        <form className="step-view is-form is-planner-input" onSubmit={handleLayoutSubmit} noValidate>
           <div className="step-head">
             <div>
               <h1 className="step-h1">{t('common.sheetCutting')}</h1>
@@ -445,6 +445,7 @@ const SheetOptimizer = () => {
             </button>
           </div>
 
+          <div className="planner-input-grid">
           <SectionCard
             id="sheet-parts"
             title={t('workflow.partsToCut')}
@@ -567,6 +568,7 @@ const SheetOptimizer = () => {
             </div>
           </SectionCard>
 
+          </div>
           <div style={{ marginTop: '26px' }}>
             <Disclosure
               title={t('ui.packingStrategy')}
@@ -658,7 +660,7 @@ const SheetOptimizer = () => {
             <div className="plan-answer-fig">
               <b>{result.total_sheets}</b>
               <span className="answer-kicker">
-                 {t('workflow.sheetsSummary', { count: result.total_sheets, efficiency: result.overall_efficiency.toFixed(1) })}
+                 {t('sheetPlan.sheets')}
               </span>
             </div>
             <dl className="plan-facts">

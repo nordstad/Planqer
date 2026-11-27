@@ -1,4 +1,15 @@
 const locale = {
+  documentUi: {
+    projectExportScope: 'Selection controls diagrams only. What to buy and CSV include all plans here; Print project combines all materials with selected diagrams.',
+    cutSizesLegend_one: '{{count}} cut size — see cut list',
+    cutSizesLegend_other: '{{count}} cut sizes — see cut list',
+    boardProfile: 'Board thickness × width',
+    tileSize: 'Tile size',
+    downloadAllSheets: 'Download all sheets',
+    currencyUnknown: '(currency not recorded)',
+    projectNameFallback: 'Leave blank to use “{{name}}” as the project name.',
+    reserveExplanation: 'To buy includes a {{percent}}% reserve for each combined board or sheet size, rounded up. Tiles and wallpaper retain the allowance in their saved plans; no extra reserve is added here. Print and CSV include the source plans and the same Needed and To buy quantities.',
+  },
   accessibilityUi: {
     skipContent: 'Skip to main content',
     homeTitle: 'Home',

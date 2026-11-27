@@ -10,7 +10,7 @@
 */
 
 import { useEffect, useState } from 'react';
-import Modal, { modalTrigger } from './Modal';
+import DiagramInspection from './DiagramInspection';
 import { useTranslation } from 'react-i18next';
 import { Download } from './icons';
 import TileCutListTable from './TileCutListTable';
@@ -18,12 +18,12 @@ import TileDiagram from './TileDiagram';
 import { smallestCutMm } from '../utils/tileCutList';
 import useTileNavigation from './useTileNavigation';
 import { svgBlobToPngBlob } from '../utils/svgToPng';
+import { tileCandidateLabel } from '../utils/tileLocalization';
 
 const mm = (n) => (Number.isFinite(n) ? Math.round(n).toLocaleString('sv-SE') : '—');
 
 const TileResultDisplay = ({ candidate, projectName, surfaceWidth, surfaceHeight }) => {
   const { t } = useTranslation();
-  const [diagramOpen, setDiagramOpen] = useState(false);
   const [selectedCut, setSelectedCut] = useState(null);
   const [highlightedCut, setHighlightedCut] = useState(null);
   const [listHighlight, setListHighlight] = useState(null);
@@ -35,6 +35,7 @@ const TileResultDisplay = ({ candidate, projectName, surfaceWidth, surfaceHeight
 
   const safeName = (projectName ? projectName : 'tile_layout').replace(/[^a-zA-Z0-9_-]/g, '_');
   const isDiagonal = candidate.min_diagonal_cut_span != null;
+  const label = tileCandidateLabel(candidate.label, t);
 
   const downloadDiagram = async () => {
     setDownloading(true);
@@ -64,12 +65,12 @@ const TileResultDisplay = ({ candidate, projectName, surfaceWidth, surfaceHeight
           <div className="tile-diagram-heading">
             <div><h2 className="section-title">{t('ui.tileDiagramTitle')}</h2><p>{t('ui.tileSurfaceSize', { width: mm(Number(surfaceWidth)), height: mm(Number(surfaceHeight)) })}</p></div>
             <div className="tile-diagram-actions">
-              <button type="button" className="btn" onClick={modalTrigger(() => setDiagramOpen(true))}>{t('ui.tileDiagramAria')}</button>
+              <DiagramInspection src={candidate.visualization} alt={`${label} — ${t('ui.tileDiagramAlt')}`} label={t('ui.tileDiagramAria')} dialogLabel={t('ui.tileLayoutDiagram')}>{t('ui.tileDiagramAria')}</DiagramInspection>
               <button type="button" className="btn" onClick={downloadDiagram} disabled={downloading}><Download /> {t('projectUi.downloadPng')}</button>
             </div>
           </div>
           <figure style={{ margin: 0, minWidth: 0 }}>
-            <TileDiagram candidate={candidate} highlightedLabel={listHighlight || activeCut} onSelect={setSelectedCut} onHighlight={setHighlightedCut} alt={`${candidate.label} — ${t('ui.tileDiagramAlt')}`} />
+            <TileDiagram candidate={candidate} highlightedLabel={listHighlight || activeCut} onSelect={setSelectedCut} onHighlight={setHighlightedCut} alt={`${label} — ${t('ui.tileDiagramAlt')}`} />
           </figure>
 
           {downloadError && <p className="alert-danger" role="alert">{t('ui.tilePngFailed')}</p>}
@@ -98,8 +99,7 @@ const TileResultDisplay = ({ candidate, projectName, surfaceWidth, surfaceHeight
             <tr><td>{t('ui.cutTiles')}</td><td>{candidate.cut_tile_count}</td></tr>
             {candidate.notched_count > 0 && <tr><td>{t('ui.tilesAroundOpening')}</td><td>{candidate.notched_count}</td></tr>}
             <tr><td>{t('ui.offcutsReused')}</td><td>{candidate.reused_offcut_count}</td></tr>
-            <tr><td>{t('ui.tilesToBuy')}</td><td>{candidate.tiles_to_purchase}</td></tr>
-             <tr><td>{t('legacy.withBreakage')}</td><td>{candidate.tiles_to_purchase_with_waste}</td></tr>
+            <tr><td>{t('ui.needed')}</td><td>{candidate.tiles_to_purchase}</td></tr>
             {isDiagonal ? (
               <tr>
                  <td>{t('ui.tightestCut')}</td>
@@ -118,19 +118,10 @@ const TileResultDisplay = ({ candidate, projectName, surfaceWidth, surfaceHeight
               </>
             )}
              <tr><td>{t('ui.sliversBelow')}</td><td>{candidate.sliver_count}</td></tr>
-             <tr><td>{t('ui.distinctCutSizes')}</td><td>{candidate.distinct_cut_sizes}</td></tr>
-             <tr><td>{t('ui.materialUsed')}</td><td>{(candidate.efficiency * 100).toFixed(1)}%</td></tr>
           </tbody>
         </table>
       </section>
 
-      {diagramOpen && (
-         <Modal aria-label={t('ui.tileLayoutDiagram')} title={t('ui.tileLayout')} sheetStyle={{ maxWidth: '95vw' }} onClose={() => setDiagramOpen(false)}>
-            <div style={{ padding: '16px' }}>
-               <img src={candidate.visualization} alt={`${candidate.label} — ${t('ui.tileDiagramAlt')}`} style={{ display: 'block', width: '100%', height: 'auto' }} />
-            </div>
-        </Modal>
-      )}
     </>
   );
 };

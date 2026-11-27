@@ -66,7 +66,7 @@ describe('SheetResultDisplay', () => {
     );
 
     expect(screen.getByAltText(/Sheet 1: 1\s?200 by 2\s?500 millimetres/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Download diagram/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Download all sheets/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /View the full diagram/i })).not.toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: /Sheet by sheet/i })).toHaveValue('0');
   });
@@ -94,5 +94,17 @@ describe('SheetResultDisplay', () => {
 
     expect(screen.getByRole('combobox', { name: /Sheet by sheet/i })).toHaveValue('1');
     expect(screen.getByAltText(/Sheet 2: 1\s?200 by 2\s?500 millimetres/i)).toHaveAttribute('src', result.sheet_visualizations[1]);
+  });
+
+  it('downloads the all-sheet asset even when viewing the second sheet', () => {
+    render(<LanguageProvider><SheetResultDisplay result={result} projectName="Workshop" /></LanguageProvider>);
+    fireEvent.change(screen.getByRole('combobox', { name: /Sheet by sheet/i }), { target: { value: '1' } });
+    let download;
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function () {
+      download = { href: this.href, name: this.download };
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Download all sheets' }));
+    expect(download).toEqual({ href: result.visualization, name: 'Workshop.svg' });
+    click.mockRestore();
   });
 });

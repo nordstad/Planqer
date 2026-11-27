@@ -310,10 +310,10 @@ describe('AdminCatalogue country identity', () => {
     await state.release(0, 'SE');
     fireEvent.click(within(rowOf('SE Framing timber 48 × 98 mm')).getByRole('button', { name: 'Edit' }));
     const form = screen.getByRole('form', { name: 'Edit product' });
-    fireEvent.change(within(form).getByLabelText('Stock lengths (mm)'), { target: { value: '3600' } });
+    fireEvent.change(within(form).getByLabelText('Stock lengths (mm) (optional)'), { target: { value: '3600' } });
     fireEvent.click(within(form).getByRole('button', { name: 'Save' }));
     expect(await within(form).findByRole('alert')).toHaveTextContent('Current save failed');
-    expect(within(form).getByLabelText('Stock lengths (mm)')).toHaveValue('3600');
+    expect(within(form).getByLabelText('Stock lengths (mm) (optional)')).toHaveValue('3600');
     fireEvent.click(within(form).getByRole('button', { name: 'Save' }));
     await waitFor(() => expect(state.lists).toHaveLength(2));
     await state.release(1, 'SE');
@@ -399,7 +399,7 @@ describe('AdminCatalogue', () => {
     fireEvent.change(typeSelect, { target: { value: 'regel' } });
     fireEvent.change(within(form).getByLabelText('Thickness (mm)'), { target: { value: '48' } });
     fireEvent.change(within(form).getByLabelText('Width (mm)'), { target: { value: '98' } });
-    fireEvent.change(within(form).getByLabelText('Stock lengths (mm)'), { target: { value: '2400, 3000' } });
+    fireEvent.change(within(form).getByLabelText('Stock lengths (mm) (optional)'), { target: { value: '2400, 3000' } });
     fireEvent.change(within(form).getByLabelText(/Source URLs/), { target: { value: 'https://www.traguiden.se/x' } });
     fireEvent.click(within(form).getByLabelText('Pine'));
     fireEvent.click(within(form).getByRole('button', { name: 'Add to catalogue' }));
@@ -453,7 +453,7 @@ describe('AdminCatalogue', () => {
     fireEvent.click(within(rowOf('Framing timber 45 × 95 mm')).getByRole('button', { name: 'Edit' }));
     const form = screen.getByRole('form', { name: 'Edit product' });
     expect(within(form).queryByLabelText('Thickness (mm)')).not.toBeInTheDocument();
-    fireEvent.change(within(form).getByLabelText('Stock lengths (mm)'), { target: { value: '3000' } });
+    fireEvent.change(within(form).getByLabelText('Stock lengths (mm) (optional)'), { target: { value: '3000' } });
     fireEvent.click(within(form).getByRole('button', { name: 'Save' }));
     await waitFor(() => expect(api.updateCatalogueEntry).toHaveBeenCalledWith(
       'se:regel:45x95', expect.objectContaining({ lengths: [3000], grades: ['C24'] }), null,

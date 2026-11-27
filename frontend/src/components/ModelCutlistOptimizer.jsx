@@ -51,7 +51,7 @@ import {
   groupBoards, groupSheets, groupLabel, planNameFor, resolveMaterial,
   groupDimensions, groupMemoryKey,
   initialConfig, boardCostPayloads, sheetPricingPayload, matchExistingPlans,
-  applySettingsToAll, validateGroupConfig, standaloneHandoff,
+  applySettingsToAll, validateGroupConfig, standaloneHandoff, boardPartsForGroup,
 } from '../utils/modelGroups';
 import { loadCatalogue, buildSnapshot } from '../utils/catalogue';
 import { focusSection } from '../utils/focusSection';
@@ -355,7 +355,7 @@ const ModelCutlistOptimizer = () => {
     setStatuses((prev) => ({ ...prev, [group.id]: 'running' }));
     try {
       if (group.kind === 'board') {
-        const parts = group.lengths.map((l) => ({ length: String(l.length), quantity: String(l.qty) }));
+        const parts = boardPartsForGroup(group);
         const stock = config.boards.map((row) => row.length);
         const { costData, saved: savedCosts } = boardCostPayloads(config, money);
         const result = await optimizeCutting(parts, stock, config.kerf, costData);
@@ -747,7 +747,7 @@ const ModelCutlistOptimizer = () => {
 
       {/* ── 03 · plan and save the batch ─────────────────────────────────── */}
       {step === STEP_SAVE && selectedGroups.length > 0 && (
-        <div className="step-view is-form">
+        <div className="step-view is-form is-planner-input">
           {!isAuthenticated ? (
              <SignInRequired message={t('modelUi.signInCutlist')} />
           ) : (
@@ -769,7 +769,7 @@ const ModelCutlistOptimizer = () => {
 
               {!allDone && (
                 <>
-                  {selectedGroups.map((group) => (
+                  <div className="model-settings-grid">{selectedGroups.map((group) => (
                     <ModelGroupSettings
                       key={group.id}
                       group={group}
@@ -782,7 +782,7 @@ const ModelCutlistOptimizer = () => {
                         ? () => applyToAll(group.id)
                         : null}
                     />
-                  ))}
+                  ))}</div>
                   {appliedNote && <p className="synthetic" role="status" style={{ marginBottom: '20px' }}>{appliedNote}</p>}
 
                 </>
@@ -800,6 +800,7 @@ const ModelCutlistOptimizer = () => {
                       value={selectedGroupId}
                       onChange={setSelectedGroupId}
                       newName={newProjectName}
+                      fallbackName={modelName}
                       onNewNameChange={setNewProjectName}
                     />
                     {Object.keys(availableMatches).length > 0 && (

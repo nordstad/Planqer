@@ -129,6 +129,14 @@ The exact request and response schemas are easiest to inspect in Swagger UI
 because they are generated from the Pydantic models used by the running
 backend.
 
+New tile saves may include `layout_result.diagram_labels`, a snapshot of display
+strings for `title`, `surface`, `full`, `notched`, `sliver`, and `cuts`. The saved
+SVG renderer escapes these strings and redraws geometry normally; it does not
+trust a supplied image as the saved export. Omitted labels retain the English
+defaults for older clients. The browser supplies the current locale's labels
+when saving; existing saved records and images are not migrated or retranslated.
+The local/Lite saved-diagram operation uses the same renderer.
+
 ## Products
 
 `GET /catalogue/?country=` returns the product types, the detail vocabularies

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Modal from '../Modal';
+import FormField, { FormLegend } from '../FormField';
 import { useTranslation } from 'react-i18next';
 import { registerUser, loginUser, getCurrentUser } from '../../utils/api';
 import { useAuth } from '../../contexts/AuthContext';
@@ -57,12 +58,13 @@ const Register = ({ onClose, onSwitchToLogin, isFirstRun = false }) => {
           </p>
 
           <form onSubmit={handleSubmit}>
+            <FormLegend />
             {error && (
               <div className="alert-danger" style={{ marginBottom: '14px' }} role="alert">{error}</div>
             )}
 
             <div className="space-y-2" style={{ marginBottom: '12px' }}>
-               <label className="form-label" htmlFor="register-email">{t('auth.email')}</label>
+              <FormField label={t('auth.email')} required>
               <input
                 id="register-email"
                 type="email"
@@ -73,10 +75,11 @@ const Register = ({ onClose, onSwitchToLogin, isFirstRun = false }) => {
                 autoFocus
                 required
               />
+              </FormField>
             </div>
 
             <div className="space-y-2" style={{ marginBottom: '12px' }}>
-               <label className="form-label" htmlFor="register-password">{t('auth.password')}</label>
+              <FormField label={t('auth.password')} required>
               <input
                 id="register-password"
                 type="password"
@@ -89,11 +92,12 @@ const Register = ({ onClose, onSwitchToLogin, isFirstRun = false }) => {
                 aria-describedby="register-password-policy"
                 required
               />
+              </FormField>
                <p id="register-password-policy" className="synthetic">{t('passwordUi.policy')}</p>
             </div>
 
             <div className="space-y-2" style={{ marginBottom: '16px' }}>
-               <label className="form-label" htmlFor="register-confirm">{t('auth.confirmPassword')}</label>
+              <FormField label={t('auth.confirmPassword')} required>
               <input
                 id="register-confirm"
                 type="password"
@@ -103,11 +107,12 @@ const Register = ({ onClose, onSwitchToLogin, isFirstRun = false }) => {
                 disabled={loading}
                 required
               />
+              </FormField>
             </div>
 
             {isFirstRun && (
               <div className="space-y-2" style={{ marginBottom: '16px' }}>
-                <label className="form-label" htmlFor="setup-secret">{t('auth.setupCode')}</label>
+                <FormField label={t('auth.setupCode')}>
                 <input
                   id="setup-secret"
                   type="password"
@@ -116,8 +121,10 @@ const Register = ({ onClose, onSwitchToLogin, isFirstRun = false }) => {
                   onChange={(e) => setSetupSecret(e.target.value)}
                   disabled={loading}
                   autoComplete="off"
+                  aria-describedby="setup-secret-hint"
                 />
-                <p className="synthetic">{t('auth.setupCodeHint')}</p>
+                </FormField>
+                <p id="setup-secret-hint" className="synthetic">{t('auth.setupCodeHint')}</p>
               </div>
             )}
 

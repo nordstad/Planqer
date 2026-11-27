@@ -42,12 +42,13 @@ export const groupBoards = (items, catalogue = null) => {
     const material = item.material || null;
     const id = `board|${materialKey(catalogue, 'board', material) || ''}|${width}x${thickness}`;
     if (!grouped.has(id)) {
-      grouped.set(id, { id, kind: 'board', material, width, thickness, quantity: 0, names: [], lengths: [] });
+      grouped.set(id, { id, kind: 'board', material, width, thickness, quantity: 0, names: [], lengths: [], parts: [] });
     }
     const g = grouped.get(id);
     g.quantity += item.quantity;
     g.names.push(item.name);
     g.lengths.push({ length: Math.round(item.length), qty: item.quantity });
+    g.parts.push({ name: item.name || '', length: Math.round(item.length), quantity: item.quantity });
   });
   return [...grouped.values()].map((g) => ({
     ...g,
@@ -245,6 +246,10 @@ export const validateGroupConfig = (group, config, t) => {
 
 /* What "Plan alone" hands to the board and sheet pages. The whole selection
    goes with it, so the product and its details arrive as they were chosen. */
+export const boardPartsForGroup = (group) => (group.parts || group.lengths.map((part) => ({
+  name: '', length: part.length, quantity: part.qty,
+}))).map((part) => ({ ...part, length: String(part.length), quantity: String(part.quantity) }));
+
 export const standaloneHandoff = (group, config, planName, sheetWord = 'Sheet') => {
   const productFields = config.product?.type ? { product: config.product } : {};
   if (group.kind === 'board') {
@@ -252,7 +257,7 @@ export const standaloneHandoff = (group, config, planName, sheetWord = 'Sheet') 
       key: 'partsible-3d-import',
       path: '/cutting?import=3d',
       data: {
-        parts: Object.fromEntries(group.lengths.map((l) => [l.length, l.qty])),
+        parts: boardPartsForGroup(group),
         projectName: planName,
         ...productFields,
         boardThickness: group.thickness,

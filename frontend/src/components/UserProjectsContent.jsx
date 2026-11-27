@@ -557,9 +557,9 @@ const UserProjectsContent = ({ groupId }) => {
               type="checkbox"
               checked={selectedPlanIds.has(project.id)}
               onChange={() => togglePlanSelection(project)}
-              disabled={!hasDiagram || printing}
+              disabled={!printableDocument || printing}
               aria-label={t('projectUi.selectPlan', { name: project.name })}
-              title={hasDiagram ? undefined : t('projectUi.noPlanDiagram')}
+              title={printableDocument ? undefined : t('projectUi.noPlanDiagram')}
             />
           </label>}
           <button
@@ -795,6 +795,7 @@ const UserProjectsContent = ({ groupId }) => {
           )}
         </header>
 
+        {plans.length > 1 && <p className="synthetic">{t('documentUi.projectExportScope')}</p>}
         <nav className="project-view-nav" aria-label={t('projectUi.projectViews')}>
           {[
             ['overview', 'projectUi.overview'],

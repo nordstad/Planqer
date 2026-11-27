@@ -139,7 +139,7 @@ describe('tile input/result identity', () => {
     await act(async () => { old.resolve(response('Outdated layout')); });
 
     expect(screen.queryByRole('heading', { name: 'Pick a layout' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Name it', exact: true })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Name and save/ })).not.toBeInTheDocument();
     expect(document.querySelectorAll('.plan-step-btn[data-state="locked"]')).toHaveLength(2);
     expect(screen.getByRole('button', { name: /Calculate layout/i })).toBeEnabled();
     expect(saveTileProject).not.toHaveBeenCalled();
@@ -226,7 +226,7 @@ describe('tile input/result identity', () => {
     });
     expect(screen.queryByText('Outdated layout')).not.toBeInTheDocument();
     expect(screen.queryByTestId('api-error')).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Name it', exact: true }));
+    fireEvent.click(screen.getByRole('button', { name: /Name and save/ }));
     fireEvent.change(screen.getByLabelText('Plan name'), { target: { value: 'Current layout' } });
     fireEvent.submit(screen.getByLabelText('Plan name').closest('form'));
     await waitFor(() => expect(saveTileProject).toHaveBeenCalledWith(expect.objectContaining({
@@ -250,8 +250,8 @@ describe('tile input/result identity', () => {
     renderTile();
     fireEvent.click(await screen.findByRole('button', { name: /Calculate layout/i }));
     await screen.findByRole('heading', { name: 'Pick a layout' });
-    fireEvent.click(screen.getByRole('button', { name: 'Name it', exact: true }));
-    expect(await screen.findByRole('heading', { name: 'Save this layout' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Name and save/ }));
+    expect(await screen.findByRole('heading', { name: 'Save this plan' })).toBeInTheDocument();
     fireEvent.click(document.querySelectorAll('.plan-step-btn')[0]);
     fireEvent.change(screen.getByLabelText('Surface width (mm)'), { target: { value: '2600' } });
     expect(document.querySelectorAll('.plan-step-btn[data-state="locked"]')).toHaveLength(2);
@@ -287,9 +287,9 @@ it('renders translated labels on the tile layout save step', async () => {
    fireEvent.change(await screen.findByLabelText('Thickness (mm)'), { target: { value: '10' } });
     fireEvent.click(await screen.findByRole('button', { name: /Calculate layout/i }));
   await screen.findByRole('heading', { name: 'Pick a layout' });
-  fireEvent.click(await screen.findByRole('button', { name: 'Name it', exact: true }));
+  fireEvent.click(await screen.findByRole('button', { name: /Name and save/ }));
 
-  await waitFor(() => expect(screen.getByRole('heading', { name: 'Save this layout' })).toBeInTheDocument());
+  await waitFor(() => expect(screen.getByRole('heading', { name: 'Save this plan' })).toBeInTheDocument());
   expect(screen.getByText(/Give the plan a name/)).toBeInTheDocument();
   expect(screen.queryByLabelText('Save as')).not.toBeInTheDocument();
   expect(screen.getByLabelText('Plan name')).toBeInTheDocument();

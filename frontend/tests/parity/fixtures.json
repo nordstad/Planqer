@@ -654,6 +654,31 @@
     }
   },
   {
+    "name": "saved_diagram_tile_localized_labels",
+    "op": "saved_diagram",
+    "seed": 0,
+    "payload": {
+      "kind": "tile",
+      "name": "Ägare <rum>",
+      "surface_data": { "width": 100, "height": 100, "cutouts": [] },
+      "layout_result": {
+        "tiles_to_purchase": 2,
+        "tiles": [
+          { "x": 0, "y": 0, "width": 50, "height": 100, "nominal_width": 50, "nominal_height": 100, "kind": "full" },
+          { "x": 50, "y": 0, "width": 10, "height": 100, "nominal_width": 50, "nominal_height": 100, "kind": "cut" }
+        ],
+        "diagram_labels": {
+          "title": "Plattlayout",
+          "surface": "Yta",
+          "full": "Hel platta",
+          "notched": "Urjackad",
+          "sliver": "Smal bit",
+          "cuts": "1 kapstorlek – se kaplista"
+        }
+      }
+    }
+  },
+  {
     "name": "saved_diagram_tile",
     "op": "saved_diagram",
     "seed": 0,

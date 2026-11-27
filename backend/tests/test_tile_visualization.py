@@ -378,6 +378,42 @@ def _solve_simple():
     )
 
 
+def test_saved_diagram_labels_are_escaped_without_changing_geometry_or_user_names():
+    surface, result = _solve_simple()
+    candidate = result.candidates[result.recommended_index]
+    original = ET.fromstring(
+        _decode(generate_saved_tile_diagram(candidate, surface, "Ägare <room>"))
+    )
+    translated = ET.fromstring(
+        _decode(
+            generate_saved_tile_diagram(
+                candidate,
+                surface,
+                "Ägare <room>",
+                labels={
+                    "surface": "Yta <mått>",
+                    "full": "Hel <platta>",
+                    "notched": "Urjackad",
+                    "sliver": "Smal bit",
+                    "cuts": "Storlekar & kaplista",
+                },
+            )
+        )
+    )
+    shapes = lambda root: [
+        (node.tag, node.attrib)
+        for node in root.iter()
+        if node.tag.rsplit("}", 1)[-1] in {"rect", "polygon", "path"}
+    ]
+    assert shapes(translated) == shapes(original)
+    text = " ".join(translated.itertext())
+    assert "Ägare <room>" in text
+    assert "socket" in text
+    assert "Hel <platta>" in text
+    assert "Yta <mått>: 909 × 1206 mm" in text
+    assert "Storlekar & kaplista" in text
+
+
 def test_visualization_is_a_valid_svg_data_url():
     surface, result = _solve_simple()
     candidate = result.candidates[result.recommended_index]

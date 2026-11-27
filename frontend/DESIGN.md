@@ -19,6 +19,9 @@ colors:
   shop: "#16150f"
   field: "#fbfaf6"
   field-line: "#8a846f"
+  builtin: "#3d6a2c"
+  builtin-bg: "#eaf2e3"
+  done: "#3d6a2c"
   night-ground: "#17150f"
   night-ground-2: "#201d15"
   night-ground-3: "#322d20"
@@ -35,6 +38,9 @@ colors:
   night-revision-bg: "#2e1410"
   night-field: "#14120d"
   night-field-line: "#8f8b78"
+  night-builtin: "#9fcb8b"
+  night-builtin-bg: "#1c2716"
+  night-done: "#9fcb8b"
 typography:
   display:
     fontFamily: "Archivo, system-ui, sans-serif"
@@ -145,6 +151,12 @@ components:
 # Design System: Partsible
 
 ## Overview
+
+This is the repository's normative interface contract. Current rules below take
+precedence over the historical rationale explicitly identified as such. Obsidian
+holds the review programme and evidence, not a second design system. The product
+UI is an **Operate** surface; Help and saved instructions prioritize **Read**.
+Preserve the existing warm-paper visual identity; remediation is not a restyle.
 
 ### Creative North Star: "The Self-Hosted README"
 
@@ -274,15 +286,18 @@ one red for correction.
   labels, muted captions, table headers. Darkened from `#8b8776` after the
   same contrast audit found it fell to 3.4–3.6:1 on paper and card — it now
   clears 4.5:1+ on both.
-- **Hairline** (`{colors.rule-hair}` `#e9e6da`, night `#322d20`): The only
-  border color in the system; used at 1–1.5px for every card, table row, and
-  control outline.
+- **Hairline** (`{colors.rule-hair}` `#e9e6da`, night `#322d20`): Decorative
+  card/table separators. Functional control boundaries use `--field-line`;
+  active, focus and error boundaries use their semantic state tokens.
 
 ### Color Rules
 
-**The One Accent Rule.** Amber marks exactly one thing per surface: the
-action, or the figure that leads to it. A screen with two amber elements
-competing for attention is a screen where one of them is wrong.
+**The Accent Has Meaning Rule.** Amber identifies the primary next action,
+active location/selection, keyboard focus, or a consequential figure. Those
+roles may coexist; do not suppress focus or selected state to meet an arbitrary
+one-element quota. Decorative accents and equally prominent competing primary
+actions are not allowed. Revision red signals errors; existing green `--done`
+and catalogue provenance colors are semantic exceptions, not extra brand colors.
 
 **The Redder Than Amber Rule.** Revision red must read as unambiguously red
 next to the accent's amber. If a proposed error color and the accent color
@@ -293,7 +308,12 @@ the rule.
 
 **Display / Body / Label Font:** Archivo, self-hosted via `@fontsource`
 (weights 400–800), one family for everything sentence-case; **Archivo
-Narrow** (600–700) for uppercase tracked labels only.
+Narrow** (600–700) for labels and supporting captions.
+
+Delivery retains those exact self-hosted WOFF2 faces, weights, and Unicode
+ranges. The build removes only their redundant legacy WOFF sources; no glyph
+subset or visual font substitution is used to meet Lite's delivery budget.
+`fontDelivery.test.js` compares every retained declaration with Fontsource.
 
 **Character:** A plain grotesque doing all the work — no second personality
 for headings, no mono for data. The narrow cut exists only to make a small
@@ -324,11 +344,13 @@ density-as-trust-signal philosophy) failed a runtime accessibility scan and
 was raised across the board; this floor is now load-bearing, not a
 suggestion.
 
-**The Narrow-Means-Label Rule.** Archivo Narrow appears only on genuinely
-uppercase, tracked micro-labels (`.kicker`, `.form-label`, `.cat-table th`).
-Quieter captions in sentence case (`.folio`, `.synthetic`) still use Archivo
-Narrow's condensed width but are never forced uppercase — they read as an
-aside, not a stamped label.
+**The Narrow-Means-Support Rule.** Archivo Narrow is for tracked micro-labels
+and the existing sentence-case `.folio`/`.synthetic` supporting captions.
+Running prose and editable values use Archivo. Do not force captions uppercase.
+The structured typography values are role defaults, not an exhaustive size
+catalogue: the established step heading is 26px (22px below 768px), the lede
+14.5px, and functional table fields 32px tall. These intentional density
+exceptions must remain readable; do not introduce arbitrary new sizes.
 
 ## Layout
 
@@ -344,12 +366,26 @@ lands right after a short headline instead of being pushed off-screen by the
 diagram. This reorder was added specifically because the first version buried
 the cards below the fold on a phone.
 
-Both optimizer pages (`CuttingOptimizer`, `SheetOptimizer`) are **stepped**, not
-spread. The old three-column `.work-spread` pattern (parts | stock | answer,
-cost and plan bands below) is gone: the work is a sequence — say what you need,
-read the plan, keep it — so the page renders one step at a time under a
-`.plan-steps` rail. `.step-view.is-form` holds steps 1 and 3 at a 620px form
-measure; step 2 drops the cap so the diagram gets the full 1080px.
+Planners are **stepped**, not an inputs-and-answer spread: enter requirements,
+read the result, save it. The `.plan-steps` rail renders only the current step.
+Simple upload and save forms retain a 620px measure; diagrams use the full
+1080px content width. At 1000px and above, `.is-planner-input` uses that wider
+measure: board/sheet parts sit beside material and visible stock; tile surface/
+openings sit beside tile/joint settings. Model batch settings use two columns
+of independent cutlists, not a widened upload field. Below that breakpoint the
+same DOM returns to one column. Inputs stay compact, not stretched to fill space.
+Optional board pricing/strategy uses `Disclosure`; stock and kerf never collapse.
+
+Sloped-wall controls are HTML `FormField`s outside the drawing's SVG transform.
+They flank the outline in roomy containers and reflow below it at 560px and
+below. The same five controls follow row-major DOM/focus order in both layouts.
+Never shrink a measurement control with a diagram.
+
+Shared headers and summary values must wrap supported long names. Two-dimensional
+strip/placement/shopping tables scroll in labelled, keyboard-focusable local
+regions; they must not expand the page or hide costs. Test 1440/1024/768/390/320px,
+long unbroken names, large part sets, all locales and both themes. Print has its
+own paginated layout; screen scrolling is not a print layout.
 
 ### Layout Rules
 
@@ -386,17 +422,16 @@ Review/Save also stay locked while an alternative start is pending. A failed
 current alternative leaves the last valid plan available for retry; an obsolete
 response cannot publish a result/error or end a newer request's loading state.
 
-**The One Nav Rule.** `.app-nav` — a single top bar with plain links, present
-on every route via `CatalogPage` — is the only navigation in the product.
-There is no second index, no trim-edge rail, no per-page duplicate of the
-same four links; a route with more than one way back to the same content is
-a bug, not a feature.
+**The One Global Nav Rule.** `CatalogPage` owns one `.app-nav` on every route.
+Do not duplicate global tool links in a second sidebar or rail. Contextual
+navigation is intentional: step progress, Help contents, wall/item selectors,
+dashboard back links and recovery links serve different tasks and remain.
 
 ## Elevation & Depth
 
 Mostly flat. Depth comes from the `--card` / `--ground` two-step brightness
-difference and 1–1.5px hairline borders, not from strong shadows. Two shadow
-uses exist and both are deliberately quiet:
+difference and 1–1.5px hairline borders, not from strong shadows. The named shadow
+and focus treatments below are deliberately quiet:
 
 ### Shadow Vocabulary
 
@@ -466,7 +501,18 @@ hollow and recessed. Every step of every planner follows this rule. The
 back button at the foot of a step is a `.btn-text` link with an arrow, so the
 amber primary is the only strong thing in the foot. The save step is a "Plan
 details" `SectionCard` (`SavePlanCard`, wallpaper inline): plan name and project
-are required `FormField`s with no placeholder, and the hint moves into an ⓘ.
+use shared `FormField`s with no placeholder. Plan name and project choice are
+required. New-project name is optional: its associated visible hint names the
+blank/whitespace fallback (plan/model name, otherwise localized "My plans").
+The section's completion status must agree with those semantics. Existing
+project choices do not create a new group.
+
+Equivalent persistence actions use **Save** for the step, **Name and save** for
+entering the save form, **Save this plan** for its heading, and **Save plan**,
+**Save to [project]** or **Update plan** for the actual operation. "Keep" is
+ordinary explanatory prose, not a competing action name. Model batch planning
+may say **Plan and save** because that operation also calculates. Help uses
+the same action vocabulary.
 
 ### Cards / Containers
 
@@ -540,6 +586,12 @@ radius, 42px square).
   fill, turning solid on focus. An earlier version drew the dash in `--ink-4`
   and was rejected for low contrast; the edge colour is load-bearing. Use
   `FormField` rather than hand-building the label.
+- **Conditional setup code:** Registration's setup code is not unconditionally
+  required or optional. Its visible, associated hint states the local/network
+  condition; do not infer the server's configured secret or mark this field
+  universally optional. Other auth fields and editable Defaults use the shared
+  required cues; catalogue creation requires kind/type/dimensions while its
+  stock lists, provenance and detail overrides are optional.
 - **Fields in tables (`.cell-input`):** the same recessed box and 3:1+ edge as
   any other field, only tighter (32px). An empty required cell stays neutral
   (no amber), like every other empty required field.
@@ -558,9 +610,9 @@ Cards do not clip their content, so an ⓘ near the top can open over the edge.
 The disabled primary at the foot of the step repeats the first blocker and
 links to it ("Fill in Wall width on Wall D to create the plan. Go to Wall D").
 
-Optional work gets its own card marked "(optional)" in the title, with a
-summary of its current setting instead of a status (board cutting's "Prices &
-cost optimisation · No prices · Least waste"). A card's title is the section's
+Optional work uses a disclosure with a current-setting summary (board cutting's
+"Prices & cost optimisation · No prices · Least waste"), or an optional card
+where the task needs persistent context. A card's title is the section's
 heading, so the step's `h1` names the tool ("Board cutting"), not the first
 card. In a table, required columns carry the `*` and optional ones
 "(optional)" in the header; cells never use "Optional" as a placeholder.
@@ -585,9 +637,30 @@ shown, because the closed cards are already the overview.
 
 Every plan document is read-only: a summary, an overview and selector when the
 module has multiple physical items, its details, and module-specific extras.
-The review step and saved-plan page render the same document; print follows
-that same order. Editing remains an explicit route back to the planner, never
-an inline alteration of a saved result.
+Where the workflow has a document Review step (wallpaper), Review and saved pages
+share the document formatter. Other planners may use task-specific live result
+controls rather than pretend to be identical saved documents. Shared facts must
+keep the same meaning. Print follows the document's information order. Editing
+is an explicit route back to the planner, never an inline saved-result mutation.
+
+Board profiles are labelled **Board thickness × width**; tile dimensions are
+**Tile size**, never Sheet size. Wallpaper summaries include actual repeat and
+matching values, and costs retain cents and known currency. Live Review, Print
+and Save pass the same pricing context. Historical missing currency is stated
+as unrecorded, never inferred from today's Defaults.
+
+Saved board/sheet diagrams expose **View the full diagram** through shared
+`DiagramInspection` and `Modal`: original SVG/PNG bytes, intrinsic-size image
+and a bounded, keyboard-scrollable region. Inspecting never enters Modify or
+regenerates an image; Escape returns to its trigger. Tables remain accessible
+outside the overlay. Live sheet **Download all sheets** always exports the
+combined returned asset, independently of the selected on-screen sheet.
+
+Model board grouping keeps length totals for comparison and separate named
+source rows for handoff. `boardPartsForGroup` feeds both standalone and batch
+paths. Equal lengths from distinct named components retain their own names and
+counts; missing names remain blank. Never assign the first component's name to
+unrelated rows. Legacy unnamed length maps still load.
 
 Saved board, sheet, tile, and wallpaper routes expose only the current route's
 document, title, Print, and Modify actions. Changing the plan ID retires the
@@ -607,6 +680,13 @@ narrow to label. The live diagram downloads as PNG. The live "What to buy"
 table uses the available width and keeps stock dimensions separate from length.
 The board result summary uses one consistent label-and-value style, and shows
 the stock profile only once when it is already present in the product name.
+Do not repeat a comparison/answer metric as a second dashboard. Tile candidate
+cards own purchase-with-allowance, utilization and distinct-size comparison;
+the selected detail table adds needed-before-allowance, cut/reuse counts and
+edge/sliver constraints. The sheet answer pairs its count with **Sheets to buy**
+and shows utilization once in its facts. Repeating a quantity in a stock total
+or physical sheet selector serves a different task and is intentional, not
+another hero.
 
 **The Measurement Comes First Rule.** A part description must never replace
 its actual cut length. Show the length first, preserve decimal precision, and
@@ -671,6 +751,18 @@ name when available) and a separate surface-size line, not a run-on ranking
 summary. Saved diagrams are stored images: changes to diagram generation do
 not retroactively redraw existing plans.
 
+Fresh tile calculations localize semantic candidate names and recognized generated
+SVG annotations through `tileLocalization`; switching locale re-renders from the
+original response. The same localized current image feeds live, enlarged, PNG
+export and new saves. Template measurements/letters are locale-neutral and their
+HTML instructions translate normally. User plan/opening names and geometry are
+never translated. Saved images remain immutable language snapshots, including
+older English legends; the surrounding saved-page controls follow the current
+locale without claiming the stored image was regenerated.
+New saves include a `layout_result.diagram_labels` snapshot so the shared
+backend/Lite saved-SVG redraw uses the same translated annotations. API callers
+that omit it keep the English rendering default.
+
 ### Wall Picker
 
 `WallPicker` is a segmented radio group for the walls in a wallpaper plan. Its
@@ -689,12 +781,15 @@ Multi-select controls appear only when a project contains more than one plan.
 
 The shopping list is a **workshop order sheet**, not a spreadsheet: one framed
 material sheet with a plate-paper heading band, strong stock names, and a
-quietly tinted **Quantity** column that makes the actionable purchase quantity
+quietly tinted **To buy** column that makes the actionable purchase quantity
 the visual anchor. Its 12px, weight-800 column labels are intentionally more
 prominent than a standard table's micro-labels. It remains a semantic table so
 stock, size, quantity, optional unit price, and cost stay easy to scan and
-export. Quantity already includes the project's spare allowance; the
-internal required count is not shown. Unpriced rows are deliberately quiet;
+export. **Needed** is secondary context in that cell, not another competing
+purchase column. The visible explanation states the configured board/sheet
+reserve, rounded up per combined size; tile/wallpaper retain their saved
+allowance without adding it twice. Print/CSV expose the same two counts plus
+source-plan provenance. Unpriced rows are deliberately quiet;
 the subtotal and note explain
 when the visible cost is incomplete.
 
@@ -1007,14 +1102,17 @@ The self-hosted homepage footer (`.hp-footer`) and the Partsible Lite footer end
 with one plain text link, "Buy me a coffee", to `https://ko-fi.com/nordstad`.
 It looks like its neighbours (Help, Source, Licence): same type, same colour,
 no icon, no button, no banner or popup. It opens in a new tab with
-`rel="noopener noreferrer"`. It is never shown inside the tools, it has no
+`rel="noopener noreferrer"`. Self-hosted tools omit this link; Lite keeps it in
+its shared footer, never inside a working form or result action group. It has no
 analytics event, and it does not load a Ko-fi widget or script, so the app
 makes no third-party request until the link is clicked.
 
-The Partsible Lite footer, and the quiet notice above it, stay pinned to the
-bottom of the window (`position: sticky`) so the links are always in view. On a
-short page the footer sits at the bottom of the window, not just under the
-content. Both are small, muted text on the page ground.
+The Lite shell places its footer at the bottom on short pages. Only the footer
+may stick, and only on roomy viewports (at least 700px wide and 720px high);
+the quiet dismissible notice stays in normal flow. Narrow/short screens and
+print keep both in flow so chrome does not take over the workspace. Focused
+content must remain reachable above sticky chrome; test browser zoom as well
+as CSS viewport sizes. Homepage footer destinations wrap rather than overflow.
 
 ### Notices
 
@@ -1036,8 +1134,8 @@ whole affordance, with `aria-label`/`title` covering the rest.
 
 ### Do
 
-- **Do** spend the amber accent on exactly one thing per surface: the action,
-  or the figure that leads to it.
+- **Do** reserve amber for the primary action, active state, focus and a
+  consequential figure; do not let decorative accents compete.
 - **Do** keep every card, input, and control on the radius ladder (4 → 6 →
   8–10 → 12 → 16 → full) rather than inventing an in-between value.
 - **Do** hold every label and caption to an 11px floor (12px for
@@ -1056,15 +1154,15 @@ whole affordance, with `aria-label`/`title` covering the rest.
 
 - **Don't** introduce a fifth color, or let revision red and the accent
   amber sit close enough in hue to be confused in a small mark.
-- **Don't** add a second navigation surface — trim-edge rail, sidebar, or
-  per-page duplicate menu — alongside `.app-nav`.
+- **Don't** duplicate global navigation alongside `.app-nav`; keep purposeful
+  local wayfinding and recovery.
 - **Don't** reintroduce a catalog reference number (folio code, "Section N,"
   "Fig. N.NN") anywhere in copy; a plain sequential index (`01`, `02`…) is
   fine, a fake document citation is not.
 - **Don't** put a second step's controls on screen beside the current one, or
   return an optimizer page to a single spread of every input at once. That is
   the specific thing the step flow replaced.
-- **Don't** add a shadow, gradient, or glass effect outside the two named
+- **Don't** add a shadow, gradient, or glass effect outside the named
   quiet-lift uses; depth comes from the ground/card brightness step and
   hairline borders first.
 - **Don't** let a color pair ship without checking contrast — this system
@@ -1074,6 +1172,31 @@ whole affordance, with `aria-label`/`title` covering the rest.
 ## Notes on incompleteness
 
 Recorded so future work does not mistake these for system rules:
+
+### Verification inventory
+
+| Contract | Automated evidence |
+| --- | --- |
+| Complete mm/count values; historical precision | Measurement/parts tests |
+| Modal entry/trap/recovery/isolation | `Modal.test.jsx`; interaction E2E |
+| Main/skip, destinations, field errors | `AccessibleInteraction` tests |
+| Document facts and export scope | Document/result component tests |
+| Original-image inspection and focus return | `DiagramInspection.test.jsx` |
+| Source-named model board handoffs | `modelGroups.test.js`; model flow tests |
+| Tile locale adapter; unchanged geometry/names | `tileLocalization.test.js` |
+| Optional project-name fallback | `ProjectPicker` / `useProjectChoice` tests |
+| Needed/To buy; reserve; purchase identity | Shopping/material-list tests |
+| Scrolling, long names, viewports | `documents-layout` browser E2E |
+| Build separation and delivery budgets | Both builds; Lite/self-hosted guards |
+
+Browser checks must include actual SVG/PNG rendering and keyboard interaction,
+not jsdom sizing assertions. Native Print/PDF dialogs, assistive technology,
+physical touch, zoom/history breadth and quota/crash durability still require
+explicit manual evidence; green automation is not certification. Parent review
+findings remain open where that evidence or consumer breadth is incomplete.
+Authentication, Defaults and catalogue required/optional cues must follow the
+shared rule above; remaining migrations are not intentional exceptions merely
+because their current markup differs.
 
 - **The flat type scale on `/cutting`** (an 8-step, 1.4:1 ratio topping out at
   15.5px) was the previous pass's disclosed defect. The step rebuild fixed it:

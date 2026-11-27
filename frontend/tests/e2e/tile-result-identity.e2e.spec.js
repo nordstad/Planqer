@@ -82,7 +82,7 @@ for (const [language, locale] of [['en-GB', en], ['sv-SE', sv], ['nb-NO', nb]]) 
       await expect(calculate).toBeEnabled();
       await state.release(0);
       await expect(page.getByRole('heading', { name: locale.tileUi.pickLayout, exact: true })).toHaveCount(0);
-      await expect(page.getByRole('button', { name: locale.workflow.nameIt, exact: true })).toHaveCount(0);
+      await expect(page.getByRole('button', { name: locale.ui.nameAndSave, exact: true })).toHaveCount(0);
       await expect(page.locator('.plan-step-btn').nth(1)).toBeDisabled();
       await expect(page.locator('.plan-step-btn').nth(2)).toBeDisabled();
       expect(state.saves).toEqual([]);
@@ -117,7 +117,7 @@ for (const [language, locale] of [['en-GB', en], ['sv-SE', sv], ['nb-NO', nb]]) 
           await expect(page.getByText('Outdated layout', { exact: true })).toHaveCount(0);
           await expect(page.getByTestId('api-error')).toHaveCount(0);
           await expect(page.locator('.tile-diagram-heading')).toContainText('2\u00a0600');
-          await page.getByRole('button', { name: locale.workflow.nameIt, exact: true }).click();
+          await page.getByRole('button', { name: locale.ui.nameAndSave, exact: true }).click();
           await page.locator('#tile-plan-name').fill('Current layout');
           await page.locator('form').evaluate((form) => form.requestSubmit());
           await expect.poll(() => state.saves.length).toBe(1);

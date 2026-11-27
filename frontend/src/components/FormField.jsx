@@ -11,6 +11,11 @@ export const splitUnit = (label) => {
   return match ? { text: label.slice(0, match.index), unit: match[1] } : { text: label, unit: null };
 };
 
+export const FormLegend = () => {
+  const { t } = useTranslation();
+  return <p className="form-legend"><span className="req-mark" aria-hidden="true" />{t('formUi.requiredLegend')}</p>;
+};
+
 const FormField = ({ label, unit: unitOverride, required = false, optional = false, tip, fill = false, error, errorId, className = '', children }) => {
   const { t } = useTranslation();
   const generatedId = useId();
