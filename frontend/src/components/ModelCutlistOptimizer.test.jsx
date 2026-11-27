@@ -138,6 +138,20 @@ const toSaveStep = async () => {
   await screen.findByRole('heading', { name: /plan and save/i });
 };
 
+it('explains blocked batch settings and focuses the invalid field instead of optional product or price', async () => {
+  await toSaveStep();
+  const width = screen.getByRole('spinbutton', { name: /Sheet width.*Sheet 15 mm/i });
+  fireEvent.change(width, { target: { value: '50' } });
+  await waitFor(() => expect(width).toHaveAttribute('aria-invalid', 'true'));
+  expect(width).toHaveAccessibleDescription('Enter whole millimetres from 100 to 10000. Decimals are not supported.');
+  expect(screen.getByRole('button', { name: 'Plan 3 cutlists', exact: true })).toBeDisabled();
+  fireEvent.click(screen.getByRole('button', { name: /^Go to Sheet 15 mm/i }));
+  await waitFor(() => expect(width).toHaveFocus());
+  fireEvent.change(width, { target: { value: '1200' } });
+  await waitFor(() => expect(width).not.toHaveAttribute('aria-invalid'));
+  expect(width).not.toHaveAttribute('aria-describedby');
+});
+
 beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
@@ -156,12 +170,60 @@ beforeEach(() => {
 });
 
 describe('cutlists step', () => {
+  it.each(['write', 'accessor'])('retains the model and offers retry when handoff storage fails (%s)', async (failure) => {
+    await readBench();
+    const previous = window.location.href;
+    const fail = () => { throw new DOMException('Denied', 'SecurityError'); };
+    const denial = failure === 'accessor' ? vi.spyOn(window, 'localStorage', 'get').mockImplementation(fail)
+      : vi.spyOn(Storage.prototype, 'setItem').mockImplementation(fail);
+    try {
+      fireEvent.click(screen.getAllByRole('button', { name: 'Plan alone' })[0]);
+      expect(screen.getByRole('alert')).toHaveTextContent(/Your model is still here/);
+      expect(screen.getByRole('heading', { name: 'Cutlists found' })).toBeInTheDocument();
+      expect(window.location.href).toBe(previous);
+      expect(screen.getAllByRole('button', { name: 'Plan alone' })[0]).toBeEnabled();
+    } finally { denial.mockRestore(); }
+  });
+
+  it.each(['stl', 'step', 'stp'])('rejects an oversized %s before previewing or uploading', async (extension) => {
+    const { container } = await renderFlow();
+    const file = new File(['synthetic'], `large.${extension}`);
+    Object.defineProperty(file, 'size', { value: 50 * 1024 * 1024 + 1 });
+    fireEvent.change(container.querySelector('input[type="file"]'), { target: { files: [file] } });
+    expect(screen.getByRole('alert')).toHaveTextContent(/no larger than 50 MB/);
+    expect(screen.getByRole('button', { name: 'Read the model' })).toBeDisabled();
+    expect(process3DCutlist).not.toHaveBeenCalled();
+  });
   it('identifies parts omitted because they could not be measured', async () => {
     process3DCutlist.mockResolvedValue({ ...benchModel, warnings: [{ name: 'Component 2', reason: 'too_small' }] });
 
     await readBench();
 
     expect(screen.getByRole('alert')).toHaveTextContent('These parts could not be measured and are not in this list: Component 2.');
+  });
+
+  it.each([
+    ['zero_thickness', /no measurable thickness/i],
+    ['too_few_points', /not enough geometry to measure a solid/i],
+    ['unrecognized_internal_detail', /check the solid geometry and re-export/i],
+  ])('explains the skipped-part reason %s without exposing raw diagnostic codes', async (reason, explanation) => {
+    process3DCutlist.mockResolvedValue({ ...benchModel, warnings: [{ name: 'Skipped component', reason }] });
+    await readBench();
+    const warning = screen.getByRole('alert');
+    expect(warning).toHaveTextContent('Skipped component');
+    expect(warning).toHaveTextContent(explanation);
+    expect(warning).not.toHaveTextContent(reason);
+  });
+
+  it('keeps skipped-geometry explanations available when no usable cutlists were found', async () => {
+    process3DCutlist.mockResolvedValue({ boards: [], sheets: [], warnings: [{ name: 'Flat face', reason: 'zero_thickness' }] });
+    const { container } = await renderFlow();
+    fireEvent.change(container.querySelector('input[type="file"]'), { target: { files: [new File(['solid'], 'flat.stl')] } });
+    fireEvent.click(screen.getByRole('button', { name: /read the model/i }));
+    expect(await screen.findByText(/No board or sheet parts found/)).toBeInTheDocument();
+    expect(screen.getByText(/no measurable thickness/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Remove file/i }));
+    expect(screen.queryByText(/no measurable thickness/i)).not.toBeInTheDocument();
   });
 
   it('shows neutral labels and never the word unknown', async () => {
@@ -378,6 +440,13 @@ describe('save step', () => {
     await waitFor(() => expect(saveProject).toHaveBeenCalledTimes(2));
     expect(optimizeCutting.mock.calls[0][3]).toBeNull();
     expect(saveProject.mock.calls[0][0]).toMatchObject({ materialType: '', boardCosts: null, name: 'bench · Board 45 × 95 mm' });
+    const sourceParts = [
+      { name: 'board_10', length: '500', quantity: '1' },
+      { name: 'board_2', length: '1800', quantity: '2' },
+      { name: 'board_1', length: '500', quantity: '3' },
+    ];
+    expect(optimizeCutting.mock.calls[0][0]).toEqual(sourceParts);
+    expect(saveProject.mock.calls[0][0].parts).toEqual(sourceParts);
     expect(saveSheetProject.mock.calls[0][0]).toMatchObject({ materialType: '', pricing: null, name: 'bench · Sheet 15 mm' });
   });
 

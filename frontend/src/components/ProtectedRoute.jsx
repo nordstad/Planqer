@@ -4,10 +4,11 @@ import { useAuth } from '../contexts/AuthContext';
 import AuthModal from './auth/AuthModal';
 import CatalogPage from './CatalogPage';
 import Loader from './Loader';
+import { modalTrigger } from './Modal';
 
 const ProtectedRoute = ({ children, fallbackMessage = 'access.default' }) => {
   const { t } = useTranslation();
-  const { isAuthenticated, loading, needsSetup, setupCheckError } = useAuth();
+  const { isAuthenticated, loading, needsSetup, setupCheckError, authStorageError, retrySetup } = useAuth();
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
   if (loading) {
@@ -20,6 +21,8 @@ const ProtectedRoute = ({ children, fallbackMessage = 'access.default' }) => {
     );
   }
 
+  if (authStorageError) return <CatalogPage />;
+
   if (setupCheckError) {
     return (
       <CatalogPage>
@@ -28,6 +31,7 @@ const ProtectedRoute = ({ children, fallbackMessage = 'access.default' }) => {
           <p style={{ color: 'var(--ink-2)' }}>
             {t('common.apiUnavailableDescription')}
           </p>
+          <button type="button" className="btn" onClick={retrySetup}>{t('recoveryUi.retry')}</button>
         </div>
       </CatalogPage>
     );
@@ -41,7 +45,7 @@ const ProtectedRoute = ({ children, fallbackMessage = 'access.default' }) => {
           <p style={{ color: 'var(--ink-2)', marginBottom: '18px' }}>
             {t('common.setupDescription')}
           </p>
-          <button type="button" className="btn-order" onClick={() => setAuthModalOpen(true)}>
+          <button type="button" className="btn-order" onClick={modalTrigger(() => setAuthModalOpen(true))}>
             {t('common.getStarted')}
           </button>
         </div>
@@ -56,7 +60,7 @@ const ProtectedRoute = ({ children, fallbackMessage = 'access.default' }) => {
         <div className="card" style={{ maxWidth: '420px', margin: '80px auto', textAlign: 'center' }}>
           <h2 className="section-title" style={{ marginBottom: '10px' }}>{t('common.signInRequired')}</h2>
           <p style={{ color: 'var(--ink-2)', marginBottom: '18px' }}>{t(fallbackMessage, fallbackMessage)}</p>
-          <button type="button" className="btn-order" onClick={() => setAuthModalOpen(true)}>
+          <button type="button" className="btn-order" onClick={modalTrigger(() => setAuthModalOpen(true))}>
             {t('common.signIn')}
           </button>
         </div>

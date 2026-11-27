@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from partsible.algorithms import OptimizationAlgorithm
+from partsible.measurement_inputs import MeasurementRequest
 from partsible.validation import (
     sanitize_board_lengths,
     sanitize_parts_dict,
@@ -45,7 +46,7 @@ class CostAnalysis(BaseModel):
     cost_breakdown: dict[str, float]
 
 
-class PartsibleRequest(BaseModel):
+class PartsibleRequest(MeasurementRequest):
     parts: dict[float, int]
     part_labels: dict[float, str] = Field(default_factory=dict)
     available_board_lengths: list[float]

@@ -68,7 +68,7 @@ test("a wallpaper plan is solved in the browser, saved, and can be modified from
   await page.goBack();
   await expect(savedPlan).toBeVisible();
   await savedPlan.getByRole("button", { name: "More actions" }).click();
-  await savedPlan.getByRole("menuitem", { name: "Modify", exact: true }).click();
+  await savedPlan.getByRole("button", { name: "Modify", exact: true }).click();
   await expect(page).toHaveURL(/#\/wallpaper$/);
   await expect(page.getByRole("heading", { name: "Your wallpaper plan" })).toBeVisible();
 
@@ -122,7 +122,7 @@ test("a plan is solved in the browser, saved, and still there after a reload", a
   await expect(page.getByText("Lite smoke plan")).toBeVisible();
   const savedPlan = page.locator(".plan-item").filter({ hasText: "Lite smoke plan" });
   await savedPlan.getByRole("button", { name: "More actions" }).click();
-  await savedPlan.getByRole("menuitem", { name: "Modify", exact: true }).click();
+  await savedPlan.getByRole("button", { name: "Modify", exact: true }).click();
   await expect(page.getByLabel("Name, item 1")).toHaveValue("Front rail");
 
   expect(seen.outside, "nothing may be loaded from another origin").toEqual([]);
@@ -174,6 +174,7 @@ test("a backup of what was saved can be downloaded", async ({ page }) => {
   await page.getByRole("link", { name: "My projects", exact: true }).click();
   await expect(page.getByRole("note").filter({ hasText: /no recent backup/i })).toBeVisible();
 
+  await page.getByRole("button", { name: "Backup", exact: true }).click();
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Export backup" }).click();
   const file = await download;
@@ -199,6 +200,7 @@ test("Browse files and Import backup open the file picker", async ({ page }) => 
   expect((await chooser).isMultiple()).toBe(false);
 
   await page.goto(`${APP}#/dashboard`);
+  await page.getByRole("button", { name: "Backup", exact: true }).click();
   const importChooser = page.waitForEvent("filechooser");
   await page.getByRole("button", { name: "Import backup" }).click();
   await importChooser;

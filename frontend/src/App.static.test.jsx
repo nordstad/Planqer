@@ -13,6 +13,7 @@ vi.mock('./runtime/localBackend', () => ({
   handle: vi.fn().mockResolvedValue(null),
   backupExport: vi.fn(),
   backupImport: vi.fn(),
+  backupPreview: vi.fn(),
   hasSavedWork: vi.fn().mockResolvedValue(false),
 }));
 
@@ -68,12 +69,16 @@ it('wraps the app in Lite notice and footer', async () => {
 
 it('offers a backup on the project page', async () => {
   await renderAtHash('#/dashboard');
+  const backup = await screen.findByRole('button', { name: 'Backup', exact: true });
+  expect(backup).toHaveAttribute('aria-expanded', 'false');
+  expect(screen.queryByRole('button', { name: 'Export backup' })).not.toBeInTheDocument();
+  await userEvent.click(backup);
   expect(await screen.findByRole('button', { name: 'Export backup' })).toBeInTheDocument();
 });
 
 it('puts the backup panel below the projects, not above them', async () => {
   await renderAtHash('#/dashboard');
-  const backup = await screen.findByRole('region', { name: 'Back up your projects' });
+  const backup = await screen.findByRole('region', { name: 'Backup', exact: true });
   const tabs = screen.getByRole('button', { name: /^(Projects|My projects)/ });
   expect(tabs.compareDocumentPosition(backup) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 });

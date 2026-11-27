@@ -5,6 +5,7 @@ import i18n from '../i18n';
 import ProductPicker, { StockSuggestions } from './ProductPicker';
 import { createCatalogueEntry, getAuthToken, getCatalogue, updateUserSettings } from '../utils/api';
 import { AuthContext } from '../contexts/authState';
+import { LOCAL_DATA_RESTORED } from '../hooks/useLocalDataRevision';
 import {
   emptySelection, freeTextSelection, resetCatalogueCache, suggestSelection, typeSelection,
 } from '../utils/catalogue';
@@ -71,6 +72,34 @@ beforeEach(() => {
 const box = () => screen.getByRole('combobox', { name: 'Product' });
 
 describe('searching and picking', () => {
+  it('refreshes mounted suggestions after restore without selecting a replacement', async () => {
+    const onSelect = vi.fn();
+    await show(<Harness onSelect={onSelect} />);
+    fireEvent.focus(box());
+    fireEvent.change(box(), { target: { value: '45x95' } });
+    expect(await screen.findByRole('option', { name: /Framing timber 45 × 95/ })).toBeInTheDocument();
+    getCatalogue.mockResolvedValue({
+      data: { ...catalogue, products: [entry('restored', 'regel', 45, 195)] }, etag: '"restored"',
+    });
+    resetCatalogueCache();
+    await act(async () => window.dispatchEvent(new Event(LOCAL_DATA_RESTORED)));
+    expect(screen.queryByRole('option', { name: /Framing timber 45 × 95/ })).not.toBeInTheDocument();
+    fireEvent.change(box(), { target: { value: '45x195' } });
+    expect(await screen.findByRole('option', { name: /Framing timber 45 × 195/ })).toBeInTheDocument();
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it('keeps an already selected product snapshot after its catalogue entry is restored differently', async () => {
+    const onSelect = vi.fn();
+    await show(<Harness initial={typeSelection(catalogue.types[0], catalogue.products[0])} onSelect={onSelect} />);
+    expect(screen.getByText('Framing timber 45 × 95 mm')).toBeInTheDocument();
+    getCatalogue.mockResolvedValue({ data: { ...catalogue, products: [] }, etag: '"restored"' });
+    resetCatalogueCache();
+    await act(async () => window.dispatchEvent(new Event(LOCAL_DATA_RESTORED)));
+    expect(screen.getByText('Framing timber 45 × 95 mm')).toBeInTheDocument();
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
   it.each([
     ['en-GB', 'Search by name or size, e.g. “stud 45x95”'],
     ['sv-SE', 'Sök på namn eller mått, t.ex. ”regel 45x95”'],

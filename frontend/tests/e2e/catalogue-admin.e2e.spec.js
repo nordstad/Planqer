@@ -29,7 +29,7 @@ test.describe('Admin catalogue', () => {
   test('adds, finds, hides and restores a product for the local instance', async ({ page }) => {
     await page.addInitScript((token) => localStorage.setItem('auth_token', token), accessToken);
     await page.goto('/admin');
-    await page.getByRole('tab', { name: 'Catalogue' }).click();
+    await page.getByRole('button', { name: 'Catalogue', exact: true }).click();
 
     await page.getByRole('button', { name: 'Add product' }).click();
     const form = page.getByRole('form', { name: 'Add product' });
@@ -50,7 +50,7 @@ test.describe('Admin catalogue', () => {
     await expect(page.getByRole('option', { name: /48 × 98 mm/ })).toBeVisible();
 
     await page.goto('/admin');
-    await page.getByRole('tab', { name: 'Catalogue' }).click();
+    await page.getByRole('button', { name: 'Catalogue', exact: true }).click();
     await page.getByLabel('Search products').fill('45x95');
     await page.getByRole('row', { name: /Framing timber.*45 × 95 mm/ }).getByRole('button', { name: 'Hide' }).click();
     await page.getByLabel('Show').selectOption('hidden');
@@ -77,7 +77,7 @@ test.describe('Admin catalogue', () => {
 
     await page.addInitScript((token) => localStorage.setItem('auth_token', token), accessToken);
     await page.goto('/admin');
-    await page.getByRole('tab', { name: 'Catalogue' }).click();
+    await page.getByRole('button', { name: 'Catalogue', exact: true }).click();
     await page.getByLabel('Search products').fill('45x95');
     // Built-ins already ship with Partsible: nothing to suggest.
     await expect(page.getByRole('row', { name: /Framing timber.*45 × 95 mm/ }).getByRole('button', { name: 'Suggest to Partsible' })).toHaveCount(0);

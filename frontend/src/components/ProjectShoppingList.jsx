@@ -1,6 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { materialRowsForPurchase, summarizeMaterialPricing } from '../utils/materialList';
-import { materialLabel } from '../utils/materialLabel';
+import { materialRowsForPurchase, purchaseMaterialLabel, summarizeMaterialPricing } from '../utils/materialList';
 
 const ProjectShoppingList = ({ projects, spareMargin = 10 }) => {
   const { t } = useTranslation();
@@ -16,22 +15,22 @@ const ProjectShoppingList = ({ projects, spareMargin = 10 }) => {
       </div>
        {values.length > 0 ? (
         <>
-          <div className="project-shopping-sheet">
+          <div className="project-shopping-sheet" role="region" tabIndex={0} aria-label={t('workflow.whatToBuy')}>
             <table className="cat-table project-shopping-table">
             <thead>
               <tr>
                 <th>{t('ui.stock')}</th>
                 <th>{t('workflow.sizeMm')}</th>
-                  <th className="shopping-buy-head">{t('legacy.quantity')}</th>
+                  <th className="shopping-buy-head">{t('ui.toBuy')}</th>
                 {pricing.hasPrices && <><th>{t('ui.priceEach')}</th><th>{t('ui.cost')}</th></>}
               </tr>
             </thead>
             <tbody>
               {values.map((row, index) => (
                 <tr key={`${row.material}-${row.size}-${row.pricePerUnit ?? ''}-${row.currency ?? ''}-${index}`}>
-                  <td className="shopping-stock">{materialLabel(row.material, t)}</td>
+                  <td className="shopping-stock">{purchaseMaterialLabel(row, t)}</td>
                   <td>{row.size.replace(' mm', '')}</td>
-                  <td className="shopping-buy"><strong>{row.quantityToBuy}</strong></td>
+                   <td className="shopping-buy"><strong>{row.quantityToBuy}</strong><small>{t('ui.needed')}: {row.neededQuantity}</small></td>
                   {pricing.hasPrices && <>
                     <td className={row.pricePerUnit ? 'shopping-price' : 'shopping-price is-unpriced'}>{row.pricePerUnit ? `${row.pricePerUnit.toFixed(2)} ${row.currency} · ${row.pricesIncludeVat ? t('ui.includingVat') : t('ui.excludingVat')} (${row.vatRate}%)` : row._priceConflict ? t('ui.conflictingPrices') : t('ui.notPriced')}</td>
                     <td className="shopping-cost">{row.pricePerUnit ? `${(row.pricePerUnit * row.quantityToBuy).toFixed(2)} ${row.currency}` : '—'}</td>
@@ -41,6 +40,7 @@ const ProjectShoppingList = ({ projects, spareMargin = 10 }) => {
             </tbody>
             </table>
           </div>
+          <p className="shopping-pricing-note">{t('documentUi.reserveExplanation', { percent: spareMargin })}</p>
           {pricing.total !== null && <p className="shopping-pricing-total">
             {pricing.complete
               ? t('ui.projectMaterialTotal', { total: pricing.total.toFixed(2), currency: pricing.currency, vat: basis })

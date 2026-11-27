@@ -1,20 +1,23 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { LanguageProvider } from '../contexts/LanguageContext';
 import TileOptimizer from './TileOptimizer';
 import i18n from '../i18n';
-import { optimizeTileLayout, getProjectGroups, getUserTileProjects, getUserSettings } from '../utils/api';
+import { optimizeTileLayout, getProjectGroups, getUserTileProjects, getUserSettings, saveTileProject } from '../utils/api';
+
+const mockUser = { id: 'user-1', email: 'user@example.com' };
 
 vi.mock('../utils/api', () => ({
   optimizeTileLayout: vi.fn(),
   getProjectGroups: vi.fn(),
   getUserTileProjects: vi.fn(),
   getUserSettings: vi.fn(),
+  saveTileProject: vi.fn(),
 }));
 
 vi.mock('../contexts/AuthContext', () => ({
   useAuth: () => ({
-    user: { id: 'user-1', email: 'user@example.com' },
+    user: mockUser,
     isAuthenticated: true,
     logout: vi.fn(),
   }),
@@ -42,7 +45,219 @@ beforeEach(() => {
   getProjectGroups.mockResolvedValue([]);
   getUserTileProjects.mockResolvedValue([]);
   getUserSettings.mockResolvedValue({ default_currency: 'SEK', default_vat_rate: 25, default_prices_include_vat: true });
-  optimizeTileLayout.mockResolvedValue({ candidates: [candidate], recommended_index: 0 });
+  optimizeTileLayout.mockReset().mockResolvedValue({ candidates: [candidate], recommended_index: 0 });
+  saveTileProject.mockReset().mockResolvedValue({ id: 'synthetic-plan', name: 'Current layout' });
+});
+
+it.each(['tile-surface-width', 'tile-surface-height', 'tile-width', 'tile-height', 'tile-thickness', 'tile-joint-width', 'tile-perimeter'])('associates only the affected tile measurement with its error: %s', async (id) => {
+  render(<MemoryRouter><LanguageProvider><TileOptimizer /></LanguageProvider></MemoryRouter>);
+  const field = document.getElementById(id);
+  const original = field.value;
+  fireEvent.change(field, { target: { value: '1.5' } });
+  await waitFor(() => expect(field).toHaveAttribute('aria-invalid', 'true'));
+  expect(field).toHaveAccessibleDescription(/\S/);
+  const valid = [...document.querySelectorAll('#tile-surface input, #tile-tile input, #tile-joint input')]
+    .filter((input) => input !== field);
+  for (const input of valid) expect(input).not.toHaveAttribute('aria-describedby', field.getAttribute('aria-describedby'));
+  fireEvent.change(field, { target: { value: original } });
+  await waitFor(() => expect(field).not.toHaveAttribute('aria-invalid'));
+  expect(field).not.toHaveAttribute('aria-describedby');
+});
+
+it('exposes edited opening errors while calculation is disabled and targets the faulty field', async () => {
+  render(<MemoryRouter><LanguageProvider><TileOptimizer /></LanguageProvider></MemoryRouter>);
+  fireEvent.click(await screen.findByRole('button', { name: 'Add opening' }));
+  const fields = [...document.querySelectorAll('#tile-openings input')];
+  expect(fields.every((field) => !field.hasAttribute('aria-invalid'))).toBe(true);
+  for (const [index, value] of ['100', '0', '5000', '500'].entries()) {
+    fireEvent.change(fields[index], { target: { value } });
+  }
+  await waitFor(() => expect(fields[2]).toHaveAttribute('aria-invalid', 'true'));
+  expect(fields[2]).toHaveAccessibleDescription(i18n.t('tileUi.rightEdge'));
+  expect(fields[0]).not.toHaveAttribute('aria-invalid');
+  expect(screen.getByRole('button', { name: /Calculate layout/i })).toBeDisabled();
+  fireEvent.click(screen.getByRole('button', { name: 'Go to Openings' }));
+  await waitFor(() => expect(fields[2]).toHaveFocus());
+  fireEvent.change(fields[2], { target: { value: '500' } });
+  await waitFor(() => expect(fields[2]).not.toHaveAttribute('aria-invalid'));
+  expect(fields[2]).not.toHaveAttribute('aria-describedby');
+  expect(screen.getByRole('button', { name: /Calculate layout/i })).toBeEnabled();
+  fireEvent.click(document.querySelector('#tile-openings .btn-text.is-quiet'));
+  expect(document.querySelectorAll('#tile-openings input')).toHaveLength(0);
+});
+
+it('explains fractional candidate counts as whole counts rather than positive numbers', async () => {
+  render(<MemoryRouter><LanguageProvider><TileOptimizer /></LanguageProvider></MemoryRouter>);
+  fireEvent.click(await screen.findByRole('button', { name: new RegExp(i18n.t('workflow.sliverGuardBreakage')) }));
+  fireEvent.change(document.querySelector('#tile-candidates'), { target: { value: '1.5' } });
+  expect(await screen.findByText(i18n.t('validation.positiveQuantity'))).toBeVisible();
+  fireEvent.click(screen.getByRole('button', { name: `Go to ${i18n.t('workflow.sliverGuardBreakage')}` }));
+  await waitFor(() => expect(document.querySelector('#tile-candidates')).toHaveFocus());
+  expect(screen.getByRole('button', { name: /Calculate layout/i })).toBeDisabled();
+  expect(optimizeTileLayout).not.toHaveBeenCalled();
+});
+
+describe('tile input/result identity', () => {
+  const deferred = () => {
+    let resolve;
+    let reject;
+    const promise = new Promise((yes, no) => { resolve = yes; reject = no; });
+    return { promise, resolve, reject };
+  };
+  const response = (label) => ({ candidates: [{ ...candidate, label }], recommended_index: 0 });
+  const renderTile = () => render(
+    <MemoryRouter initialEntries={['/tile-layout']}>
+      <LanguageProvider><TileOptimizer /></LanguageProvider>
+    </MemoryRouter>,
+  );
+
+  it.each([
+    ['surface width', 'input#tile-surface-width', '2600'],
+    ['surface height', 'input#tile-surface-height', '1300'],
+    ['tile width', 'input#tile-width', '350'],
+    ['tile height', 'input#tile-height', '650'],
+    ['material', 'select#tile-material', 'porcelain'],
+    ['thickness', 'input#tile-thickness', '12'],
+    ['joint', 'input#tile-joint-width', '4'],
+    ['perimeter gap', 'input#tile-perimeter', '2'],
+    ['bond', 'select#tile-bond', 'stack'],
+    ['row offset', 'input#tile-offset', '25'],
+    ['sliver threshold', 'input#tile-min-edge', '50'],
+    ['waste allowance', 'input#tile-waste', '15'],
+    ['candidate count', 'input#tile-candidates', '3'],
+    ['rotation', '#tile-tile input[type=checkbox]'],
+    ['offcut reuse', '#tile-guard input[type=checkbox]'],
+  ])('ignores an old result after editing %s during calculation', async (_name, selector, value) => {
+    const old = deferred();
+    optimizeTileLayout.mockReturnValueOnce(old.promise);
+    renderTile();
+    fireEvent.click(await screen.findByRole('button', { name: new RegExp(i18n.t('workflow.sliverGuardBreakage')) }));
+    fireEvent.click(screen.getByRole('button', { name: /Calculate layout/i }));
+    const input = document.querySelector(selector);
+    if (input.type === 'checkbox') fireEvent.click(input);
+    else fireEvent.change(input, { target: { value } });
+    await act(async () => { old.resolve(response('Outdated layout')); });
+
+    expect(screen.queryByRole('heading', { name: 'Pick a layout' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Name and save/ })).not.toBeInTheDocument();
+    expect(document.querySelectorAll('.plan-step-btn[data-state="locked"]')).toHaveLength(2);
+    expect(screen.getByRole('button', { name: /Calculate layout/i })).toBeEnabled();
+    expect(saveTileProject).not.toHaveBeenCalled();
+  });
+
+  it.each(['add', 'edit', 'remove'])('retires a pending layout when openings %s', async (action) => {
+    const old = deferred();
+    optimizeTileLayout.mockReturnValueOnce(old.promise);
+    renderTile();
+    await screen.findByLabelText('Surface width (mm)');
+    if (action !== 'add') {
+      fireEvent.click(screen.getByRole('button', { name: 'Add opening', exact: true }));
+      [...document.querySelectorAll('#tile-openings input')].forEach((input, index) => {
+        fireEvent.change(input, { target: { value: index < 2 ? '0' : '100' } });
+      });
+    }
+    fireEvent.click(screen.getByRole('button', { name: /Calculate layout/i }));
+    expect(optimizeTileLayout).toHaveBeenCalledTimes(1);
+    if (action === 'add') fireEvent.click(screen.getByRole('button', { name: 'Add opening', exact: true }));
+    else if (action === 'edit') fireEvent.change(document.querySelector('#tile-openings input'), { target: { value: '50' } });
+    else fireEvent.click(screen.getByRole('button', { name: 'Remove', exact: true }));
+    await act(async () => { old.resolve(response('Outdated layout')); });
+    expect(screen.queryByRole('heading', { name: 'Pick a layout' })).not.toBeInTheDocument();
+    expect(document.querySelectorAll('.plan-step-btn[data-state="locked"]')).toHaveLength(2);
+    expect(saveTileProject).not.toHaveBeenCalled();
+  });
+
+  it('retires a pending calculation when another synthetic saved input is loaded', async () => {
+    const old = deferred();
+    optimizeTileLayout.mockReturnValueOnce(old.promise);
+    getUserTileProjects.mockResolvedValue([{
+      id: 'synthetic-input', name: 'Different inputs',
+      surface_data: { width: 3200, height: 1500 },
+      tile_data: { width: 400, height: 400, thickness: 12 },
+      bond_data: { pattern: 'stack', joint_width: 3, perimeter_gap: 0 },
+    }]);
+    renderTile();
+    fireEvent.click(await screen.findByRole('button', { name: /Calculate layout/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Load a saved plan', exact: true }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Load', exact: true }));
+    await act(async () => { old.resolve(response('Outdated layout')); });
+    expect(screen.getByLabelText('Surface width (mm)')).toHaveValue(3200);
+    expect(screen.queryByRole('heading', { name: 'Pick a layout' })).not.toBeInTheDocument();
+    expect(document.querySelectorAll('.plan-step-btn[data-state="locked"]')).toHaveLength(2);
+  });
+
+  it.each(['success', 'failure'])('ignores an obsolete %s without ending a newer calculation', async (outcome) => {
+    const old = deferred();
+    const current = deferred();
+    optimizeTileLayout.mockReturnValueOnce(old.promise).mockReturnValueOnce(current.promise);
+    renderTile();
+    const width = await screen.findByLabelText('Surface width (mm)');
+    fireEvent.click(screen.getByRole('button', { name: /Calculate layout/i }));
+    fireEvent.change(width, { target: { value: '2600' } });
+    expect(screen.getByRole('button', { name: /Calculate layout/i })).toBeEnabled();
+    fireEvent.click(screen.getByRole('button', { name: /Calculate layout/i }));
+    expect(optimizeTileLayout).toHaveBeenCalledTimes(2);
+    await act(async () => {
+      if (outcome === 'success') old.resolve(response('Outdated layout'));
+      else old.reject(new Error('Outdated failure'));
+    });
+    expect(screen.getByRole('button', { name: /Calculating|Solving/i })).toBeDisabled();
+    expect(screen.queryByTestId('api-error')).not.toBeInTheDocument();
+    expect(screen.queryByText('Outdated layout')).not.toBeInTheDocument();
+    await act(async () => { current.resolve(response('Current layout')); });
+    expect(await screen.findByText('Current layout')).toBeInTheDocument();
+  });
+
+  it.each(['success', 'failure'])('keeps the newer result and save payload after an old %s arrives last', async (outcome) => {
+    const old = deferred();
+    const current = deferred();
+    optimizeTileLayout.mockReturnValueOnce(old.promise).mockReturnValueOnce(current.promise);
+    getProjectGroups.mockResolvedValue([{ id: 'synthetic-group', name: 'Synthetic project' }]);
+    renderTile();
+    const width = await screen.findByLabelText('Surface width (mm)');
+    fireEvent.click(screen.getByRole('button', { name: /Calculate layout/i }));
+    fireEvent.change(width, { target: { value: '2600' } });
+    fireEvent.submit(width.closest('form'));
+    await act(async () => { current.resolve(response('Current layout')); });
+    expect(await screen.findByText('Current layout')).toBeInTheDocument();
+    await act(async () => {
+      if (outcome === 'success') old.resolve(response('Outdated layout'));
+      else old.reject(new Error('Outdated failure'));
+    });
+    expect(screen.queryByText('Outdated layout')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('api-error')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Name and save/ }));
+    fireEvent.change(screen.getByLabelText('Plan name'), { target: { value: 'Current layout' } });
+    fireEvent.submit(screen.getByLabelText('Plan name').closest('form'));
+    await waitFor(() => expect(saveTileProject).toHaveBeenCalledWith(expect.objectContaining({
+      surfaceWidth: '2600',
+      candidate: expect.objectContaining({ label: 'Current layout' }),
+    })));
+  });
+
+  it('keeps current failures visible and permits a normal retry', async () => {
+    optimizeTileLayout.mockRejectedValueOnce(new Error('Current failure')).mockResolvedValueOnce(response('Retry layout'));
+    renderTile();
+    fireEvent.click(await screen.findByRole('button', { name: /Calculate layout/i }));
+    expect(await screen.findByTestId('api-error')).toHaveTextContent('Current failure');
+    expect(screen.getByRole('button', { name: /Calculate layout/i })).toBeEnabled();
+    fireEvent.click(screen.getByRole('button', { name: /Calculate layout/i }));
+    expect(await screen.findByText('Retry layout')).toBeInTheDocument();
+    expect(screen.queryByTestId('api-error')).not.toBeInTheDocument();
+  });
+
+  it('still locks Layout and Keep after editing an already completed layout', async () => {
+    renderTile();
+    fireEvent.click(await screen.findByRole('button', { name: /Calculate layout/i }));
+    await screen.findByRole('heading', { name: 'Pick a layout' });
+    fireEvent.click(screen.getByRole('button', { name: /Name and save/ }));
+    expect(await screen.findByRole('heading', { name: 'Save this plan' })).toBeInTheDocument();
+    fireEvent.click(document.querySelectorAll('.plan-step-btn')[0]);
+    fireEvent.change(screen.getByLabelText('Surface width (mm)'), { target: { value: '2600' } });
+    expect(document.querySelectorAll('.plan-step-btn[data-state="locked"]')).toHaveLength(2);
+    expect(screen.queryByLabelText('Plan name')).not.toBeInTheDocument();
+    expect(saveTileProject).not.toHaveBeenCalled();
+  });
 });
 
 it('uses compact controls for tile dimensions', async () => {
@@ -72,9 +287,9 @@ it('renders translated labels on the tile layout save step', async () => {
    fireEvent.change(await screen.findByLabelText('Thickness (mm)'), { target: { value: '10' } });
     fireEvent.click(await screen.findByRole('button', { name: /Calculate layout/i }));
   await screen.findByRole('heading', { name: 'Pick a layout' });
-  fireEvent.click(await screen.findByRole('button', { name: 'Name it', exact: true }));
+  fireEvent.click(await screen.findByRole('button', { name: /Name and save/ }));
 
-  await waitFor(() => expect(screen.getByRole('heading', { name: 'Save this layout' })).toBeInTheDocument());
+  await waitFor(() => expect(screen.getByRole('heading', { name: 'Save this plan' })).toBeInTheDocument());
   expect(screen.getByText(/Give the plan a name/)).toBeInTheDocument();
   expect(screen.queryByLabelText('Save as')).not.toBeInTheDocument();
   expect(screen.getByLabelText('Plan name')).toBeInTheDocument();
@@ -194,4 +409,3 @@ it('starts with a 10 mm thickness, and names it as missing when it is cleared', 
   expect(screen.getByRole('button', { name: 'Go to Tile' })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /Calculate layout/i })).toBeDisabled();
 });
-

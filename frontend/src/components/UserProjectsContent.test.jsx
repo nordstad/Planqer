@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import UserProjectsContent from './UserProjectsContent';
 import { LanguageProvider } from '../contexts/LanguageContext';
@@ -15,6 +15,7 @@ import {
   downloadProjectImage,
   renameProjectGroup,
   movePlanToProject,
+  updateProject,
 } from '../utils/api';
 import { printProjectPlans } from '../utils/printProject';
 
@@ -156,11 +157,47 @@ it('confirms deletion of a plan on the project detail route', async () => {
   renderDetail();
 
   await openMoreActions();
-  fireEvent.click(await screen.findByRole('menuitem', { name: 'Delete', exact: true }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Delete', exact: true }));
   const dialog = await screen.findByRole('alertdialog');
   fireEvent.click(within(dialog).getByRole('button', { name: 'Delete', exact: true }));
 
   await waitFor(() => expect(deleteProject).toHaveBeenCalledWith(plan.id));
+});
+
+it('keeps the plan rename draft after failure and blocks duplicate pending commits', async () => {
+  let fail;
+  updateProject.mockReset().mockImplementationOnce(() => new Promise((_, reject) => { fail = reject; }));
+  renderDetail();
+  fireEvent.click(await screen.findByRole('button', { name: 'Rename Cut list' }));
+  const input = screen.getByLabelText('Plan name');
+  fireEvent.change(input, { target: { value: 'Draft rails' } });
+  fireEvent.keyDown(input, { key: 'Enter' });
+  fireEvent.blur(input);
+  expect(updateProject).toHaveBeenCalledTimes(1);
+  await act(async () => fail(new Error('Synthetic failure')));
+  expect(input).toHaveValue('Draft rails');
+  expect(screen.getByRole('alert')).toHaveTextContent('Synthetic failure');
+  updateProject.mockResolvedValueOnce({});
+  fireEvent.keyDown(input, { key: 'Enter' });
+  await screen.findByRole('heading', { name: 'Draft rails' });
+  expect(updateProject).toHaveBeenCalledTimes(2);
+});
+
+it('does not show a failed collection as a missing project and retries without reloading', async () => {
+  getUserProjects.mockRejectedValueOnce(new Error('Synthetic collection failure'));
+  renderDetail();
+  expect(await screen.findByRole('alert')).toHaveTextContent('Synthetic collection failure');
+  expect(screen.queryByText('That project no longer exists.')).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+  expect(await screen.findByRole('heading', { name: 'Lab' })).toBeInTheDocument();
+});
+
+it('refreshes mounted project names after a committed local restore notification', async () => {
+  renderDetail();
+  await screen.findByRole('heading', { name: 'Lab' });
+  getProjectGroups.mockResolvedValueOnce([{ ...group, name: 'Restored workshop' }]);
+  act(() => window.dispatchEvent(new Event('partsible:local-data-restored')));
+  expect(await screen.findByRole('heading', { name: 'Restored workshop' })).toBeInTheDocument();
 });
 
 it('moves a plan to another project from its accessible menu', async () => {
@@ -170,7 +207,7 @@ it('moves a plan to another project from its accessible menu', async () => {
 
   await openMoreActions();
   fireEvent.click(await screen.findByRole('button', { name: 'Move to…' }));
-  fireEvent.click(screen.getByRole('menuitem', { name: 'Workshop' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Workshop' }));
 
   await waitFor(() => expect(movePlanToProject).toHaveBeenCalledWith(expect.objectContaining({ id: plan.id, projectType: 'board' }), otherGroup.id));
   expect(screen.queryByText(plan.name, { selector: 'h3' })).not.toBeInTheDocument();
@@ -200,7 +237,7 @@ it('routes a saved plan to its optimizer for modification', async () => {
   renderDetail();
 
   await openMoreActions();
-  fireEvent.click(await screen.findByRole('menuitem', { name: 'Modify', exact: true }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Modify', exact: true }));
 
   expect(screen.getByTestId('location')).toHaveTextContent('/cutting?edit=plan-1');
 });
@@ -212,12 +249,12 @@ it('routes saved sheet and tile plans to their optimizers', async () => {
   renderDetail();
 
   await openMoreActions(0);
-  fireEvent.click(await screen.findByRole('menuitem', { name: 'Modify', exact: true }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Modify', exact: true }));
   expect(screen.getByTestId('location')).toHaveTextContent('/sheet-cutting?edit=sheet-plan-1');
 
-  fireEvent.keyDown(document, { key: 'Escape' });
+  fireEvent.keyDown(screen.getAllByRole('button', { name: 'More actions' })[0], { key: 'Escape' });
   await openMoreActions(1);
-  fireEvent.click(await screen.findByRole('menuitem', { name: 'Modify', exact: true }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Modify', exact: true }));
   expect(screen.getByTestId('location')).toHaveTextContent('/tile-layout?edit=tile-plan-1');
 });
 
@@ -250,6 +287,23 @@ it('prints only the selected plans', async () => {
 
   await waitFor(() => expect(printProjectPlans).toHaveBeenCalled());
   expect(printProjectPlans.mock.calls.at(-1)[0].plans).toHaveLength(2);
+});
+
+it('lets no-image wallpaper documents be selected and cleared like other printable plans', async () => {
+  getWallpaperProjects.mockResolvedValue([{
+    ...secondPlan, has_svg_image: false, cutlist_image: null,
+    plan_result: { rolls_to_buy: 2 }, wallpaper_data: { name: 'Synthetic wallpaper' },
+  }]);
+  renderDetail();
+  const checkbox = await screen.findByRole('checkbox', { name: 'Select plan "Second cut list"' });
+  expect(checkbox).toBeEnabled();
+  fireEvent.click(screen.getByRole('button', { name: 'Select all' }));
+  expect(checkbox).toBeChecked();
+  fireEvent.click(checkbox);
+  expect(checkbox).not.toBeChecked();
+  expect(screen.getByRole('button', { name: 'Print diagram (1)' })).toBeEnabled();
+  fireEvent.click(screen.getByRole('button', { name: 'Clear selection' }));
+  expect(screen.getByRole('button', { name: 'Print diagrams (0)' })).toBeDisabled();
 });
 
 it('prints the selected shopping list', async () => {

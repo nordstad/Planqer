@@ -8,7 +8,7 @@ test('creates the first administrator through the browser on a fresh Compose ins
   await expect(page.getByRole('heading', { name: /set up partsible/i })).toBeVisible();
   await page.getByRole('button', { name: /get started/i }).click();
 
-  const setupDialog = page.getByRole('dialog', { name: /create account/i });
+  const setupDialog = page.getByRole('dialog', { name: /set up partsible/i });
   await setupDialog.getByLabel('Email').fill(email);
   await setupDialog.getByLabel('Password', { exact: true }).fill(password);
   await setupDialog.getByLabel('Confirm password', { exact: true }).fill(password);

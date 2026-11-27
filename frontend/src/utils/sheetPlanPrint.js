@@ -2,9 +2,10 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { sheetSummaryRows } from '../components/SheetPlanDocument';
 import { printProjectPlans } from './printProject';
+import { formatMillimetres } from './measurements';
 
 const h = createElement;
-const mm = (value) => `${Math.round(value)} mm`;
+const mm = (value) => `${formatMillimetres(value)} mm`;
 
 const printCss = `
   .sheet-plan-print { --ink: #16150f; --ink-3: #6f6a55; --rule-hair: #e9e6da; }
@@ -32,7 +33,7 @@ const SheetPrintSection = ({ sheet, diagram, index, t }) => h('section', { class
     h('tbody', { key: 'body' }, sheet.parts.map((part, partIndex) => h('tr', { key: `${part.part_id}-${partIndex}` }, [
       h('th', { key: 'part' }, part.part_id),
       h('td', { key: 'size' }, `${mm(part.width)} × ${mm(part.height)}`),
-      h('td', { key: 'position' }, `${Math.round(part.x)}, ${Math.round(part.y)}`),
+      h('td', { key: 'position' }, `${formatMillimetres(part.x)}; ${formatMillimetres(part.y)}`),
       h('td', { key: 'turned' }, part.rotated ? '90°' : '—'),
     ]))),
   ]),

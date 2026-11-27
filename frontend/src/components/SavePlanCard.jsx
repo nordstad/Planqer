@@ -76,6 +76,7 @@ const SavePlanCard = ({
         onChange={onGroupId}
         newName={newName}
         onNewNameChange={onNewName}
+        fallbackName={projectName}
       />
     </SectionCard>
   );

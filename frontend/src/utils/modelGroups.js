@@ -11,6 +11,7 @@ import {
 } from './catalogue';
 import { canonicalMaterial, matchMaterial } from './materialMatch';
 import { validateBoards, SAW_KERF_MIN, SAW_KERF_MAX } from './validators';
+import { millimetresError } from './measurementInput';
 
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
 export const naturalCompare = (a, b) => collator.compare(String(a), String(b));
@@ -41,12 +42,13 @@ export const groupBoards = (items, catalogue = null) => {
     const material = item.material || null;
     const id = `board|${materialKey(catalogue, 'board', material) || ''}|${width}x${thickness}`;
     if (!grouped.has(id)) {
-      grouped.set(id, { id, kind: 'board', material, width, thickness, quantity: 0, names: [], lengths: [] });
+      grouped.set(id, { id, kind: 'board', material, width, thickness, quantity: 0, names: [], lengths: [], parts: [] });
     }
     const g = grouped.get(id);
     g.quantity += item.quantity;
     g.names.push(item.name);
     g.lengths.push({ length: Math.round(item.length), qty: item.quantity });
+    g.parts.push({ name: item.name || '', length: Math.round(item.length), quantity: item.quantity });
   });
   return [...grouped.values()].map((g) => ({
     ...g,
@@ -230,28 +232,24 @@ export const applySettingsToAll = (configs, groups, sourceId) => {
   return next;
 };
 
-const inRange = (value, min, max) => {
-  const n = parseFloat(value);
-  return Number.isFinite(n) && n >= min && n <= max;
-};
-
 export const validateGroupConfig = (group, config, t) => {
   const kerfMax = group.kind === 'board' ? SAW_KERF_MAX : 50;
-  const kerf = !config.kerf || parseFloat(config.kerf) < SAW_KERF_MIN
-    ? t('modelUi.kerfZero')
-    : parseFloat(config.kerf) > kerfMax ? t('modelUi.kerfWide') : '';
+  const kerf = millimetresError(config.kerf, SAW_KERF_MIN, kerfMax, t);
   if (group.kind === 'board') {
     const boards = validateBoards(config.boards.map((b) => b.length), t);
     return { boards, kerf, hasErrors: boards.some(Boolean) || !!kerf };
   }
-  const width = inRange(config.sheetWidth, 100, 10000) ? '' : t('modelUi.sheetWidthPositive');
-  const height = inRange(config.sheetHeight, 100, 10000) ? '' : t('modelUi.sheetHeightPositive');
-  const sheetKerf = inRange(config.kerf, SAW_KERF_MIN, 50) ? '' : t('modelUi.kerfZero');
-  return { width, height, kerf: sheetKerf, hasErrors: !!(width || height || sheetKerf) };
+  const width = millimetresError(config.sheetWidth, 100, 10000, t);
+  const height = millimetresError(config.sheetHeight, 100, 10000, t);
+  return { width, height, kerf, hasErrors: !!(width || height || kerf) };
 };
 
 /* What "Plan alone" hands to the board and sheet pages. The whole selection
    goes with it, so the product and its details arrive as they were chosen. */
+export const boardPartsForGroup = (group) => (group.parts || group.lengths.map((part) => ({
+  name: '', length: part.length, quantity: part.qty,
+}))).map((part) => ({ ...part, length: String(part.length), quantity: String(part.quantity) }));
+
 export const standaloneHandoff = (group, config, planName, sheetWord = 'Sheet') => {
   const productFields = config.product?.type ? { product: config.product } : {};
   if (group.kind === 'board') {
@@ -259,7 +257,7 @@ export const standaloneHandoff = (group, config, planName, sheetWord = 'Sheet') 
       key: 'partsible-3d-import',
       path: '/cutting?import=3d',
       data: {
-        parts: Object.fromEntries(group.lengths.map((l) => [l.length, l.qty])),
+        parts: boardPartsForGroup(group),
         projectName: planName,
         ...productFields,
         boardThickness: group.thickness,

@@ -6,6 +6,7 @@ Each kind is saved through the real endpoint and the stored image must equal
 what the operation returns.
 """
 
+import base64
 import json
 import uuid
 
@@ -116,9 +117,33 @@ def test_a_saved_sheet_layout_has_the_diagram_the_server_stores(client, headers)
     assert body == {"image": saved["cutlist_image"]}
 
 
-def test_a_saved_tile_layout_has_the_diagram_the_server_stores(client, headers):
+@pytest.mark.parametrize(
+    "labels",
+    [
+        None,
+        {
+            "title": "Plattlayout",
+            "surface": "Yta",
+            "full": "Hel platta",
+            "notched": "Urjackad",
+            "sliver": "Smal bit",
+            "cuts": "Kapstorlekar – se kaplista",
+        },
+        {
+            "title": "Flislegging",
+            "surface": "Flate",
+            "full": "Hel flis",
+            "notched": "Med utsparing",
+            "sliver": "Smal bit",
+            "cuts": "Kappstørrelser – se kappliste",
+        },
+    ],
+)
+def test_a_saved_tile_layout_has_the_diagram_the_server_stores(client, headers, labels):
     _, result = call("tile_layout", TILE_PLAN)
     candidate = result["candidates"][result["recommended_index"]]
+    if labels:
+        candidate = {**candidate, "diagram_labels": labels}
     surface = {"width": 909, "height": 1206, "cutouts": []}
 
     saved = client.post(
@@ -146,6 +171,14 @@ def test_a_saved_tile_layout_has_the_diagram_the_server_stores(client, headers):
     assert status == 200
     assert saved["cutlist_image"]
     assert body == {"image": saved["cutlist_image"]}
+    svg = base64.b64decode(saved["cutlist_image"].split(",")[1]).decode()
+    assert "Splashback" in svg
+    assert (labels or {"full": "Full tile"})["full"] in svg
+    if labels:
+        assert labels["surface"] in svg
+        assert labels["notched"] in svg
+        assert labels["sliver"] in svg
+        assert saved["layout_result"]["diagram_labels"] == labels
 
 
 def test_a_saved_wallpaper_plan_has_the_diagram_the_server_stores(client, headers):

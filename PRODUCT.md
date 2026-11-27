@@ -16,9 +16,11 @@ cutting to a client's order with real margins. Partsible serves them, but when a
 design decision splits the two, it favors the hobbyist: less shop-floor jargon,
 more guidance, no assumption that the user owns CAD or shop-management software.
 
-Design consequence: the user is frequently standing in a workshop or a lumber
-aisle, not sitting at a desk. Confidence in the number matters more than
-density of numbers.
+Design consequence: prioritize laptop and desktop use, followed by tablets.
+Planning involves substantial data entry and reviewing detailed results. Mobile
+must look good and remain usable, but it is not the primary design target and
+must not dictate the main workflow. Confidence in the numbers matters on every
+device.
 
 ## Product Purpose
 
@@ -148,6 +150,25 @@ Absent — must not be fabricated:
 
 ## Product Principles
 
+### Design and Maintenance
+
+1. **One product, one interaction language.** Pages share their look and feel,
+   terminology, control behavior, validation, and navigation patterns. Different
+   layouts are appropriate when the task requires them, not merely because a
+   page was built separately.
+2. **UX serves the task.** Make the next action, current state, and recovery from
+   mistakes clear. Prioritize laptop and desktop workflows, followed by tablets,
+   while keeping mobile usable.
+3. **Keep it simple (KISS).** Remove unnecessary controls, repeated information,
+   and decoration. Preserve measurements, constraints, and guidance that prevent
+   mistakes; simplicity must not hide essential facts.
+4. **Reuse before inventing.** Prefer existing design tokens and shared
+   components when the interaction genuinely matches. Improve shared patterns
+   centrally rather than adding page-specific copies. Avoid speculative
+   abstractions for one-off needs.
+
+### Planning and Trust
+
 1. **The plan must survive the workshop.** Every result has to be readable and
    trustworthy away from the desk, where the user can't re-check the inputs.
 2. **Physical truth over clean math.** Kerf, real board sizes, and material cost
@@ -161,6 +182,7 @@ Absent — must not be fabricated:
 
 ## Accessibility & Inclusion
 
-No product-specific standard has been established. Note the operating context:
-the interface is read in workshop lighting and often on a phone, so contrast and
-touch-target quality carry more weight here than on a desk-bound tool.
+The existing design system specifies WCAG 2.2 AA as the accessibility baseline.
+Laptop and desktop workflows take priority, followed by tablets; mobile remains
+supported. Contrast, keyboard access, readable measurements, and usable touch
+targets matter across the supported devices.

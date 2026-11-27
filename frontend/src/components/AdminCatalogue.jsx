@@ -5,14 +5,16 @@
   stored in this instance's database.
 */
 
-import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import ConfirmDialog from './ConfirmDialog';
+import { modalTrigger } from './Modal';
 import CatalogueEntryForm from './CatalogueEntryForm';
 import CatalogueSuggest from './CatalogueSuggest';
 import Loader from './Loader';
 import CatalogueCountrySelect from './CatalogueCountrySelect';
 import { useCatalogueChoice } from '../hooks/useCatalogueChoice';
+import { useLocalDataRevision } from '../hooks/useLocalDataRevision';
 import { liteContext } from '../utils/mode';
 import {
   createCatalogueEntry, getAdminCatalogue, hideCatalogueEntry, resetCatalogueEntry,
@@ -28,31 +30,46 @@ const SMALL = { padding: '5px 10px', minHeight: 0 };
 const PANEL_CELL = { textAlign: 'left', fontSize: '14px', fontWeight: 400, letterSpacing: 'normal', color: 'var(--ink)', paddingTop: 0 };
 
 const AdminCatalogue = () => {
+  const selection = useCatalogueChoice();
+  const restored = useLocalDataRevision();
+  const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState('all');
+  // A country owns its rows, drafts, confirmations, and pending work.
+  return <CatalogueView key={`${selection.country ?? 'default'}:${restored}`} {...selection} query={query} setQuery={setQuery} filter={filter} setFilter={setFilter} />;
+};
+
+const CatalogueView = ({ choice, country, setChoice, query, setQuery, filter, setFilter }) => {
   const { t, i18n } = useTranslation();
-  const { choice, country, setChoice } = useCatalogueChoice();
   const [items, setItems] = useState(null);
   const [catalogue, setCatalogue] = useState(null);
   const [error, setError] = useState(null);
-  const [query, setQuery] = useState('');
-  const [filter, setFilter] = useState('all');
   const [panel, setPanel] = useState(null);
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState(null);
   const [pendingReset, setPendingReset] = useState(null);
+  const current = useRef(false);
+  const requestRevision = useRef(0);
 
   const refresh = useCallback(async () => {
+    if (!current.current) return;
+    const revision = ++requestRevision.current;
     try {
       setError(null);
       resetCatalogueCache();
-      const [list, vocabulary] = await Promise.all([getAdminCatalogue(), loadCatalogue()]);
+      const [list, vocabulary] = await Promise.all([getAdminCatalogue(country), loadCatalogue(country)]);
+      if (!current.current || revision !== requestRevision.current) return;
       setItems(list);
       setCatalogue(vocabulary);
     } catch (err) {
-      setError(err.message);
+      if (current.current && revision === requestRevision.current) setError(err.message);
     }
   }, [country]);
 
-  useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => {
+    current.current = true;
+    refresh();
+    return () => { current.current = false; };
+  }, [refresh]);
 
   const shown = useMemo(
     () => (items ? filterItems(items, { query, filter, catalogue, language: i18n.language }) : []),
@@ -60,23 +77,41 @@ const AdminCatalogue = () => {
   );
 
   const run = async (action, { inForm = false } = {}) => {
+    if (!current.current || !items || busy) return;
     setBusy(true);
     setError(null);
     setFormError(null);
     try {
       await action();
+      if (!current.current) return;
       setPanel(null);
       await refresh();
     } catch (err) {
+      if (!current.current) return;
       if (inForm) setFormError(err.message);
       else setError(err.message);
     } finally {
-      setBusy(false);
+      if (current.current) setBusy(false);
     }
   };
 
+  const countrySelector = (
+    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
+      <label className="form-label" htmlFor="admin-catalogue-country" style={{ margin: 0 }}>{t('catalogueCountry.label')}</label>
+      <CatalogueCountrySelect
+        id="admin-catalogue-country"
+        value={choice || 'auto'}
+        onChange={(next) => setChoice(next === 'auto' ? null : next)}
+        style={{ width: 'auto', minWidth: '160px' }}
+      />
+    </div>
+  );
+
   if (!items && !error) {
-    return <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}><Loader /></div>;
+    return <div>{countrySelector}<div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}><Loader /></div></div>;
+  }
+  if (!items && error) {
+    return <div>{countrySelector}<p className="alert-danger" role="alert">{error}</p><button type="button" className="btn" onClick={refresh}>{t('recoveryUi.retry')}</button></div>;
   }
 
   const countryName = catalogue?.country_name || t('catalogueAdmin.genericCountry');
@@ -97,15 +132,7 @@ const AdminCatalogue = () => {
   return (
     <div>
       {error && <div className="alert-danger" role="alert" style={{ marginBottom: '16px' }}>{error}</div>}
-      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
-        <label className="form-label" htmlFor="admin-catalogue-country" style={{ margin: 0 }}>{t('catalogueCountry.label')}</label>
-        <CatalogueCountrySelect
-          id="admin-catalogue-country"
-          value={choice || 'auto'}
-          onChange={(next) => setChoice(next === 'auto' ? null : next)}
-          style={{ width: 'auto', minWidth: '160px' }}
-        />
-      </div>
+      {countrySelector}
       <p className="synthetic" style={{ whiteSpace: 'normal', marginBottom: '12px' }}>
         {t('catalogueAdmin.intro', { country: countryName, ...liteContext() })}
       </p>
@@ -121,7 +148,7 @@ const AdminCatalogue = () => {
             {LIST_FILTERS.map((key) => <option key={key} value={key}>{t(`catalogueAdmin.filter.${key}`)}</option>)}
           </select>
         </div>
-        <button type="button" className="btn btn-primary" onClick={() => { setFormError(null); setPanel({ mode: 'add' }); }}>{t('catalogueAdmin.addTitle')}</button>
+        <button type="button" className="btn btn-primary" disabled={busy || !items || !catalogue} onClick={() => { setFormError(null); setPanel({ mode: 'add' }); }}>{t('catalogueAdmin.addTitle')}</button>
       </div>
 
       {panel?.mode === 'add' && catalogue && (
@@ -130,7 +157,7 @@ const AdminCatalogue = () => {
           creating
           busy={busy}
           error={formError}
-          onSubmit={(payload) => run(() => createCatalogueEntry(payload), { inForm: true })}
+          onSubmit={(payload) => run(() => createCatalogueEntry(payload, country), { inForm: true })}
           onCancel={() => setPanel(null)}
         />
       )}
@@ -154,7 +181,7 @@ const AdminCatalogue = () => {
               const open = panel && panel.mode !== 'add' && panel.item.product.id === product.id ? panel.mode : null;
               return (
                 <Fragment key={product.id}>
-                  <tr style={item.hidden ? { opacity: 0.6 } : undefined}>
+                  <tr>
                     <td style={{ textAlign: 'left', color: 'var(--ink)', fontWeight: 700 }}>
                       {itemName(item, catalogue, i18n.language)}
                       {item.origin === 'local' && shippedSizes.has(sizeKey(product)) && (
@@ -174,12 +201,12 @@ const AdminCatalogue = () => {
                       <span className="flex justify-end gap-2" style={{ flexWrap: 'wrap' }}>
                         <button type="button" className="btn" style={SMALL} disabled={busy} onClick={() => { setFormError(null); setPanel({ mode: 'edit', item }); }}>{t('catalogueAdmin.edit')}</button>
                         {item.hidden ? (
-                          <button type="button" className="btn" style={SMALL} disabled={busy} onClick={() => run(() => restoreCatalogueEntry(product.id))}>{t('catalogueAdmin.restore')}</button>
+                          <button type="button" className="btn" style={SMALL} disabled={busy} onClick={() => run(() => restoreCatalogueEntry(product.id, country))}>{t('catalogueAdmin.restore')}</button>
                         ) : (
-                          <button type="button" className="btn" style={SMALL} disabled={busy} onClick={() => run(() => hideCatalogueEntry(product.id))}>{t('catalogueAdmin.hide')}</button>
+                          <button type="button" className="btn" style={SMALL} disabled={busy} onClick={() => run(() => hideCatalogueEntry(product.id, country))}>{t('catalogueAdmin.hide')}</button>
                         )}
                         {isLocalOrModified(item) && (
-                          <button type="button" className="btn btn-outline-danger" style={SMALL} disabled={busy} onClick={() => setPendingReset(item)}>
+                          <button type="button" className="btn btn-outline-danger" style={SMALL} disabled={busy} onClick={modalTrigger(() => setPendingReset(item))}>
                             {item.origin === 'local' ? t('ui.delete') : t('catalogueAdmin.revert')}
                           </button>
                         )}
@@ -198,7 +225,7 @@ const AdminCatalogue = () => {
                             initial={formFromProduct(product)}
                             busy={busy}
                             error={formError}
-                            onSubmit={(payload) => run(() => updateCatalogueEntry(product.id, payload), { inForm: true })}
+                            onSubmit={(payload) => run(() => updateCatalogueEntry(product.id, payload, country), { inForm: true })}
                             onCancel={() => setPanel(null)}
                           />
                         )}
@@ -229,7 +256,7 @@ const AdminCatalogue = () => {
         title={pendingReset?.origin === 'local' ? t('ui.delete') : t('catalogueAdmin.revert')}
         message={pendingReset && t(pendingReset.origin === 'local' ? 'catalogueAdmin.deleteConfirm' : 'catalogueAdmin.revertConfirm', { name: itemName(pendingReset, catalogue, i18n.language), ...liteContext() })}
         confirmLabel={pendingReset?.origin === 'local' ? t('ui.delete') : t('catalogueAdmin.revert')}
-        onConfirm={() => { const { product } = pendingReset; setPendingReset(null); run(() => resetCatalogueEntry(product.id)); }}
+        onConfirm={() => { const { product } = pendingReset; setPendingReset(null); run(() => resetCatalogueEntry(product.id, country)); }}
         onCancel={() => setPendingReset(null)}
       />
     </div>

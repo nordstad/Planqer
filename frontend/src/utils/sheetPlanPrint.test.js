@@ -14,6 +14,32 @@ const project = {
 };
 
 describe('buildSheetPlanHtml', () => {
+  it('preserves fractional stock and exact placements throughout the print pack', () => {
+    const fractionalProject = {
+      ...project, sheet_thickness: 18.125, sheet_width: 1200.5, sheet_height: 2500.25,
+      optimization_result: {
+        ...project.optimization_result,
+        sheets: project.optimization_result.sheets.map((sheet, index) => ({
+          ...sheet,
+          parts: [{
+            ...sheet.parts[0], width: 800.5, height: 400.25,
+            x: index ? 0 : 3.125, y: index ? 400.0625 : 0.0625,
+          }],
+        })),
+      },
+    };
+    const doc = new DOMParser().parseFromString(buildSheetPlanHtml(fractionalProject, t, 'en-GB'), 'text/html');
+    expect(doc.body.textContent).toContain('18,125 mm');
+    expect(doc.body.textContent).toMatch(/1\s?200,5 mm × 2\s?500,25 mm/);
+    const sheets = doc.querySelectorAll('.sheet-plan-sheet');
+    expect(sheets).toHaveLength(2);
+    expect(sheets[0].textContent).toContain('800,5 mm × 400,25 mm');
+    expect(sheets[0].textContent).toContain('3,125; 0,0625');
+    expect(sheets[1].textContent).toContain('0; 400,0625');
+    expect(sheets[1].textContent).toContain('90°');
+    expect(doc.body.textContent).not.toContain('801 mm × 400 mm');
+  });
+
   it('prints the summary, every sheet diagram, and the placements', () => {
     const html = buildSheetPlanHtml(project, t, 'en-GB');
     expect(html).toContain('Summary');

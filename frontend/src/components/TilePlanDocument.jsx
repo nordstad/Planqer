@@ -4,14 +4,15 @@ import TileCutListTable from './TileCutListTable';
 import TileDiagram from './TileDiagram';
 import { useState } from 'react';
 import useTileNavigation from './useTileNavigation';
+import { formatMillimetres } from '../utils/measurements';
 
-const mm = (value) => `${Math.round(value)} mm`;
+const mm = (value) => `${formatMillimetres(value)} mm`;
 
 export const tileSummaryRows = (project, t, language) => {
   const result = project.layout_result;
   const rows = [
     [t('sheetPlan.material'), project.tile_data.material_type],
-    [t('sheetPlan.size'), `${mm(project.tile_data.width)} × ${mm(project.tile_data.height)}`],
+    [t('documentUi.tileSize'), `${mm(project.tile_data.width)} × ${mm(project.tile_data.height)}`],
     [t('ui.tilesToBuy'), result.tiles_to_purchase_with_waste ?? result.tiles_to_purchase],
     [t('wallpaperUi.summarySaved'), project.updated_at.slice(0, 10)],
   ];

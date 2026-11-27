@@ -8,17 +8,16 @@
 */
 
 import { useEffect, useState } from 'react';
+import DiagramInspection from './DiagramInspection';
 import { useTranslation } from 'react-i18next';
 import Disclosure from './Disclosure';
 import { ArrowLeft, ArrowRight, Download } from './icons';
+import { formatMillimetres as mm } from '../utils/measurements';
 
-const mm = (n) => (Number.isFinite(n) ? Math.round(n).toLocaleString('sv-SE') : '—');
-
-const area = (a) => (a >= 1000000 ? `${(a / 1000000).toFixed(2)} m²` : `${mm(a)} mm²`);
+const area = (a) => (a >= 1000000 ? `${(a / 1000000).toFixed(2)} m²` : `${mm(Math.round(a))} mm²`);
 
 const SheetResultDisplay = ({ result, projectName }) => {
   const { t } = useTranslation();
-  const [diagramOpen, setDiagramOpen] = useState(false);
   const [placementsOpen, setPlacementsOpen] = useState(false);
   const [selectedSheetIndex, setSelectedSheetIndex] = useState(0);
   useEffect(() => setSelectedSheetIndex(0), [result]);
@@ -76,31 +75,25 @@ const SheetResultDisplay = ({ result, projectName }) => {
           </div>
         )}
         {hasDiagram && (
-          <button
-            type="button"
-            className="cut-list-visualization"
-            style={{ width: '100%', cursor: 'zoom-in' }}
-            onClick={() => setDiagramOpen(true)}
-            aria-label={t('ui.sheetDiagramAria', {
+          <DiagramInspection
+            src={selectedDiagram}
+            className="sheet-diagram-image cut-list-visualization"
+            label={t('ui.sheetDiagramAria', {
               number: activeSheetIndex + 1,
               width: mm(selectedSheet.sheet_width),
               height: mm(selectedSheet.sheet_height),
               parts: selectedSheet.parts_count,
               percent: selectedSheet.efficiency.toFixed(1),
             })}
-          >
-            <img
-              src={selectedDiagram}
-              alt={t('ui.sheetDiagramAria', {
+            dialogLabel={t('ui.sheetLayoutDiagram')}
+            alt={t('ui.sheetDiagramAria', {
                 number: activeSheetIndex + 1,
                 width: mm(selectedSheet.sheet_width),
                 height: mm(selectedSheet.sheet_height),
                 parts: selectedSheet.parts_count,
                 percent: selectedSheet.efficiency.toFixed(1),
-              })}
-              className="sheet-diagram-image"
-            />
-          </button>
+            })}
+          />
         )}
         <figcaption className="flex flex-wrap items-center justify-between gap-3" style={{ marginTop: '12px' }}>
            <p className="synthetic" style={{ margin: 0 }}>
@@ -108,7 +101,7 @@ const SheetResultDisplay = ({ result, projectName }) => {
            </p>
           {hasDiagram && (
             <button type="button" className="btn btn-primary" onClick={downloadDiagram}>
-              <Download /> {t('workflow.downloadDiagram')}
+              <Download /> {t('documentUi.downloadAllSheets')}
             </button>
           )}
         </figcaption>
@@ -121,7 +114,7 @@ const SheetResultDisplay = ({ result, projectName }) => {
           open={placementsOpen}
           onToggle={() => setPlacementsOpen(v => !v)}
         >
-          <table className="cat-table">
+          <div className="document-table-scroll" role="region" tabIndex={0} aria-label={t('workflow.exactPlacements')}><table className="cat-table">
             <thead>
               <tr><th>{t('ui.part')}</th><th>{t('ui.sheet')}</th><th>{t('workflow.sizeMm')}</th><th>{t('ui.atXY')}</th><th>{t('ui.turned')}</th><th>{t('ui.area')}</th></tr>
             </thead>
@@ -132,33 +125,17 @@ const SheetResultDisplay = ({ result, projectName }) => {
                     <td>{part.part_id}</td>
                     <td>{sheetIndex + 1}</td>
                     <td>{mm(part.width)} × {mm(part.height)}</td>
-                    <td>{Math.round(part.x)}, {Math.round(part.y)}</td>
+                    <td>{mm(part.x)}; {mm(part.y)}</td>
                     <td>{part.rotated ? '90°' : '—'}</td>
                     <td>{area(part.width * part.height)}</td>
                   </tr>
                 ))
               )}
             </tbody>
-          </table>
+          </table></div>
         </Disclosure>
       </div>
 
-      {diagramOpen && (
-         <div className="cat-overlay" role="dialog" aria-modal="true" aria-label={t('ui.sheetLayoutDiagram')} onClick={() => setDiagramOpen(false)}>
-          <div className="cat-sheet" style={{ maxWidth: '95vw' }} onClick={(e) => e.stopPropagation()}>
-            <div className="masthead" style={{ marginTop: 0 }}>
-               <span className="masthead-brand" style={{ fontSize: '13px' }}>{t('ui.sheetLayout')}</span>
-              <span className="masthead-section" />
-              <button type="button" className="masthead-flash" onClick={() => setDiagramOpen(false)}>
-                 {t('common.close')}
-              </button>
-            </div>
-            <div style={{ padding: '16px' }}>
-                <img src={selectedDiagram} alt={t('ui.sheetDiagramAlt')} style={{ display: 'block', width: '100%', height: 'auto' }} />
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 };

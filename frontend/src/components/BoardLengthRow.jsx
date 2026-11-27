@@ -6,10 +6,12 @@ import { Strike } from './icons';
 import { useTranslation } from 'react-i18next';
 import { translateWithFallback } from '../i18n/translate';
 import { MIN_BOARD_LENGTH, MAX_BOARD_LENGTH } from '../utils/validators';
+import { useId } from 'react';
 
 const BoardLengthRow = ({ board, index, handleBoardChange, handleBoardsPaste, removeBoard, error, canRemove, inPlan, currency = 'SEK', price = '', handlePriceChange = () => {} }) => {
   const mm = parseFloat(board);
   const { t } = useTranslation();
+  const errorId = useId();
   const text = (key, vars) => translateWithFallback(t, key, vars);
   // once a plan exists, the stock the plan actually buys is knocked out in signal
   const solved = inPlan !== null && inPlan !== undefined;
@@ -20,16 +22,18 @@ const BoardLengthRow = ({ board, index, handleBoardChange, handleBoardsPaste, re
         <input
           aria-label={text('ui.boardLengthAria', { row: index + 1 })}
           type="number"
-          step="any"
+          step="1"
           value={board}
           onChange={(e) => handleBoardChange(index, e.target.value)}
           onPaste={(e) => handleBoardsPaste(index, e)}
           className={`cell-input ${error ? 'is-error' : ''}`}
           required
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? errorId : undefined}
            min={MIN_BOARD_LENGTH}
            max={MAX_BOARD_LENGTH}
         />
-        {error && <p className="text-danger text-[11px] font-semibold text-right">{error}</p>}
+        {error && <p id={errorId} className="text-danger text-[11px] font-semibold text-right">{error}</p>}
       </td>
       {solved ? (
         <td style={{ width: '86px' }} className={inPlan ? 'cell-in-plan' : undefined}>

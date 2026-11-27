@@ -106,7 +106,7 @@ const ModelGroupSettings = ({ group, config, errors, label, currency, onChange, 
               onUseLengths={(lengths) => onChange({ boards: lengths.map((length) => ({ length: String(length), price: '' })) })}
             />
             <div style={{ marginTop: '18px' }}>
-              <FormField label={t('legacy.sawBlade')} unit="mm" required>
+              <FormField label={t('legacy.sawBlade')} unit="mm" required error={errors.kerf}>
                 <input
                   id={`${idBase}-kerf`}
                   type="number"
@@ -118,13 +118,12 @@ const ModelGroupSettings = ({ group, config, errors, label, currency, onChange, 
                   className={`form-input kerf-input dimension-input ${errors.kerf ? 'form-input-error' : ''}`}
                 />
               </FormField>
-              {errors.kerf && <p className="text-danger text-[12.5px] font-semibold" style={{ marginTop: '5px' }}>{errors.kerf}</p>}
             </div>
           </>
         ) : (
           <>
             <div className="grid gap-x-6 gap-y-4 md:grid-cols-2">
-              <FormField label={t('legacy.width')} unit="mm" required>
+              <FormField label={t('legacy.width')} unit="mm" required error={errors.width}>
                 <input
                   type="number" step="0.1" min="100" max="10000"
                   value={config.sheetWidth}
@@ -133,7 +132,7 @@ const ModelGroupSettings = ({ group, config, errors, label, currency, onChange, 
                   aria-label={`${t('ui.sheetWidthAria')} — ${label}`}
                 />
               </FormField>
-              <FormField label={t('legacy.height')} unit="mm" required>
+              <FormField label={t('legacy.height')} unit="mm" required error={errors.height}>
                 <input
                   type="number" step="0.1" min="100" max="10000"
                   value={config.sheetHeight}
@@ -142,7 +141,7 @@ const ModelGroupSettings = ({ group, config, errors, label, currency, onChange, 
                   aria-label={`${t('ui.sheetHeightAria')} — ${label}`}
                 />
               </FormField>
-              <FormField label={t('legacy.kerf')} unit="mm" required>
+              <FormField label={t('legacy.kerf')} unit="mm" required error={errors.kerf}>
                 <input
                   type="number" step="0.1" min={SAW_KERF_MIN} max="50"
                   value={config.kerf}
@@ -165,11 +164,6 @@ const ModelGroupSettings = ({ group, config, errors, label, currency, onChange, 
               selection={config.product}
               onUseFormat={(format) => onChange({ sheetWidth: String(format.width), sheetHeight: String(format.height) })}
             />
-            {(errors.width || errors.height || errors.kerf) && (
-              <p className="text-danger text-[12.5px] font-semibold" style={{ marginTop: '10px' }}>
-                {errors.width || errors.height || errors.kerf}
-              </p>
-            )}
           </>
         )}
 

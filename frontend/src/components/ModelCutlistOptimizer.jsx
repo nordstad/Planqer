@@ -51,12 +51,15 @@ import {
   groupBoards, groupSheets, groupLabel, planNameFor, resolveMaterial,
   groupDimensions, groupMemoryKey,
   initialConfig, boardCostPayloads, sheetPricingPayload, matchExistingPlans,
-  applySettingsToAll, validateGroupConfig, standaloneHandoff,
+  applySettingsToAll, validateGroupConfig, standaloneHandoff, boardPartsForGroup,
 } from '../utils/modelGroups';
 import { loadCatalogue, buildSnapshot } from '../utils/catalogue';
+import { focusSection } from '../utils/focusSection';
 import { colourForModelGroup, colourForModelPart, partKey } from '../utils/modelPreview';
 import { VISUALLY_HIDDEN } from '../utils/visuallyHidden';
+import { modalTrigger } from './Modal';
 import { modelFileAccept } from '../utils/modelFileAccept';
+import { rememberProjectChoice } from '../hooks/useProjectChoice';
 
 const ModelPreview = lazy(() => import('./ModelPreview'));
 const ModelPartsPreview = lazy(() => import('./ModelPartsPreview'));
@@ -78,6 +81,7 @@ const formatFileSize = (bytes) => {
 const extensionOf = (filename) => filename.toLowerCase().match(/\.[a-z0-9]+$/)?.[0] || '';
 const baseName = (filename) => filename.replace(/\.[a-z0-9]+$/i, '');
 const ACCEPTED = ['.stl', '.step', '.stp'];
+const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
 const isStl = (candidate) => extensionOf(candidate.name) === '.stl';
 
 const spaced = (n) => Math.round(n).toLocaleString('sv-SE');
@@ -134,7 +138,8 @@ const ModelCutlistOptimizer = () => {
   // Validation follows the debounced values so errors don't flash while typing; a
   // cutlist too new to be in them yet is checked as it stands.
   const errorsOf = (group, source) => validateGroupConfig(group, source[group.id] || configs[group.id], t);
-  const stockHasErrors = selectedGroups.some((g) => errorsOf(g, debouncedConfigs).hasErrors);
+  const blockedGroup = selectedGroups.find((g) => errorsOf(g, debouncedConfigs).hasErrors);
+  const stockHasErrors = !!blockedGroup;
 
   const allDone = selectedGroups.length > 0 && selectedGroups.every((g) => statuses[g.id] === 'done');
   const savedCount = selectedGroups.filter((g) => statuses[g.id] === 'done').length;
@@ -200,6 +205,7 @@ const ModelCutlistOptimizer = () => {
 
   /* ── the model ─────────────────────────────────────────────────────── */
   const retireAll = () => {
+    setWarnings([]);
     setGroups([]);
     setSelectedIds(new Set());
     setExpandedIds(new Set());
@@ -208,6 +214,7 @@ const ModelCutlistOptimizer = () => {
     setConfigs({});
     setStatuses({});
     setStatusMessages({});
+    setSavedPlans([]);
     setApiError('');
     setAppliedNote('');
   };
@@ -216,6 +223,12 @@ const ModelCutlistOptimizer = () => {
     if (!candidate) return;
     if (!ACCEPTED.includes(extensionOf(candidate.name))) {
        setError(t('ui.modelFileRequired'));
+      return;
+    }
+    if (candidate.size > MAX_UPLOAD_BYTES) {
+      setFile(null);
+      retireAll();
+      setError(t('measurementUi.uploadTooLarge'));
       return;
     }
     setFile(candidate);
@@ -252,6 +265,7 @@ const ModelCutlistOptimizer = () => {
     }
     setReading(true);
     setError(null);
+    setWarnings([]);
     try {
       const isStep = ['.step', '.stp'].includes(extensionOf(file.name));
        const data = isStep ? await processStepCutlist(file) : await process3DCutlist(file);
@@ -309,8 +323,12 @@ const ModelCutlistOptimizer = () => {
 
   const planGroupAlone = (group) => {
     const { key, path, data } = standaloneHandoff(group, configs[group.id], planNameOf(group), t('ui.sheet'));
-    localStorage.setItem(key, JSON.stringify(data));
-    window.location.href = path;
+    try {
+      localStorage.setItem(key, JSON.stringify(data));
+      window.location.href = path;
+    } catch {
+      setApiError(t('measurementUi.handoffFailed'));
+    }
   };
 
   const totalComponents = groups.reduce((n, g) => n + g.quantity, 0);
@@ -337,7 +355,7 @@ const ModelCutlistOptimizer = () => {
     setStatuses((prev) => ({ ...prev, [group.id]: 'running' }));
     try {
       if (group.kind === 'board') {
-        const parts = group.lengths.map((l) => ({ length: String(l.length), quantity: String(l.qty) }));
+        const parts = boardPartsForGroup(group);
         const stock = config.boards.map((row) => row.length);
         const { costData, saved: savedCosts } = boardCostPayloads(config, money);
         const result = await optimizeCutting(parts, stock, config.kerf, costData);
@@ -391,7 +409,6 @@ const ModelCutlistOptimizer = () => {
     setApiError('');
     if (selectedGroups.some((g) => errorsOf(g, configs).hasErrors)) return;
     setSaving(true);
-    setSavedPlans([]);
     let projectGroupId;
     try {
       projectGroupId = await resolveProject();
@@ -415,7 +432,7 @@ const ModelCutlistOptimizer = () => {
       const moved = await Promise.all(savedPlans.map((plan) => movePlanToProject(plan, group.id)));
       setSavedPlans(moved.map((plan, index) => ({ ...plan, projectType: savedPlans[index].projectType })));
       setSelectedGroupId(group.id);
-      localStorage.setItem('partsible.lastProjectGroup', group.id);
+      rememberProjectChoice(group.id);
       return true;
     } catch (err) {
       setApiError(t('projectUi.moveFailed', { message: err.message }));
@@ -456,6 +473,13 @@ const ModelCutlistOptimizer = () => {
       {error && step === STEP_MODEL && (
         <div className="alert-danger" style={{ marginBottom: '20px' }} role="alert">{error}</div>
       )}
+      {warnings.length > 0 && step <= STEP_CUTLISTS && <div role="alert" className="synthetic">
+        <p>{t('modelUi.skippedParts', { count: warnings.length, names: warnings.map((warning) => warning.name).join(', ') })}</p>
+        <ul>{warnings.map((warning, index) => <li key={index}>
+          {warning.name}: {t(warning.reason === 'zero_thickness' ? 'modelUi.skippedZeroThickness'
+            : warning.reason === 'too_few_points' ? 'modelUi.skippedTooFewPoints' : 'modelUi.skippedGeometry')}
+        </li>)}</ul>
+      </div>}
 
       {/* ── 01 · the model ─────────────────────────────────────────────── */}
       {step === STEP_MODEL && (
@@ -508,7 +532,7 @@ const ModelCutlistOptimizer = () => {
                 <p className="synthetic" style={{ margin: '0 auto 16px' }}>
                    {t('modelUi.acceptedModelFiles')}
                 </p>
-                <label className="btn-primary" style={{ cursor: 'pointer', position: 'relative' }}>
+                <label className="btn-primary file-picker" style={{ cursor: 'pointer', position: 'relative' }}>
                   <input
                     type="file"
                     accept={modelFileAccept()}
@@ -581,7 +605,8 @@ const ModelCutlistOptimizer = () => {
               </p>
             </div>
             </div>
-            {warnings.length > 0 && <p role="alert" className="synthetic">{t('modelUi.skippedParts', { count: warnings.length, names: warnings.map((warning) => warning.name).join(', ') })}</p>}
+            <p className="synthetic">{t('measurementUi.modelRounding')}</p>
+            {apiError && <div className="alert-danger" role="alert">{apiError}</div>}
 
           <Suspense fallback={<p className="synthetic" role="status">{t('modelUi.partsPreviewLoading')}</p>}>
             <ModelPartsPreview
@@ -722,7 +747,7 @@ const ModelCutlistOptimizer = () => {
 
       {/* ── 03 · plan and save the batch ─────────────────────────────────── */}
       {step === STEP_SAVE && selectedGroups.length > 0 && (
-        <div className="step-view is-form">
+        <div className="step-view is-form is-model-settings">
           {!isAuthenticated ? (
              <SignInRequired message={t('modelUi.signInCutlist')} />
           ) : (
@@ -744,7 +769,7 @@ const ModelCutlistOptimizer = () => {
 
               {!allDone && (
                 <>
-                  {selectedGroups.map((group) => (
+                  <div className="model-settings-grid">{selectedGroups.map((group) => (
                     <ModelGroupSettings
                       key={group.id}
                       group={group}
@@ -757,7 +782,7 @@ const ModelCutlistOptimizer = () => {
                         ? () => applyToAll(group.id)
                         : null}
                     />
-                  ))}
+                  ))}</div>
                   {appliedNote && <p className="synthetic" role="status" style={{ marginBottom: '20px' }}>{appliedNote}</p>}
 
                 </>
@@ -775,6 +800,7 @@ const ModelCutlistOptimizer = () => {
                       value={selectedGroupId}
                       onChange={setSelectedGroupId}
                       newName={newProjectName}
+                      fallbackName={modelName}
                       onNewNameChange={setNewProjectName}
                     />
                     {Object.keys(availableMatches).length > 0 && (
@@ -802,7 +828,7 @@ const ModelCutlistOptimizer = () => {
                           <td style={{ width: '140px' }}>
                             {status === 'done' && <span style={{ color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', gap: '5px' }}><Tick size={14} /> {t('legacy.saved')}</span>}
                             {status === 'running' && <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Loader /> {t('legacy.planning')}</span>}
-                            {status === 'error' && <span style={{ color: 'var(--revision)', display: 'inline-flex', alignItems: 'center', gap: '5px' }}><Strike size={12} /> {t('legacy.failed')}</span>}
+                            {status === 'error' && <div role="alert"><span style={{ color: 'var(--revision)', display: 'inline-flex', alignItems: 'center', gap: '5px' }}><Strike size={12} /> {t('legacy.failed')}</span><p>{statusMessages[group.id]}</p><p>{t('measurementUi.retryFailed')}</p></div>}
                             {!status && <span className="text-muted">{t('legacy.waiting')}</span>}
                           </td>
                         </tr>
@@ -817,6 +843,12 @@ const ModelCutlistOptimizer = () => {
                    <ArrowLeft /> {t('modelUi.backToCutlists')}
                 </button>
                 <div className="step-foot-act">
+                  {!allDone && blockedGroup && <p className="synthetic">
+                    {t('formUi.checkValues')}{' '}
+                    <button type="button" className="btn-link" onClick={() => focusSection(`group-${blockedGroup.id.replace(/[^a-z0-9]+/gi, '-')}`)}>
+                      {t('formUi.goTo', { name: labelOf(blockedGroup) })}
+                    </button>
+                  </p>}
                   {allDone ? (
                     <Link to={savedProjectPath} className="btn-order">
                        {selectedGroupId ? t('modelUi.openProject') : t('ui.openDashboard')} <ArrowRight size={15} />
@@ -856,7 +888,7 @@ const ModelCutlistOptimizer = () => {
 const SignInRequired = ({ message }) => {
   const { t } = useTranslation();
   const [authModalOpen, setAuthModalOpen] = useState(false);
-  const { needsSetup, setupCheckError } = useAuth();
+  const { needsSetup, setupCheckError, retrySetup } = useAuth();
 
   if (setupCheckError) {
     return (
@@ -865,6 +897,7 @@ const SignInRequired = ({ message }) => {
         <p style={{ color: 'var(--ink-2)' }}>
           {t('common.apiUnavailableDescription')}
         </p>
+        <button type="button" className="btn" onClick={retrySetup}>{t('recoveryUi.retry')}</button>
       </div>
     );
   }
@@ -873,7 +906,7 @@ const SignInRequired = ({ message }) => {
     <div className="card" style={{ maxWidth: '420px', margin: '40px auto', textAlign: 'center' }}>
       <h2 className="section-title" style={{ marginBottom: '10px' }}>{t('common.signInRequired')}</h2>
       <p style={{ color: 'var(--ink-2)', marginBottom: '18px' }}>{message}</p>
-      <button type="button" className="btn-order" onClick={() => setAuthModalOpen(true)}>{t('common.signIn')}</button>
+      <button type="button" className="btn-order" onClick={modalTrigger(() => setAuthModalOpen(true))}>{t('common.signIn')}</button>
       <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} initialMode={needsSetup ? 'register' : 'login'} isFirstRun={needsSetup} />
     </div>
   );

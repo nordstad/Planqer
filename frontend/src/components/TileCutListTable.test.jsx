@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import TileCutListTable from './TileCutListTable';
+import '../i18n';
 
 describe('TileCutListTable', () => {
   const diagram = (name) => `data:image/svg+xml;base64,${btoa(`<svg>${name}</svg>`)}`;

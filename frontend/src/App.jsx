@@ -5,6 +5,7 @@ import { LanguageProvider } from './contexts/LanguageContext';
 import HomePage from './components/HomePage';
 import ProtectedRoute from './components/ProtectedRoute';
 import { isStaticMode } from './utils/mode';
+import { RouteErrorBoundary, RouteRecovery } from './components/RouteRecovery';
 
 const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
 const AdminRoute = lazy(() => import('./components/AdminRoute'));
@@ -37,7 +38,7 @@ const App = () => {
         <Router>
           <Suspense fallback={<div>Loading…</div>}>
             <Shell>
-            <Routes>
+            <RouteErrorBoundary><Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/cutting" element={<ProtectedRoute fallbackMessage="access.board"><CuttingOptimizer /></ProtectedRoute>} />
             <Route path="/cutting/plan/:planId" element={<ProtectedRoute fallbackMessage="access.board"><BoardPlanPage /></ProtectedRoute>} />
@@ -60,7 +61,8 @@ const App = () => {
             <Route path="/dashboard/project/:groupId" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
             {LiteCatalogue && <Route path="/catalogue" element={<LiteCatalogue />} />}
             {!lite && <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />}
-            </Routes>
+            <Route path="*" element={<RouteRecovery />} />
+            </Routes></RouteErrorBoundary>
             </Shell>
           </Suspense>
           {lite && <Suspense fallback={null}><SolverStatus /></Suspense>}

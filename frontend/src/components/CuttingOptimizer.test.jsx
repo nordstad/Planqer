@@ -80,6 +80,35 @@ beforeEach(() => {
 });
 
 describe('CuttingOptimizer', () => {
+  it('restores distinct named source parts from a model handoff without merging equal lengths', async () => {
+    const parts = [{ name: 'Front rail', length: '1200', quantity: '2' }, { name: 'Rear rail', length: '1200', quantity: '3' }];
+    localStorage.setItem('partsible-3d-import', JSON.stringify({ parts, source: 'model-cutlist', boardThickness: 45, boardWidth: 95 }));
+    renderOptimizer({ loadExample: false, initialEntries: ['/cutting?import=3d'] });
+    expect(await screen.findByLabelText('Name, item 1')).toHaveValue('Front rail');
+    expect(screen.getByLabelText('Name, item 2')).toHaveValue('Rear rail');
+    fireEvent.submit(screen.getByLabelText('Name, item 1').closest('form'));
+    await waitFor(() => expect(optimizeCutting).toHaveBeenCalled());
+    expect(optimizeCutting.mock.calls.at(-1)[0]).toEqual(parts);
+    expect(localStorage.getItem('partsible-3d-import')).toBeNull();
+  });
+
+  it('uses complete whole counts in board totals and planning input', async () => {
+    renderOptimizer({ loadExample: false });
+    fireEvent.click(screen.getByRole('button', { name: /Add part/i }));
+    fireEvent.change(screen.getByLabelText('Part length in millimetres, item 1'), { target: { value: '100' } });
+    const quantity = screen.getByLabelText('Quantity, item 1');
+    fireEvent.change(quantity, { target: { value: '1e2' } });
+    fillMaterial();
+    const cells = screen.getByText('Σ').closest('tr').children;
+    expect(cells[2]).toHaveTextContent('100');
+    expect(cells[1]).toHaveTextContent(/10\s*000/);
+    fireEvent.submit(quantity.closest('form'));
+    await waitFor(() => expect(optimizeCutting).toHaveBeenCalledWith(
+      expect.arrayContaining([expect.objectContaining({ quantity: '1e2' })]),
+      expect.any(Array), '3', null,
+    ));
+  });
+
   it('starts with no required parts and offers a realistic workshop example', async () => {
     renderOptimizer({ loadExample: false });
     expect(await screen.findByRole('heading', { name: /Required parts/i })).toBeInTheDocument();
@@ -177,6 +206,7 @@ describe('CuttingOptimizer', () => {
     await screen.findByRole('heading', { name: /Required parts/i });
 
     expect(screen.getByLabelText(/Price per metre in SEK for the 2500 mm length/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Prices & cost optimisation/ }));
     expect(screen.getByRole('radio', { name: /Lowest cost/i })).toBeDisabled();
     expect(screen.getByText(/Add a price for every stock length/i)).toBeInTheDocument();
   });
@@ -203,6 +233,7 @@ describe('CuttingOptimizer', () => {
       });
     });
 
+    fireEvent.click(screen.getByRole('button', { name: /Prices & cost optimisation/ }));
     expect(screen.getByRole('radio', { name: /Lowest cost/i })).not.toBeDisabled();
     fillMaterial();
     fireEvent.click(screen.getByRole('button', { name: /Plan the cuts/i }));
@@ -300,10 +331,10 @@ describe('CuttingOptimizer', () => {
 
     expect(screen.queryByRole('button', { name: 'Create project' })).not.toBeInTheDocument();
     expect(screen.queryByRole('option', { name: 'Not in a project' })).not.toBeInTheDocument();
-    expect(screen.getByLabelText('New project name')).toHaveValue('My plans');
+    expect(screen.getByRole('textbox', { name: 'New project name (optional)' })).toHaveValue('My plans');
 
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Rails' } });
-    fireEvent.change(screen.getByLabelText('New project name'), { target: { value: 'Matstol' } });
+    fireEvent.change(screen.getByRole('textbox', { name: 'New project name (optional)' }), { target: { value: 'Matstol' } });
     fireEvent.click(screen.getByRole('button', { name: /^Save/i }));
 
     await waitFor(() => expect(saveProject).toHaveBeenCalled());
@@ -322,7 +353,7 @@ describe('CuttingOptimizer', () => {
     await screen.findByRole('heading', { name: /Save this plan/i });
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Rails' } });
 
-    fireEvent.keyDown(screen.getByLabelText('New project name'), { key: 'Enter' });
+    fireEvent.keyDown(screen.getByRole('textbox', { name: 'New project name (optional)' }), { key: 'Enter' });
 
     await waitFor(() => expect(saveProject).toHaveBeenCalled());
     expect(createProjectGroup).toHaveBeenCalledWith('My plans');
@@ -338,7 +369,7 @@ describe('CuttingOptimizer', () => {
     fireEvent.click(screen.getByRole('button', { name: /Name and save/i }));
     await screen.findByRole('heading', { name: /Save this plan/i });
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Rails' } });
-    fireEvent.keyDown(screen.getByLabelText('New project name'), { key: 'Enter' });
+    fireEvent.keyDown(screen.getByRole('textbox', { name: 'New project name (optional)' }), { key: 'Enter' });
 
     expect(await screen.findByText(/Add more plans to this project to get one shopping list/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Start another plan' })).toHaveAttribute('href', '/');

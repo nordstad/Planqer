@@ -1,22 +1,28 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import CatalogPage from './CatalogPage';
 import { getAdminStats, getAdminUsers, toggleUserAdmin, toggleUserActive, deleteUser, resetUserPassword } from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
 import Loader from './Loader';
 import ConfirmDialog from './ConfirmDialog';
+import { modalTrigger } from './Modal';
 import AdminCatalogue from './AdminCatalogue';
+import { validNewPassword } from '../utils/passwordPolicy';
 
 const AdminDashboard = () => {
   const { t } = useTranslation();
   const { user: currentUser, singleUser } = useAuth();
   const [stats, setStats] = useState(null);
-  const [users, setUsers] = useState([]);
+  const [users, setUsers] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [busyId, setBusyId] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
   const [tab, setTab] = useState('users');
+  const [resetTarget, setResetTarget] = useState(null);
+  const [password, setPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const passwordPending = useRef(false);
 
   useEffect(() => {
     if (!singleUser) loadData();
@@ -26,6 +32,8 @@ const AdminDashboard = () => {
     try {
       setLoading(true);
       setError(null);
+      setUsers(null);
+      setStats(null);
       const [statsData, usersData] = await Promise.all([getAdminStats(), getAdminUsers()]);
       setStats(statsData);
       setUsers(usersData);
@@ -56,20 +64,38 @@ const AdminDashboard = () => {
   };
 
   const handleResetPassword = (u) => {
-    const password = window.prompt(t('ui.resetPasswordPrompt', { email: u.email }));
-    if (!password) return;
-    withBusy(u.id, () => resetUserPassword(u.id, password));
+    if (passwordPending.current) return;
+    setResetTarget(u.id);
+    setPassword('');
+    setPasswordError('');
+  };
+  const submitPassword = async (event, u) => {
+    event.preventDefault();
+    if (passwordPending.current) return;
+    if (!validNewPassword(password)) { setPasswordError(t('passwordUi.policy')); return; }
+    passwordPending.current = true;
+    setBusyId(u.id);
+    setPasswordError('');
+    try {
+      await resetUserPassword(u.id, password);
+      setResetTarget(null);
+      setPassword('');
+    } catch (err) {
+      setPasswordError(err.message);
+    } finally {
+      passwordPending.current = false;
+      setBusyId(null);
+    }
   };
 
   const tabs = (
-    <div role="tablist" aria-label={t('common.admin')} style={{ display: 'flex', gap: '18px', borderBottom: '1px solid var(--rule)', marginBottom: '18px' }}>
+    <div role="group" aria-label={t('common.admin')} style={{ display: 'flex', gap: '18px', borderBottom: '1px solid var(--rule)', marginBottom: '18px' }}>
       {['users', 'catalogue'].map((key) => (
         <button
           key={key}
           type="button"
-          role="tab"
           id={`admin-tab-${key}`}
-          aria-selected={tab === key}
+          aria-pressed={tab === key}
           onClick={() => setTab(key)}
           style={{
             background: 'none', border: 0, borderBottom: `2px solid ${tab === key ? 'var(--accent)' : 'transparent'}`,
@@ -87,6 +113,7 @@ const AdminDashboard = () => {
   if (singleUser) {
     return (
       <CatalogPage>
+        <h1 className="step-h1">{t('catalogueAdmin.tab.catalogue')}</h1>
         <AdminCatalogue />
       </CatalogPage>
     );
@@ -96,7 +123,8 @@ const AdminDashboard = () => {
     return (
       <CatalogPage>
         {tabs}
-        <div role="tabpanel" id="admin-panel" aria-labelledby="admin-tab-catalogue"><AdminCatalogue /></div>
+        <h1 className="step-h1">{t('catalogueAdmin.tab.catalogue')}</h1>
+        <div id="admin-panel"><AdminCatalogue /></div>
       </CatalogPage>
     );
   }
@@ -111,10 +139,14 @@ const AdminDashboard = () => {
       </CatalogPage>
     );
   }
+  if (users === null) {
+    return <CatalogPage>{tabs}<p className="alert-danger" role="alert">{error}</p><button type="button" className="btn" onClick={loadData}>{t('recoveryUi.retry')}</button></CatalogPage>;
+  }
 
   return (
     <CatalogPage>
       {tabs}
+      <h1 className="step-h1">{t('catalogueAdmin.tab.users')}</h1>
       {error && <div className="alert-danger" role="alert" style={{ marginBottom: '16px' }}>{error}</div>}
 
       {stats && (
@@ -188,13 +220,22 @@ const AdminDashboard = () => {
                     <button
                       className="btn btn-outline-danger"
                       style={{ padding: '5px 10px', minHeight: 0 }}
-                      onClick={() => handleDelete(u)}
+                      onClick={modalTrigger(() => handleDelete(u))}
                       disabled={busyId === u.id || isSelf}
                       title={isSelf ? t('ui.ownDeleteTitle') : undefined}
                     >
                       {t('ui.delete')}
                     </button>
                   </span>
+                  {resetTarget === u.id && <form onSubmit={(event) => submitPassword(event, u)} style={{ marginTop: '12px', textAlign: 'left' }}>
+                    <label htmlFor={`reset-password-${u.id}`}>{t('passwordUi.resetFor', { email: u.email })}</label>
+                    <input id={`reset-password-${u.id}`} type="password" autoComplete="new-password" className="form-input" value={password}
+                      onChange={(event) => setPassword(event.target.value)} disabled={busyId === u.id} aria-describedby={`reset-policy-${u.id}`} autoFocus />
+                    <p id={`reset-policy-${u.id}`} className="synthetic">{t('passwordUi.policy')}</p>
+                    {passwordError && <p className="alert-danger" role="alert">{passwordError}</p>}
+                    <button type="submit" className="btn" disabled={busyId === u.id}>{t('common.saveSettings')}</button>{' '}
+                    <button type="button" className="btn" disabled={busyId === u.id} onClick={() => { setResetTarget(null); setPassword(''); }}>{t('ui.cancel')}</button>
+                  </form>}
                 </td>
               </tr>
             );

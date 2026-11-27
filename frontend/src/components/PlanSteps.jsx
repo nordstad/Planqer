@@ -9,11 +9,33 @@
 */
 
 import { useTranslation } from 'react-i18next';
+import { useLayoutEffect, useRef } from 'react';
+import { focusDestination } from '../utils/focusDestination';
 
 const PlanSteps = ({ steps, current, onSelect }) => {
   const { t } = useTranslation();
+  const rail = useRef(null);
+  const previous = useRef(current);
+  useLayoutEffect(() => {
+    const element = rail.current;
+    const parent = element.parentElement;
+    const update = () => parent.style.setProperty('--plan-steps-height', `${element.getBoundingClientRect().height}px`);
+    update();
+    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(update) : null;
+    observer?.observe(element);
+    return () => {
+      observer?.disconnect();
+      parent.style.removeProperty('--plan-steps-height');
+    };
+  }, []);
+  useLayoutEffect(() => {
+    if (previous.current !== current) {
+      focusDestination(rail.current?.parentElement.querySelector('.step-view h1'));
+      previous.current = current;
+    }
+  }, [current]);
   return (
-  <ol className="plan-steps" aria-label={t('ui.planProgress')}>
+  <ol ref={rail} className="plan-steps" aria-label={t('ui.planProgress')}>
     {steps.map((step, index) => {
       const number = String(index + 1).padStart(2, '0');
       const isCurrent = index === current;

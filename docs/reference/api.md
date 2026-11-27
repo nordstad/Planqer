@@ -46,6 +46,12 @@ groups, and admin endpoints require authentication.
 
 ## Optimization
 
+Planning requests use **whole millimetres**, including dimensions, kerf, joints,
+gaps, offsets, and allowances. Fractional measurements are rejected with a
+validation error, not silently rounded. Prices, percentages, and ratios keep
+their existing precision. Solver geometry/results can contain fractions, and
+existing saved records and backup imports retain their historical measurements.
+
 | Endpoint | Purpose |
 | --- | --- |
 | `POST /api/cutting-plans` | 1D board cutting. Rate limited: 10/minute. |
@@ -123,13 +129,21 @@ The exact request and response schemas are easiest to inspect in Swagger UI
 because they are generated from the Pydantic models used by the running
 backend.
 
+New tile saves may include `layout_result.diagram_labels`, a snapshot of display
+strings for `title`, `surface`, `full`, `notched`, `sliver`, and `cuts`. The saved
+SVG renderer escapes these strings and redraws geometry normally; it does not
+trust a supplied image as the saved export. Omitted labels retain the English
+defaults for older clients. The browser supplies the current locale's labels
+when saving; existing saved records and images are not migrated or retranslated.
+The local/Lite saved-diagram operation uses the same renderer.
+
 ## Products
 
 `GET /catalogue/?country=` returns the product types, the detail vocabularies
 and the entries for `SE`, `NO` or `generic`. Without `country` (or with one it
 doesn't know) it uses the instance default, `PARTSIBLE_CATALOGUE_COUNTRY`, and is
-generic, with no entries, when that is unset. Saved board and sheet plans accept an
-optional `product` snapshot on create and update; it is stored and returned
+generic, with no entries, when that is unset. Saved board and sheet plans accept
+an optional `product` snapshot on create and update; it is stored and returned
 as given, and `material_type` stays a readable label for older clients.
 
 `GET /catalogue/products?q=&kind=&id=&limit=&lang=&country=` searches the same

@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAccountContext } from '../contexts/useAccountContext';
 import CatalogPage from './CatalogPage';
+import { focusDestination } from '../utils/focusDestination';
 
 const DOCS_URL = 'https://docs.partsible.com/';
 
@@ -32,7 +33,8 @@ const HelpPage = () => {
 
   useEffect(() => {
     if (requestedSection !== activeSection) return;
-    document.getElementById(activeSection)?.scrollIntoView?.();
+    const section = document.getElementById(activeSection);
+    focusDestination(section?.querySelector('h1, h2') || section);
   }, [activeSection, requestedSection]);
 
   return (
@@ -50,6 +52,8 @@ const HelpPage = () => {
                 to={`/help#${section.id}`}
                 className="help-entry"
                 data-current={activeSection === section.id ? 'true' : undefined}
+                aria-current={activeSection === section.id ? 'location' : undefined}
+                onClick={() => focusDestination(document.getElementById(section.id)?.querySelector('h1, h2'))}
               >
                 <span className="help-entry-no">{section.no}</span>
                 <span className="help-entry-title">{t(section.title)}</span>

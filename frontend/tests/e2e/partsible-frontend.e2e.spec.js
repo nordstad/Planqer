@@ -128,7 +128,7 @@ test.describe('Partsible Frontend E2E Tests', () => {
     await page.locator('.plan-item-acts').getByRole('button', { name: 'Open plan', exact: true }).click();
     await expect(page).toHaveURL(/\/cutting\/plan\//);
     await expect(page.getByRole('heading', { name: 'Summary' })).toBeVisible();
-    await expect(page.getByRole('tab', { name: /Board 1/i })).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByRole('button', { name: /Board 1/i })).toHaveAttribute('aria-pressed', 'true');
     await page.getByRole('button', { name: 'Print', exact: true }).click();
     await expect(page.locator('iframe[aria-hidden="true"]')).toHaveCount(1);
     await page.goto(`/dashboard/project/${groupId}`);
@@ -136,7 +136,7 @@ test.describe('Partsible Frontend E2E Tests', () => {
     await expect(page.locator('iframe[aria-hidden="true"]')).toHaveCount(1);
 
     await page.getByRole('button', { name: 'More actions' }).click();
-    await page.getByRole('menuitem', { name: 'Modify', exact: true }).click();
+    await page.getByRole('button', { name: 'Modify', exact: true }).click();
     await expect(page).toHaveURL(/\/cutting\?edit=[^/]+/);
     await expect(page.locator('#plan-name')).not.toBeVisible();
     await expect(page.locator('input').filter({ hasValue: '80' }).first()).toBeVisible();

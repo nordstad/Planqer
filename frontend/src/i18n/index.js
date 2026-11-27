@@ -12,10 +12,10 @@ import {
 } from './languages';
 
 const getInitialLanguage = () => {
-  if (typeof localStorage !== 'undefined') {
+  try {
     const storedLanguage = normalizeLanguage(localStorage.getItem(LANGUAGE_STORAGE_KEY));
     if (storedLanguage) return storedLanguage;
-  }
+  } catch { /* Optional browser preferences may be unavailable. */ }
 
   return detectLanguage() || DEFAULT_LANGUAGE;
 };
@@ -45,9 +45,9 @@ updateDocumentLanguage(i18n.language);
 
 i18n.on('languageChanged', (language) => {
   updateDocumentLanguage(language);
-  if (typeof localStorage !== 'undefined') {
+  try {
     localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
-  }
+  } catch { /* Keep the active language even if it cannot be remembered. */ }
 });
 
 export const changeLanguage = (language) => i18n.changeLanguage(normalizeLanguage(language) || DEFAULT_LANGUAGE);

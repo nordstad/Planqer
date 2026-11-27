@@ -108,7 +108,7 @@
   .plan-steps {
     display: flex; gap: 0 34px; list-style: none; margin: -12px 0 28px; padding: 12px 0 0;
     border-bottom: 1px solid var(--rule-hair);
-    position: sticky; top: 0; z-index: 10; background: var(--ground);
+    position: sticky; top: var(--app-nav-height, 0px); z-index: 10; background: var(--ground);
   }
   .plan-steps::after {
     content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 12px;
@@ -144,16 +144,22 @@
   @media (max-width: 767px) {
     /* On a phone the rail keeps its three positions but drops the summaries —
        the step you are on already shows its own facts underneath. */
-    .plan-steps { margin-bottom: 20px; }
+    .plan-steps { margin-bottom: 20px; column-gap: 12px; }
     .plan-step-btn { padding-right: 8px; }
     .plan-step-sum { display: none; }
-    .plan-step-label { font-size: 13px; }
+    .plan-step-label { font-size: 13px; overflow-wrap: anywhere; }
   }
 
   /* Parts and Save are forms and read at a form's measure; the plan is a
      drawing and takes the whole page. */
   .step-view { min-width: 0; }
   .step-view.is-form { max-width: 620px; }
+  .model-settings-grid > * { min-width: 0; }
+  @media (min-width: 1000px) {
+    .step-view.is-form.is-model-settings { max-width: none; }
+    .model-settings-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: start; }
+    .model-settings-grid > .sec-card + .sec-card { margin-top: 0; }
+  }
 
   /* SVG text has no colour of its own: without this it is black on the dark theme. */
   .wallpaper-elevation svg text:not([fill]), .wallpaper-roll-diagram text:not([fill]),
@@ -379,7 +385,7 @@
   }
 
   /* ── app nav: one top bar, on every page, the only wayfinding ────────── */
-  .app-nav { border-bottom: 1px solid var(--rule-hair); }
+  .app-nav { position: sticky; top: 0; z-index: 20; background: var(--ground); border-bottom: 1px solid var(--rule-hair); }
   .app-nav-row {
     display: flex; align-items: center; gap: 12px; flex-wrap: nowrap;
     max-width: 1080px; margin: 0 auto; padding: 16px 24px;
@@ -716,7 +722,7 @@
      card edge. */
   .sec-card {
     background: var(--card); border: 1px solid var(--rule-hair); border-radius: 16px;
-    box-shadow: 0 1px 2px rgba(22,21,15,.05); scroll-margin-top: 140px;
+    box-shadow: 0 1px 2px rgba(22,21,15,.05); scroll-margin-top: calc(var(--app-nav-height, 0px) + var(--plan-steps-height, 0px) + 16px);
   }
   .sec-card + .sec-card { margin-top: 16px; }
   /* A list item left out of the batch stays readable but steps back. */
@@ -733,7 +739,7 @@
   button.sec-card-head:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .sec-card-text { min-width: 0; flex: 1 1 auto; }
   .sec-card-title { display: block; margin: 0; font-size: 15px; font-weight: 700; line-height: 1.25; }
-  .sec-card-title[tabindex] { scroll-margin-top: 110px; outline: none; }
+  .sec-card-title[tabindex] { scroll-margin-top: calc(var(--app-nav-height, 0px) + var(--plan-steps-height, 0px) + 16px); outline: none; }
   .sec-card-summary {
     display: block; font-size: 12.5px; color: var(--ink-2); font-variant-numeric: tabular-nums;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -964,7 +970,7 @@
   .help-prose li::before { content: '—'; position: absolute; left: 0; color: var(--ink-3); }
   .help-prose a { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
   .help-prose a:hover { color: var(--ink); }
-  .help-section { padding-bottom: 18px; scroll-margin-top: 24px; }
+  .help-section { padding-bottom: 18px; scroll-margin-top: calc(var(--app-nav-height, 0px) + 24px); }
   .help-section + .help-section { border-top: 1px solid var(--rule-hair); margin-top: 14px; padding-top: 10px; }
   .help-section h1 { margin-top: 0; }
   .help-section h2 { margin-top: 18px; }
@@ -987,6 +993,16 @@
     align-items: center; justify-content: center; padding: 18px;
     background: rgba(22,21,15,.5);
   }
+  .skip-link {
+    position: fixed; top: 8px; left: 8px; z-index: 70;
+    padding: 10px 16px; background: var(--card); color: var(--ink);
+    border: 2px solid var(--accent); border-radius: 8px;
+    transform: translateY(-150%);
+  }
+  .skip-link:focus { transform: none; }
+  #main-content, .step-view h1, .help-section h1, .help-section h2 { scroll-margin-top: calc(var(--app-nav-height, 0px) + var(--plan-steps-height, 0px) + 24px); }
+  .cat-body :is(h1, h2)[tabindex="-1"]:focus { outline: none; }
+  .file-picker:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 4px; }
   .cat-sheet {
     width: 100%; max-width: 640px; max-height: 86vh; overflow: auto;
     background: var(--card); border: 1px solid var(--rule-hair); border-radius: 16px;
@@ -1008,6 +1024,8 @@
     background: var(--accent-bg); border: 1px solid var(--rule-hair);
     padding: 11px 14px; font-size: 13.5px; color: var(--ink-2); border-radius: 10px;
   }
+  .auth-storage-alert { font-weight: 400; }
+  .auth-storage-alert::before { content: none; }
   .text-danger { color: var(--revision); }
   .text-muted { color: var(--ink-3); }
   .text-success { color: var(--shop); }
@@ -1190,13 +1208,13 @@
   }
   .proj-head-name {
     display: flex; align-items: center; font-size: 26px; font-weight: 800;
-    letter-spacing: -.02em; line-height: 1.1; flex: 1 1 auto;
+    letter-spacing: -.02em; line-height: 1.1; flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere;
   }
   .proj-head-meta {
     flex: 1 1 100%; order: 3; margin: 0;
     font-size: 13px; color: var(--ink-2);
   }
-  .proj-head-act { flex: none; align-self: center; display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; }
+  .proj-head-act { flex: 0 1 auto; min-width: 0; align-self: center; display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; }
 
   .project-view-nav {
     display: flex; gap: 4px; margin: -4px 0 22px; padding: 4px;
@@ -1216,6 +1234,21 @@
   .wall-picker-letter { display: inline-grid; place-items: center; width: 22px; height: 22px; border: 1px solid currentColor; border-radius: 50%; font-size: 12px; }
   .plan-more-menu { position: absolute; z-index: 2; right: 0; top: calc(100% + 4px); display: grid; gap: 4px; min-width: 150px; padding: 8px; border: 1px solid var(--rule-hair); border-radius: 10px; background: var(--card); box-shadow: 0 6px 16px -10px rgba(22, 21, 15, .18); }
    .wallpaper-plan-document { display: grid; gap: 32px; }
+   .wallpaper-plan-document > section, .sheet-plan-document > section, .board-plan-document > section, .tile-plan-document > section { min-width: 0; }
+   .step-head > div { min-width: 0; }
+   .step-h1, .plan-summary dd { overflow-wrap: anywhere; }
+   .plan-summary > div { max-width: 100%; }
+   .document-table-scroll { max-width: 100%; overflow-x: auto; }
+   .document-table-scroll:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+   .wallpaper-measurement-guide { margin: 0; container-type: inline-size; }
+   .wall-outline-layout { display: grid; grid-template-columns: 140px minmax(0, 1fr) 140px; grid-template-areas: "height_left drawing height_right" "lower_left drawing lower_right" ". width ."; gap: 16px; align-items: center; }
+   .wall-outline-drawing { grid-area: drawing; min-width: 0; text-align: center; }
+   .wall-outline-drawing > svg { width: 100%; }
+   .wall-outline-layout .form-input { min-height: 40px; }
+   @container (max-width: 560px) {
+     .wall-outline-layout { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: "drawing drawing" "height_left height_right" "lower_left lower_right" "width width"; }
+     .wall-outline-drawing > svg { max-height: 240px; }
+   }
     .sheet-plan-document { display: grid; gap: 32px; }
     .board-plan-document, .tile-plan-document { display: grid; gap: 32px; }
    .sheet-plan-overview { display: flex; gap: 10px; overflow-x: auto; padding: 2px 0; }
@@ -1224,6 +1257,10 @@
    .sheet-plan-thumbnail.is-active { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); color: var(--ink); }
    .sheet-plan-thumbnail img { display: block; width: 100%; height: 100px; object-fit: contain; background: var(--ground-2); }
     .sheet-plan-diagram { margin: 16px 0 24px; }
+    .diagram-inspection-trigger { display: block; width: 100%; min-width: 0; padding: 0; text-align: left; cursor: zoom-in; }
+    .diagram-inspection-trigger > img { display: block; width: 100%; height: auto; }
+    .diagram-inspection-scroll { max-height: 75vh; overflow: auto; padding: 16px; }
+    .diagram-inspection-scroll img { display: block; width: auto; max-width: none; height: auto; }
     .board-plan-diagram, .tile-plan-diagram { display: block; width: 100%; max-height: 620px; margin: 16px auto 0; object-fit: contain; }
     .board-plan-picker { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
     .board-plan-picker .sheet-plan-thumbnail { flex-basis: auto; }
@@ -1247,7 +1284,7 @@
   @media (max-width: 899px) { .plan-overview { grid-template-columns: 1fr; } }
   .project-shopping { margin: 0 0 24px; }
   .project-shopping-sheet {
-    margin-top: 14px; overflow: hidden; border: 1px solid var(--rule-hair);
+    margin-top: 14px; overflow-x: auto; border: 1px solid var(--rule-hair);
     border-radius: 12px; background: var(--card);
   }
   .project-shopping-table { margin: 0; }
@@ -1278,7 +1315,7 @@
   .project-diagram-note { margin: 22px 0 0; }
 
   /* ── print the whole project: paper size sits with its one button ─────── */
-  .print-set { display: inline-flex; align-items: center; gap: 6px; }
+  .print-set { display: inline-flex; flex-wrap: wrap; min-width: 0; max-width: 100%; align-items: center; gap: 6px; }
   .print-paper {
     width: auto; min-height: 30px; padding: 4px 36px 4px 9px; font-size: 12.5px;
     border-radius: 8px; border-width: 1px;
@@ -1304,7 +1341,7 @@
   .plan-item-body { flex: 1 1 220px; min-width: 0; }
   .plan-item-name {
     display: flex; align-items: center; font-size: 15.5px; font-weight: 700;
-    line-height: 1.25; margin-bottom: 4px;
+    line-height: 1.25; margin-bottom: 4px; min-width: 0; overflow-wrap: anywhere;
   }
   /* Space separates the facts, not punctuation: a middot between them — by
      pseudo-element or typed in — becomes a dangling mark at the start of a
@@ -1516,6 +1553,7 @@
 .hp-footer { margin-top: 34px; padding: 20px 0; border-top: 1px solid var(--rule-hair); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; font-size: 12.5px; color: var(--ink-3); }
 .hp-footer a { color: var(--ink-2); text-decoration: none; margin-right: 16px; white-space: nowrap; }
 .hp-footer a:hover { color: var(--accent); }
+.hp-footer > div { display: flex; flex-wrap: wrap; gap: 8px 0; min-width: 0; }
 
 /* part rows stack on small screens, sit on one rule at desk width */
 .part-input-row { flex-direction: column; }

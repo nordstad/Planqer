@@ -21,6 +21,7 @@ vi.mock('../utils/api', async () => ({
     { id: 'other', email: 'someone@example.com', is_active: true, is_admin: false, project_count: 1, sheet_project_count: 1, created_at: '2026-01-02T00:00:00Z' },
   ]),
   deleteUser: vi.fn().mockResolvedValue({}),
+  resetUserPassword: vi.fn(),
   getAdminCatalogue: vi.fn().mockResolvedValue([]),
   getCatalogue: vi.fn().mockResolvedValue({ data: { country: null, country_name: null, types: [], details: { species: [], treatment: [], profile: [] }, products: [] }, etag: '"x"' }),
 }));
@@ -37,14 +38,43 @@ const renderDashboard = () =>
   );
 
 describe('AdminDashboard', () => {
+  it('uses a password field, blocks invalid resets, and retains a failed reset for retry', async () => {
+    api.resetUserPassword.mockReset().mockRejectedValueOnce(new Error('Synthetic reset failed'));
+    renderDashboard();
+    const row = (await screen.findByText('someone@example.com')).closest('tr');
+    fireEvent.click(within(row).getByRole('button', { name: 'Reset password' }));
+    const input = screen.getByLabelText('New password for someone@example.com');
+    expect(input).toHaveAttribute('type', 'password');
+    fireEvent.change(input, { target: { value: 'Aa1!xx' } });
+    fireEvent.submit(input.closest('form'));
+    expect(api.resetUserPassword).not.toHaveBeenCalled();
+    expect(screen.getByRole('alert')).toHaveTextContent(/at least 8 characters/);
+    fireEvent.change(input, { target: { value: 'Synthetic1!' } });
+    fireEvent.submit(input.closest('form'));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Synthetic reset failed');
+    expect(input).toHaveValue('Synthetic1!');
+    api.resetUserPassword.mockResolvedValueOnce({});
+    fireEvent.submit(input.closest('form'));
+    await waitFor(() => expect(screen.queryByLabelText('New password for someone@example.com')).not.toBeInTheDocument());
+    expect(api.resetUserPassword).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not claim no users after a failed read and supports retry', async () => {
+    getAdminUsers.mockRejectedValueOnce(new Error('Synthetic users unavailable'));
+    renderDashboard();
+    expect(await screen.findByRole('alert')).toHaveTextContent('Synthetic users unavailable');
+    expect(screen.queryByText(/No users yet/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(await screen.findByText('someone@example.com')).toBeInTheDocument();
+  });
   it('switches between the users and catalogue tabs', async () => {
     renderDashboard();
     await screen.findByText('someone@example.com');
-    expect(screen.getByRole('tab', { name: 'Users' })).toHaveAttribute('aria-selected', 'true');
-    fireEvent.click(screen.getByRole('tab', { name: 'Catalogue' }));
+    expect(screen.getByRole('button', { name: 'Users' })).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(screen.getByRole('button', { name: 'Catalogue' }));
     expect(await screen.findByLabelText('Search products')).toBeInTheDocument();
     expect(screen.queryByText('someone@example.com')).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('tab', { name: 'Users' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Users' }));
     expect(await screen.findByText('someone@example.com')).toBeInTheDocument();
   });
 

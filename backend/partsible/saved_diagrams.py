@@ -154,7 +154,9 @@ def render_saved_tile_layout(
             tiles=tiles,
             tiles_to_purchase=layout_result.get("tiles_to_purchase", 0),
         )
-        return generate_saved_tile_diagram(candidate, surface, name)
+        return generate_saved_tile_diagram(
+            candidate, surface, name, layout_result.get("diagram_labels")
+        )
     except Exception as e:
         # A missing diagram is worth far less than a lost layout — keep the save.
         logger.warning(f"Failed to render diagram for saved tile project '{name}': {e}")

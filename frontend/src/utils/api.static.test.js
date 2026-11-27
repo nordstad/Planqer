@@ -33,7 +33,7 @@ it('solves a cutting plan in the browser and returns the same body', async () =>
 
   const result = await api.optimizeCutting(
     [{ length: 100, quantity: 2 }],
-    [{ length: 200 }],
+    ['200'],
     3,
   );
 
@@ -54,7 +54,7 @@ it('shows the endpoint\'s own message when the solver rejects the request', asyn
   });
 
   await expect(
-    api.optimizeCutting([{ length: 100, quantity: 2 }], [{ length: 200 }], 3),
+    api.optimizeCutting([{ length: 100, quantity: 2 }], ['200'], 3),
   ).rejects.toThrow('The genetic algorithm supports at most 100 parts');
 });
 

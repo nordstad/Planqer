@@ -10,7 +10,9 @@
   tradeoff that fits the job — see .plans/tile-layout.md Decision #3.
 */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { localizeTileImage, tileDiagramLabels } from '../utils/tileLocalization';
+import Modal, { modalTrigger } from './Modal';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -28,7 +30,9 @@ import Disclosure from './Disclosure';
 import FormField, { SectionCard, SectionStatus } from './FormField';
 import SavePlanCard from './SavePlanCard';
 import MovePlanMenu from './MovePlanMenu';
-import { useProjectChoice } from '../hooks/useProjectChoice';
+import { useProjectChoice, rememberProjectChoice } from '../hooks/useProjectChoice';
+import { millimetresError, isWholeMillimetres } from '../utils/measurementInput';
+import { focusSection } from '../utils/focusSection';
 import Loader from './Loader';
 import InfoTip from './InfoTip';
 import PlanSteps from './PlanSteps';
@@ -51,11 +55,12 @@ const DEFAULT_TILE_THICKNESS = '10';
 const isBlank = (value) => value == null || String(value).trim() === '';
 
 // An empty field is missing (named on its card), not an error.
-const numberError = (value, { min, max, label, allowZero = false, t }) => {
-  const n = parseFloat(value);
+const numberError = (value, { min, max, label, whole = true, t }) => {
+  const n = Number(value);
   if (isBlank(value)) return '';
-  if (isNaN(n)) return t('tileUi.numberRequired', { label });
-  if (allowZero ? n < min : n <= min) return t('tileUi.greaterThan', { label, min });
+  if (whole) return millimetresError(value, min, max, t);
+  if (!Number.isFinite(n)) return t('tileUi.numberRequired', { label });
+  if (n < min) return t('tileUi.greaterThan', { label, min });
   if (n > max) return t('tileUi.cannotExceed', { label, max });
   return '';
 };
@@ -73,6 +78,11 @@ const validateCutouts = (cutouts, surfaceWidth, surfaceHeight, t) => cutouts.map
   if (cutout.y === '' || isNaN(y) || y < 0) errors.y = t('tileUi.yMinimum');
   if (!cutout.width || isNaN(width) || width <= 0) errors.width = t('tileUi.positiveWidth');
   if (!cutout.height || isNaN(height) || height <= 0) errors.height = t('tileUi.positiveHeight');
+  for (const field of ['x', 'y', 'width', 'height']) {
+    if (!errors[field] && !isWholeMillimetres(cutout[field])) {
+      errors[field] = millimetresError(cutout[field], field === 'x' || field === 'y' ? 0 : 1, 20000, t);
+    }
+  }
 
   if (!errors.x && !errors.width && !isNaN(sw) && x + width > sw) errors.width = t('tileUi.rightEdge');
   if (!errors.y && !errors.height && !isNaN(sh) && y + height > sh) errors.height = t('tileUi.topEdge');
@@ -91,11 +101,11 @@ const validateTileInputs = (values, t) => ({
   minEdgeCut: values.minEdgeCut === ''
     ? ''
     : numberError(values.minEdgeCut, { min: 0, max: 3000, label: t('tileUi.sliverThreshold'), allowZero: true, t }),
-  wastePercent: numberError(values.wastePercent, { min: 0, max: 100, label: t('tileUi.breakageAllowance'), allowZero: true, t }),
+  wastePercent: numberError(values.wastePercent, { min: 0, max: 100, label: t('tileUi.breakageAllowance'), whole: false, t }),
   candidateCount: (() => {
     const n = Number(values.candidateCount);
     if (isBlank(values.candidateCount)) return '';
-    if (!Number.isInteger(n) || n < 1) return t('tileUi.greaterThan', { label: t('tileUi.candidateCount'), min: 0 });
+    if (!Number.isInteger(n) || n < 1) return t('validation.positiveQuantity');
     if (n > 20) return t('tileUi.cannotExceed', { label: t('tileUi.candidateCount'), max: 20 });
     return '';
   })(),
@@ -135,7 +145,14 @@ const TileOptimizer = () => {
   const [reuseOffcuts, setReuseOffcuts] = useState(true);
   const [guardOpen, setGuardOpen] = useState(false);
 
-  const [result, setResult] = useState(null);
+  const [rawResult, setResult] = useState(null);
+  const result = useMemo(() => rawResult && ({
+    ...rawResult,
+    candidates: rawResult.candidates.map((candidate) => ({
+      ...candidate, visualization: localizeTileImage(candidate.visualization, t, rawResult.namedDiagram),
+      diagram_labels: tileDiagramLabels(candidate.distinct_cut_sizes, t),
+    })),
+  }), [rawResult, t]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState('');
@@ -170,6 +187,7 @@ const TileOptimizer = () => {
   /* loading one back */
   const [userProjects, setUserProjects] = useState([]);
   const [loadModalOpen, setLoadModalOpen] = useState(false);
+  const inputRevision = useRef(0);
 
   const debounced = {
     surfaceWidth: useDebounce(surfaceWidth, 300),
@@ -200,6 +218,7 @@ const TileOptimizer = () => {
   }, [
     debounced.cutouts, debounced.surfaceWidth, debounced.surfaceHeight, debounced.tileWidth, debounced.tileHeight,
     debounced.jointWidth, debounced.perimeterGap, debounced.minEdgeCut, debounced.wastePercent, debounced.candidateCount,
+    surfaceWidth, surfaceHeight, tileWidth, tileHeight, jointWidth, perimeterGap, minEdgeCut, wastePercent, candidateCount,
   ]);
 
   useEffect(() => {
@@ -211,6 +230,8 @@ const TileOptimizer = () => {
 
   /* ── a layout belongs to its inputs ────────────────────────────────────── */
   const retireLayout = () => {
+    inputRevision.current += 1;
+    setLoading(false);
     setResult(null);
     setSelectedIndex(0);
     setApiError('');
@@ -304,19 +325,13 @@ const TileOptimizer = () => {
   const cutoutPristine = (cutout) => ['x', 'y', 'width', 'height'].every((field) => isBlank(cutout[field]));
   const cutoutsWrong = cutouts.some((cutout, index) => inputErrors.cutouts[index] && !cutoutPristine(cutout));
   const cutoutsEmpty = cutouts.some(cutoutPristine);
-  const thicknessWrong = !isBlank(tileThickness) && !(parseFloat(tileThickness) > 0);
+  const thicknessWrong = !isBlank(tileThickness) && (!isWholeMillimetres(tileThickness) || Number(tileThickness) < 1);
   const tileWrong = !!(inputErrors.tileWidth || inputErrors.tileHeight) || thicknessWrong;
   const jointWrong = !!(inputErrors.jointWidth || inputErrors.perimeterGap);
   const guardWrong = !!(inputErrors.minEdgeCut || inputErrors.wastePercent || inputErrors.candidateCount);
   const hasErrors = surfaceWrong || cutoutsWrong || cutoutsEmpty || tileWrong || jointWrong || guardWrong || !materialType
     || [...surfaceMissing, ...tileMissing, ...jointMissing, ...guardMissing].length > 0;
-  const goToSection = (id) => window.setTimeout(() => {
-    const section = document.getElementById(id);
-    if (!section) return;
-    section.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
-    const fields = [...section.querySelectorAll('input:not([type=checkbox]):not([type=radio]), select')];
-    (fields.find((field) => !field.value) || fields[0])?.focus({ preventScroll: true });
-  }, 0);
+  const goToSection = focusSection;
   const goTo = (id, name) => ({ name: t('formUi.goTo', { name }), go: () => goToSection(id) });
   const goToGuard = { name: t('formUi.goTo', { name: t('workflow.sliverGuardBreakage') }), go: () => { setGuardOpen(true); goToSection('tile-guard'); } };
   const fillToSolve = (fields) => t('tileForm.fillToSolve', { fields: fields.join(', ') });
@@ -361,6 +376,7 @@ const TileOptimizer = () => {
     setLoading(true);
     setResult(null);
     setSaved(null);
+    const requestRevision = ++inputRevision.current;
     try {
       const response = await optimizeTileLayout({
         surfaceWidth, surfaceHeight, cutouts,
@@ -370,13 +386,16 @@ const TileOptimizer = () => {
         minEdgeCut, reuseOffcuts, wastePercent, candidateCount,
         projectName,
       });
-      setResult(response);
+      if (requestRevision !== inputRevision.current) return;
+      setResult({ ...response, namedDiagram: !!projectName.trim() });
       setSelectedIndex(response.recommended_index);
       setStep(STEP_LAYOUT);
     } catch (error) {
+      if (requestRevision !== inputRevision.current) return;
       setApiError(error.message || t('auditUi.unknownError'));
+    } finally {
+      if (requestRevision === inputRevision.current) setLoading(false);
     }
-    setLoading(false);
   };
 
   /* ── keeping a layout ──────────────────────────────────────────────────── */
@@ -429,7 +448,7 @@ const TileOptimizer = () => {
     try {
       const moved = await movePlanToProject({ ...saved, projectType: 'tile' }, group.id);
       setSaved(moved);
-      localStorage.setItem('partsible.lastProjectGroup', group.id);
+      rememberProjectChoice(group.id);
       return true;
     } catch (error) {
       setApiError(t('projectUi.moveFailed', { message: error.message }));
@@ -459,9 +478,9 @@ const TileOptimizer = () => {
       locked: t('workflow.solvesFromSurface'),
     },
     {
-      label: t('workflow.keep'),
+      label: t('workflow.save'),
       reachable: !!result,
-      summary: saved ? t('workflow.savedAs', { name: saved.name }) : t('workflow.nameAndKeep'),
+      summary: saved ? t('workflow.savedAs', { name: saved.name }) : t('workflow.planDetails'),
       locked: t('workflow.waitsForLayout'),
     },
   ];
@@ -485,7 +504,7 @@ const TileOptimizer = () => {
               <p className="step-lede">{t('workflow.surfaceIntro')}</p>
               <p className="form-legend"><span className="req-mark" aria-hidden="true" />{t('formUi.requiredLegend')}</p>
             </div>
-            <button type="button" className="btn-text" onClick={() => setLoadModalOpen(true)}>
+            <button type="button" className="btn-text" onClick={modalTrigger(() => setLoadModalOpen(true))}>
               {t('workflow.loadSavedPlan')}
             </button>
           </div>
@@ -497,11 +516,11 @@ const TileOptimizer = () => {
             status={surfaceWrong ? <SectionStatus error={t('formUi.checkValues')} /> : <SectionStatus missing={surfaceMissing} />}
           >
             <div className="grid gap-x-6 gap-y-4 grid-cols-2">
-              <FormField label={t('tileUi.surfaceWidth')} unit="mm" required>
-                <input id="tile-surface-width" type="number" step="0.1" min="100" value={surfaceWidth} onChange={(e) => setField(setSurfaceWidth)(e.target.value)} className={`form-input dimension-input ${inputErrors.surfaceWidth ? 'form-input-error' : ''}`} aria-invalid={!!inputErrors.surfaceWidth || undefined} />
+              <FormField label={t('tileUi.surfaceWidth')} unit="mm" required error={inputErrors.surfaceWidth}>
+                <input id="tile-surface-width" type="number" step="0.1" min="100" value={surfaceWidth} onChange={(e) => setField(setSurfaceWidth)(e.target.value)} className="form-input dimension-input" />
               </FormField>
-              <FormField label={t('tileUi.surfaceHeight')} unit="mm" required>
-                <input id="tile-surface-height" type="number" step="0.1" min="100" value={surfaceHeight} onChange={(e) => setField(setSurfaceHeight)(e.target.value)} className={`form-input dimension-input ${inputErrors.surfaceHeight ? 'form-input-error' : ''}`} aria-invalid={!!inputErrors.surfaceHeight || undefined} />
+              <FormField label={t('tileUi.surfaceHeight')} unit="mm" required error={inputErrors.surfaceHeight}>
+                <input id="tile-surface-height" type="number" step="0.1" min="100" value={surfaceHeight} onChange={(e) => setField(setSurfaceHeight)(e.target.value)} className="form-input dimension-input" />
               </FormField>
             </div>
             <p className={surfaceWrong ? 'text-danger text-[12.5px] font-semibold' : 'synthetic'} style={{ marginTop: '10px' }}>
@@ -521,7 +540,7 @@ const TileOptimizer = () => {
               <div>
               <p className="synthetic" style={{ margin: '0 0 10px' }}>{t('tileUi.openingPositionHint')}</p>
               {cutouts.map((cutout, index) => (
-                <OpeningEditor key={index} cutout={cutout} fromVertical="tileUi.openingFromTop" onChange={(field, value) => handleCutoutChange(index, field, value)} onRemove={() => removeCutout(index)} error={surfaceAttempted && Object.values(inputErrors.cutouts[index] || {})[0]} />
+                <OpeningEditor key={index} cutout={cutout} fromVertical="tileUi.openingFromTop" onChange={(field, value) => handleCutoutChange(index, field, value)} onRemove={() => removeCutout(index)} errors={surfaceAttempted || !cutoutPristine(cutout) ? inputErrors.cutouts[index] || {} : {}} />
               ))}
               </div>
             )}
@@ -537,11 +556,11 @@ const TileOptimizer = () => {
             status={tileWrong ? <SectionStatus error={t('formUi.checkValues')} /> : <SectionStatus missing={tileMissing} />}
           >
             <div className="grid gap-x-6 gap-y-4 grid-cols-2">
-              <FormField label={t('tileUi.tileWidth')} unit="mm" required>
-                <input id="tile-width" type="number" step="0.1" min="10" value={tileWidth} onChange={(e) => setField(setTileWidth)(e.target.value)} className={`form-input dimension-input ${inputErrors.tileWidth ? 'form-input-error' : ''}`} aria-invalid={!!inputErrors.tileWidth || undefined} />
+              <FormField label={t('tileUi.tileWidth')} unit="mm" required error={inputErrors.tileWidth}>
+                <input id="tile-width" type="number" step="0.1" min="10" value={tileWidth} onChange={(e) => setField(setTileWidth)(e.target.value)} className="form-input dimension-input" />
               </FormField>
-              <FormField label={t('tileUi.tileHeight')} unit="mm" required>
-                <input id="tile-height" type="number" step="0.1" min="10" value={tileHeight} onChange={(e) => setField(setTileHeight)(e.target.value)} className={`form-input dimension-input ${inputErrors.tileHeight ? 'form-input-error' : ''}`} aria-invalid={!!inputErrors.tileHeight || undefined} />
+              <FormField label={t('tileUi.tileHeight')} unit="mm" required error={inputErrors.tileHeight}>
+                <input id="tile-height" type="number" step="0.1" min="10" value={tileHeight} onChange={(e) => setField(setTileHeight)(e.target.value)} className="form-input dimension-input" />
               </FormField>
             </div>
             <p className={inputErrors.tileWidth || inputErrors.tileHeight ? 'text-danger text-[12.5px] font-semibold' : 'synthetic'} style={{ marginTop: '10px' }}>
@@ -565,8 +584,8 @@ const TileOptimizer = () => {
                 )}
               </div>
               <div>
-                <FormField label={t('workflow.thicknessMm')} required>
-                  <input id="tile-thickness" type="number" min="0.1" step="0.1" value={tileThickness} onChange={(e) => setField(setTileThickness)(e.target.value)} className={`form-input dimension-input ${thicknessWrong ? 'form-input-error' : ''}`} aria-invalid={thicknessWrong || undefined} />
+                <FormField label={t('workflow.thicknessMm')} required error={thicknessWrong ? millimetresError(tileThickness, 1, Number.MAX_SAFE_INTEGER, t) : undefined}>
+                  <input id="tile-thickness" type="number" min="1" step="1" value={tileThickness} onChange={(e) => setField(setTileThickness)(e.target.value)} className="form-input dimension-input" />
                 </FormField>
               </div>
               <FormField label={t('ui.pricePerTile', { currency: pricingDefaults.currency })} optional>
@@ -587,11 +606,11 @@ const TileOptimizer = () => {
             status={jointWrong ? <SectionStatus error={t('formUi.checkValues')} /> : <SectionStatus missing={jointMissing} />}
           >
             <div className="grid gap-x-6 gap-y-4 grid-cols-2">
-              <FormField label={t('tileUi.joint')} unit="mm" required>
-                <input id="tile-joint" type="number" step="0.1" min="0" value={jointWidth} onChange={(e) => setField(setJointWidth)(e.target.value)} className={`form-input dimension-input ${inputErrors.jointWidth ? 'form-input-error' : ''}`} aria-invalid={!!inputErrors.jointWidth || undefined} />
+              <FormField label={t('tileUi.joint')} unit="mm" required error={inputErrors.jointWidth}>
+                <input id="tile-joint-width" type="number" step="0.1" min="0" value={jointWidth} onChange={(e) => setField(setJointWidth)(e.target.value)} className="form-input dimension-input" />
               </FormField>
-              <FormField label={t('tileUi.perimeterGap')} unit="mm" required>
-                <input id="tile-perimeter" type="number" step="0.1" min="0" value={perimeterGap} onChange={(e) => setField(setPerimeterGap)(e.target.value)} className={`form-input dimension-input ${inputErrors.perimeterGap ? 'form-input-error' : ''}`} aria-invalid={!!inputErrors.perimeterGap || undefined} />
+              <FormField label={t('tileUi.perimeterGap')} unit="mm" required error={inputErrors.perimeterGap}>
+                <input id="tile-perimeter" type="number" step="0.1" min="0" value={perimeterGap} onChange={(e) => setField(setPerimeterGap)(e.target.value)} className="form-input dimension-input" />
               </FormField>
               <div className="flex items-end gap-3 col-span-2">
                 <span className="bond-preview" style={{ color: 'var(--accent)' }} aria-hidden="true">
@@ -641,10 +660,13 @@ const TileOptimizer = () => {
                   value={minEdgeCut}
                   onChange={(e) => setField(setMinEdgeCut)(e.target.value)}
                   className={`form-input ${inputErrors.minEdgeCut ? 'form-input-error' : ''}`}
+                  aria-invalid={!!inputErrors.minEdgeCut || undefined}
+                  aria-describedby={inputErrors.minEdgeCut ? 'tile-min-edge-error' : undefined}
                   style={{ width: '110px' }}
                 />
                  <span style={{ fontSize: '13.5px', color: 'var(--ink-3)', fontWeight: 600 }}>{t('tileUi.thresholdUnit')}</span>
               </div>
+              {inputErrors.minEdgeCut && <p id="tile-min-edge-error" className="text-danger text-[12.5px] font-semibold">{inputErrors.minEdgeCut}</p>}
               <p className="synthetic" style={{ marginTop: '4px' }}>{t('tileForm.emptyMeansOff')}</p>
               <InfoTip label={t('workflow.sliverThreshold')}>{t('tileUi.ruleOfThumb')}</InfoTip>
 
@@ -655,10 +677,14 @@ const TileOptimizer = () => {
                   value={wastePercent}
                   onChange={(e) => setField(setWastePercent)(e.target.value)}
                   className={`form-input ${inputErrors.wastePercent ? 'form-input-error' : ''}`}
+                  aria-required="true"
+                  aria-invalid={!!inputErrors.wastePercent || undefined}
+                  aria-describedby={inputErrors.wastePercent ? 'tile-waste-error' : undefined}
                   style={{ width: '110px' }}
                 />
                  <span style={{ fontSize: '13.5px', color: 'var(--ink-3)', fontWeight: 600 }}>{t('tileUi.extraTiles')}</span>
               </div>
+              {inputErrors.wastePercent && <p id="tile-waste-error" className="text-danger text-[12.5px] font-semibold">{inputErrors.wastePercent}</p>}
 
                <label className="form-label" style={{ marginTop: '18px' }} htmlFor="tile-candidates">{t('tileUi.candidateCount')}</label>
               <div className="flex items-center gap-2">
@@ -667,9 +693,13 @@ const TileOptimizer = () => {
                   value={candidateCount}
                   onChange={(e) => setField(setCandidateCount)(e.target.value)}
                   className={`form-input ${inputErrors.candidateCount ? 'form-input-error' : ''}`}
+                  aria-required="true"
+                  aria-invalid={!!inputErrors.candidateCount || undefined}
+                  aria-describedby={inputErrors.candidateCount ? 'tile-candidates-error' : undefined}
                   style={{ width: '110px' }}
                 />
               </div>
+              {inputErrors.candidateCount && <p id="tile-candidates-error" className="text-danger text-[12.5px] font-semibold">{inputErrors.candidateCount}</p>}
 
               <label className="flex items-start gap-3" style={{ marginTop: '18px', cursor: 'pointer' }}>
                 <input
@@ -685,11 +715,6 @@ const TileOptimizer = () => {
                   </span>
                 </span>
               </label>
-              {(inputErrors.minEdgeCut || inputErrors.wastePercent || inputErrors.candidateCount) && (
-                <p className="text-danger text-[12.5px] font-semibold" style={{ marginTop: '10px' }}>
-                  {inputErrors.minEdgeCut || inputErrors.wastePercent || inputErrors.candidateCount}
-                </p>
-              )}
             </Disclosure>
           </div>
 
@@ -758,7 +783,7 @@ const TileOptimizer = () => {
             </button>
             <div className="step-foot-act">
               <button type="button" className="btn-order" onClick={() => setStep(STEP_KEEP)}>
-                 {t('workflow.nameIt')} <ArrowRight size={15} />
+                 {t('ui.nameAndSave')} <ArrowRight size={15} />
               </button>
             </div>
           </div>
@@ -767,10 +792,10 @@ const TileOptimizer = () => {
 
       {/* ── 03 · keep it ──────────────────────────────────────────────────── */}
       {step === STEP_KEEP && result && (
-        <form className="step-view is-form" onSubmit={handleSave}>
+        <form className="step-view is-form" onSubmit={modalTrigger(handleSave)}>
           <div className="step-head" style={{ marginBottom: '22px' }}>
              <div>
-                <h1 className="step-h1">{saved ? t('ui.layoutSaved') : t('ui.saveLayout')}</h1>
+                <h1 className="step-h1">{saved ? t('workflow.planSaved') : t('workflow.saveThisPlan')}</h1>
               <p className="step-lede">
                 {saved
                     ? t('ui.keptPlan', accountContext)
@@ -850,15 +875,7 @@ const TileOptimizer = () => {
       />
 
       {loadModalOpen && (
-         <div className="cat-overlay" role="dialog" aria-modal="true" aria-label={t('workflow.loadSavedPlan')}>
-          <div className="cat-sheet">
-            <div className="masthead" style={{ marginTop: 0 }}>
-               <span className="masthead-brand" style={{ fontSize: '13px' }}>{t('tileUi.savedPlans')}</span>
-              <span className="masthead-section" />
-              <button type="button" className="masthead-flash" onClick={() => setLoadModalOpen(false)}>
-                 {t('ui.close')}
-              </button>
-            </div>
+         <Modal aria-label={t('workflow.loadSavedPlan')} title={t('tileUi.savedPlans')} onClose={() => setLoadModalOpen(false)}>
             <div style={{ padding: '14px 16px 18px' }}>
               {userProjects.length === 0 ? (
                 <p style={{ color: 'var(--ink-3)', fontSize: '13px' }}>
@@ -886,8 +903,7 @@ const TileOptimizer = () => {
                  {t('tileUi.renameDelete')}
               </p>
             </div>
-          </div>
-        </div>
+        </Modal>
       )}
     </CatalogPage>
   );

@@ -19,6 +19,9 @@ colors:
   shop: "#16150f"
   field: "#fbfaf6"
   field-line: "#8a846f"
+  builtin: "#3d6a2c"
+  builtin-bg: "#eaf2e3"
+  done: "#3d6a2c"
   night-ground: "#17150f"
   night-ground-2: "#201d15"
   night-ground-3: "#322d20"
@@ -35,6 +38,9 @@ colors:
   night-revision-bg: "#2e1410"
   night-field: "#14120d"
   night-field-line: "#8f8b78"
+  night-builtin: "#9fcb8b"
+  night-builtin-bg: "#1c2716"
+  night-done: "#9fcb8b"
 typography:
   display:
     fontFamily: "Archivo, system-ui, sans-serif"
@@ -146,6 +152,12 @@ components:
 
 ## Overview
 
+This is the repository's normative interface contract. Current rules below take
+precedence over the historical rationale explicitly identified as such. Obsidian
+holds the review programme and evidence, not a second design system. The product
+UI is an **Operate** surface; Help and saved instructions prioritize **Read**.
+Preserve the existing warm-paper visual identity; remediation is not a restyle.
+
 ### Creative North Star: "The Self-Hosted README"
 
 Partsible reads like a well-made open-source project's own homepage, not a printed
@@ -192,6 +204,44 @@ from one stylesheet.
   numbered list is now just a plain index (`01`, `02`…), never a fake
   document citation
 
+## Design and UX Principles
+
+These principles guide changes across every page, not just the homepage or one
+planner. Product context lives in `PRODUCT.md`.
+
+**Measurement policy (2026-11-27):** New measurement inputs use whole millimetres,
+including kerf, joints, gaps, opening positions, stock profiles, and allowances.
+Reject fractional, malformed, and out-of-range input rather than truncating it
+or accepting a numeric prefix. Keep the existing supported bounds; the smallest
+positive whole-mm kerf is 1 mm. Prices, percentages, ratios, and angles are not
+millimetre measurements and retain their own contracts.
+
+The model flow explicitly explains that measured geometry is rounded to the
+nearest millimetre before grouping and planning. This supersedes the earlier
+proposal to preserve fractional model inputs. Computed geometry is not rounded
+internally: doing that could change placement and fit. Existing saved records,
+stored diagrams, and backups are not migrated or silently rounded. Their
+historical fractional instructions remain accurately readable; modifying them
+requires correcting unsupported inputs before recalculation or a new save.
+
+- **Consistency across pages:** Reuse the same visual and interaction language
+  for equivalent tasks: navigation, actions, fields, validation, loading,
+  dialogs, and result summaries. Consistency does not require identical layouts
+  for different tasks.
+- **Task-first UX:** Make the next action, current state, and error recovery
+  clear. Prioritize laptop and desktop workflows, followed by tablets. Mobile
+  must look good and work, but must not dictate the main workflow.
+- **Keep it simple (KISS):** Remove unnecessary controls, repeated information,
+  and decoration. Do not remove measurements, constraints, or guidance needed
+  to prevent mistakes merely to make a screen look cleaner.
+- **Reuse before inventing:** Use existing tokens and shared components when
+  the pattern matches. Fix shared behavior centrally instead of copying it
+  into each page. Do not create speculative abstractions for one-off needs.
+- **Explicit exceptions:** A page-specific departure needs a task-based reason
+  documented here. Distinguish intentional differences from unfinished
+  migrations; neither an implementation accident nor a scanner finding alone
+  establishes a design rule.
+
 ## Colors
 
 A warm, restrained press: cream-to-white neutrals, ink type, one amber accent,
@@ -236,15 +286,18 @@ one red for correction.
   labels, muted captions, table headers. Darkened from `#8b8776` after the
   same contrast audit found it fell to 3.4–3.6:1 on paper and card — it now
   clears 4.5:1+ on both.
-- **Hairline** (`{colors.rule-hair}` `#e9e6da`, night `#322d20`): The only
-  border color in the system; used at 1–1.5px for every card, table row, and
-  control outline.
+- **Hairline** (`{colors.rule-hair}` `#e9e6da`, night `#322d20`): Decorative
+  card/table separators. Functional control boundaries use `--field-line`;
+  active, focus and error boundaries use their semantic state tokens.
 
 ### Color Rules
 
-**The One Accent Rule.** Amber marks exactly one thing per surface: the
-action, or the figure that leads to it. A screen with two amber elements
-competing for attention is a screen where one of them is wrong.
+**The Accent Has Meaning Rule.** Amber identifies the primary next action,
+active location/selection, keyboard focus, or a consequential figure. Those
+roles may coexist; do not suppress focus or selected state to meet an arbitrary
+one-element quota. Decorative accents and equally prominent competing primary
+actions are not allowed. Revision red signals errors; existing green `--done`
+and catalogue provenance colors are semantic exceptions, not extra brand colors.
 
 **The Redder Than Amber Rule.** Revision red must read as unambiguously red
 next to the accent's amber. If a proposed error color and the accent color
@@ -255,7 +308,12 @@ the rule.
 
 **Display / Body / Label Font:** Archivo, self-hosted via `@fontsource`
 (weights 400–800), one family for everything sentence-case; **Archivo
-Narrow** (600–700) for uppercase tracked labels only.
+Narrow** (600–700) for labels and supporting captions.
+
+Delivery retains those exact self-hosted WOFF2 faces, weights, and Unicode
+ranges. The build removes only their redundant legacy WOFF sources; no glyph
+subset or visual font substitution is used to meet Lite's delivery budget.
+`fontDelivery.test.js` compares every retained declaration with Fontsource.
 
 **Character:** A plain grotesque doing all the work — no second personality
 for headings, no mono for data. The narrow cut exists only to make a small
@@ -286,11 +344,13 @@ density-as-trust-signal philosophy) failed a runtime accessibility scan and
 was raised across the board; this floor is now load-bearing, not a
 suggestion.
 
-**The Narrow-Means-Label Rule.** Archivo Narrow appears only on genuinely
-uppercase, tracked micro-labels (`.kicker`, `.form-label`, `.cat-table th`).
-Quieter captions in sentence case (`.folio`, `.synthetic`) still use Archivo
-Narrow's condensed width but are never forced uppercase — they read as an
-aside, not a stamped label.
+**The Narrow-Means-Support Rule.** Archivo Narrow is for tracked micro-labels
+and the existing sentence-case `.folio`/`.synthetic` supporting captions.
+Running prose and editable values use Archivo. Do not force captions uppercase.
+The structured typography values are role defaults, not an exhaustive size
+catalogue: the established step heading is 26px (22px below 768px), the lede
+14.5px, and functional table fields 32px tall. These intentional density
+exceptions must remain readable; do not introduce arbitrary new sizes.
 
 ## Layout
 
@@ -306,12 +366,36 @@ lands right after a short headline instead of being pushed off-screen by the
 diagram. This reorder was added specifically because the first version buried
 the cards below the fold on a phone.
 
-Both optimizer pages (`CuttingOptimizer`, `SheetOptimizer`) are **stepped**, not
-spread. The old three-column `.work-spread` pattern (parts | stock | answer,
-cost and plan bands below) is gone: the work is a sequence — say what you need,
-read the plan, keep it — so the page renders one step at a time under a
-`.plan-steps` rail. `.step-view.is-form` holds steps 1 and 3 at a 620px form
-measure; step 2 drops the cap so the diagram gets the full 1080px.
+Planners are **stepped**, not an inputs-and-answer spread: enter requirements,
+read the result, save it. The `.plan-steps` rail renders only the current step.
+Simple upload and save forms retain a 620px measure; diagrams use the full
+1080px content width. Board, sheet and tile entry share the same `.is-form`
+620px measure, with their sections stacked in reading order at every width.
+Do not add per-planner desktop columns: user review rejected the uneven
+two-column composition, which left empty space without removing scrolling.
+Individual related fields may still share a row within a section.
+Model batch settings are a separate comparison task: `.is-model-settings`
+uses the wider measure at 1000px and above, with two columns of independent
+cutlists, not a widened upload field. Below that breakpoint the same DOM returns
+to one column. Inputs stay compact, not stretched to fill space.
+Optional board pricing/strategy uses `Disclosure`; stock and kerf never collapse.
+
+The global menu is always sticky at the viewport top. The step rail starts in
+normal document flow and sticks beneath the menu only when scrolling reaches
+it. Its offset follows the menu's measured height, including wrapped mobile
+navigation and locale changes; never pin both surfaces at `top: 0`. Focus and
+anchor destinations account for both sticky surfaces so headings remain visible.
+
+Sloped-wall controls are HTML `FormField`s outside the drawing's SVG transform.
+They flank the outline in roomy containers and reflow below it at 560px and
+below. The same five controls follow row-major DOM/focus order in both layouts.
+Never shrink a measurement control with a diagram.
+
+Shared headers and summary values must wrap supported long names. Two-dimensional
+strip/placement/shopping tables scroll in labelled, keyboard-focusable local
+regions; they must not expand the page or hide costs. Test 1440/1024/768/390/320px,
+long unbroken names, large part sets, all locales and both themes. Print has its
+own paginated layout; screen scrolling is not a print layout.
 
 ### Layout Rules
 
@@ -335,17 +419,29 @@ retires the plan and re-locks the steps after it, rather than leaving a diagram
 on screen that no longer matches the parts. A plan the user can read but not
 trust is worse than no plan.
 
-**The One Nav Rule.** `.app-nav` — a single top bar with plain links, present
-on every route via `CatalogPage` — is the only navigation in the product.
-There is no second index, no trim-edge rail, no per-page duplicate of the
-same four links; a route with more than one way back to the same content is
-a bug, not a feature.
+Tile calculations follow the board/sheet revision-guard pattern: editing inputs
+retires both completed and in-flight layouts and permits a fresh calculation.
+Only the current request may publish a result or error, advance to Layout/Keep,
+or end the current loading state. An obsolete response must not unlock Keep or
+pair old candidate geometry with newly entered measurements when saving.
+
+Wallpaper uses the same revision rule for both Create plan and alternative-start
+calculations. Editing wall, roll, pattern, corner, or allowance inputs retires
+completed and pending plans and locks Plan/Review/Save until recalculated.
+Review/Save also stay locked while an alternative start is pending. A failed
+current alternative leaves the last valid plan available for retry; an obsolete
+response cannot publish a result/error or end a newer request's loading state.
+
+**The One Global Nav Rule.** `CatalogPage` owns one `.app-nav` on every route.
+Do not duplicate global tool links in a second sidebar or rail. Contextual
+navigation is intentional: step progress, Help contents, wall/item selectors,
+dashboard back links and recovery links serve different tasks and remain.
 
 ## Elevation & Depth
 
 Mostly flat. Depth comes from the `--card` / `--ground` two-step brightness
-difference and 1–1.5px hairline borders, not from strong shadows. Two shadow
-uses exist and both are deliberately quiet:
+difference and 1–1.5px hairline borders, not from strong shadows. The named shadow
+and focus treatments below are deliberately quiet:
 
 ### Shadow Vocabulary
 
@@ -415,7 +511,18 @@ hollow and recessed. Every step of every planner follows this rule. The
 back button at the foot of a step is a `.btn-text` link with an arrow, so the
 amber primary is the only strong thing in the foot. The save step is a "Plan
 details" `SectionCard` (`SavePlanCard`, wallpaper inline): plan name and project
-are required `FormField`s with no placeholder, and the hint moves into an ⓘ.
+use shared `FormField`s with no placeholder. Plan name and project choice are
+required. New-project name is optional: its associated visible hint names the
+blank/whitespace fallback (plan/model name, otherwise localized "My plans").
+The section's completion status must agree with those semantics. Existing
+project choices do not create a new group.
+
+Equivalent persistence actions use **Save** for the step, **Name and save** for
+entering the save form, **Save this plan** for its heading, and **Save plan**,
+**Save to [project]** or **Update plan** for the actual operation. "Keep" is
+ordinary explanatory prose, not a competing action name. Model batch planning
+may say **Plan and save** because that operation also calculates. Help uses
+the same action vocabulary.
 
 ### Cards / Containers
 
@@ -470,6 +577,15 @@ radius, 42px square).
   claim about the stock. A catalogue product's thickness replaces the default;
   an explicitly cleared thickness still blocks planning. Thickness is saved
   but does not currently change the sheet placement calculation.
+- **Sheet part quantities:** Accept complete whole-number values from 1 to 1000
+  per row. Never truncate fractional or partially numeric input. Invalid counts
+  block planning and serialization for both calculation and saving; totals count
+  only valid rows while the existing row status explains what needs correction.
+- **Board part quantities:** Apply the same complete-value rule with the existing
+  1–10,000 per-row limit. Counts, length demand, and calculation/save payloads
+  must agree; valid whole counts in exponent notation retain their full value.
+  Invalid counts block submission and serialization rather than being truncated
+  or silently omitted.
 - **Required and optional fields:** Every required label carries an ink `*`
   (`.req-mark`, hidden from screen readers, with `aria-required` on the
   control), and the form opens with one "* Required" legend. An optional field
@@ -480,6 +596,12 @@ radius, 42px square).
   fill, turning solid on focus. An earlier version drew the dash in `--ink-4`
   and was rejected for low contrast; the edge colour is load-bearing. Use
   `FormField` rather than hand-building the label.
+- **Conditional setup code:** Registration's setup code is not unconditionally
+  required or optional. Its visible, associated hint states the local/network
+  condition; do not infer the server's configured secret or mark this field
+  universally optional. Other auth fields and editable Defaults use the shared
+  required cues; catalogue creation requires kind/type/dimensions while its
+  stock lists, provenance and detail overrides are optional.
 - **Fields in tables (`.cell-input`):** the same recessed box and 3:1+ edge as
   any other field, only tighter (32px). An empty required cell stays neutral
   (no amber), like every other empty required field.
@@ -498,9 +620,9 @@ Cards do not clip their content, so an ⓘ near the top can open over the edge.
 The disabled primary at the foot of the step repeats the first blocker and
 links to it ("Fill in Wall width on Wall D to create the plan. Go to Wall D").
 
-Optional work gets its own card marked "(optional)" in the title, with a
-summary of its current setting instead of a status (board cutting's "Prices &
-cost optimisation · No prices · Least waste"). A card's title is the section's
+Optional work uses a disclosure with a current-setting summary (board cutting's
+"Prices & cost optimisation · No prices · Least waste"), or an optional card
+where the task needs persistent context. A card's title is the section's
 heading, so the step's `h1` names the tool ("Board cutting"), not the first
 card. In a table, required columns carry the `*` and optional ones
 "(optional)" in the header; cells never use "Optional" as a placeholder.
@@ -525,9 +647,37 @@ shown, because the closed cards are already the overview.
 
 Every plan document is read-only: a summary, an overview and selector when the
 module has multiple physical items, its details, and module-specific extras.
-The review step and saved-plan page render the same document; print follows
-that same order. Editing remains an explicit route back to the planner, never
-an inline alteration of a saved result.
+Where the workflow has a document Review step (wallpaper), Review and saved pages
+share the document formatter. Other planners may use task-specific live result
+controls rather than pretend to be identical saved documents. Shared facts must
+keep the same meaning. Print follows the document's information order. Editing
+is an explicit route back to the planner, never an inline saved-result mutation.
+
+Board profiles are labelled **Board thickness × width**; tile dimensions are
+**Tile size**, never Sheet size. Wallpaper summaries include actual repeat and
+matching values, and costs retain cents and known currency. Live Review, Print
+and Save pass the same pricing context. Historical missing currency is stated
+as unrecorded, never inferred from today's Defaults.
+
+Saved board/sheet diagrams expose **View the full diagram** through shared
+`DiagramInspection` and `Modal`: original SVG/PNG bytes, intrinsic-size image
+and a bounded, keyboard-scrollable region. Inspecting never enters Modify or
+regenerates an image; Escape returns to its trigger. Tables remain accessible
+outside the overlay. Live sheet **Download all sheets** always exports the
+combined returned asset, independently of the selected on-screen sheet.
+
+Model board grouping keeps length totals for comparison and separate named
+source rows for handoff. `boardPartsForGroup` feeds both standalone and batch
+paths. Equal lengths from distinct named components retain their own names and
+counts; missing names remain blank. Never assign the first component's name to
+unrelated rows. Legacy unnamed length maps still load.
+
+Saved board, sheet, tile, and wallpaper routes expose only the current route's
+document, title, Print, and Modify actions. Changing the plan ID retires the
+previous document immediately and shows the existing loading state; missing
+state is reset for the new request. Obsolete success/failure responses cannot
+replace the current document or its loading/missing state, including A→B→A
+navigation. This guards response eligibility, not network cancellation.
 
 A board plan's document and printout include **Parts to cut** (name, length,
 and quantity) before the cutting diagram. This is distinct from the project
@@ -540,12 +690,33 @@ narrow to label. The live diagram downloads as PNG. The live "What to buy"
 table uses the available width and keeps stock dimensions separate from length.
 The board result summary uses one consistent label-and-value style, and shows
 the stock profile only once when it is already present in the product name.
+Do not repeat a comparison/answer metric as a second dashboard. Tile candidate
+cards own purchase-with-allowance, utilization and distinct-size comparison;
+the selected detail table adds needed-before-allowance, cut/reuse counts and
+edge/sliver constraints. The sheet answer pairs its count with **Sheets to buy**
+and shows utilization once in its facts. Repeating a quantity in a stock total
+or physical sheet selector serves a different task and is intentional, not
+another hero.
 
 **The Measurement Comes First Rule.** A part description must never replace
 its actual cut length. Show the length first, preserve decimal precision, and
 add a description only if it fits without obscuring the measurement. If a
 piece is too small for its length, a standalone diagram must retain a readable
 fallback schedule: removing redundant text must never remove a required cut.
+
+Live sheet results, saved sheet documents, and generated sheet Print instructions
+preserve decimal dimensions and coordinates through the shared measurement
+formatter, following the existing board-results number format. Saved summaries
+also retain stock thickness and dimensions; diagram descriptions retain the
+returned sheet dimensions. A semicolon separates x and y so decimal commas
+cannot be mistaken for coordinate separators. Existing stored diagram images
+are not regenerated by these presentation fixes.
+
+Saved board documents and generated board Print instructions use that same
+formatter for stock profiles, stock lengths, required-part lengths, and cut
+schedules. Board selection must not change measurement precision. Named rows
+and legacy length-to-quantity records follow the same display rule; stored
+measurements and diagram images are left untouched.
 
 `components/plan/PlanPageShell` owns the saved-plan loading states, back link,
 title, and Print / Modify actions. `PlanSummary` renders the common labelled
@@ -590,6 +761,18 @@ name when available) and a separate surface-size line, not a run-on ranking
 summary. Saved diagrams are stored images: changes to diagram generation do
 not retroactively redraw existing plans.
 
+Fresh tile calculations localize semantic candidate names and recognized generated
+SVG annotations through `tileLocalization`; switching locale re-renders from the
+original response. The same localized current image feeds live, enlarged, PNG
+export and new saves. Template measurements/letters are locale-neutral and their
+HTML instructions translate normally. User plan/opening names and geometry are
+never translated. Saved images remain immutable language snapshots, including
+older English legends; the surrounding saved-page controls follow the current
+locale without claiming the stored image was regenerated.
+New saves include a `layout_result.diagram_labels` snapshot so the shared
+backend/Lite saved-SVG redraw uses the same translated annotations. API callers
+that omit it keep the English rendering default.
+
 ### Wall Picker
 
 `WallPicker` is a segmented radio group for the walls in a wallpaper plan. Its
@@ -608,14 +791,35 @@ Multi-select controls appear only when a project contains more than one plan.
 
 The shopping list is a **workshop order sheet**, not a spreadsheet: one framed
 material sheet with a plate-paper heading band, strong stock names, and a
-quietly tinted **Quantity** column that makes the actionable purchase quantity
+quietly tinted **To buy** column that makes the actionable purchase quantity
 the visual anchor. Its 12px, weight-800 column labels are intentionally more
 prominent than a standard table's micro-labels. It remains a semantic table so
 stock, size, quantity, optional unit price, and cost stay easy to scan and
-export. Quantity already includes the project's spare allowance; the
-internal required count is not shown. Unpriced rows are deliberately quiet;
+export. **Needed** is secondary context in that cell, not another competing
+purchase column. The visible explanation states the configured board/sheet
+reserve, rounded up per combined size; tile/wallpaper retain their saved
+allowance without adding it twice. Print/CSV expose the same two counts plus
+source-plan provenance. Unpriced rows are deliberately quiet;
 the subtotal and note explain
 when the visible cost is incomplete.
+
+Tile purchase aggregation includes known thickness as well as material, width,
+and height; use stored measurements, never rounded labels, as identity. Unknown
+thickness must not inherit a known thickness by merging. Identical tile rows
+still aggregate under the existing pricing rules and retain the planner's
+purchase quantity without applying the project spare allowance a second time.
+The screen, CSV, and generated shopping Print use the same purchase rows.
+
+Wallpaper purchases include each known product code in structured identity,
+alongside the existing name, manufacturer, and roll dimensions. Shopping labels
+show the name, manufacturer, and code when present so distinct purchases remain
+identifiable on screen, in CSV, and in generated Print. Missing codes must not
+inherit known ones; identical coded products retain existing pricing and
+reserve behavior. Codes are preserved as stored, not inferred or case-folded.
+Known repeat, match, roll offset, and batch reference also participate in purchase
+identity and are visible in the shared screen/CSV/Print label. Missing metadata
+does not inherit known values by merging. Identical metadata still aggregates
+without a second reserve allowance.
 
 ### The Step Rail
 
@@ -636,12 +840,137 @@ one place in the system where `01 / 02 / 03` is earned rather than decoration.
 
 ### Blocked Actions and Recovery
 
+Language, day/night edition, and Lite-notice dismissal are optional browser
+preferences. Denied storage getters, reads, or writes must not blank the app.
+Language falls back to a supported browser language, then English; switching
+still updates the active language and document language. Only a saved boolean
+`true` enables the night edition; malformed values use the day edition. When
+storage is unreadable, keep the current document's theme across navigation.
+Lite-notice dismissal still works in the current view if it cannot be remembered.
+These fallbacks do not imply that saved work is available, persistent, or
+backed up.
+
+Self-hosted sign-in storage is not an optional preference: an unreadable token
+must not be treated as a missing token or trigger token deletion. Finish loading
+with an explicit storage-specific alert and a reload recovery action; do not
+offer sign-in/setup or expose protected routes while identity is unknown.
+This alert has its own translated heading, not the generated "Note" prefix.
+Public content and language/theme controls remain available. A failed logout
+must not claim success if token removal failed. This does not change credential
+storage policy, IndexedDB behavior, or introduce an ephemeral work-store fallback.
+
+Optional catalogue/release caches and last-project preferences must not turn a
+successful fetch, save, or move into an apparent failure when their write fails.
+Model handoff is different: a failed transfer write keeps the source model and
+offers an explicit retry instruction without navigating. A failed destination
+read leaves a visible recovery message rather than crashing the planner.
+
+Saved-plan failures distinguish confirmed not-found from inaccessible or
+temporarily unavailable data and offer an in-place retry. Unknown collections
+must not render a known-empty library. Failed renames/settings edits retain the
+draft, block duplicate pending commits, and permit retry or cancellation.
+Unknown routes and failed route rendering retain navigation and honest
+reload/home recovery; reloading may discard unsaved input.
+Recovery resets on navigation after a failure without remounting healthy pages:
+consuming an edit/import query or following a fragment must preserve loaded work.
+Wallpaper saves announce their pending state and lock the save fields and step
+navigation until completion. Failures retain the draft for retry. Leaving the
+planner retires completion handling and prevents an unsent plan write after
+project creation; it cannot cancel a write already sent. A secondary wallpaper-
+library failure must not imply that the completed plan save failed.
+Skipped model geometry retains its part name and a localized explanation for
+known reasons, with a safe correction hint for unrecognized reasons. Keep these
+diagnostics available even when no usable cutlists remain; replacing or removing
+the source file clears them. A geometry warning alone does not prove that an
+assembly container was intended as a physical part.
+
+Registration and password reset explain the server's actual policy: at least
+eight Unicode characters, ASCII uppercase/lowercase, a digit and a special
+character, with a maximum of 72 UTF-8 bytes. Reset uses a password field with
+retry/cancel, never a plain-text browser prompt. Login is not subjected to
+new-password validation.
+
+Lite backup import reports success only after all imported record writes commit
+in one transaction across the affected stores. A failed or aborted import must
+leave both existing records and unrelated work unchanged; successful individual
+write requests are not evidence of a committed restore. This atomic-write rule
+does not replace record validation or explicit conflict/replacement confirmation.
+Before writing, imports reject unsupported formats, duplicate IDs within a store,
+invalid saved-record shapes, and missing project-group references in the merged
+library. Validation preserves the original supported metadata rather than
+normalizing it or re-solving plans. Rejection leaves storage unchanged and tells
+the user to keep the original file and try another backup.
+
+Choosing an import file prepares a read-only inline review in the existing backup
+panel; it never writes immediately. Show additions/replacements for each affected
+record type, with expandable record names, IDs, and current replacement names.
+Matching IDs count as replacements even when their contents are identical,
+including Defaults and catalogue entries. Require an unchecked-by-default explicit
+replacement approval before enabling the destructive restore action.
+
+Changing the file, cancelling, leaving the panel, or a failed/stale restore
+retires the current UI approval. Pending obsolete file reads/previews cannot
+restore eligibility or feedback. A restore is single-use and locks its actions
+until commit/rollback; cancellation is available before, not during, that write.
+Reread the selected file before handing off the write; changed or unreadable
+contents cannot be restored using the previous preview.
+Empty backups remain read-only. Move keyboard focus to the ready review heading
+and back to Import after cancellation or a completed restore attempt.
+
+Preview owns an immutable copy of the validated file and a consistent snapshot
+of affected IDs plus referenced retained groups. The write transaction rechecks
+those records before enqueueing any writes, including absent IDs that might have
+become replacements. A relevant mismatch aborts without writes and requires a
+fresh preview and new approval. Unrelated record changes do not invalidate it.
+Backup maintenance stays below the dashboard's project/Defaults content behind a
+collapsed-by-default **Backup** button disclosure, not a competing full-width
+card. Export history, transfer controls, storage details, and persistence requests
+are disclosed inline. Backup reminders, unprotected/unknown storage warnings,
+persistence refusals, and action feedback stay visible even while collapsed.
+The native button exposes expanded state and its controlled content; hidden
+controls are not keyboard stops. Collapsing cancels an uncommitted review and
+retires its approval, with focus on Backup. Disable collapse during a restore
+write; normal cancellation/completion still returns focus to Import.
+After a successful restore commit, invalidate catalogue caches and notify mounted
+project/Defaults/catalogue views to reload their stored data. Failure/rollback
+does not emit a success notification. Keep the backup disclosure mounted so its
+feedback and focus recovery survive. This is same-document refresh, not a promise
+of automatic cross-tab synchronization or crash durability.
+
+Defaults are editable and saveable only after a successful read for the current
+user. A pending read shows the existing loader; a failed read shows the load error
+and a localized Retry action, not an editable fallback form. Retry never writes
+preferences. Failed saves retain the loaded draft for correction or retry.
+Changing user retires the previous draft/actions; obsolete load/save completions
+cannot change current eligibility, feedback, language, or catalogue choice.
+Save also rejects direct submissions while settings are unknown or a save is
+pending. This protects response eligibility, not already-sent request cancellation;
+there is no implicit reset-to-defaults behavior.
+
+The admin catalogue's resolved country owns its rows, vocabulary, edit/add drafts,
+suggestion panels, and delete/revert confirmations. Changing that country retires
+those together and shows the existing loader, while keeping the country selector
+available. Search and filter choices persist. Rows and mutations become available
+only after the matching list and vocabulary load. Requests and mutations capture
+their country; obsolete load/mutation successes and failures cannot replace
+current data, close a new country's form, or end its pending state. Already-sent
+mutations may finish in their original country; this is not network cancellation.
+
 A disabled primary action must state the requirement that blocks it at the point
 of action and provide a direct route to fix it. In board cutting, no required
 parts shows a status beside the Required parts heading and a “Go to required
 parts” link beside the disabled plan action; the link scrolls to and focuses the
 heading. Do not rely on off-screen validation or a vague “fix highlighted rows”
 message.
+
+Correction links in board, sheet, tile, and model batch settings focus the first
+invalid field in DOM order, then an empty required field, never an unrelated
+empty optional field. Their scroll respects reduced motion. Edited invalid tile
+openings expose field-specific feedback while calculation is disabled; untouched
+empty openings stay neutral. Shared field feedback associates only the faulty
+control with its error and clears that association after correction.
+Committed Lite restores also refresh mounted product-picker suggestions without
+rewriting selected product snapshots or current planner inputs.
 
 ### Folds
 
@@ -661,6 +990,41 @@ lives here, while units, constraints, validation, and other error-preventing
 guidance stay inline.
 
 ### Navigation
+
+**Accessible interaction contract (2026-11-27).** `CatalogPage` owns exactly one
+`main#main-content` and a visible-on-focus skip link; saved-plan shells must not
+nest another main. Projects, Defaults and administration retain meaningful h1
+headings, including project rename mode. Route titles are localized and identify
+the current tool or supplied saved/loading/error state, never an obsolete plan.
+
+Genuine pathname transitions focus the destination heading (or main while no
+heading is available) without scrolling it into view. New routes scroll
+immediately to the page top, keeping the global menu and step rail in their
+initial positions rather than moving them under the next pointer activation.
+Non-interactive destination headings do not draw a focus box; keyboard focus
+indicators remain on links, buttons and fields. POP navigation does not force
+scroll. Query consumption
+must preserve working context. Help hashes focus their section heading and expose
+`aria-current="location"`. `PlanSteps` reveals/focuses the new heading only when
+the step changes, not during same-step repricing. Destination scrolling respects
+reduced motion.
+
+`Modal` owns focus entry, forward/backward containment, Escape/backdrop dismissal,
+background isolation and trigger recovery for confirmation, authentication,
+saved-plan loading and diagram/template overlays. Existing sheet styling and
+bounded internal scrolling remain. First-run setup can be cancelled to return to
+the page; cancellation never bypasses protected-route setup requirements.
+An explicit destination such as Show in cut list takes precedence over trigger
+recovery after the overlay has released background isolation.
+
+Board/admin selectors use ordinary selected buttons (`aria-pressed`), not tab
+roles. Plan actions and nested Move destinations are disclosures with normal
+Tab/Enter buttons, expanded/control associations and nearest-trigger Escape
+recovery, not application menus. Keep working sheet buttons and wall radios.
+Model file-input keyboard focus is reflected on its visible label. Meaningful
+warnings use theme-aware semantic colors; enabled catalogue rows are never faded
+through ancestor opacity. Field errors describe only affected controls; related
+opening fields may share one explanation without repeating live alerts.
 
 - **Style:** `.app-nav` — one top bar, wordmark left, plain links center,
   day/night switch right. The current route's link gets a 2px amber
@@ -751,14 +1115,17 @@ The self-hosted homepage footer (`.hp-footer`) and the Partsible Lite footer end
 with one plain text link, "Buy me a coffee", to `https://ko-fi.com/nordstad`.
 It looks like its neighbours (Help, Source, Licence): same type, same colour,
 no icon, no button, no banner or popup. It opens in a new tab with
-`rel="noopener noreferrer"`. It is never shown inside the tools, it has no
+`rel="noopener noreferrer"`. Self-hosted tools omit this link; Lite keeps it in
+its shared footer, never inside a working form or result action group. It has no
 analytics event, and it does not load a Ko-fi widget or script, so the app
 makes no third-party request until the link is clicked.
 
-The Partsible Lite footer, and the quiet notice above it, stay pinned to the
-bottom of the window (`position: sticky`) so the links are always in view. On a
-short page the footer sits at the bottom of the window, not just under the
-content. Both are small, muted text on the page ground.
+The Lite shell places its footer at the bottom on short pages. Only the footer
+may stick, and only on roomy viewports (at least 700px wide and 720px high);
+the quiet dismissible notice stays in normal flow. Narrow/short screens and
+print keep both in flow so chrome does not take over the workspace. Focused
+content must remain reachable above sticky chrome; test browser zoom as well
+as CSS viewport sizes. Homepage footer destinations wrap rather than overflow.
 
 ### Notices
 
@@ -780,8 +1147,8 @@ whole affordance, with `aria-label`/`title` covering the rest.
 
 ### Do
 
-- **Do** spend the amber accent on exactly one thing per surface: the action,
-  or the figure that leads to it.
+- **Do** reserve amber for the primary action, active state, focus and a
+  consequential figure; do not let decorative accents compete.
 - **Do** keep every card, input, and control on the radius ladder (4 → 6 →
   8–10 → 12 → 16 → full) rather than inventing an in-between value.
 - **Do** hold every label and caption to an 11px floor (12px for
@@ -800,15 +1167,15 @@ whole affordance, with `aria-label`/`title` covering the rest.
 
 - **Don't** introduce a fifth color, or let revision red and the accent
   amber sit close enough in hue to be confused in a small mark.
-- **Don't** add a second navigation surface — trim-edge rail, sidebar, or
-  per-page duplicate menu — alongside `.app-nav`.
+- **Don't** duplicate global navigation alongside `.app-nav`; keep purposeful
+  local wayfinding and recovery.
 - **Don't** reintroduce a catalog reference number (folio code, "Section N,"
   "Fig. N.NN") anywhere in copy; a plain sequential index (`01`, `02`…) is
   fine, a fake document citation is not.
 - **Don't** put a second step's controls on screen beside the current one, or
   return an optimizer page to a single spread of every input at once. That is
   the specific thing the step flow replaced.
-- **Don't** add a shadow, gradient, or glass effect outside the two named
+- **Don't** add a shadow, gradient, or glass effect outside the named
   quiet-lift uses; depth comes from the ground/card brightness step and
   hairline borders first.
 - **Don't** let a color pair ship without checking contrast — this system
@@ -818,6 +1185,31 @@ whole affordance, with `aria-label`/`title` covering the rest.
 ## Notes on incompleteness
 
 Recorded so future work does not mistake these for system rules:
+
+### Verification inventory
+
+| Contract | Automated evidence |
+| --- | --- |
+| Complete mm/count values; historical precision | Measurement/parts tests |
+| Modal entry/trap/recovery/isolation | `Modal.test.jsx`; interaction E2E |
+| Main/skip, destinations, field errors | `AccessibleInteraction` tests |
+| Document facts and export scope | Document/result component tests |
+| Original-image inspection and focus return | `DiagramInspection.test.jsx` |
+| Source-named model board handoffs | `modelGroups.test.js`; model flow tests |
+| Tile locale adapter; unchanged geometry/names | `tileLocalization.test.js` |
+| Optional project-name fallback | `ProjectPicker` / `useProjectChoice` tests |
+| Needed/To buy; reserve; purchase identity | Shopping/material-list tests |
+| Scrolling, long names, viewports | `documents-layout` browser E2E |
+| Build separation and delivery budgets | Both builds; Lite/self-hosted guards |
+
+Browser checks must include actual SVG/PNG rendering and keyboard interaction,
+not jsdom sizing assertions. Native Print/PDF dialogs, assistive technology,
+physical touch, zoom/history breadth and quota/crash durability still require
+explicit manual evidence; green automation is not certification. Parent review
+findings remain open where that evidence or consumer breadth is incomplete.
+Authentication, Defaults and catalogue required/optional cues must follow the
+shared rule above; remaining migrations are not intentional exceptions merely
+because their current markup differs.
 
 - **The flat type scale on `/cutting`** (an 8-step, 1.4:1 ratio topping out at
   15.5px) was the previous pass's disclosed defect. The step rebuild fixed it:

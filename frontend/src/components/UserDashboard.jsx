@@ -26,9 +26,10 @@ const UserDashboard = () => {
   const inProject = Boolean(groupId);
 
   return (
-    <CatalogPage bodyClassName="dashboard-body">
+    <CatalogPage bodyClassName="dashboard-body" title={!inProject && activeTab === 'settings' ? t('common.defaults') : undefined}>
       {!inProject && (
         <>
+          <h1 className="step-h1">{t(activeTab === 'settings' ? 'common.defaults' : 'common.myProjects')}</h1>
           {isStaticMode() && (
             <p className="synthetic" role="note" style={{ marginBottom: '14px' }}>
               {t('lite.selfHostedNote.text')}{' '}
@@ -50,6 +51,7 @@ const UserDashboard = () => {
                 key={tab.key}
                 type="button"
                 className={`btn ${activeTab === tab.key ? 'btn-primary' : ''}`}
+                aria-pressed={activeTab === tab.key}
                 onClick={() => setActiveTab(tab.key)}
               >
                 {t(tab.label)}

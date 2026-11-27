@@ -6,25 +6,25 @@ from partsible.schemas.sheet import SheetOptimizationRequest
 from partsible.schemas.tile import TileLayoutRequest
 
 
-def test_board_schema_accepts_decimal_and_boundary_values():
+def test_board_schema_accepts_whole_mm_boundary_values():
     request = PartsibleRequest(
-        parts={0.1: 1, 15000: 1},
+        parts={1: 1, 15000: 1},
         available_board_lengths=[1, 15000],
-        saw_blade_width=0.1,
+        saw_blade_width=1,
     )
-    assert request.parts[0.1] == 1
+    assert request.parts[1] == 1
 
 
 @pytest.mark.parametrize(
     ("field", "value"),
-    [("sheet_width", 100), ("sheet_height", 100), ("kerf_width", 0.1)],
+    [("sheet_width", 100), ("sheet_height", 100), ("kerf_width", 1)],
 )
 def test_sheet_schema_accepts_minimum_boundaries(field, value):
     payload = {
         "parts": {"part": {"width": 1, "height": 1, "quantity": 1}},
         "sheet_width": 100,
         "sheet_height": 100,
-        "kerf_width": 0.1,
+        "kerf_width": 1,
     }
     payload[field] = value
     assert SheetOptimizationRequest(**payload)

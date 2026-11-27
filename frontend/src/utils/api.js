@@ -1,6 +1,8 @@
 import axios from 'axios';
 import { normalizeBoardParts } from './boardParts';
+import { isValidSheetQuantity, MAX_SHEET_PART_QUANTITY } from './validators';
 import { resolveCatalogueCountry } from './catalogueChoice';
+import { readMillimetres } from './measurementInput';
 import { createLocalTransport } from '../runtime/localTransport';
 
 /*
@@ -72,6 +74,9 @@ const extractErrorMessage = (error) => {
   }
   return error.message || '';
 };
+const savedLoadError = (error) => Object.assign(new Error(extractErrorMessage(error)), {
+  status: error.response?.status,
+});
 
 /* ── local account auth ───────────────────────────────────────────────
    A local account lives on this self-hosted instance, never a cloud
@@ -79,7 +84,13 @@ const extractErrorMessage = (error) => {
 
 const AUTH_TOKEN_KEY = 'auth_token';
 
-export const getAuthToken = () => localStorage.getItem(AUTH_TOKEN_KEY);
+export const getAuthToken = () => {
+  try {
+    return localStorage.getItem(AUTH_TOKEN_KEY);
+  } catch {
+    throw Object.assign(new Error('Browser sign-in storage is unavailable.'), { name: 'AuthStorageError' });
+  }
+};
 const setAuthToken = (token) => localStorage.setItem(AUTH_TOKEN_KEY, token);
 const clearAuthToken = () => localStorage.removeItem(AUTH_TOKEN_KEY);
 
@@ -150,7 +161,9 @@ export const getLatestRelease = async () => {
 
   const response = await http.get('https://api.github.com/repos/nordstad/partsible/releases/latest');
   const tag = response.data.tag_name;
-  localStorage.setItem(LATEST_RELEASE_CACHE_KEY, JSON.stringify({ tag, fetchedAt: Date.now() }));
+  try {
+    localStorage.setItem(LATEST_RELEASE_CACHE_KEY, JSON.stringify({ tag, fetchedAt: Date.now() }));
+  } catch { /* Release information remains usable without its optional cache. */ }
   return tag;
 };
 
@@ -159,6 +172,7 @@ export const getSetupStatus = async () => {
     const response = await http.get(`${API_URL}/api/auth/setup-status`);
     return response.data;
   } catch (error) {
+    if (error?.name === 'AuthStorageError') throw error;
     throw new Error(extractErrorMessage(error));
   }
 };
@@ -168,6 +182,7 @@ export const getCurrentUser = async () => {
     const response = await http.get(`${API_URL}/api/auth/me`);
     return response.data;
   } catch (error) {
+    if (error?.name === 'AuthStorageError') throw error;
     throw new Error(extractErrorMessage(error));
   }
 };
@@ -208,7 +223,7 @@ export const getProject = async (id) => {
     const response = await http.get(`${API_URL}/api/projects/${encodeURIComponent(id)}`);
     return response.data;
   } catch (error) {
-    throw new Error(extractErrorMessage(error));
+    throw savedLoadError(error);
   }
 };
 
@@ -229,8 +244,7 @@ export const serializeBoardPartLabels = (parts) => normalizeBoardParts(parts).re
 export const serializeBoardLengths = (boards) => [
   ...new Set(
     boards
-      .map((board) => parseFloat(board))
-      .filter((length) => Number.isFinite(length)),
+      .map((board) => readMillimetres(board, 1, 15000)),
   ),
 ];
 
@@ -246,9 +260,12 @@ export const normalizeSheetParts = (parts) => {
     }
     usedIds.add(id);
 
-    const width = parseFloat(part.width);
-    const height = parseFloat(part.height);
-    const quantity = parseInt(part.quantity, 10);
+    const width = readMillimetres(part.width, 1, 5000);
+    const height = readMillimetres(part.height, 1, 5000);
+    if (!isValidSheetQuantity(part.quantity)) {
+      throw new Error(`Sheet part ${index + 1} quantity must be a whole number between 1 and ${MAX_SHEET_PART_QUANTITY}`);
+    }
+    const quantity = Number(part.quantity);
     if (
       Number.isFinite(width) && width > 0
       && Number.isFinite(height) && height > 0
@@ -283,11 +300,11 @@ export const saveProject = async ({ id, name, projectGroupId, parts, boards, saw
       project_group_id: projectGroupId || null,
       parts_data: normalizeBoardParts(parts),
       board_lengths: serializeBoardLengths(boards),
-      saw_blade_width: parseFloat(sawKerf),
+      saw_blade_width: readMillimetres(sawKerf, 1, 100),
       material_type: materialType,
       product: product || null,
-      board_thickness: parseFloat(boardThickness),
-      board_width: parseFloat(boardWidth),
+      board_thickness: readMillimetres(boardThickness),
+      board_width: readMillimetres(boardWidth),
       // Null when the plan was never priced, so an unpriced plan doesn't store
       // an empty pricing panel that looks like a deliberate zero.
       board_costs: boardCosts || null,
@@ -354,7 +371,7 @@ export const getSheetProject = async (id) => {
     const response = await http.get(`${API_URL}/api/sheet-projects/${encodeURIComponent(id)}`);
     return response.data;
   } catch (error) {
-    throw new Error(extractErrorMessage(error));
+    throw savedLoadError(error);
   }
 };
 
@@ -366,10 +383,10 @@ export const saveSheetProject = async ({
       name,
       project_group_id: projectGroupId || null,
       parts_data: normalizeSheetParts(parts),
-      sheet_width: parseFloat(sheetWidth),
-      sheet_height: parseFloat(sheetHeight),
-      sheet_thickness: parseFloat(sheetThickness),
-      kerf_width: parseFloat(kerfWidth),
+      sheet_width: readMillimetres(sheetWidth, 100, 10000),
+      sheet_height: readMillimetres(sheetHeight, 100, 10000),
+      sheet_thickness: readMillimetres(sheetThickness),
+      kerf_width: readMillimetres(kerfWidth, 1, 50),
       material_type: materialType,
       product: product || null,
       algorithm: algorithm || null,
@@ -420,14 +437,14 @@ export const getTileProject = async (id) => {
     const response = await http.get(`${API_URL}/api/tile-projects/${encodeURIComponent(id)}`);
     return response.data;
   } catch (error) {
-    throw new Error(extractErrorMessage(error));
+    throw savedLoadError(error);
   }
 };
 
 /* Keeping a layout is its own step, same as board/sheet: the candidate is
    already-computed (from optimizeTileLayout), and nothing is stored until
-   the user names it here. The diagram is redrawn server-side from
-   surface_data + layout_result, so no image is sent over the wire. */
+   the user names it here. The saved export is redrawn from surface_data and
+   layout_result geometry, with its optional translated diagram-label snapshot. */
 export const saveTileProject = async ({
   id, name, projectGroupId, surfaceWidth, surfaceHeight, cutouts, tile, joint, bond,
   minEdgeCut, reuseOffcuts, wastePercent, candidateCount, candidate, pricing,
@@ -437,31 +454,31 @@ export const saveTileProject = async ({
       name,
       project_group_id: projectGroupId || null,
       surface_data: {
-        width: parseFloat(surfaceWidth),
-        height: parseFloat(surfaceHeight),
+        width: readMillimetres(surfaceWidth, 100, 20000),
+        height: readMillimetres(surfaceHeight, 100, 20000),
         cutouts: cutouts
           .filter((c) => c.x !== '' && c.y !== '' && c.width !== '' && c.height !== '')
           .map((c) => ({
-            x: parseFloat(c.x), y: parseFloat(c.y),
-            width: parseFloat(c.width), height: parseFloat(c.height),
+            x: readMillimetres(c.x, 0, 20000), y: readMillimetres(c.y, 0, 20000),
+            width: readMillimetres(c.width, 1, 20000), height: readMillimetres(c.height, 1, 20000),
             label: c.label || null,
           })),
       },
       tile_data: {
-        width: parseFloat(tile.width),
-        height: parseFloat(tile.height),
+        width: readMillimetres(tile.width, 10, 3000),
+        height: readMillimetres(tile.height, 10, 3000),
         allow_rotation: !!tile.allowRotation,
         material_type: tile.materialType,
-        thickness: parseFloat(tile.thickness),
+        thickness: readMillimetres(tile.thickness, 1),
       },
       bond_data: {
         pattern: bond.pattern,
         offset_fraction: parseFloat(bond.offsetFraction),
-        joint_width: parseFloat(joint.jointWidth),
-        perimeter_gap: parseFloat(joint.perimeterGap),
+        joint_width: readMillimetres(joint.jointWidth, 0, 50),
+        perimeter_gap: readMillimetres(joint.perimeterGap, 0, 200),
       },
       options_data: {
-        min_edge_cut: minEdgeCut === '' || minEdgeCut === undefined ? null : parseFloat(minEdgeCut),
+        min_edge_cut: minEdgeCut === '' || minEdgeCut === undefined ? null : readMillimetres(minEdgeCut, 0, 3000),
         reuse_offcuts: reuseOffcuts !== false,
         waste_percent: parseFloat(wastePercent),
         candidate_count: parseInt(candidateCount, 10),
@@ -574,59 +591,58 @@ export const downloadProjectImage = async (projectId, projectType) => {
 const catalogueEntryUrl = (productId, suffix = '') => `${API_URL}/api/admin/catalogue/${encodeURIComponent(productId)}${suffix}`;
 
 /* The catalogue the admin is looking at: the same country the picker shows. */
-const catalogueView = () => {
-  const catalogue = resolveCatalogueCountry();
+const catalogueView = (catalogue = resolveCatalogueCountry()) => {
   return catalogue ? { catalogue } : undefined;
 };
 
-export const getAdminCatalogue = async () => {
+export const getAdminCatalogue = async (country) => {
   try {
-    const response = await http.get(`${API_URL}/api/admin/catalogue`, { params: catalogueView() });
+    const response = await http.get(`${API_URL}/api/admin/catalogue`, { params: catalogueView(country) });
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
   }
 };
 
-export const createCatalogueEntry = async (entry) => {
+export const createCatalogueEntry = async (entry, country) => {
   try {
-    const response = await http.post(`${API_URL}/api/admin/catalogue`, entry, { params: catalogueView() });
+    const response = await http.post(`${API_URL}/api/admin/catalogue`, entry, { params: catalogueView(country) });
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
   }
 };
 
-export const updateCatalogueEntry = async (productId, details) => {
+export const updateCatalogueEntry = async (productId, details, country) => {
   try {
-    const response = await http.put(catalogueEntryUrl(productId), details, { params: catalogueView() });
+    const response = await http.put(catalogueEntryUrl(productId), details, { params: catalogueView(country) });
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
   }
 };
 
-export const hideCatalogueEntry = async (productId) => {
+export const hideCatalogueEntry = async (productId, country) => {
   try {
-    const response = await http.post(catalogueEntryUrl(productId, '/hide'), undefined, { params: catalogueView() });
+    const response = await http.post(catalogueEntryUrl(productId, '/hide'), undefined, { params: catalogueView(country) });
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
   }
 };
 
-export const restoreCatalogueEntry = async (productId) => {
+export const restoreCatalogueEntry = async (productId, country) => {
   try {
-    const response = await http.post(catalogueEntryUrl(productId, '/restore'), undefined, { params: catalogueView() });
+    const response = await http.post(catalogueEntryUrl(productId, '/restore'), undefined, { params: catalogueView(country) });
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
   }
 };
 
-export const resetCatalogueEntry = async (productId) => {
+export const resetCatalogueEntry = async (productId, country) => {
   try {
-    await http.delete(catalogueEntryUrl(productId), { params: catalogueView() });
+    await http.delete(catalogueEntryUrl(productId), { params: catalogueView(country) });
   } catch (error) {
     throw new Error(extractErrorMessage(error));
   }
@@ -706,7 +722,7 @@ export const resetUserPassword = async (userId, password) => {
 export const optimizeCutting = async (parts, boards, sawKerf, costData = null) => {
   const partsPayload = serializeBoardParts(parts);
   const boardLengths = serializeBoardLengths(boards);
-  const kerfValue = parseFloat(sawKerf);
+  const kerfValue = readMillimetres(sawKerf, 1, 100);
 
   const payload = {
     parts: partsPayload,
@@ -745,9 +761,9 @@ export const optimizeCutting = async (parts, boards, sawKerf, costData = null) =
 export const optimizeSheetCutting = async (parts, sheetWidth, sheetHeight, kerfWidth, materialType, algorithm, allowRotation) => {
   const payload = {
     parts: serializeSheetParts(parts),
-    sheet_width: parseFloat(sheetWidth),
-    sheet_height: parseFloat(sheetHeight),
-    kerf_width: parseFloat(kerfWidth),
+    sheet_width: readMillimetres(sheetWidth, 100, 10000),
+    sheet_height: readMillimetres(sheetHeight, 100, 10000),
+    kerf_width: readMillimetres(kerfWidth, 1, 50),
     material_type: materialType || 'plywood',
     algorithm: algorithm || undefined,
     allow_rotation: allowRotation !== false
@@ -779,31 +795,31 @@ export const optimizeTileLayout = async ({
   minEdgeCut, reuseOffcuts, wastePercent, candidateCount, projectName,
 }) => {
   const payload = {
-    surface_width: parseFloat(surfaceWidth),
-    surface_height: parseFloat(surfaceHeight),
+    surface_width: readMillimetres(surfaceWidth, 100, 20000),
+    surface_height: readMillimetres(surfaceHeight, 100, 20000),
     cutouts: cutouts
       .filter((c) => c.x !== '' && c.y !== '' && c.width !== '' && c.height !== '')
       .map((c) => ({
-        x: parseFloat(c.x),
-        y: parseFloat(c.y),
-        width: parseFloat(c.width),
-        height: parseFloat(c.height),
+        x: readMillimetres(c.x, 0, 20000),
+        y: readMillimetres(c.y, 0, 20000),
+        width: readMillimetres(c.width, 1, 20000),
+        height: readMillimetres(c.height, 1, 20000),
         label: c.label || null,
       })),
     tile: {
-      width: parseFloat(tile.width),
-      height: parseFloat(tile.height),
+      width: readMillimetres(tile.width, 10, 3000),
+      height: readMillimetres(tile.height, 10, 3000),
       allow_rotation: !!tile.allowRotation,
     },
     joint: {
-      joint_width: parseFloat(joint.jointWidth),
-      perimeter_gap: parseFloat(joint.perimeterGap),
+      joint_width: readMillimetres(joint.jointWidth, 0, 50),
+      perimeter_gap: readMillimetres(joint.perimeterGap, 0, 200),
     },
     bond: {
       pattern: bond.pattern,
       offset_fraction: parseFloat(bond.offsetFraction),
     },
-    min_edge_cut: minEdgeCut === '' || minEdgeCut === undefined ? null : parseFloat(minEdgeCut),
+    min_edge_cut: minEdgeCut === '' || minEdgeCut === undefined ? null : readMillimetres(minEdgeCut, 0, 3000),
     reuse_offcuts: reuseOffcuts !== false,
     waste_percent: parseFloat(wastePercent),
     candidate_count: parseInt(candidateCount, 10),
@@ -840,8 +856,14 @@ export const getWallpapers = async () => (await http.get(`${API_URL}/api/wallpap
 export const saveWallpaper = async (payload) => (await http.post(`${API_URL}/api/wallpapers/`, payload)).data;
 export const getWallpaperProjects = async () => (await http.get(`${API_URL}/api/wallpaper-projects/`)).data;
 export const getWallpaperProject = async (id) => (await http.get(`${API_URL}/api/wallpaper-projects/${encodeURIComponent(id)}`)).data;
-export const saveWallpaperProject = async (payload) => (await http.post(`${API_URL}/api/wallpaper-projects/`, payload)).data;
-export const updateWallpaperProject = async (id, payload) => (await http.put(`${API_URL}/api/wallpaper-projects/${id}`, payload)).data;
+export const saveWallpaperProject = async (payload) => {
+  try { return (await http.post(`${API_URL}/api/wallpaper-projects/`, payload)).data; }
+  catch (error) { throw new Error(extractErrorMessage(error)); }
+};
+export const updateWallpaperProject = async (id, payload) => {
+  try { return (await http.put(`${API_URL}/api/wallpaper-projects/${id}`, payload)).data; }
+  catch (error) { throw new Error(extractErrorMessage(error)); }
+};
 export const deleteWallpaperProject = async (id) => (await http.delete(`${API_URL}/api/wallpaper-projects/${id}`)).data;
 
 const PROJECT_ENDPOINTS = { board: 'projects', sheet: 'sheet-projects', tile: 'tile-projects', wallpaper: 'wallpaper-projects' };

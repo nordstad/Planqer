@@ -12,35 +12,15 @@
 
 import { smallestCutMm } from '../utils/tileCutList';
 import { useTranslation } from 'react-i18next';
+import { tileCandidateLabel } from '../utils/tileLocalization';
 
 const mm = (n) => (Number.isFinite(n) ? Math.round(n).toLocaleString('sv-SE') : '—');
-
-const candidateLabelKeys = {
-  'Full tile at bottom-left corner': 'ui.candidateBottomLeft',
-  'Full tile at bottom-right corner': 'ui.candidateBottomRight',
-  'Full tile at top-left corner': 'ui.candidateTopLeft',
-  'Full tile at top-right corner': 'ui.candidateTopRight',
-  'Best sliver avoidance': 'ui.candidateBestSliverAvoidance',
-  'Fewest tiles to buy': 'ui.candidateFewestTiles',
-  'Most symmetric': 'ui.candidateMostSymmetric',
-  'Fewest cuts': 'ui.candidateFewestCuts',
-};
 
 const TileLayoutCandidateCard = ({ candidate, selected, onSelect, minEdgeCut }) => {
   const hasSliver = candidate.sliver_count > 0;
   const { t } = useTranslation();
   const smallestCut = smallestCutMm(candidate);
-  let label = candidate.label;
-  const rotated = label.endsWith(' (rotated)');
-  const baseLabel = rotated ? label.slice(0, -10) : label;
-  const labels = baseLabel.split(' & ');
-  if (labels.every((part) => Object.hasOwn(candidateLabelKeys, part))) {
-    label = labels.map((part) => t(candidateLabelKeys[part])).join(' & ');
-    if (rotated) label = t('ui.candidateRotated', { label });
-  } else {
-    const alternative = /^Alternative (\d+)$/.exec(label);
-    if (alternative) label = t('ui.candidateAlternative', { number: alternative[1] });
-  }
+  const label = tileCandidateLabel(candidate.label, t);
 
   return (
     <button

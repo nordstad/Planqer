@@ -2,7 +2,9 @@
 // store. api.js in static mode reaches it through the local transport.
 
 import { version as appVersion } from "../../package.json";
-import { exportBackup, importBackup } from "./backup";
+import { exportBackup, importBackup, previewBackup } from "./backup";
+import { resetCatalogueCache } from "../utils/catalogue";
+import { LOCAL_DATA_RESTORED } from "../hooks/useLocalDataRevision";
 import { createLocalApi } from "./localApi";
 import { openDatabase } from "./indexedDb";
 import { solverCall } from "./solver";
@@ -36,7 +38,13 @@ export const entries = () => localApi().then((ready) => ready.entries());
 export const backupExport = () =>
   db().then((ready) => exportBackup(ready, { appVersion }));
 
-export const backupImport = (content) => db().then((ready) => importBackup(ready, content));
+export const backupPreview = (content) => db().then((ready) => previewBackup(ready, content));
+export const backupImport = async (preview, options) => {
+  const counts = await importBackup(await db(), preview, options);
+  resetCatalogueCache();
+  window.dispatchEvent(new Event(LOCAL_DATA_RESTORED));
+  return counts;
+};
 
 // Plans and the projects that hold them; settings alone are not worth a reminder.
 export const hasSavedWork = async () => {

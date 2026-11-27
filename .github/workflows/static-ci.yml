@@ -77,11 +77,15 @@ jobs:
       - name: Build Lite and check its size
         run: python3 scripts/build-lite.py --check-budget
 
+      - name: Build self-hosted frontend for shared preference checks
+        working-directory: frontend
+        run: npm run build
+
       - name: Install browsers
         working-directory: frontend
         run: npx playwright install --with-deps chromium firefox webkit
 
-      - name: Run Lite in the browsers
+      - name: Run Lite and shared preference checks in the browsers
         working-directory: frontend
         run: npm run test:lite
 

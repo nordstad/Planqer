@@ -7,13 +7,15 @@
   calls `onSubmit` where the page has no form.
 */
 
+import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import FormField from './FormField';
 
 export const NEW_PROJECT = '__new__';
 
-const ProjectPicker = ({ groups, value, onChange, newName, onNewNameChange, onSubmit }) => {
+const ProjectPicker = ({ groups, value, onChange, newName, onNewNameChange, onSubmit, fallbackName }) => {
   const { t } = useTranslation();
+  const hintId = useId();
 
   return (
     <div>
@@ -34,11 +36,12 @@ const ProjectPicker = ({ groups, value, onChange, newName, onNewNameChange, onSu
 
       {value === NEW_PROJECT && (
         <div style={{ marginTop: '14px' }}>
-          <FormField label={t('ui.newProjectName')} required>
+          <FormField label={t('ui.newProjectName')} optional>
             <input
               type="text"
               className="form-input"
               value={newName}
+              aria-describedby={hintId}
               onChange={(e) => onNewNameChange(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key !== 'Enter') return;
@@ -48,6 +51,7 @@ const ProjectPicker = ({ groups, value, onChange, newName, onNewNameChange, onSu
               }}
             />
           </FormField>
+          <p id={hintId} className="synthetic" style={{ marginTop: '7px' }}>{t('documentUi.projectNameFallback', { name: fallbackName?.trim() || t('ui.defaultProjectName') })}</p>
           {groups.length === 0 && <p className="synthetic" style={{ marginTop: '7px' }}>{t('ui.firstProjectHint')}</p>}
         </div>
       )}

@@ -10,16 +10,16 @@ import {
 
 const t = (key, vars) => `${key}:${vars?.max ?? ''}`;
 
-test('accepts API boundary and decimal values for board parts', () => {
+test('accepts whole-mm boundary values and rejects fractional board parts', () => {
   expect(validateParts([
     { length: String(MIN_PART_LENGTH), quantity: '1' },
     { length: String(MAX_PART_LENGTH), quantity: String(MAX_PART_QUANTITY) },
     { length: '12.5', quantity: '2' },
-  ], t)).toEqual([null, null, null]);
+  ], t)).toEqual([null, null, 'measurementUi.range:15000']);
 });
 
-test('accepts API boundary and decimal values for stock boards', () => {
-  expect(validateBoards(['1', String(MAX_BOARD_LENGTH), '12.5'], t)).toEqual([null, null, null]);
+test('accepts whole-mm boundary values and rejects fractional stock boards', () => {
+  expect(validateBoards(['1', String(MAX_BOARD_LENGTH), '12.5'], t)).toEqual([null, null, 'measurementUi.range:15000']);
 });
 
 test('rejects zero, fractional quantities, and values over API limits', () => {
@@ -34,6 +34,13 @@ test('identifies which part field is invalid', () => {
   expect(validatePartFields({ length: '60', quantity: '1.5' }, t)).toEqual({
     quantity: 'validation.positiveQuantity:',
   });
+});
+
+test('checks the complete board count against the maximum, including exponent notation', () => {
+  expect(validatePartFields({ length: '100', quantity: '1e5' }, t)).toEqual({
+    quantity: 'validation.maxQuantity:10000',
+  });
+  expect(validatePartFields({ length: '100', quantity: '1e2' }, t)).toBeNull();
 });
 
 test('board and part lengths reach 15 m while the limits still reject beyond it', () => {

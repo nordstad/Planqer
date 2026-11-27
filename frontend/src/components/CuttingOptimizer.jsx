@@ -18,6 +18,7 @@
 */
 
 import { useState, useEffect, useRef } from 'react';
+import Modal, { modalTrigger } from './Modal';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { optimizeCutting, saveProject, getProjectGroups, getUserProjects, getUserSettings, movePlanToProject } from '../utils/api';
@@ -32,6 +33,7 @@ import {
   MAX_BOARD_LENGTH,
   SAW_KERF_MAX,
   SAW_KERF_MIN,
+  isValidBoardQuantity,
   validateBoards,
   validatePartFields,
   validateParts,
@@ -47,7 +49,9 @@ import Disclosure from './Disclosure';
 import FormField, { SectionCard, SectionStatus, splitUnit } from './FormField';
 import SavePlanCard from './SavePlanCard';
 import MovePlanMenu from './MovePlanMenu';
-import { useProjectChoice } from '../hooks/useProjectChoice';
+import { useProjectChoice, rememberProjectChoice } from '../hooks/useProjectChoice';
+import { millimetresError, isWholeMillimetres } from '../utils/measurementInput';
+import { focusSection } from '../utils/focusSection';
 import Loader from './Loader';
 import InfoTip from './InfoTip';
 import PlanSteps from './PlanSteps';
@@ -94,6 +98,7 @@ const CuttingOptimizer = () => {
   const [inputErrors, setInputErrors] = useState({ boards: [], sawKerf: "" });
 
   const [limitsOpen, setLimitsOpen] = useState(false);
+  const [pricingOpen, setPricingOpen] = useState(false);
   const [costOpen, setCostOpen] = useState(false);
 
   /* the save step */
@@ -138,16 +143,11 @@ const CuttingOptimizer = () => {
   const debouncedSawKerf = useDebounce(sawKerf, 300);
 
   useEffect(() => {
-    const kerfValue = parseFloat(debouncedSawKerf);
     setInputErrors({
       boards: validateBoards(debouncedBoards, t),
-      sawKerf: !debouncedSawKerf || kerfValue < SAW_KERF_MIN
-        ? t('modelUi.kerfZero')
-        : kerfValue > SAW_KERF_MAX
-          ? t('auditUi.kerfWide')
-          : "",
+      sawKerf: !debouncedSawKerf ? '' : millimetresError(debouncedSawKerf, SAW_KERF_MIN, SAW_KERF_MAX, t),
     });
-  }, [debouncedBoards, debouncedSawKerf]);
+  }, [debouncedBoards, debouncedSawKerf, sawKerf]);
 
   // This page requires sign-in, so project groups and saved plans are always available.
   // Loaded defaults are also applied once so the user settings act as the real starting state.
@@ -180,16 +180,12 @@ const CuttingOptimizer = () => {
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
     if (urlParams.get('import') !== '3d') return;
-    const importData = localStorage.getItem('partsible-3d-import');
-    if (!importData) return;
     try {
+      const importData = localStorage.getItem('partsible-3d-import');
+      if (!importData) throw new Error('Missing cutlist');
       const data = JSON.parse(importData);
       if (data.parts && data.source === 'model-cutlist') {
-        setParts(Object.entries(data.parts).map(([length, quantity]) => ({
-          name: '',
-          length,
-          quantity: quantity.toString(),
-        })));
+        setParts(restoreBoardParts(data.parts));
         setProjectName(data.projectName || '');
         if (data.product?.type) setProductSel(data.product);
         if (data.boardThickness != null) setBoardThickness(String(data.boardThickness));
@@ -197,8 +193,8 @@ const CuttingOptimizer = () => {
         localStorage.removeItem('partsible-3d-import');
         navigate(location.pathname, { replace: true });
       }
-    } catch (err) {
-      console.error('Failed to import 3D cutlist data:', err);
+    } catch {
+      setApiError(t('measurementUi.handoffReadFailed'));
     }
   }, [location.pathname, location.search, navigate]);
 
@@ -348,13 +344,15 @@ const CuttingOptimizer = () => {
     const visible = Object.fromEntries(Object.entries(errors).filter(([field]) => part[field] !== ''));
     return Object.keys(visible).length > 0 ? visible : null;
   };
-  const partCount = parts.reduce((n, p) => n + (parseInt(p.quantity, 10) || 0), 0);
+  const partCount = parts.reduce((n, p) => n + (isValidBoardQuantity(p.quantity) ? Number(p.quantity) : 0), 0);
   const demand = parts.reduce(
-    (sum, p) => sum + (parseFloat(p.length) || 0) * (parseFloat(p.quantity) || 0), 0);
+    (sum, p) => sum + (parseFloat(p.length) || 0) * (isValidBoardQuantity(p.quantity) ? Number(p.quantity) : 0), 0);
   const sectionDims = { thickness: parseFloat(boardThickness), width: parseFloat(boardWidth) };
   const material = selectionName(productSel, i18n.language, sectionDims);
   const hasErrors = parts.length === 0 || currentPartErrors.some(Boolean) || inputErrors.boards.some(Boolean) || !!inputErrors.sawKerf
-    || !parseFloat(boardThickness) || !parseFloat(boardWidth);
+    || !sawKerf
+    || !isWholeMillimetres(boardThickness) || Number(boardThickness) < 1
+    || !isWholeMillimetres(boardWidth) || Number(boardWidth) < 1;
   const validBoards = boards.filter(b => b && !isNaN(parseFloat(b)));
   const uniqueValidBoards = [...new Set(validBoards.map((board) => parseFloat(board)))];
   const pricedBoardCount = uniqueValidBoards.filter((board) => boardCosts[board]?.price_per_meter > 0).length;
@@ -371,23 +369,22 @@ const CuttingOptimizer = () => {
   const materialMissing = [
     !parseFloat(boardThickness) && unitless('workflow.thicknessMm'),
     !parseFloat(boardWidth) && unitless('workflow.widthMm'),
+    !sawKerf && unitless('workflow.sawBlade'),
   ].filter(Boolean);
+  const profileErrors = [boardThickness, boardWidth].map((value) => value !== '' && (!isWholeMillimetres(value) || Number(value) < 1)
+    ? t('measurementUi.whole', { min: 1 }) : '');
+  const profileError = profileErrors.find(Boolean) || '';
   const partRowsWrong = parts.some((part, index) => visiblePartError(part, index));
   const partRowsBlank = currentPartErrors.some((errors, index) => errors && Object.keys(errors).some((field) => parts[index][field] === ''));
   const stockWrong = inputErrors.boards.some(Boolean);
-  const goToSection = (id) => window.setTimeout(() => {
-    const section = document.getElementById(id);
-    if (!section) return;
-    section.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
-    const fields = [...section.querySelectorAll('input:not([type=checkbox]):not([type=radio]), select')];
-    (fields.find((field) => !field.value) || fields[0])?.focus({ preventScroll: true });
-  }, 0);
+  const goToSection = focusSection;
   const toParts = { name: t('workflow.goToRequiredParts'), go: goToRequiredParts };
   const toMaterial = { name: t('formUi.goTo', { name: t('workflow.materialProfile') }), go: () => goToSection('board-material') };
   const blocker = parts.length === 0 ? { text: t('workflow.partsRequiredBeforePlanning'), ...toParts }
     : partRowsWrong ? { text: t('ui.fixLines'), ...toParts }
     : partRowsBlank ? { text: t('boardUi.fillPartRows'), ...toParts }
     : inputErrors.sawKerf ? { text: inputErrors.sawKerf, ...toMaterial }
+    : profileError ? { text: profileError, ...toMaterial }
     : materialMissing.length ? { text: t('boardUi.fillToPlan', { fields: materialMissing.join(', ') }), ...toMaterial }
     : stockWrong ? { text: t('ui.fixLines'), name: t('formUi.goTo', { name: t('workflow.stockAvailable') }), go: () => goToSection('board-stock') }
     : null;
@@ -522,12 +519,12 @@ const CuttingOptimizer = () => {
     const currentParts = validateParts(parts, t);
     const currentErrors = {
       boards: validateBoards(boards, t),
-      sawKerf: !sawKerf || parseFloat(sawKerf) < SAW_KERF_MIN
-        ? t('workflow.kerfHint')
-        : parseFloat(sawKerf) > SAW_KERF_MAX ? t('auditUi.kerfWide') : '',
+      sawKerf: millimetresError(sawKerf, SAW_KERF_MIN, SAW_KERF_MAX, t),
     };
     setInputErrors(currentErrors);
-    if (currentParts.some(Boolean) || currentErrors.boards.some(Boolean) || currentErrors.sawKerf) return;
+    if (currentParts.some(Boolean) || currentErrors.boards.some(Boolean) || currentErrors.sawKerf
+      || !isWholeMillimetres(boardThickness) || Number(boardThickness) < 1
+      || !isWholeMillimetres(boardWidth) || Number(boardWidth) < 1) return;
     runPlan(pricingComplete);
   };
 
@@ -601,7 +598,7 @@ const CuttingOptimizer = () => {
     try {
       const moved = await movePlanToProject({ ...saved, projectType: 'board' }, group.id);
       setSaved(moved);
-      localStorage.setItem('partsible.lastProjectGroup', group.id);
+      rememberProjectChoice(group.id);
       return true;
     } catch (error) {
       setApiError(t('projectUi.moveFailed', { message: error.message }));
@@ -631,7 +628,7 @@ const CuttingOptimizer = () => {
     {
       label: t('workflow.save'),
       reachable: !!plan,
-      summary: saved ? t('workflow.savedAs', { name: saved.name }) : t('workflow.nameAndKeep'),
+      summary: saved ? t('workflow.savedAs', { name: saved.name }) : t('workflow.planDetails'),
       locked: t('workflow.waitsForPlan'),
     },
   ];
@@ -655,7 +652,7 @@ const CuttingOptimizer = () => {
               <p className="step-lede">{t('workflow.requiredPartsIntro')}</p>
               <p className="form-legend"><span className="req-mark" aria-hidden="true" />{t('formUi.requiredLegend')}</p>
             </div>
-            <button type="button" className="btn-text" onClick={() => setLoadModalOpen(true)}>
+            <button type="button" className="btn-text" onClick={modalTrigger(() => setLoadModalOpen(true))}>
               {t('workflow.loadSavedPlan')}
             </button>
           </div>
@@ -726,7 +723,7 @@ const CuttingOptimizer = () => {
           <SectionCard
             id="board-material"
             title={t('workflow.materialProfile')}
-            status={inputErrors.sawKerf ? <SectionStatus error={t('formUi.checkValues')} /> : <SectionStatus missing={materialMissing} />}
+            status={inputErrors.sawKerf || profileError ? <SectionStatus error={t('formUi.checkValues')} /> : <SectionStatus missing={materialMissing} />}
           >
             <div style={{ marginBottom: '18px' }}>
               <span className="form-label" style={{ display: 'block' }}>{t('productUi.product')}{' '}<span className="opt-mark">{t('formUi.optionalMark')}</span></span>
@@ -745,10 +742,10 @@ const CuttingOptimizer = () => {
               />
             </div>
             <div className="grid gap-x-6 gap-y-4 md:grid-cols-2">
-              <FormField label={t('workflow.thicknessMm')} required>
+              <FormField label={t('workflow.thicknessMm')} required error={profileErrors[0]}>
                 <input id="board-thickness" type="number" min="1" step="1" value={boardThickness} onChange={(e) => { retirePlan(); setBoardThickness(e.target.value); }} className="form-input dimension-input" />
               </FormField>
-              <FormField label={t('workflow.widthMm')} required>
+              <FormField label={t('workflow.widthMm')} required error={profileErrors[1]}>
                 <input id="board-width" type="number" min="1" step="1" value={boardWidth} onChange={(e) => { retirePlan(); setBoardWidth(e.target.value); }} className="form-input dimension-input" />
               </FormField>
               <div className="md:col-span-2">
@@ -829,13 +826,13 @@ const CuttingOptimizer = () => {
             </p>
           </SectionCard>
 
-          <SectionCard
-            id="board-pricing"
+          <div id="board-pricing" style={{ marginTop: '16px' }}><Disclosure
             title={t('ui.pricesAndCost')}
-            optional
-            tip={t('ui.stockPricingOptional')}
-            summary={pricingSummary}
+            hint={pricingSummary}
+            open={pricingOpen}
+            onToggle={() => setPricingOpen((open) => !open)}
           >
+            <p className="synthetic">{t('ui.stockPricingOptional')}</p>
             <label className="flex items-center gap-2" style={{ cursor: 'pointer', fontSize: '13.5px', fontWeight: 600 }}>
               <input
                 type="checkbox"
@@ -889,7 +886,7 @@ const CuttingOptimizer = () => {
               </label>
               {!pricingComplete && <p id="lowest-cost-help" className="synthetic" style={{ margin: '4px 0 0 28px' }}>{t('ui.lowestCostNeedsPrices')}</p>}
             </fieldset>
-          </SectionCard>
+          </Disclosure></div>
 
           <div style={{ marginTop: '22px' }}>
             <Disclosure
@@ -1021,7 +1018,7 @@ const CuttingOptimizer = () => {
 
       {/* ── 03 · keep it ──────────────────────────────────────────────────── */}
       {step === STEP_SAVE && plan && (
-        <form className="step-view is-form" onSubmit={handleSave}>
+        <form className="step-view is-form" onSubmit={modalTrigger(handleSave)}>
           <div className="step-head" style={{ marginBottom: '22px' }}>
             <div>
                <h1 className="step-h1">{saved ? t('workflow.planSaved') : t('workflow.saveThisPlan')}</h1>
@@ -1102,15 +1099,7 @@ const CuttingOptimizer = () => {
       />
 
       {loadModalOpen && (
-         <div className="cat-overlay" role="dialog" aria-modal="true" aria-label={t('workflow.loadSavedPlan')}>
-          <div className="cat-sheet">
-            <div className="masthead" style={{ marginTop: 0 }}>
-               <span className="masthead-brand" style={{ fontSize: '13px' }}>{t('ui.savedPlans')}</span>
-              <span className="masthead-section" />
-              <button type="button" className="masthead-flash" onClick={() => setLoadModalOpen(false)}>
-                 {t('ui.close')}
-              </button>
-            </div>
+         <Modal aria-label={t('workflow.loadSavedPlan')} title={t('ui.savedPlans')} onClose={() => setLoadModalOpen(false)}>
             <div style={{ padding: '14px 16px 18px' }}>
               {userProjects.length === 0 ? (
                 <p style={{ color: 'var(--ink-3)', fontSize: '13px' }}>
@@ -1174,8 +1163,7 @@ const CuttingOptimizer = () => {
                  {t('ui.renameDeleteHint')}
               </p>
             </div>
-          </div>
-        </div>
+        </Modal>
       )}
     </CatalogPage>
   );

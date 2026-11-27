@@ -17,6 +17,8 @@ from pathlib import Path
 # "Partsible-demon" and a privacy sentence may name Umami, and locale files ship
 # in every build, so those words alone must not trip the check. Umami is caught
 # by what loads it: its host, its tracking call, its tag attribute, our setting.
+# Backup store labels also ship in every locale, so catch IndexedDB schema
+# creation rather than the shared catalogue_entries translation key.
 MARKERS = (
     ("pyodide", True),
     ("solverWorker", False),
@@ -24,7 +26,7 @@ MARKERS = (
     ("partsible-lite", False),
     ("partsible.lite.", False),
     ("catalogue_admin", False),
-    ("catalogue_entries", False),
+    (".createObjectStore(", False),
     ("cloud.umami.is", True),
     ("umami.track", True),
     ("data-website-id", True),

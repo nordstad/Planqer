@@ -64,7 +64,9 @@ export const loadCatalogue = (country = resolveCatalogueCountry()) => {
           ? await getCatalogue(stored?.etag, country)
           : await getCatalogue(stored?.etag);
         if (response.notModified && stored) return stored.data;
-        localStorage.setItem(cacheKeyFor(country), JSON.stringify({ etag: response.etag, data: response.data }));
+        try {
+          localStorage.setItem(cacheKeyFor(country), JSON.stringify({ etag: response.etag, data: response.data }));
+        } catch { /* A successful fetch does not depend on the optional cache. */ }
         return response.data;
       } catch (error) {
         if (stored) return stored.data;

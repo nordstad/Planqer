@@ -110,7 +110,7 @@ const tileRows = (project) => {
   }, {
     product: { material: project.tile_data?.material_type || 'tile' },
     kind: 'tile',
-    dimensions: [project.tile_data?.width, project.tile_data?.height],
+    dimensions: [project.tile_data?.thickness ?? null, width, height],
     stock: null,
   })];
 };
@@ -121,14 +121,20 @@ const wallpaperRows = (project) => {
   if (!Number.isFinite(quantity) || !wallpaper) return [];
   return [withMergeData({
     plan: project.name,
-    material: wallpaper.name || 'wallpaper',
+    material: [wallpaper.name || 'wallpaper', wallpaper.manufacturer, wallpaper.product_code].filter(Boolean).join(' · '),
     size: `${mm(wallpaper.roll_width)} × ${mm(wallpaper.roll_length)} mm`,
     quantity,
     ...(Number(wallpaper.price_per_roll) > 0 && wallpaper.currency
       ? { pricePerUnit: Number(wallpaper.price_per_roll), currency: wallpaper.currency, pricesIncludeVat: wallpaper.prices_include_vat ?? true, vatRate: wallpaper.vat_rate ?? 25 }
       : {}),
   }, {
-    product: { material: wallpaper.name || 'wallpaper', manufacturer: wallpaper.manufacturer || '' },
+    product: {
+      material: wallpaper.name || 'wallpaper', manufacturer: wallpaper.manufacturer || '', code: wallpaper.product_code || null,
+      repeat: wallpaper.repeat ?? null,
+      match: wallpaper.match || null,
+      offset: wallpaper.roll_offset ?? null,
+      batch: wallpaper.batch_reference || null,
+    },
     kind: 'wallpaper',
     dimensions: [wallpaper.roll_width, wallpaper.roll_length],
     stock: null,
@@ -141,6 +147,19 @@ export const buildMaterialRows = (projects) => projects.flatMap((project) => {
   if (project.projectType === 'wallpaper') return wallpaperRows(project);
   return boardRows(project);
 });
+
+export const purchaseMaterialLabel = (row, t) => {
+  const label = materialLabel(row.material, t);
+  if (row._mergeData?.kind !== 'wallpaper') return label;
+  const { repeat, match, offset, batch } = row._mergeData.product;
+  return [
+    label,
+    repeat != null ? t('purchaseUi.repeat', { value: mm(repeat) }) : null,
+    match ? t(`purchaseUi.${match}`, { defaultValue: match }) : null,
+    offset != null ? t('purchaseUi.offset', { value: mm(offset) }) : null,
+    batch ? t('purchaseUi.batch', { value: batch }) : null,
+  ].filter(Boolean).join(' · ');
+};
 
 const isPriced = (row) => row.pricePerUnit > 0 && Boolean(row.currency);
 
@@ -257,7 +276,7 @@ export const buildMaterialListHtml = (projects, t, spareMargin = 10) => {
       <h2>${escapeHtml(t('workflow.whatToBuy'))}</h2>
        <table class="shopping-table">
          <thead><tr><th>${escapeHtml(t('workflow.planName'))}</th><th>${escapeHtml(t('legacy.material'))}</th><th>${escapeHtml(t('workflow.sizeMm'))}</th><th>${escapeHtml(t('ui.needed'))}</th><th>${escapeHtml(t('ui.toBuy'))}</th>${priceHeadings}</tr></thead>
-        <tbody>${rows.map((row) => `<tr><td>${escapeHtml(row.plans.join(', '))}</td><td>${escapeHtml(materialLabel(row.material, t))}</td><td>${escapeHtml(row.size)}</td><td>${row.neededQuantity}</td><td>${row.quantityToBuy}</td>${priceCells(row)}</tr>`).join('')}</tbody>
+        <tbody>${rows.map((row) => `<tr><td>${escapeHtml(row.plans.join(', '))}</td><td>${escapeHtml(purchaseMaterialLabel(row, t))}</td><td>${escapeHtml(row.size)}</td><td>${row.neededQuantity}</td><td>${row.quantityToBuy}</td>${priceCells(row)}</tr>`).join('')}</tbody>
       </table>
       ${summary ? `<p class="shopping-total">${escapeHtml(summary)}</p>` : ''}
       ${pricing.unpricedCount > 0 && pricing.hasPrices ? `<p>${escapeHtml(t('ui.unpricedMaterialCount', { count: pricing.unpricedCount }))}</p>` : ''}
@@ -280,7 +299,7 @@ export const buildMaterialCsv = (projects, t, spareMargin = 10) => {
   ];
   const lines = rows.map((row) => [
     row.plans.join(', '),
-    materialLabel(row.material, t),
+    purchaseMaterialLabel(row, t),
     row.size.replace(' mm', ''),
     row.neededQuantity,
     row.quantityToBuy,

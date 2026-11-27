@@ -1,9 +1,9 @@
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useActionDisclosure } from '../hooks/useActionDisclosure';
 
 const MovePlanMenu = ({ groups, currentGroupId, onMove, busy = false }) => {
   const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
+  const { open, setOpen, id, container } = useActionDisclosure();
   const targets = groups.filter((group) => group.id !== currentGroupId);
 
   if (targets.length === 0) return null;
@@ -13,21 +13,21 @@ const MovePlanMenu = ({ groups, currentGroupId, onMove, busy = false }) => {
   };
 
   return (
-    <div className="move-plan-menu">
+    <div {...container} className="move-plan-menu">
       <button
         type="button"
         className="btn btn-sm"
         aria-expanded={open}
-        aria-haspopup="menu"
+        aria-controls={open ? id : undefined}
         onClick={() => setOpen((value) => !value)}
         disabled={busy}
       >
         {t('projectUi.moveTo')}
       </button>
       {open && (
-        <div className="move-plan-options" role="menu" aria-label={t('projectUi.moveToProject')}>
+        <div id={id} className="move-plan-options" role="group" aria-label={t('projectUi.moveToProject')}>
           {targets.map((group) => (
-            <button key={group.id} type="button" role="menuitem" onClick={() => move(group)} disabled={busy}>
+            <button key={group.id} type="button" onClick={() => move(group)} disabled={busy}>
               {group.name}
             </button>
           ))}

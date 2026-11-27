@@ -17,6 +17,33 @@ const project = {
 };
 
 describe('SheetPlanDocument', () => {
+  it('preserves fractional stock, placements, and diagram descriptions across sheets', () => {
+    const fractionalProject = {
+      ...project, sheet_thickness: 18.125, sheet_width: 1200.5, sheet_height: 2500.25,
+      optimization_result: {
+        ...project.optimization_result,
+        sheets: project.optimization_result.sheets.map((sheet, index) => ({
+          ...sheet, sheet_width: 1200.5, sheet_height: 2500.25,
+          parts: [{
+            ...sheet.parts[0], width: 800.5, height: 400.25,
+            x: index ? 0 : 3.125, y: index ? 400.0625 : 0.0625,
+          }],
+        })),
+      },
+    };
+    render(<SheetPlanDocument project={fractionalProject} />);
+    expect(screen.getByText('18,125 mm')).toBeInTheDocument();
+    expect(screen.getByText(/1\s?200,5 mm × 2\s?500,25 mm/)).toBeInTheDocument();
+    expect(screen.getByAltText(/Sheet 1: 1\s?200,5 by 2\s?500,25 millimetres/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Exact placements/i }));
+    expect(screen.getByText('800,5 mm × 400,25 mm')).toBeInTheDocument();
+    expect(screen.getByText('3,125; 0,0625')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Sheet 2/i }));
+    expect(screen.getByText('0; 400,0625')).toBeInTheDocument();
+    expect(screen.getByText('90°')).toBeInTheDocument();
+    expect(screen.queryByText('801 mm × 400 mm')).not.toBeInTheDocument();
+  });
+
   it('shows the summary and lets a reader choose a sheet from its overview', () => {
     render(<SheetPlanDocument project={project} />);
 

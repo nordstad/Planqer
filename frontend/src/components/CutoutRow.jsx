@@ -51,7 +51,7 @@ const CutoutRow = ({ cutout, index, handleCutoutChange, removeCutout, error, att
               tag="x"
               aria-label={t('ui.cutoutPositionAria', { axis: 'x', item: index + 1 })}
               type="number"
-              step="0.1"
+              step="1"
               value={cutout.x}
               onChange={(e) => handleCutoutChange(index, 'x', e.target.value)}
               style={{ width: '62px' }}
@@ -62,7 +62,7 @@ const CutoutRow = ({ cutout, index, handleCutoutChange, removeCutout, error, att
               tag="y"
               aria-label={t('ui.cutoutPositionAria', { axis: 'y', item: index + 1 })}
               type="number"
-              step="0.1"
+              step="1"
               value={cutout.y}
               onChange={(e) => handleCutoutChange(index, 'y', e.target.value)}
               style={{ width: '62px' }}
@@ -77,22 +77,22 @@ const CutoutRow = ({ cutout, index, handleCutoutChange, removeCutout, error, att
               tag="w"
               aria-label={t('ui.cutoutSizeAria', { axis: t('workflow.width'), item: index + 1 })}
               type="number"
-              step="0.1"
+              step="1"
               value={cutout.width}
               onChange={(e) => handleCutoutChange(index, 'width', e.target.value)}
               style={{ width: '62px' }}
-              min="0.1"
+              min="1"
               error={fieldError('width')}
             />
             <CutoutField
               tag="h"
               aria-label={t('ui.cutoutSizeAria', { axis: t('workflow.height'), item: index + 1 })}
               type="number"
-              step="0.1"
+              step="1"
               value={cutout.height}
               onChange={(e) => handleCutoutChange(index, 'height', e.target.value)}
               style={{ width: '62px' }}
-              min="0.1"
+              min="1"
               error={fieldError('height')}
             />
           </div>

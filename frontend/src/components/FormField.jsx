@@ -11,7 +11,12 @@ export const splitUnit = (label) => {
   return match ? { text: label.slice(0, match.index), unit: match[1] } : { text: label, unit: null };
 };
 
-const FormField = ({ label, unit: unitOverride, required = false, optional = false, tip, fill = false, className = '', children }) => {
+export const FormLegend = () => {
+  const { t } = useTranslation();
+  return <p className="form-legend"><span className="req-mark" aria-hidden="true" />{t('formUi.requiredLegend')}</p>;
+};
+
+const FormField = ({ label, unit: unitOverride, required = false, optional = false, tip, fill = false, error, errorId, className = '', children }) => {
   const { t } = useTranslation();
   const generatedId = useId();
   const control = Children.only(children);
@@ -21,8 +26,15 @@ const FormField = ({ label, unit: unitOverride, required = false, optional = fal
   // Optional fields get their own look (dashed edge, no recessed fill) on top of the "(optional)" label.
   const input = cloneElement(control, {
     id,
+    ...(error ? {
+      'aria-invalid': true,
+      'aria-describedby': [control.props['aria-describedby'], errorId || `${id}-error`].filter(Boolean).join(' '),
+    } : {}),
+    ...(unit === 'mm' && control.props.type === 'number' ? { step: '1' } : {}),
     ...(required ? { 'aria-required': true } : {}),
-    ...(optional ? { className: `${control.props.className || ''} is-optional`.trim() } : {}),
+    ...(optional || error ? {
+      className: [control.props.className, optional && 'is-optional', error && 'form-input-error'].filter(Boolean).join(' '),
+    } : {}),
   });
 
   return (
@@ -39,6 +51,7 @@ const FormField = ({ label, unit: unitOverride, required = false, optional = fal
       {unit
         ? <span className="field-unit-wrap">{input}<span className="field-unit" aria-hidden="true">{unit}</span></span>
         : input}
+      {error && !errorId && <p id={`${id}-error`} className="text-danger text-[12.5px] font-semibold">{error}</p>}
     </div>
   );
 };

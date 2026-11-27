@@ -18,12 +18,12 @@ export const LanguageProvider = ({ children }) => {
 
   const changeLanguage = async (language, { persistAccount = true } = {}) => {
     await setLanguage(language);
-    if (persistAccount && getAuthToken()) {
-      try {
+    try {
+      if (persistAccount && getAuthToken()) {
         await updateUserSettings({ preferred_language: i18n.language });
-      } catch {
-        // The browser preference still works if the API is unavailable.
       }
+    } catch {
+      // The active language still works if account storage or the API is unavailable.
     }
   };
 

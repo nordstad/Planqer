@@ -38,6 +38,8 @@ MODULES = (
     "partsible/cutlist_services.py",
     "partsible/errors.py",
     "partsible/local_api.py",
+    "partsible/saved_backup.py",
+    "partsible/measurement_inputs.py",
     "partsible/saved_diagrams.py",
     "partsible/schemas/__init__.py",
     "partsible/schemas/cutlists.py",

@@ -24,6 +24,8 @@ export const AuthProvider = ({ children }) => {
   const [needsSetup, setNeedsSetup] = useState(false);
   const [singleUser, setSingleUser] = useState(false);
   const [setupCheckError, setSetupCheckError] = useState(false);
+  const [authStorageError, setAuthStorageError] = useState(false);
+  const [bootstrapAttempt, setBootstrapAttempt] = useState(0);
 
   useEffect(() => {
     if (!user) return;
@@ -47,13 +49,32 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     if (lite) return;
+    setLoading(true);
+    setSetupCheckError(false);
     const checkAuth = async () => {
-      if (getAuthToken()) {
+      let token;
+      try {
+        token = getAuthToken();
+      } catch {
+        // An unreadable token is unknown, not an absent token or a signed-out user.
+        setAuthStorageError(true);
+        setLoading(false);
+        return;
+      }
+      if (token) {
         try {
           setUser(await getCurrentUser());
-        } catch {
-          // Token expired or invalid
-          logoutUser();
+        } catch (error) {
+          if (error?.name === 'AuthStorageError') {
+            setAuthStorageError(true);
+          } else {
+            // Token expired or invalid
+            try {
+              logoutUser();
+            } catch {
+              setAuthStorageError(true);
+            }
+          }
           setUser(null);
         }
       } else {
@@ -66,18 +87,19 @@ export const AuthProvider = ({ children }) => {
             setSingleUser(true);
             setUser(await getCurrentUser());
           }
-        } catch {
+        } catch (error) {
           // Can't tell if this instance has accounts yet (e.g. the API was
           // unreachable or CORS-blocked) - falling back to a login form here
           // would hide that from someone who has no account to log in to.
-          setSetupCheckError(true);
+          if (error?.name === 'AuthStorageError') setAuthStorageError(true);
+          else setSetupCheckError(true);
         }
       }
       setLoading(false);
     };
 
     checkAuth();
-  }, []);
+  }, [bootstrapAttempt]);
 
   const login = (userData) => {
     setUser(userData);
@@ -86,7 +108,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    logoutUser();
+    try {
+      logoutUser();
+    } catch {
+      setAuthStorageError(true);
+      return;
+    }
     setUser(null);
     setError(null);
   };
@@ -98,6 +125,8 @@ export const AuthProvider = ({ children }) => {
     needsSetup,
     singleUser,
     setupCheckError,
+    authStorageError,
+    retrySetup: () => setBootstrapAttempt((current) => current + 1),
     isAuthenticated: !!user,
     login,
     logout,

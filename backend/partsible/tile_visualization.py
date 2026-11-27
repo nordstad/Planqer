@@ -146,6 +146,9 @@ def assign_size_labels(tiles) -> dict[tuple, str]:
 class TileSVGVisualizer:
     """SVG-based tile/surface layout diagram generator."""
 
+    def __init__(self, labels: dict[str, str] | None = None):
+        self.labels = labels or {}
+
     def _create_svg_header(self, width: int, height: int) -> str:
         return f'''<?xml version="1.0" encoding="UTF-8"?>
 <svg width="{width}" height="{height}" viewBox="0 0 {width} {height}"
@@ -309,7 +312,7 @@ class TileSVGVisualizer:
             f'<rect x="{cx}" y="{y - 8}" width="10" height="10" fill="{FULL_TILE_FILL}" stroke="{_INK}"/>'
         )
         parts.append(
-            f'<text x="{cx + 14}" y="{y}" class="legend-text">Full tile</text>'
+            f'<text x="{cx + 14}" y="{y}" class="legend-text">{escape(self.labels.get("full", "Full tile"), _SVG_TEXT_ENTITIES)}</text>'
         )
         cx += 110
 
@@ -322,17 +325,24 @@ class TileSVGVisualizer:
         parts.append(
             f'<rect x="{cx}" y="{y - 8}" width="10" height="10" fill="url(#notch-overlay)"/>'
         )
-        parts.append(f'<text x="{cx + 14}" y="{y}" class="legend-text">Notched</text>')
+        parts.append(
+            f'<text x="{cx + 14}" y="{y}" class="legend-text">{escape(self.labels.get("notched", "Notched"), _SVG_TEXT_ENTITIES)}</text>'
+        )
         cx += 110
 
         parts.append(
             f'<rect x="{cx}" y="{y - 8}" width="10" height="10" fill="none" stroke="{_SLIVER_STROKE}" stroke-width="2"/>'
         )
-        parts.append(f'<text x="{cx + 14}" y="{y}" class="legend-text">Sliver</text>')
+        parts.append(
+            f'<text x="{cx + 14}" y="{y}" class="legend-text">{escape(self.labels.get("sliver", "Sliver"), _SVG_TEXT_ENTITIES)}</text>'
+        )
         cx += 80
 
         if distinct_cut_sizes > 0:
-            note = f"{distinct_cut_sizes} cut size{'s' if distinct_cut_sizes != 1 else ''} \u2014 see cut list"
+            note = (
+                self.labels.get("cuts")
+                or f"{distinct_cut_sizes} cut size{'s' if distinct_cut_sizes != 1 else ''} \u2014 see cut list"
+            )
             parts.append(
                 f'<text x="{cx}" y="{y}" class="legend-text">{escape(note, _SVG_TEXT_ENTITIES)}</text>'
             )
@@ -357,14 +367,15 @@ class TileSVGVisualizer:
 
         total_width = max(surface_w + margin * 2, 640)
         title_lines = textwrap.wrap(
-            project_name or "Tile layout", width=max(1, int((total_width - 80) / 11))
-        ) or ["Tile layout"]
+            project_name or self.labels.get("title", "Tile layout"),
+            width=max(1, int((total_width - 80) / 11)),
+        ) or [self.labels.get("title", "Tile layout")]
         header_height = 28 + len(title_lines) * 22 + 20
         total_height = header_height + surface_h + legend_height + margin
 
         x_off, y_off = margin, header_height
 
-        label = f"Surface: {surface.width:g} \u00d7 {surface.height:g} mm"
+        label = f"{self.labels.get('surface', 'Surface')}: {surface.width:g} \u00d7 {surface.height:g} mm"
 
         size_colors = assign_size_colors(candidate.tiles)
         size_labels = assign_size_labels(candidate.tiles)
@@ -939,11 +950,14 @@ def generate_tile_layout_visualization(
 
 
 def generate_saved_tile_diagram(
-    candidate, surface, project_name: str | None = None
+    candidate,
+    surface,
+    project_name: str | None = None,
+    labels: dict[str, str] | None = None,
 ) -> str:
     """Generate the SVG data URL stored with a saved tile project. See
     svg_visualization.generate_saved_diagram for why there is no PNG here."""
-    visualizer = TileSVGVisualizer()
+    visualizer = TileSVGVisualizer(labels)
     svg_content = visualizer.generate_layout_visualization(
         candidate, surface, project_name
     )

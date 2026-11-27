@@ -1,8 +1,10 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import '../i18n';
 import AdminCatalogue from './AdminCatalogue';
 import * as api from '../utils/api';
 import { resetCatalogueCache } from '../utils/catalogue';
+import { setCatalogueChoice } from '../utils/catalogueChoice';
+import { LOCAL_DATA_RESTORED } from '../hooks/useLocalDataRevision';
 
 vi.mock('../utils/api', () => ({
   getCatalogue: vi.fn(),
@@ -13,6 +15,7 @@ vi.mock('../utils/api', () => ({
   restoreCatalogueEntry: vi.fn(),
   resetCatalogueEntry: vi.fn(),
   getCatalogueSuggestion: vi.fn(),
+  getAuthToken: vi.fn(),
 }));
 
 const product = (id, type, thickness, width, extra = {}) => ({
@@ -45,6 +48,280 @@ beforeEach(() => {
   [api.createCatalogueEntry, api.updateCatalogueEntry, api.hideCatalogueEntry, api.restoreCatalogueEntry, api.resetCatalogueEntry]
     .forEach((fn) => fn.mockResolvedValue({}));
   api.getCatalogueSuggestion.mockResolvedValue({ snippet: '', url: 'https://github.com/nordstad/partsible/issues/new' });
+  api.getAuthToken.mockReturnValue(null);
+});
+
+const deferred = () => {
+  let resolve;
+  let reject;
+  const promise = new Promise((yes, no) => { resolve = yes; reject = no; });
+  return { promise, resolve, reject };
+};
+const countryListing = (country) => listing().map((item) => ({
+  ...item, product: { ...item.product, country, id: item.product.id.replace(/^se:/, `${country.toLowerCase()}:`) },
+}));
+const countryVocabulary = (country) => ({
+  ...vocabulary, country, country_name: country === 'SE' ? 'Sweden' : 'Norway',
+  types: vocabulary.types.map((type) => ({
+    ...type, labels: { en: `${country} ${type.labels.en}` },
+  })),
+});
+const countrySetup = () => {
+  const lists = [];
+  const vocabularies = [];
+  localStorage.setItem('partsible-catalogue-country-v1', 'SE');
+  api.getAdminCatalogue.mockImplementation((country) => {
+    const request = { ...deferred(), country };
+    lists.push(request);
+    return request.promise;
+  });
+  api.getCatalogue.mockImplementation((etag, country) => {
+    const request = { ...deferred(), country };
+    vocabularies.push(request);
+    return request.promise;
+  });
+  const view = render(<AdminCatalogue />);
+  const release = async (index, country, modified = false) => {
+    await act(async () => {
+      const items = countryListing(country);
+      if (modified) items[2].origin = 'modified';
+      lists[index].resolve(items);
+      vocabularies[index].resolve({ data: countryVocabulary(country), etag: `"${country}"` });
+    });
+  };
+  return { ...view, lists, vocabularies, release };
+};
+const changeCountry = (country) => fireEvent.change(
+  screen.getByLabelText('Catalogue'), { target: { value: country } },
+);
+const expectCountryPending = () => {
+  expect(screen.queryByRole('table')).not.toBeInTheDocument();
+  expect(screen.queryByRole('form')).not.toBeInTheDocument();
+  expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Add product' })).not.toBeInTheDocument();
+};
+
+describe('AdminCatalogue country identity', () => {
+  it('refreshes mounted catalogue rows and retires old requests after committed restore', async () => {
+    const state = countrySetup();
+    await state.release(0, 'SE');
+    act(() => window.dispatchEvent(new Event(LOCAL_DATA_RESTORED)));
+    expectCountryPending();
+    act(() => window.dispatchEvent(new Event(LOCAL_DATA_RESTORED)));
+    await state.release(2, 'SE', true);
+    await state.release(1, 'NO');
+    expect(screen.getByText('SE Framing timber 48 × 98 mm')).toBeInTheDocument();
+    expect(screen.queryByText(/NO Framing timber/)).not.toBeInTheDocument();
+    expect(api.createCatalogueEntry).not.toHaveBeenCalled();
+  });
+
+  for (const first of ['list', 'vocabulary']) {
+    it(`does not expose rows or mutations when only ${first} has loaded`, async () => {
+      const state = countrySetup();
+      await act(async () => {
+        if (first === 'list') state.lists[0].resolve(countryListing('SE'));
+        else state.vocabularies[0].resolve({ data: countryVocabulary('SE'), etag: '"SE"' });
+      });
+      expectCountryPending();
+      await state.release(0, 'SE');
+      expect(screen.getByText('SE Framing timber 48 × 98 mm')).toBeInTheDocument();
+    });
+  }
+
+  for (const panel of ['add', 'edit', 'suggest', 'delete']) {
+    it(`retires the old rows and ${panel} panel immediately on country change`, async () => {
+      const state = countrySetup();
+      await state.release(0, 'SE');
+      if (panel === 'add') fireEvent.click(screen.getByRole('button', { name: 'Add product' }));
+      else {
+        const names = { edit: 'Edit', suggest: 'Suggest to Partsible', delete: 'Delete' };
+        fireEvent.click(within(rowOf('SE Framing timber 48 × 98 mm')).getByRole('button', { name: names[panel] }));
+      }
+      changeCountry('NO');
+      expectCountryPending();
+      expect(screen.getByLabelText('Catalogue')).toHaveValue('NO');
+      await state.release(1, 'NO');
+      expect(screen.getByText('NO Framing timber 48 × 98 mm')).toBeInTheDocument();
+      expect(screen.queryByRole('form')).not.toBeInTheDocument();
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    });
+  }
+
+  for (const order of ['old-first', 'new-first']) {
+    for (const endpoint of ['list', 'vocabulary']) {
+      for (const failure of [false, true]) {
+        it(`ignores obsolete ${endpoint} ${failure ? 'failure' : 'success'} (${order})`, async () => {
+          const state = countrySetup();
+          // Change through the shared choice store while the first load is pending.
+          act(() => setCatalogueChoice('NO'));
+          const obsolete = async () => act(async () => {
+            const target = endpoint === 'list' ? state.lists[0] : state.vocabularies[0];
+            const other = endpoint === 'list' ? state.vocabularies[0] : state.lists[0];
+            other.resolve(endpoint === 'list'
+              ? { data: countryVocabulary('SE'), etag: '"SE"' } : countryListing('SE'));
+            if (failure) target.reject(new Error('Obsolete country failed'));
+            else target.resolve(endpoint === 'list'
+              ? countryListing('SE') : { data: countryVocabulary('SE'), etag: '"SE"' });
+          });
+          if (order === 'old-first') {
+            await obsolete();
+            expectCountryPending();
+            expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+            await state.release(1, 'NO');
+          } else {
+            await state.release(1, 'NO');
+            await obsolete();
+          }
+          expect(screen.getByText('NO Framing timber 48 × 98 mm')).toBeInTheDocument();
+          expect(screen.queryByText('SE Framing timber 48 × 98 mm')).not.toBeInTheDocument();
+          expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        });
+      }
+    }
+  }
+
+  it('keeps Sweden current after SE→NO→SE and a late Norway response', async () => {
+    const state = countrySetup();
+    await state.release(0, 'SE');
+    changeCountry('NO');
+    changeCountry('SE');
+    expectCountryPending();
+    await state.release(2, 'SE');
+    await state.release(1, 'NO');
+    expect(screen.getByText('SE Framing timber 48 × 98 mm')).toBeInTheDocument();
+    expect(screen.queryByText('NO Framing timber 48 × 98 mm')).not.toBeInTheDocument();
+    expect(state.lists.map(({ country }) => country)).toEqual(['SE', 'NO', 'SE']);
+    expect(state.vocabularies.map(({ country }) => country)).toEqual(['SE', 'NO', 'SE']);
+  });
+
+  it('does not revive an earlier Sweden request when returning to Sweden', async () => {
+    const state = countrySetup();
+    changeCountry('NO');
+    changeCountry('SE');
+    await state.release(0, 'SE');
+    expectCountryPending();
+    await state.release(2, 'SE');
+    await state.release(1, 'NO');
+    expect(screen.getByText('SE Framing timber 48 × 98 mm')).toBeInTheDocument();
+  });
+
+  it('passes explicit generic and automatic-default request contexts', async () => {
+    const state = countrySetup();
+    await state.release(0, 'SE');
+    changeCountry('generic');
+    expectCountryPending();
+    expect(state.lists[1].country).toBe('generic');
+    expect(state.vocabularies[1].country).toBe('generic');
+    changeCountry('auto');
+    expectCountryPending();
+    expect(state.lists[2].country).toBe(null);
+    expect(state.vocabularies[2].country).toBe(undefined);
+    await state.release(2, 'SE');
+    await state.release(1, 'NO');
+    expect(screen.getByLabelText('Catalogue')).toHaveValue('auto');
+    expect(screen.getByText('SE Framing timber 48 × 98 mm')).toBeInTheDocument();
+  });
+
+  it('recovers from a current-country failure by switching country', async () => {
+    const state = countrySetup();
+    await act(async () => state.lists[0].reject(new Error('Current load failed')));
+    expect(screen.getByRole('alert')).toHaveTextContent('Current load failed');
+    expect(screen.queryByRole('button', { name: 'Add product' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeEnabled();
+    changeCountry('NO');
+    expectCountryPending();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    await state.release(1, 'NO');
+    expect(screen.getByText('NO Framing timber 48 × 98 mm')).toBeInTheDocument();
+  });
+
+  it('preserves search and filter while retiring country-specific data', async () => {
+    const state = countrySetup();
+    await state.release(0, 'SE');
+    fireEvent.change(screen.getByLabelText('Search products'), { target: { value: '48x98' } });
+    fireEvent.change(screen.getByLabelText('Show'), { target: { value: 'local' } });
+    changeCountry('NO');
+    await state.release(1, 'NO');
+    expect(screen.getByLabelText('Search products')).toHaveValue('48x98');
+    expect(screen.getByLabelText('Show')).toHaveValue('local');
+    expect(screen.getByText('NO Framing timber 48 × 98 mm')).toBeInTheDocument();
+  });
+
+  for (const operation of ['add', 'edit', 'hide', 'restore', 'delete', 'revert']) {
+    it(`pins ${operation} to the displayed country`, async () => {
+      const state = countrySetup();
+      await state.release(0, 'SE', operation === 'revert');
+      if (operation === 'add') {
+        fireEvent.click(screen.getByRole('button', { name: 'Add product' }));
+        const form = screen.getByRole('form', { name: 'Add product' });
+        fireEvent.change(within(form).getByLabelText('Product type'), { target: { value: 'regel' } });
+        fireEvent.change(within(form).getByLabelText('Thickness (mm)'), { target: { value: '48' } });
+        fireEvent.change(within(form).getByLabelText('Width (mm)'), { target: { value: '98' } });
+        fireEvent.click(within(form).getByRole('button', { name: 'Add to catalogue' }));
+        expect(api.createCatalogueEntry).toHaveBeenCalledWith(expect.any(Object), 'SE');
+      } else if (operation === 'edit') {
+        fireEvent.click(within(rowOf('SE Framing timber 48 × 98 mm')).getByRole('button', { name: 'Edit' }));
+        fireEvent.click(within(screen.getByRole('form', { name: 'Edit product' })).getByRole('button', { name: 'Save' }));
+        expect(api.updateCatalogueEntry).toHaveBeenCalledWith('local:regel:48x98', expect.any(Object), 'SE');
+      } else if (operation === 'hide' || operation === 'restore') {
+        const restore = operation === 'restore';
+        fireEvent.click(within(rowOf(`SE Framing timber 45 × ${restore ? 70 : 95} mm`)).getByRole('button', { name: restore ? 'Restore' : 'Hide' }));
+        expect(restore ? api.restoreCatalogueEntry : api.hideCatalogueEntry)
+          .toHaveBeenCalledWith(`se:regel:45x${restore ? 70 : 95}`, 'SE');
+      } else {
+        const label = operation === 'revert' ? 'Revert' : 'Delete';
+        fireEvent.click(within(rowOf('SE Framing timber 48 × 98 mm')).getByRole('button', { name: label }));
+        fireEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: label }));
+        expect(api.resetCatalogueEntry).toHaveBeenCalledWith('local:regel:48x98', 'SE');
+      }
+      await waitFor(() => expect(state.lists).toHaveLength(2));
+      await state.release(1, 'SE');
+    });
+  }
+
+  for (const failure of [false, true]) {
+    it(`ignores an old mutation's late ${failure ? 'failure' : 'success'} while a new-country mutation is pending`, async () => {
+      const oldMutation = deferred();
+      const newMutation = deferred();
+      api.hideCatalogueEntry.mockReturnValueOnce(oldMutation.promise).mockReturnValueOnce(newMutation.promise);
+      const state = countrySetup();
+      await state.release(0, 'SE');
+      fireEvent.click(within(rowOf('SE Framing timber 45 × 95 mm')).getByRole('button', { name: 'Hide' }));
+      changeCountry('NO');
+      await state.release(1, 'NO');
+      fireEvent.click(within(rowOf('NO Framing timber 45 × 95 mm')).getByRole('button', { name: 'Hide' }));
+      await act(async () => {
+        if (failure) oldMutation.reject(new Error('Obsolete mutation failed'));
+        else oldMutation.resolve({});
+      });
+      expect(state.lists).toHaveLength(2);
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      expect(within(rowOf('NO Framing timber 45 × 95 mm')).getByRole('button', { name: 'Hide' })).toBeDisabled();
+      await act(async () => newMutation.resolve({}));
+      expect(state.lists).toHaveLength(3);
+      await state.release(2, 'NO');
+      expect(within(rowOf('NO Framing timber 45 × 95 mm')).getByRole('button', { name: 'Hide' })).toBeEnabled();
+    });
+  }
+
+  it('retains a current failed edit and supports retry against the same country', async () => {
+    const state = countrySetup();
+    api.updateCatalogueEntry.mockRejectedValueOnce(new Error('Current save failed'));
+    await state.release(0, 'SE');
+    fireEvent.click(within(rowOf('SE Framing timber 48 × 98 mm')).getByRole('button', { name: 'Edit' }));
+    const form = screen.getByRole('form', { name: 'Edit product' });
+    fireEvent.change(within(form).getByLabelText('Stock lengths (mm) (optional)'), { target: { value: '3600' } });
+    fireEvent.click(within(form).getByRole('button', { name: 'Save' }));
+    expect(await within(form).findByRole('alert')).toHaveTextContent('Current save failed');
+    expect(within(form).getByLabelText('Stock lengths (mm) (optional)')).toHaveValue('3600');
+    fireEvent.click(within(form).getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(state.lists).toHaveLength(2));
+    await state.release(1, 'SE');
+    expect(screen.queryByRole('form')).not.toBeInTheDocument();
+    expect(api.updateCatalogueEntry).toHaveBeenLastCalledWith(
+      'local:regel:48x98', expect.objectContaining({ lengths: [3600] }), 'SE',
+    );
+  });
 });
 
 const rowOf = (name) => screen.getByText(name).closest('tr');
@@ -107,9 +384,9 @@ describe('AdminCatalogue', () => {
     render(<AdminCatalogue />);
     await screen.findByText('Framing timber 45 × 95 mm');
     fireEvent.click(within(rowOf('Framing timber 45 × 95 mm')).getByRole('button', { name: 'Hide' }));
-    await waitFor(() => expect(api.hideCatalogueEntry).toHaveBeenCalledWith('se:regel:45x95'));
+    await waitFor(() => expect(api.hideCatalogueEntry).toHaveBeenCalledWith('se:regel:45x95', null));
     fireEvent.click(within(rowOf('Framing timber 45 × 70 mm')).getByRole('button', { name: 'Restore' }));
-    await waitFor(() => expect(api.restoreCatalogueEntry).toHaveBeenCalledWith('se:regel:45x70'));
+    await waitFor(() => expect(api.restoreCatalogueEntry).toHaveBeenCalledWith('se:regel:45x70', null));
   });
 
   it('adds a product with a size, lengths and a source', async () => {
@@ -122,13 +399,13 @@ describe('AdminCatalogue', () => {
     fireEvent.change(typeSelect, { target: { value: 'regel' } });
     fireEvent.change(within(form).getByLabelText('Thickness (mm)'), { target: { value: '48' } });
     fireEvent.change(within(form).getByLabelText('Width (mm)'), { target: { value: '98' } });
-    fireEvent.change(within(form).getByLabelText('Stock lengths (mm)'), { target: { value: '2400, 3000' } });
+    fireEvent.change(within(form).getByLabelText('Stock lengths (mm) (optional)'), { target: { value: '2400, 3000' } });
     fireEvent.change(within(form).getByLabelText(/Source URLs/), { target: { value: 'https://www.traguiden.se/x' } });
     fireEvent.click(within(form).getByLabelText('Pine'));
     fireEvent.click(within(form).getByRole('button', { name: 'Add to catalogue' }));
     await waitFor(() => expect(api.createCatalogueEntry).toHaveBeenCalledWith(expect.objectContaining({
       type: 'regel', thickness: 48, width: 98, lengths: [2400, 3000], species: ['pine'], sources: ['https://www.traguiden.se/x'],
-    })));
+    }), null));
     await waitFor(() => expect(screen.queryByRole('form', { name: 'Add product' })).not.toBeInTheDocument());
   });
 
@@ -138,6 +415,21 @@ describe('AdminCatalogue', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Add product' }));
     fireEvent.click(screen.getByRole('button', { name: 'Add to catalogue' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Choose a product type.');
+    const form = screen.getByRole('form', { name: 'Add product' });
+    const type = within(form).getByLabelText('Product type');
+    const thickness = within(form).getByLabelText('Thickness (mm)');
+    expect(type).toHaveAttribute('aria-invalid', 'true');
+    expect(type).toHaveAccessibleDescription('Choose a product type.');
+    expect(thickness).not.toHaveAttribute('aria-describedby');
+    fireEvent.change(type, { target: { value: 'regel' } });
+    expect(type).not.toHaveAttribute('aria-invalid');
+    fireEvent.change(thickness, { target: { value: '45abc' } });
+    fireEvent.click(within(form).getByRole('button', { name: 'Add to catalogue' }));
+    expect(thickness).toHaveAttribute('aria-invalid', 'true');
+    expect(thickness).toHaveAccessibleDescription(/whole number of millimetres/);
+    expect(type).not.toHaveAttribute('aria-describedby');
+    fireEvent.change(thickness, { target: { value: '45' } });
+    expect(thickness).not.toHaveAttribute('aria-describedby');
     expect(api.createCatalogueEntry).not.toHaveBeenCalled();
   });
 
@@ -161,10 +453,10 @@ describe('AdminCatalogue', () => {
     fireEvent.click(within(rowOf('Framing timber 45 × 95 mm')).getByRole('button', { name: 'Edit' }));
     const form = screen.getByRole('form', { name: 'Edit product' });
     expect(within(form).queryByLabelText('Thickness (mm)')).not.toBeInTheDocument();
-    fireEvent.change(within(form).getByLabelText('Stock lengths (mm)'), { target: { value: '3000' } });
+    fireEvent.change(within(form).getByLabelText('Stock lengths (mm) (optional)'), { target: { value: '3000' } });
     fireEvent.click(within(form).getByRole('button', { name: 'Save' }));
     await waitFor(() => expect(api.updateCatalogueEntry).toHaveBeenCalledWith(
-      'se:regel:45x95', expect.objectContaining({ lengths: [3000], grades: ['C24'] }),
+      'se:regel:45x95', expect.objectContaining({ lengths: [3000], grades: ['C24'] }), null,
     ));
   });
 
@@ -175,7 +467,7 @@ describe('AdminCatalogue', () => {
     fireEvent.click(within(rowOf('Framing timber 48 × 98 mm')).getByRole('button', { name: 'Delete' }));
     expect(api.resetCatalogueEntry).not.toHaveBeenCalled();
     fireEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }));
-    await waitFor(() => expect(api.resetCatalogueEntry).toHaveBeenCalledWith('local:regel:48x98'));
+    await waitFor(() => expect(api.resetCatalogueEntry).toHaveBeenCalledWith('local:regel:48x98', null));
   });
 
   it('opens the edit and suggest forms directly under the row they belong to', async () => {

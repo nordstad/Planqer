@@ -9,7 +9,7 @@ const readLast = () => {
   try { return localStorage.getItem(LAST_PROJECT_KEY); } catch { return null; }
 };
 
-const remember = (id) => {
+export const rememberProjectChoice = (id) => {
   try { localStorage.setItem(LAST_PROJECT_KEY, String(id)); } catch { /* storage unavailable */ }
 };
 
@@ -36,7 +36,7 @@ export function useProjectChoice({ groups, onCreated, fallbackName }) {
   // there saves nothing.
   const resolve = async () => {
     if (groupId !== NEW_PROJECT) {
-      remember(groupId);
+      rememberProjectChoice(groupId);
       return groupId;
     }
     const name = newName.trim() || fallbackName?.trim() || defaultName;
@@ -51,7 +51,7 @@ export function useProjectChoice({ groups, onCreated, fallbackName }) {
     }
     if (!existing) onCreated(group);
     setPicked(group.id);
-    remember(group.id);
+    rememberProjectChoice(group.id);
     return group.id;
   };
 

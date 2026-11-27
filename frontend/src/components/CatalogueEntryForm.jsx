@@ -7,10 +7,13 @@ import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FREE_TEXT_TYPE, detailOptions, labelIn, typesOfKind } from '../utils/catalogue';
 import { detailsPayload, emptyForm, formProblem, newEntryPayload } from '../utils/catalogueAdmin';
+import FormField, { FormLegend } from './FormField';
 
-const OptionChecks = ({ legend, options, value, onChange, language }) => (
+const OptionChecks = ({ legend, options, value, onChange, language }) => {
+  const { t } = useTranslation();
+  return (
   <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
-    <legend className="form-label">{legend}</legend>
+    <legend className="form-label">{legend}{' '}<span className="opt-mark">{t('formUi.optionalMark')}</span></legend>
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 14px' }}>
       {options.map((option) => (
         <label key={option.key} style={{ display: 'flex', gap: '6px', alignItems: 'center', fontSize: '13.5px' }}>
@@ -24,14 +27,18 @@ const OptionChecks = ({ legend, options, value, onChange, language }) => (
       ))}
     </div>
   </fieldset>
-);
+  );
+};
 
 const CatalogueEntryForm = ({ catalogue, initial, creating, busy, error, onSubmit, onCancel }) => {
   const { t, i18n } = useTranslation();
   const idBase = useId().replace(/:/g, '');
   const [form, setForm] = useState(initial || emptyForm());
   const [problem, setProblem] = useState(null);
-  const set = (field, value) => setForm((current) => ({ ...current, [field]: value }));
+  const set = (field, value) => {
+    setForm((current) => ({ ...current, [field]: value }));
+    if (problem === field) setProblem(null);
+  };
 
   const types = typesOfKind(catalogue, form.kind).filter((type) => type.key !== FREE_TEXT_TYPE[form.kind]);
   const board = form.kind === 'board';
@@ -45,46 +52,48 @@ const CatalogueEntryForm = ({ catalogue, initial, creating, busy, error, onSubmi
   };
 
   const field = (name, label, props = {}) => (
-    <div>
-      <label className="form-label" htmlFor={`${idBase}-${name}`}>{label}</label>
+    <FormField label={label} required={['thickness', 'width'].includes(name)} optional={!['thickness', 'width'].includes(name)}>
       <input
         id={`${idBase}-${name}`}
         className={`form-input${problem === name ? ' form-input-error' : ''}`}
+        aria-invalid={problem === name || undefined}
+        aria-describedby={problem === name ? `${idBase}-error` : undefined}
         value={form[name]}
         onChange={(e) => set(name, e.target.value)}
         {...props}
       />
-    </div>
+    </FormField>
   );
 
   return (
     <form onSubmit={submit} className="synthetic" style={{ display: 'grid', gap: '12px', whiteSpace: 'normal', padding: '14px', border: '1px solid var(--rule)', borderRadius: '10px', margin: '12px 0' }} aria-label={creating ? t('catalogueAdmin.addTitle') : t('catalogueAdmin.editTitle')}>
+      <FormLegend />
       {creating && (
         <div style={{ display: 'grid', gap: '10px', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
-          <div>
-            <label className="form-label" htmlFor={`${idBase}-kind`}>{t('catalogueAdmin.kind')}</label>
+          <FormField label={t('catalogueAdmin.kind')} required>
             <select
               id={`${idBase}-kind`}
               className="form-select"
               value={form.kind}
-              onChange={(e) => setForm({ ...emptyForm(e.target.value), note: form.note })}
+              onChange={(e) => { setForm({ ...emptyForm(e.target.value), note: form.note }); setProblem(null); }}
             >
               <option value="board">{t('catalogueAdmin.board')}</option>
               <option value="sheet">{t('catalogueAdmin.sheet')}</option>
             </select>
-          </div>
-          <div>
-            <label className="form-label" htmlFor={`${idBase}-type`}>{t('catalogueAdmin.type')}</label>
+          </FormField>
+          <FormField label={t('catalogueAdmin.type')} required>
             <select
               id={`${idBase}-type`}
               className={`form-select${problem === 'type' ? ' form-input-error' : ''}`}
+              aria-invalid={problem === 'type' || undefined}
+              aria-describedby={problem === 'type' ? `${idBase}-error` : undefined}
               value={form.type}
               onChange={(e) => set('type', e.target.value)}
             >
               <option value="">{t('catalogueAdmin.chooseType')}</option>
               {types.map((type) => <option key={type.key} value={type.key}>{labelIn(type.labels, i18n.language)}</option>)}
             </select>
-          </div>
+          </FormField>
           {field('thickness', t('catalogueAdmin.thickness'), { inputMode: 'decimal' })}
           {board && field('width', t('catalogueAdmin.width'), { inputMode: 'decimal' })}
         </div>
@@ -108,22 +117,25 @@ const CatalogueEntryForm = ({ catalogue, initial, creating, busy, error, onSubmi
         </>
       ) : null}
 
-      <div>
-        <label className="form-label" htmlFor={`${idBase}-sources`}>{t('catalogueAdmin.sources')}</label>
+      <FormField label={t('catalogueAdmin.sources')} optional>
         <textarea
           id={`${idBase}-sources`}
           className={`form-input${problem === 'sources' ? ' form-input-error' : ''}`}
+          aria-invalid={problem === 'sources' || undefined}
+          aria-describedby={problem === 'sources' ? `${idBase}-error` : undefined}
           rows={2}
           value={form.sources}
           onChange={(e) => set('sources', e.target.value)}
           placeholder="https://"
         />
-      </div>
+      </FormField>
       {field('note', t('productUi.note'), { maxLength: 200 })}
 
       {(problem || error) && (
-        <div className="alert-danger" role="alert">
-          {problem ? t(`catalogueAdmin.problem.${problem}`) : error}
+        <div id={`${idBase}-error`} className="alert-danger" role="alert">
+          {problem ? ['thickness', 'width', 'lengths', 'maxLength', 'formats'].includes(problem)
+            ? t('measurementUi.whole', { min: 1 })
+            : t(`catalogueAdmin.problem.${problem}`) : error}
         </div>
       )}
       <div style={{ display: 'flex', gap: '8px' }}>

@@ -5,18 +5,18 @@
 */
 
 import { labelIn, sizeLabel } from './catalogue';
+import { isWholeMillimetres, readMillimetres } from './measurementInput';
 
 export const ORIGINS = ['builtin', 'local', 'modified'];
 export const LIST_FILTERS = ['all', 'builtin', 'local', 'modified', 'hidden'];
 
 const fold = (text) => String(text).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-const number = (text) => parseFloat(String(text).replace(',', '.'));
+const number = (text) => readMillimetres(text, 1);
 
 export const parseNumberList = (text) => String(text || '')
   .split(/[\s,;]+/)
   .filter(Boolean)
-  .map((part) => Math.round(number(part)))
-  .filter((value) => Number.isFinite(value) && value > 0);
+  .map(number);
 
 export const parseTextList = (text) => String(text || '')
   .split(/[,;\n]+/)
@@ -25,9 +25,12 @@ export const parseTextList = (text) => String(text || '')
 
 export const parseFormats = (text) => String(text || '')
   .split(/[,;\n]+/)
-  .map((part) => /^\s*(\d+(?:[.,]\d+)?)\s*[x×*]\s*(\d+(?:[.,]\d+)?)\s*$/i.exec(part))
-  .filter(Boolean)
-  .map((match) => ({ width: number(match[1]), height: number(match[2]) }));
+  .filter((part) => part.trim())
+  .map((part) => {
+    const match = /^\s*(\d+)\s*[x×*]\s*(\d+)\s*$/i.exec(part);
+    if (!match) throw new Error('formats');
+    return { width: number(match[1]), height: number(match[2]) };
+  });
 
 const formatText = (formats) => formats.map((f) => `${f.width}x${f.height}`).join(', ');
 
@@ -66,7 +69,7 @@ export const formFromProduct = (product) => ({
 /* What can change on an existing entry. */
 export const detailsPayload = (form) => ({
   lengths: form.kind === 'board' ? parseNumberList(form.lengths) : [],
-  max_length: form.kind === 'board' && form.maxLength !== '' ? Math.round(number(form.maxLength)) : null,
+  max_length: form.kind === 'board' && form.maxLength !== '' ? number(form.maxLength) : null,
   formats: form.kind === 'sheet' ? parseFormats(form.formats) : [],
   species: form.species,
   treatments: form.treatments,
@@ -87,10 +90,12 @@ export const newEntryPayload = (form) => ({
 export const formProblem = (form, { creating }) => {
   if (creating) {
     if (!form.type) return 'type';
-    if (!(number(form.thickness) > 0)) return 'thickness';
-    if (form.kind === 'board' && !(number(form.width) > 0)) return 'width';
+    if (!isWholeMillimetres(form.thickness) || Number(form.thickness) <= 0) return 'thickness';
+    if (form.kind === 'board' && (!isWholeMillimetres(form.width) || Number(form.width) <= 0)) return 'width';
   }
-  if (form.kind === 'sheet' && form.formats.trim() && parseFormats(form.formats).length === 0) return 'formats';
+  try { if (form.kind === 'board') parseNumberList(form.lengths); } catch { return 'lengths'; }
+  if (form.kind === 'board' && form.maxLength !== '' && (!isWholeMillimetres(form.maxLength) || Number(form.maxLength) <= 0)) return 'maxLength';
+  try { if (form.kind === 'sheet') parseFormats(form.formats); } catch { return 'formats'; }
   const bad = parseTextList(form.sources).find((url) => !url.startsWith('https://'));
   if (bad) return 'sources';
   return null;

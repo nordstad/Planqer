@@ -1,4 +1,5 @@
 import i18n from '../i18n';
+import { isWholeMillimetres, millimetresError } from './measurementInput';
 
 // Mirrors the backend wall-outline checks so mistakes are shown beside the
 // field. The backend stays authoritative.
@@ -28,8 +29,10 @@ const dimensionIssues = (wall, t, groups) => {
       missing.push(label);
       return;
     }
-    const values = fields.map((field) => num(wall[field]));
-    if (values.some((value) => value < MIN_MM || value > MAX_MM)) {
+    const values = fields.map((field) => Number(wall[field]));
+    if (fields.some((field) => !isWholeMillimetres(wall[field]))) {
+      errors.push(t('measurementUi.range', { min: MIN_MM, max: MAX_MM }));
+    } else if (values.some((value) => value < MIN_MM || value > MAX_MM)) {
       errors.push(t(`wallpaperUi.err${label}Range`, { min: MIN_MM, max: fmt(MAX_MM) }));
     } else if (Math.min(...values) < IMPLAUSIBLE_MM) {
       warnings.push(t(`wallpaperUi.warn${label}Small`, { value: fmt(Math.min(...values)) }));
@@ -41,6 +44,9 @@ const dimensionIssues = (wall, t, groups) => {
 export const wallDimensionIssues = (wall, t = defaultT) => {
   const { errors, warnings, missing } = dimensionIssues(wall, t, GROUPS);
   if (wall.profile === 'sloped') {
+    if (['lower_left', 'lower_right'].some((field) => !isWholeMillimetres(wall[field]) || Number(wall[field]) < 0 || Number(wall[field]) > MAX_MM)) {
+      errors.push(t('measurementUi.range', { min: 0, max: MAX_MM }));
+    }
     if (num(wall.lower_left) >= num(wall.height_left)) errors.push(t('wallpaperUi.errLowerLeft'));
     if (num(wall.lower_right) >= num(wall.height_right)) errors.push(t('wallpaperUi.errLowerRight'));
   }
@@ -61,26 +67,32 @@ const usableHeightAt = (wall, x) => {
 const CUTOUT_FIELDS = ['x', 'y', 'width', 'height'];
 export const cutoutMissing = (cutout) => CUTOUT_FIELDS.filter((field) => isBlank(cutout[field]));
 
-export const cutoutIssue = (wall, cutout, t = defaultT) => {
+export const cutoutFieldIssues = (wall, cutout, t = defaultT) => {
+  const issue = (fields, message) => Object.fromEntries(fields.map((field) => [field, message]));
   // A field not filled in yet is missing, not wrong.
-  if (cutoutMissing(cutout).length) return null;
+  if (cutoutMissing(cutout).length) return {};
+  for (const field of CUTOUT_FIELDS) {
+    if (!isWholeMillimetres(cutout[field])) return issue([field], millimetresError(cutout[field], 0, MAX_MM, t));
+  }
   const x = num(cutout.x);
   const y = num(cutout.y);
   const width = num(cutout.width);
   const height = num(cutout.height);
-  if (width <= 0 || height <= 0) return t('wallpaperUi.errCutoutZero');
-  if (x < 0 || y < 0) return t('wallpaperUi.errCutoutNegative');
+  if (width <= 0 || height <= 0) return issue(['width', 'height'].filter((field) => num(cutout[field]) <= 0), t('wallpaperUi.errCutoutZero'));
+  if (x < 0 || y < 0) return issue(['x', 'y'].filter((field) => num(cutout[field]) < 0), t('wallpaperUi.errCutoutNegative'));
   const wallW = wallWidth(wall);
-  if (x + width > wallW) return t('wallpaperUi.errCutoutWide', { over: fmt(x + width - wallW), width: fmt(wallW) });
+  if (x + width > wallW) return issue(['x', 'width'], t('wallpaperUi.errCutoutWide', { over: fmt(x + width - wallW), width: fmt(wallW) }));
   const left = usableHeightAt(wall, x);
   const right = usableHeightAt(wall, x + width);
   const available = Math.min(left, right);
   if (y + height > available) {
     const side = right <= left ? t('wallpaperUi.sideRight') : t('wallpaperUi.sideLeft');
-    return t('wallpaperUi.errCutoutTall', { over: fmt(y + height - available), side, available: fmt(available) });
+    return issue(['y', 'height'], t('wallpaperUi.errCutoutTall', { over: fmt(y + height - available), side, available: fmt(available) }));
   }
-  return null;
+  return {};
 };
+
+export const cutoutIssue = (wall, cutout, t = defaultT) => Object.values(cutoutFieldIssues(wall, cutout, t))[0] || null;
 
 export const MAX_CORNER_OVERLAP_MM = 50;
 
